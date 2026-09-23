@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.10, Quantities v0.3, Slice-Plan v0.4
+
+- Liste zeigt Packungen statt Rechenwerte, +/− je Packung, Packungsgröße editierbar und gemerkt
+- Intelligentes Runden (haltbar immer auf, frisch nur bis 25 % Überschuss) und Ausgleich innerhalb der Gruppe
+- Appetit und Trinken als Crew-Fragen mit Aufschlag, Reserve für Ankertage getrennt, Einstufung pro Person optional
+
 ## 2026-09-23 – Katalog v0.4, PRD v0.9, Slice-Plan v0.3
 
 - `docs/KATALOG_v0.4.md`, `data/catalog_v0.4.json`: alle 10 Kategorien im Schema Bedarfsgruppe → Variante (47 Gruppen, 212 Varianten), Technik mit Sichtbarkeit (Alltag auch beim Charter) und Prüflisten-Modus, Bordapotheke als Prüfliste
