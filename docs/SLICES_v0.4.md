@@ -1,6 +1,6 @@
 # Proviantplaner – Umsetzungsplan in Slices v0.4
 
-Stand: 23.09.2026 · Grundlage: `docs/PRD_v0.10.md`, `docs/KATALOG_v0.4.md`
+Stand: 23.09.2026 · Grundlage: `docs/PRD_v0.11.md`, `docs/KATALOG_v0.4.md`
 
 Jeder Slice ist eine abgeschlossene Arbeitseinheit für eine Gemini-Sitzung: klein genug für eine Standzeit, mit klaren Abnahmekriterien. Ein Slice gilt erst als fertig, wenn alle Kriterien erfüllt sind und die Tests grün laufen.
 
@@ -12,6 +12,7 @@ Jeder Slice ist eine abgeschlossene Arbeitseinheit für eine Gemini-Sitzung: kle
 | v0.2 | 23.09.2026 | Angepasst an PRD v0.8: Vorratsliste statt Menüplan als Kern, Konsumprofile, Überschreiben von Mengen, Einlagerungs-Checkliste, Charter oder eigenes Boot; Menüplan nach v1.1 |
 | v0.3 | 23.09.2026 | S1, S2, S4 auf Katalog v0.4 umgestellt (Bedarfsgruppen, Varianten, split equal/each, Portionen, Sichtbarkeit, Prüflisten-Modus, frisch nachkaufen) |
 | v0.4 | 23.09.2026 | Crew-Fragen statt Pflicht-Einstufung pro Person, Reserve-Schalter, Packungsanzeige mit +/−, intelligentes Runden und Gruppenausgleich, gemerkte Packungsgrößen |
+| v0.4.1 | 23.09.2026 | Verweis auf PRD v0.11; Hinweis: Törn-Code und Bestellung an die Basis sind v1.1 und nicht Teil dieser Slices. Vorbereitung in S6: Freischaltung so bauen, dass später eine zeitlich begrenzte Freischaltung per Code ergänzt werden kann |
 
 ## Technische Leitplanken (für alle Slices)
 
@@ -101,7 +102,7 @@ Formular in wenigen Schritten: Name und Datum, Charter oder eigenes Boot, Revier
 
 Reine Dart-Logik `Entitlements`: Probetörn (erster Törn, alles frei), Mitglied (HullQ-Login, unbegrenzte Törns, Funktionen laut PRD-Tabelle), Pro (Abo, Mock bis v1.1).
 
-**Abnahme:** Unit-Tests decken jede Zeile der Funktionstabelle im PRD ab; der zweite Törn zeigt den Freischalten-Dialog.
+**Abnahme:** Unit-Tests decken jede Zeile der Funktionstabelle im PRD ab; der zweite Törn zeigt den Freischalten-Dialog; das Modell erlaubt später eine zeitlich begrenzte Freischaltung pro Törn (Törn-Code, v1.1), ohne Umbau.
 
 ### S7 – HullQ-Login, Einwilligung, Konto löschen
 

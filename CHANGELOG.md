@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.11
+
+- B2B-Kanal Charterfirmen: Törn-Code und Bestellung an den Proviantservice der Basis (beides v1.1)
+- Slice-Plan: S6 so vorbereiten, dass eine zeitlich begrenzte Freischaltung per Code später ohne Umbau möglich ist
+
 ## 2026-09-23 – PRD v0.10, Quantities v0.3, Slice-Plan v0.4
 
 - Liste zeigt Packungen statt Rechenwerte, +/− je Packung, Packungsgröße editierbar und gemerkt
