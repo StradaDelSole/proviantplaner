@@ -6,7 +6,7 @@ Diese Datei liest du zu Beginn jeder Sitzung, bevor du Code schreibst.
 
 1. `docs/PRD_vX.Y.md` mit der höchsten Versionsnummer beschreibt, WAS gebaut wird.
 2. `docs/SLICES_vX.Y.md` mit der höchsten Versionsnummer beschreibt, in welcher Reihenfolge und mit welchen Abnahmekriterien.
-3. `data/quantities_vX.Y.json` enthält die Mengenwerte. Werte niemals im Code hart codieren.
+3. `data/catalog_vX.Y.json` (Vorratskatalog) und `data/quantities_vX.Y.json` (Mengen und Profile), jeweils höchste Version, enthalten alle Mengenwerte. Werte niemals im Code hart codieren.
 
 Wenn Code und Dokumente sich widersprechen, gelten die Dokumente. Wenn die Dokumente unklar oder widersprüchlich sind: nicht raten, sondern nachfragen.
 
