@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.14, Katalog v0.5, Slice-Plan v0.6, Freigabe S1
+
+- Törnverlauf: Mittags-/Abends-Restaurant pro Tag, optional Tagestyp und Hafenname; Einkaufsstopps mit manueller Zuordnung
+- Törnablauf in fünf Phasen, Navigation mit vier Reitern
+- Katalog v0.5: Rechenbasis pro Mittagessen an Bord
+- S1 freigegeben
+
 ## 2026-09-23 – PRD v0.13, Freigabe S0
 
 - Android zuerst, iOS später über Cloud-Build; Umsetzung mit Antigravity im lokalen Repo
