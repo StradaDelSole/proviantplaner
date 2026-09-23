@@ -12,7 +12,7 @@ Wenn Code und Dokumente sich widersprechen, gelten die Dokumente. Wenn die Dokum
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0, S1.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6. Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 

@@ -6,10 +6,10 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 
 | Pfad | Inhalt |
 | --- | --- |
-| `docs/PRD_v0.14.md` | Produktanforderungen, Quelle der Wahrheit |
-| `docs/SLICES_v0.6.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
-| `docs/KATALOG_v0.5.md` | Vorratskatalog, lesbar |
-| `data/catalog_v0.5.json` | Vorratskatalog, maschinenlesbar |
+| `docs/PRD_v0.15.md` | Produktanforderungen, Quelle der Wahrheit |
+| `docs/SLICES_v0.7.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
+| `docs/KATALOG_v0.6.md` | Vorratskatalog, lesbar |
+| `data/catalog_v0.6.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.3.json` | Mengen, Konsumprofile, Faktoren |
 | `docs/design/DESIGN_BRIEF_v0.1.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
@@ -22,6 +22,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 
 ## Status
 
-Konzeptphase läuft (PRD v0.14). Es gilt jeweils die höchste Versionsnummer.
+Konzeptphase läuft (PRD v0.15). Es gilt jeweils die höchste Versionsnummer.
 
-**Freigegeben für Gemini: S0, S1.** S1 und folgende erst nach Freigabe hier.
+**Freigegeben für Gemini: S0 bis S6.** Mengen und Oberfläche vorläufig. S1 und folgende erst nach Freigabe hier.

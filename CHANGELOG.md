@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.15, Katalog v0.6, Slice-Plan v0.7, Freigabe S2–S6
+
+- Mengen vorläufig (Zucker gesenkt), Baseline folgt später
+- Umsetzung mit Google AI Pro
+- S2 bis S6 freigegeben; UI vorläufig bis Mockups, alles datengetrieben und im Theme zentral
+
 ## 2026-09-23 – Design-Brief v0.1
 
 - `docs/design/DESIGN_BRIEF_v0.1.md`: Stilrichtung aus HullQ-CI, globaler Stil-Prompt und 9 Bildschirm-Prompts für Stitch, Animationshinweise für Flutter
