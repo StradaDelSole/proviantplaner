@@ -11,6 +11,8 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/KATALOG_v0.5.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.5.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.3.json` | Mengen, Konsumprofile, Faktoren |
+| `docs/design/DESIGN_BRIEF_v0.1.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
+| `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
 | `CHANGELOG.md` | Fortschritt pro Slice |
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 – Design-Brief v0.1
+
+- `docs/design/DESIGN_BRIEF_v0.1.md`: Stilrichtung aus HullQ-CI, globaler Stil-Prompt und 9 Bildschirm-Prompts für Stitch, Animationshinweise für Flutter
+- Ordner `docs/design/mockups/` für die Entwürfe
+
 ## 2026-09-23 – PRD v0.14, Katalog v0.5, Slice-Plan v0.6, Freigabe S1
 
 - Törnverlauf: Mittags-/Abends-Restaurant pro Tag, optional Tagestyp und Hafenname; Einkaufsstopps mit manueller Zuordnung
