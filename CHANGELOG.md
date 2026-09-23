@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.12, Slice-Plan v0.5
+
+- Bordkasse und Kostenteilung: gemeinsame Kasse und Einzelabrechnung, Kategorien, Beteiligung pro Person, "Skipper frei"
+- Zahlungen nur anstoßen: EPC-QR-Code, PayPal-/Revolut-Links; Splitwise-Export später; keine Zahlungsabwicklung
+
 ## 2026-09-23 – PRD v0.11
 
 - B2B-Kanal Charterfirmen: Törn-Code und Bestellung an den Proviantservice der Basis (beides v1.1)
