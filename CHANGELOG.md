@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 – GEMINI.md v0.2, Startprompt v0.1
+
+- GEMINI.md: Darf/Darf nicht, Pflichtablauf mit Plan und Freigabe, Stoppregeln, Berichtsformat, kein Commit/Push durch Gemini
+- `docs/PROMPT_SESSION_START_v0.1.md`: Startprompt und Folgeprompts
+
 ## 2026-09-23 – PRD v0.15, Katalog v0.6, Slice-Plan v0.7, Freigabe S2–S6
 
 - Mengen vorläufig (Zucker gesenkt), Baseline folgt später
