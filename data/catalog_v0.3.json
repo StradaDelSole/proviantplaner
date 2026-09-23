@@ -1,0 +1,1056 @@
+{
+  "version": "0.3",
+  "status": "in Arbeit: Kategorie fruehstueck im neuen Schema fertig, übrige Kategorien folgen; bis dahin gilt für sie catalog_v0.2.json nicht als Bauvorlage",
+  "date": "2026-09-23",
+  "schema": {
+    "levels": [
+      "category",
+      "group",
+      "variant"
+    ],
+    "group": "Bedarf wird pro Bedarfsgruppe berechnet (need.amount je need.basis), mit Profil, Kinderfaktor und applies_to",
+    "variant": "Die Crew wählt Varianten; der Gruppenbedarf wird gleichmäßig (split=equal) oder nach eingestellten Anteilen verteilt und in Packungen (pack.size) aufgerundet",
+    "fresh": "Varianten mit shelf_life_days <= 2 werden nur für die ersten Tage gekauft und als 'unterwegs frisch nachkaufen' pro Hafentag ausgewiesen; haltbare Varianten decken Ankertage ab",
+    "override": "Menge je Gruppe und je Variante überschreibbar, auch als Gesamtzahl"
+  },
+  "categories": [
+    {
+      "id": "fruehstueck",
+      "name_de": "Frühstück"
+    },
+    {
+      "id": "grundnahrung",
+      "name_de": "Grundnahrung"
+    },
+    {
+      "id": "saucen_wuerzen",
+      "name_de": "Saucen und Würzen"
+    },
+    {
+      "id": "frisches",
+      "name_de": "Frisches"
+    },
+    {
+      "id": "suesses_snacks",
+      "name_de": "Süßes und Snacks"
+    },
+    {
+      "id": "getraenke",
+      "name_de": "Getränke ohne Alkohol"
+    },
+    {
+      "id": "alkohol",
+      "name_de": "Getränke mit Alkohol"
+    },
+    {
+      "id": "haushalt",
+      "name_de": "Haushalt"
+    },
+    {
+      "id": "hygiene",
+      "name_de": "Hygiene"
+    },
+    {
+      "id": "technik",
+      "name_de": "Bord und Technik"
+    }
+  ],
+  "bases": {
+    "per_person_day": "pro Person und Tag",
+    "per_person_day_region": "pro Person und Tag, je nach Revier",
+    "per_person_week": "pro Person und Woche (anteilig bei anderen Törnlängen)",
+    "per_person_board_evening": "pro Person und Bordabend",
+    "per_adult_evening": "pro erwachsener Person und Abend",
+    "per_crew_week": "pro Crew und Woche (angefangene Woche zählt voll)",
+    "per_trip": "einmal pro Törn",
+    "per_person_trip": "einmal pro Person und Törn",
+    "check": "Checkliste, keine Mengenberechnung"
+  },
+  "departments": {
+    "backwaren": "Backwaren",
+    "molkerei": "Molkerei und Kühlregal",
+    "obst_gemuese": "Obst und Gemüse",
+    "fleisch_fisch": "Fleisch und Fisch",
+    "trockenware": "Trockenware",
+    "konserven": "Konserven",
+    "getraenke": "Getränke",
+    "suesswaren": "Süßwaren",
+    "haushalt": "Haushalt",
+    "drogerie": "Drogerie",
+    "technik": "Technik / Bootszubehör"
+  },
+  "tags": {
+    "meat": "Fleisch",
+    "fish": "Fisch",
+    "dairy": "Milchprodukte",
+    "egg": "Ei",
+    "gluten": "Gluten",
+    "nuts": "Nüsse",
+    "alcohol": "Alkohol"
+  },
+  "storage_hints": {
+    "remove_cardboard": "Kartons an Land auspacken, nicht an Bord nehmen; Inhalt in dichte Dosen oder Beutel umfüllen",
+    "wash_produce": "Waschen (z. B. Essigwasser) und gut trocknen, luftig lagern",
+    "potatoes_onions": "Trocken und dunkel lagern, Kartoffeln getrennt von Zwiebeln, nicht waschen",
+    "remove_labels": "Etiketten entfernen, Inhalt mit wasserfestem Stift auf den Deckel schreiben",
+    "eggs": "Kühl und dunkel lagern; ungekühlte Eier regelmäßig wenden",
+    "cool_first": "Sofort in den Kühlschrank und zuerst verbrauchen",
+    "keep_dry": "Trocken und dicht verpackt lagern"
+  },
+  "applies_to": {
+    "all": "alle",
+    "non_vegetarian": "nicht vegetarische Crewmitglieder",
+    "vegetarian": "vegetarische Crewmitglieder",
+    "adults": "Erwachsene"
+  },
+  "groups": [
+    {
+      "id": "bread",
+      "category": "fruehstueck",
+      "name_de": "Brot und Backwaren",
+      "need": {
+        "amount": 120,
+        "unit": "g",
+        "basis": "per_person_day"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "estimate",
+      "note": "Recherche nennt ca. einen halben Laib pro Person und Woche plus täglich frisches Brot; als Tagesbedarf zusammengefasst"
+    },
+    {
+      "id": "butter",
+      "category": "fruehstueck",
+      "name_de": "Butter und Streichfett",
+      "need": {
+        "amount": 125,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "spread_sweet",
+      "category": "fruehstueck",
+      "name_de": "Süße Aufstriche",
+      "need": {
+        "amount": 150,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "spread_savory",
+      "category": "fruehstueck",
+      "name_de": "Herzhafte Aufstriche",
+      "need": {
+        "amount": 100,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "cheese",
+      "category": "fruehstueck",
+      "name_de": "Käse",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "cold_cuts",
+      "category": "fruehstueck",
+      "name_de": "Wurst und Aufschnitt",
+      "need": {
+        "amount": 200,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "non_vegetarian",
+      "split": "equal",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "eggs",
+      "category": "fruehstueck",
+      "name_de": "Eier",
+      "need": {
+        "amount": 12,
+        "unit": "Stück",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "milk",
+      "category": "fruehstueck",
+      "name_de": "Milch und Alternativen",
+      "need": {
+        "amount": 0.5,
+        "unit": "l",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "research",
+      "note": "ohne Kaffeemilch (Getränke)"
+    },
+    {
+      "id": "yogurt",
+      "category": "fruehstueck",
+      "name_de": "Joghurt und Quark",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "cereal",
+      "category": "fruehstueck",
+      "name_de": "Müsli und Cerealien",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "source": "estimate",
+      "note": ""
+    }
+  ],
+  "variants": [
+    {
+      "id": "bread_wholegrain",
+      "group": "bread",
+      "name_de": "Vollkornbrot",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "bread_white",
+      "group": "bread",
+      "name_de": "Weißbrot / Bauernbrot",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "baguette",
+      "group": "bread",
+      "name_de": "Baguette",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch in jedem Hafen nachkaufen"
+    },
+    {
+      "id": "rolls",
+      "group": "bread",
+      "name_de": "Brötchen",
+      "pack": {
+        "size": 60,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch nachkaufen"
+    },
+    {
+      "id": "rolls_wholegrain",
+      "group": "bread",
+      "name_de": "Vollkornbrötchen",
+      "pack": {
+        "size": 70,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch nachkaufen"
+    },
+    {
+      "id": "bake_rolls",
+      "group": "bread",
+      "name_de": "Aufbackbrötchen",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "nur mit Backofen an Bord"
+    },
+    {
+      "id": "toast",
+      "group": "bread",
+      "name_de": "Toastbrot",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "crispbread",
+      "group": "bread",
+      "name_de": "Knäckebrot",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "Reserve für Ankertage"
+    },
+    {
+      "id": "wraps",
+      "group": "bread",
+      "name_de": "Wraps / Tortillas",
+      "pack": {
+        "size": 320,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "butter_std",
+      "group": "butter",
+      "name_de": "Butter",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "butter_salted",
+      "group": "butter",
+      "name_de": "Gesalzene Butter",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "hält ungekühlt länger"
+    },
+    {
+      "id": "margarine",
+      "group": "butter",
+      "name_de": "Margarine / veganes Streichfett",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "jam_strawberry",
+      "group": "spread_sweet",
+      "name_de": "Marmelade Erdbeere",
+      "pack": {
+        "size": 340,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "jam_apricot",
+      "group": "spread_sweet",
+      "name_de": "Marmelade Aprikose",
+      "pack": {
+        "size": 340,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "honey",
+      "group": "spread_sweet",
+      "name_de": "Honig",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "nutella",
+      "group": "spread_sweet",
+      "name_de": "Nuss-Nougat-Creme",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "nuts",
+        "dairy"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "peanut_butter",
+      "group": "spread_sweet",
+      "name_de": "Erdnussbutter",
+      "pack": {
+        "size": 350,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "nuts"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "cream_cheese",
+      "group": "spread_savory",
+      "name_de": "Frischkäse",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "hummus",
+      "group": "spread_savory",
+      "name_de": "Hummus",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "liver_sausage",
+      "group": "spread_savory",
+      "name_de": "Streichwurst / Leberwurst",
+      "pack": {
+        "size": 125,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": "nur nicht vegetarisch"
+    },
+    {
+      "id": "gouda",
+      "group": "cheese",
+      "name_de": "Gouda / Butterkäse in Scheiben",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "emmental",
+      "group": "cheese",
+      "name_de": "Emmentaler / Bergkäse",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "brie",
+      "group": "cheese",
+      "name_de": "Brie / Camembert",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 10,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "feta",
+      "group": "cheese",
+      "name_de": "Feta",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "mozzarella",
+      "group": "cheese",
+      "name_de": "Mozzarella",
+      "pack": {
+        "size": 125,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "parmesan",
+      "group": "cheese",
+      "name_de": "Parmesan / Hartkäse am Stück",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "hält auch ungekühlt lange"
+    },
+    {
+      "id": "salami",
+      "group": "cold_cuts",
+      "name_de": "Salami",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [],
+      "note": "luftgetrocknet, gut haltbar"
+    },
+    {
+      "id": "ham_cooked",
+      "group": "cold_cuts",
+      "name_de": "Kochschinken",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "ham_cured",
+      "group": "cold_cuts",
+      "name_de": "Rohschinken",
+      "pack": {
+        "size": 100,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "turkey",
+      "group": "cold_cuts",
+      "name_de": "Putenbrust",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "eggs_std",
+      "group": "eggs",
+      "name_de": "Eier (10er)",
+      "pack": {
+        "size": 10,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "egg"
+      ],
+      "storage": [
+        "eggs",
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "milk_fresh",
+      "group": "milk",
+      "name_de": "Frischmilch",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "milk_uht",
+      "group": "milk",
+      "name_de": "H-Milch",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "an Bord meist die bessere Wahl"
+    },
+    {
+      "id": "oat_drink",
+      "group": "milk",
+      "name_de": "Haferdrink",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "soy_drink",
+      "group": "milk",
+      "name_de": "Sojadrink",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "yogurt_plain",
+      "group": "yogurt",
+      "name_de": "Naturjoghurt",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "yogurt_fruit",
+      "group": "yogurt",
+      "name_de": "Fruchtjoghurt",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "skyr",
+      "group": "yogurt",
+      "name_de": "Skyr / Quark",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "muesli",
+      "group": "cereal",
+      "name_de": "Müsli",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten",
+        "nuts"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "oats",
+      "group": "cereal",
+      "name_de": "Haferflocken",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cornflakes",
+      "group": "cereal",
+      "name_de": "Cornflakes",
+      "pack": {
+        "size": 375,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "granola",
+      "group": "cereal",
+      "name_de": "Granola / Knuspermüsli",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten",
+        "nuts"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    }
+  ]
+}

@@ -10,6 +10,10 @@ Diese Datei liest du zu Beginn jeder Sitzung, bevor du Code schreibst.
 
 Wenn Code und Dokumente sich widersprechen, gelten die Dokumente. Wenn die Dokumente unklar oder widersprüchlich sind: nicht raten, sondern nachfragen.
 
+## Aktueller Status
+
+Katalog in Arbeit (v0.3). Mit der Umsetzung erst beginnen, wenn im README "bereit für S0" steht.
+
 ## Arbeitsweise
 
 - Pro Sitzung genau EIN Slice. Nenne zu Beginn den Slice (z. B. "S2 – Mengen-Engine") und fasse die Abnahmekriterien in eigenen Worten zusammen.

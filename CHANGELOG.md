@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-23 – Katalog v0.3 (in Arbeit)
+
+- Neues Schema Kategorie → Bedarfsgruppe → Variante mit Packungsgröße und Haltbarkeit
+- Kategorie Frühstück vollständig umgestellt; übrige Kategorien folgen
+- Hinweis für Gemini: Katalog noch nicht als Bauvorlage verwenden
+
 ## 2026-09-23 – PRD v0.8, Katalog v0.2, Slice-Plan v0.2
 
 - `docs/PRD_v0.8.md`: Vorratsliste als Kern, Menüplan optional (v1.1), Konsumprofile Essen/Trinken, Mengen überschreibbar, Einlagerungs-Checkliste, Charter oder eigenes Boot, Scope 6–7 Tage
