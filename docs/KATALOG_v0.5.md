@@ -28,6 +28,23 @@ Alle Kategorien sind im neuen Schema. Die Mengen sind Startwerte und werden in d
 - **Modus:** `quantity` berechnet Mengen; `check` ist eine Prüfliste mit vorhanden / fehlt / nachkaufen
 - Mengen sind je Gruppe und je Variante überschreibbar, auch als Gesamtzahl
 
+## Rechenbasen
+
+| Basis | Bedeutung |
+| --- | --- |
+| `per_person_day` | pro Person und Tag |
+| `per_person_day_region` | pro Person und Tag, je nach Revier |
+| `per_person_week` | pro Person und Woche (anteilig bei anderen Törnlängen) |
+| `per_person_board_evening` | pro Person und Abendessen an Bord |
+| `per_adult_evening` | pro erwachsener Person und Abend |
+| `per_crew_week` | pro Crew und Woche (angefangene Woche zählt voll) |
+| `per_trip` | einmal pro Törn |
+| `per_person_trip` | einmal pro Person und Törn |
+| `check` | Checkliste, keine Mengenberechnung |
+| `per_person_board_lunch` | pro Person und Mittagessen an Bord |
+
+Bordabend = Abendessen an Bord (Tag ohne Abends-Restaurant); Bord-Mittagessen = Tag ohne Mittags-Restaurant.
+
 ## Frühstück
 
 ### Brot und Backwaren
