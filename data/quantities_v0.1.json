@@ -1,0 +1,43 @@
+{
+  "version": "0.1",
+  "source": "docs/PRD_v0.7.md, Abschnitt Mengentabelle",
+  "note": "Startwerte pro erwachsener Person, vom Nutzer anpassbar. Keine Ernaehrungsempfehlung.",
+  "water_liters_per_person_day": {
+    "temperate": { "min": 1.5, "max": 2.0, "default": 2.0 },
+    "mediterranean_summer": { "min": 2.0, "max": 3.0, "default": 2.5 },
+    "hot_or_remote": { "min": 3.0, "max": 4.0, "default": 3.5 }
+  },
+  "main_meal_grams_per_person": {
+    "meat_boneless_raw": { "min": 150, "max": 200, "default": 175 },
+    "meat_bone_in_raw": { "min": 200, "max": 250, "default": 225 },
+    "minced_or_stew_meat_raw": { "min": 100, "max": 120, "default": 110 },
+    "fish_fillet": { "min": 150, "max": 180, "default": 165 },
+    "whole_fish": { "min": 300, "max": 300, "default": 300 },
+    "pasta_main_dry": { "min": 120, "max": 150, "default": 130 },
+    "pasta_side_dry": { "min": 50, "max": 80, "default": 70 },
+    "rice_dry": { "min": 60, "max": 80, "default": 70 },
+    "potatoes": { "min": 200, "max": 250, "default": 225 },
+    "vegetables_side": { "min": 150, "max": 200, "default": 175 },
+    "vegetables_main": { "min": 400, "max": 400, "default": 400 }
+  },
+  "breakfast_and_staples_per_person_week": {
+    "eggs_pieces": 12,
+    "cheese_mixed_g": 250,
+    "cold_cuts_g": 200,
+    "butter_g": 125,
+    "milk_l": 0.5,
+    "bread_loaf": 0.5,
+    "fruit_mixed_kg": 1.5,
+    "vegetables_salad_lunch_kg": 1.0
+  },
+  "per_crew_per_week": {
+    "olive_oil_l": 1.0
+  },
+  "factors": {
+    "appetite": { "min": 0.8, "max": 1.25, "default": 1.0 },
+    "fresh_first_days": 3,
+    "fridge_liters_hint": { "monohull": [60, 120], "catamaran": [100, 200] },
+    "holiday_snack_drink_uplift": { "default": 1.2, "note": "Startwert, nicht aus Quellen; nach ersten Toerns kalibrieren" }
+  },
+  "drinks_alcohol": "nicht berechnet, Eingabe durch die Crew pro Abend"
+}
