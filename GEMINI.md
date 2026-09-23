@@ -12,7 +12,9 @@ Wenn Code und Dokumente sich widersprechen, gelten die Dokumente. Wenn die Dokum
 
 ## Aktueller Status
 
-Konzept in Arbeit (Katalog v0.4, Baseline der Mengen offen). Mit der Umsetzung erst beginnen, wenn im README "bereit für S0" steht.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0.
+
+Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
 ## Arbeitsweise
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-23 – PRD v0.13, Freigabe S0
+
+- Android zuerst, iOS später über Cloud-Build; Umsetzung mit Antigravity im lokalen Repo
+- Abschnitt "Offen vor dem Start" (10 Punkte), Start kostenlos, Abo mit v1.1
+- S0 für Gemini freigegeben; S1 nach Klärung von Törnverlauf und Törnablauf
+
 ## 2026-09-23 – PRD v0.12, Slice-Plan v0.5
 
 - Bordkasse und Kostenteilung: gemeinsame Kasse und Einzelabrechnung, Kategorien, Beteiligung pro Person, "Skipper frei"
