@@ -21,7 +21,7 @@ Alle Kategorien sind im neuen Schema. Die Mengen sind Startwerte und werden in d
 - **Bedarfsgruppe:** hier wird der Bedarf berechnet, z. B. Brot und Backwaren 120 g pro Person und Tag; mit Konsumprofil, Kinderfaktor und Zielgruppe
 - **Variante:** konkretes Produkt mit Packungsgröße und Haltbarkeit, z. B. Baguette 250 g, 1 Tag. Die Crew wählt Varianten, die App verteilt den Gruppenbedarf gleichmäßig oder nach Anteilen und rundet auf Packungen auf
 - **Frisch nachkaufen:** Varianten mit höchstens 2 Tagen Haltbarkeit werden nur für die ersten Tage gekauft und als "unterwegs frisch nachkaufen" pro Hafentag ausgewiesen; haltbare Varianten decken Ankertage ab
-- **split:** `equal` verteilt den Gruppenbedarf auf die gewählten Varianten (z. B. Brot); `each` gibt jeder gewählten Variante ihren eigenen Bedarf (z. B. Salz, Pfeffer, Sojasauce); ohne eigenen Bedarf gilt der Gruppenbedarf je Variante
+- **split:** `equal` verteilt den Gruppenbedarf auf die gewählten Varianten (z. B. Brot); `each` gibt jeder gewählten Variante ihren eigenen Bedarf (z. B. Salz, Pfeffer, Sojasauce); ohne eigenen Bedarf gilt der Gruppenbedarf je Variante; ohne eigenen Bedarf gilt der Gruppenbedarf je Variante
 - **Portionen:** Bei Sättigungsbeilagen rechnet jede Variante mit ihrer eigenen Portionsgröße (Spaghetti 130 g, Reis 70 g, Kartoffeln 225 g)
 - **Sichtbarkeit:** `all` immer sichtbar; `owner` nur beim eigenen Boot, beim Charter eingeklappt
 - **Modus:** `quantity` berechnet Mengen; `check` ist eine Prüfliste mit vorhanden / fehlt / nachkaufen
