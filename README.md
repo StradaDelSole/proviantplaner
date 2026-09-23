@@ -13,7 +13,8 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `data/quantities_v0.3.json` | Mengen, Konsumprofile, Faktoren |
 | `docs/design/DESIGN_BRIEF_v0.1.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
-| `docs/PROMPT_SESSION_START_v0.1.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
+| `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
+| `docs/impl/` | Pläne und Berichte von Gemini je Slice |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
 | `CHANGELOG.md` | Fortschritt pro Slice |
 

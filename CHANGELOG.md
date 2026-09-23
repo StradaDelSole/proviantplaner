@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-23 – GEMINI.md v0.3 (Durchlauf-Modus)
+
+- Gemini arbeitet alle freigegebenen Slices nacheinander ab, committet und pusht nach jedem grünen Slice auf main
+- Pläne und Berichte in `docs/impl/`; Review gesammelt am Ende
+
 ## 2026-09-23 – Slice-Plan v0.8
 
 - S0: Abnahme nur auf dem Android-Emulator, Paket-ID `com.hullq.proviantplaner`

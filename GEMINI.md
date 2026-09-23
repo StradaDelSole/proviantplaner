@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.2
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.3
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -6,6 +6,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | --- | --- | --- |
 | v0.1 | 23.09.2026 | Erstfassung |
 | v0.2 | 23.09.2026 | Klare Regeln "Darf / Darf nicht", Pflichtablauf pro Sitzung, Stoppregeln, Berichtsformat |
+| v0.3 | 23.09.2026 | Durchlauf-Modus: alle freigegebenen Slices nacheinander ohne Freigabe pro Plan; Commit und Push auf main nach jedem grünen Slice; Review erst am Ende |
 
 ## Aktueller Status
 
@@ -24,25 +25,33 @@ Es gilt jeweils die Datei mit der HÖCHSTEN Versionsnummer:
 
 Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind unklar oder widersprüchlich? Dann NICHT raten, sondern stoppen und nachfragen.
 
-## Pflichtablauf pro Sitzung
+## Pflichtablauf: Durchlauf-Modus
 
-1. Diese Datei, das README und den Abschnitt des angefragten Slices lesen. Nur zusätzliche Dateien lesen, die der Slice wirklich braucht.
-2. **Plan vorlegen und auf Freigabe warten:** betroffene Dateien, neue Pakete (falls nötig), Vorgehen, wie die Abnahmekriterien geprüft werden. Erst nach "OK" umsetzen.
-3. Umsetzen – ausschließlich den freigegebenen Slice.
-4. Prüfen: `flutter analyze` ohne Fehler, `flutter test` grün. Ergebnisse wörtlich berichten.
-5. `CHANGELOG.md` ergänzen (Datum, Slice, Umgesetztes, Offenes, Vorschläge für das PRD).
-6. Abschlussbericht im Format unten. Kein Commit und kein Push – das macht der Mensch.
+Alle freigegebenen Slices werden der Reihe nach abgearbeitet (S0, S1, S2 …), ohne auf eine Freigabe pro Plan zu warten. Das Review erfolgt am Ende gesammelt; Korrekturen kommen danach als Nachtrag.
+
+Pro Slice:
+
+1. Den Abschnitt des Slices im Slice-Plan lesen, Plan kurz in `docs/impl/S<Nr>_plan.md` festhalten (betroffene Dateien, Vorgehen, Prüfung der Abnahmekriterien). Nur dieser Ordner `docs/impl/` darf unter `docs/` beschrieben werden.
+2. Umsetzen – ausschließlich diesen Slice.
+3. Prüfen: `flutter analyze` ohne Fehler, `flutter test` grün.
+4. `CHANGELOG.md` ergänzen und den Abschlussbericht (Format unten) in `docs/impl/S<Nr>_bericht.md` ablegen.
+5. Nur wenn Analyse und Tests grün sind: committen mit `S<Nr>: <kurze Beschreibung>` und `git push` auf `main`.
+6. Mit dem nächsten freigegebenen Slice weitermachen.
+
+Greift eine Stoppregel, wird der Durchlauf beendet: Stand committen und pushen nur, wenn Analyse und Tests grün sind; sonst nichts pushen und berichten.
 
 ## Darf
 
 - Code, Tests und Assets für den freigegebenen Slice anlegen und ändern
 - Pakete aus den technischen Leitplanken im Slice-Plan verwenden
 - `CHANGELOG.md` ergänzen; im README nur den Umsetzungsstand unter "Status" ergänzen
+- Pläne und Berichte in `docs/impl/` ablegen
+- Nach grünem Slice committen und auf `main` pushen
 - Rückfragen stellen, jederzeit
 
 ## Darf nicht
 
-- Nichts in `docs/` oder `data/` ändern. Änderungswünsche als "Vorschläge für das PRD" im CHANGELOG notieren
+- Nichts in `docs/` (außer `docs/impl/`) oder `data/` ändern. Änderungswünsche als "Vorschläge für das PRD" im CHANGELOG notieren
 - Keine Features bauen, die nicht im PRD stehen; nichts aus späteren Slices vorziehen
 - Keine Pakete außerhalb der Leitplanken ohne ausdrückliche Freigabe hinzufügen
 - Keine bestehenden Dateien löschen oder umbenennen, die nicht zum aktuellen Slice gehören
@@ -52,7 +61,9 @@ Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind
 - Keine Zahlungsabwicklung (nur QR-Codes und Links)
 - Keine Zugangsdaten, API-Schlüssel, Tokens oder IBANs in Code oder Repo
 - Keine Tests abschwächen, auskommentieren oder löschen, um sie grün zu bekommen
-- Kein `git commit`, `git push`, `git reset` oder Ändern der Git-Historie
+- Kein `git push --force`, kein `git reset --hard` auf gepushte Commits, kein Ändern der Git-Historie, keine anderen Branches
+- Nichts pushen, solange `flutter analyze` oder `flutter test` nicht grün sind
+- Vor jedem Push `git pull --rebase`, damit Dokumenten-Updates nicht überschrieben werden
 
 ## Stoppregeln – sofort anhalten und fragen, wenn
 
@@ -67,7 +78,7 @@ Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind
 - HullQ nur über `HullqAuthService` und `HullqBackupService`, bis die echte API dokumentiert ist Mock-Implementierungen
 - Rechenlogik (Mengen, Runden, Bordkasse, Freischaltung) als reines Dart ohne Flutter-Abhängigkeit, mit Unit-Tests
 - Kleine, austauschbare Widgets; Oberfläche ist vorläufig bis zu den Mockups
-- Commit-Vorschlag im Bericht im Format `S<Nr>: <kurze Beschreibung>`
+- Commit-Nachricht im Format `S<Nr>: <kurze Beschreibung>`
 
 ## Format Abschlussbericht
 
@@ -80,5 +91,5 @@ flutter test: <Ergebnis, Anzahl Tests>
 Abnahmekriterien: <je Kriterium erfüllt / nicht erfüllt, mit Begründung>
 Offen / Risiken: <Stichpunkte>
 Vorschläge für das PRD: <oder "keine">
-Commit-Vorschlag: S<Nr>: <Beschreibung>
+Commit: S<Nr>: <Beschreibung> (gepusht: ja/nein)
 ```
