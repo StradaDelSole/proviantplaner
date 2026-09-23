@@ -7,7 +7,7 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | Pfad | Inhalt |
 | --- | --- |
 | `docs/PRD_v0.15.md` | Produktanforderungen, Quelle der Wahrheit |
-| `docs/SLICES_v0.7.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
+| `docs/SLICES_v0.8.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
 | `docs/KATALOG_v0.6.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.6.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.3.json` | Mengen, Konsumprofile, Faktoren |

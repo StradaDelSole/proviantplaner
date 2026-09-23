@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-23 – Slice-Plan v0.8
+
+- S0: Abnahme nur auf dem Android-Emulator, Paket-ID `com.hullq.proviantplaner`
+
 ## 2026-09-23 – GEMINI.md v0.2, Startprompt v0.1
 
 - GEMINI.md: Darf/Darf nicht, Pflichtablauf mit Plan und Freigabe, Stoppregeln, Berichtsformat, kein Commit/Push durch Gemini
