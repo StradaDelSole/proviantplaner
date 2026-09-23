@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-23 – Katalog v0.4, PRD v0.9, Slice-Plan v0.3
+
+- `docs/KATALOG_v0.4.md`, `data/catalog_v0.4.json`: alle 10 Kategorien im Schema Bedarfsgruppe → Variante (47 Gruppen, 212 Varianten), Technik mit Sichtbarkeit (Alltag auch beim Charter) und Prüflisten-Modus, Bordapotheke als Prüfliste
+- `docs/PRD_v0.9.md`, `docs/SLICES_v0.3.md`: auf Katalog v0.4 umgestellt
+- Status: noch nicht bereit für S0 (Baseline der Mengen offen)
+
 ## 2026-09-23 – Katalog v0.3 (in Arbeit)
 
 - Neues Schema Kategorie → Bedarfsgruppe → Variante mit Packungsgröße und Haltbarkeit

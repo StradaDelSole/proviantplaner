@@ -12,7 +12,7 @@ Wenn Code und Dokumente sich widersprechen, gelten die Dokumente. Wenn die Dokum
 
 ## Aktueller Status
 
-Katalog in Arbeit (v0.3). Mit der Umsetzung erst beginnen, wenn im README "bereit für S0" steht.
+Konzept in Arbeit (Katalog v0.4, Baseline der Mengen offen). Mit der Umsetzung erst beginnen, wenn im README "bereit für S0" steht.
 
 ## Arbeitsweise
 

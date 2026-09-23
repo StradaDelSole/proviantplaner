@@ -1,0 +1,5052 @@
+{
+  "version": "0.4",
+  "status": "alle Kategorien im neuen Schema; Mengen noch zu kalibrieren (Baseline)",
+  "date": "2026-09-23",
+  "schema": {
+    "levels": [
+      "category",
+      "group",
+      "variant"
+    ],
+    "group": "Bedarf wird pro Bedarfsgruppe berechnet (need.amount je need.basis), mit Profil, Kinderfaktor und applies_to",
+    "variant": "Die Crew wählt Varianten; der Gruppenbedarf wird gleichmäßig (split=equal) oder nach eingestellten Anteilen verteilt und in Packungen (pack.size) aufgerundet",
+    "fresh": "Varianten mit shelf_life_days <= 2 werden nur für die ersten Tage gekauft und als 'unterwegs frisch nachkaufen' pro Hafentag ausgewiesen; haltbare Varianten decken Ankertage ab",
+    "override": "Menge je Gruppe und je Variante überschreibbar, auch als Gesamtzahl",
+    "split": "equal: Gruppenbedarf wird auf die gewählten Varianten verteilt; each: jede gewählte Variante hat ihren eigenen Bedarf (variant.need, sonst gilt der Gruppenbedarf je Variante)",
+    "portion": "Bei Bedarf in Portionen rechnet die Variante mit portion (Menge je Portion)",
+    "visibility": "all: immer sichtbar; owner: nur bei eigenem Boot, beim Charter eingeklappt",
+    "mode": "quantity: Mengenberechnung; check: Prüfliste vorhanden/fehlt/nachkaufen"
+  },
+  "categories": [
+    {
+      "id": "fruehstueck",
+      "name_de": "Frühstück"
+    },
+    {
+      "id": "grundnahrung",
+      "name_de": "Grundnahrung"
+    },
+    {
+      "id": "saucen_wuerzen",
+      "name_de": "Saucen und Würzen"
+    },
+    {
+      "id": "frisches",
+      "name_de": "Frisches"
+    },
+    {
+      "id": "suesses_snacks",
+      "name_de": "Süßes und Snacks"
+    },
+    {
+      "id": "getraenke",
+      "name_de": "Getränke ohne Alkohol"
+    },
+    {
+      "id": "alkohol",
+      "name_de": "Getränke mit Alkohol"
+    },
+    {
+      "id": "haushalt",
+      "name_de": "Haushalt"
+    },
+    {
+      "id": "hygiene",
+      "name_de": "Hygiene"
+    },
+    {
+      "id": "technik",
+      "name_de": "Bord und Technik"
+    }
+  ],
+  "bases": {
+    "per_person_day": "pro Person und Tag",
+    "per_person_day_region": "pro Person und Tag, je nach Revier",
+    "per_person_week": "pro Person und Woche (anteilig bei anderen Törnlängen)",
+    "per_person_board_evening": "pro Person und Bordabend",
+    "per_adult_evening": "pro erwachsener Person und Abend",
+    "per_crew_week": "pro Crew und Woche (angefangene Woche zählt voll)",
+    "per_trip": "einmal pro Törn",
+    "per_person_trip": "einmal pro Person und Törn",
+    "check": "Checkliste, keine Mengenberechnung"
+  },
+  "departments": {
+    "backwaren": "Backwaren",
+    "molkerei": "Molkerei und Kühlregal",
+    "obst_gemuese": "Obst und Gemüse",
+    "fleisch_fisch": "Fleisch und Fisch",
+    "trockenware": "Trockenware",
+    "konserven": "Konserven",
+    "getraenke": "Getränke",
+    "suesswaren": "Süßwaren",
+    "haushalt": "Haushalt",
+    "drogerie": "Drogerie",
+    "technik": "Technik / Bootszubehör",
+    "apotheke": "Apotheke / Drogerie"
+  },
+  "tags": {
+    "meat": "Fleisch",
+    "fish": "Fisch",
+    "dairy": "Milchprodukte",
+    "egg": "Ei",
+    "gluten": "Gluten",
+    "nuts": "Nüsse",
+    "alcohol": "Alkohol"
+  },
+  "storage_hints": {
+    "remove_cardboard": "Kartons an Land auspacken, nicht an Bord nehmen; Inhalt in dichte Dosen oder Beutel umfüllen",
+    "wash_produce": "Waschen (z. B. Essigwasser) und gut trocknen, luftig lagern",
+    "potatoes_onions": "Trocken und dunkel lagern, Kartoffeln getrennt von Zwiebeln, nicht waschen",
+    "remove_labels": "Etiketten entfernen, Inhalt mit wasserfestem Stift auf den Deckel schreiben",
+    "eggs": "Kühl und dunkel lagern; ungekühlte Eier regelmäßig wenden",
+    "cool_first": "Sofort in den Kühlschrank und zuerst verbrauchen",
+    "keep_dry": "Trocken und dicht verpackt lagern"
+  },
+  "applies_to": {
+    "all": "alle",
+    "non_vegetarian": "nicht vegetarische Crewmitglieder",
+    "vegetarian": "vegetarische Crewmitglieder",
+    "adults": "Erwachsene"
+  },
+  "groups": [
+    {
+      "id": "bread",
+      "category": "fruehstueck",
+      "name_de": "Brot und Backwaren",
+      "need": {
+        "amount": 120,
+        "unit": "g",
+        "basis": "per_person_day"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "Recherche nennt ca. einen halben Laib pro Person und Woche plus täglich frisches Brot; als Tagesbedarf zusammengefasst"
+    },
+    {
+      "id": "butter",
+      "category": "fruehstueck",
+      "name_de": "Butter und Streichfett",
+      "need": {
+        "amount": 125,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "spread_sweet",
+      "category": "fruehstueck",
+      "name_de": "Süße Aufstriche",
+      "need": {
+        "amount": 150,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "spread_savory",
+      "category": "fruehstueck",
+      "name_de": "Herzhafte Aufstriche",
+      "need": {
+        "amount": 100,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "cheese",
+      "category": "fruehstueck",
+      "name_de": "Käse",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "cold_cuts",
+      "category": "fruehstueck",
+      "name_de": "Wurst und Aufschnitt",
+      "need": {
+        "amount": 200,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "non_vegetarian",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "eggs",
+      "category": "fruehstueck",
+      "name_de": "Eier",
+      "need": {
+        "amount": 12,
+        "unit": "Stück",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "milk",
+      "category": "fruehstueck",
+      "name_de": "Milch und Alternativen",
+      "need": {
+        "amount": 0.5,
+        "unit": "l",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "ohne Kaffeemilch (Getränke)"
+    },
+    {
+      "id": "yogurt",
+      "category": "fruehstueck",
+      "name_de": "Joghurt und Quark",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "cereal",
+      "category": "fruehstueck",
+      "name_de": "Müsli und Cerealien",
+      "need": {
+        "amount": 250,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "carbs",
+      "category": "grundnahrung",
+      "name_de": "Sättigungsbeilagen",
+      "need": {
+        "amount": 1,
+        "unit": "Portion",
+        "basis": "per_person_board_evening"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "Portionsgrößen je Variante"
+    },
+    {
+      "id": "sauces_pasta",
+      "category": "grundnahrung",
+      "name_de": "Tomatenprodukte und Pastasaucen",
+      "need": {
+        "amount": 100,
+        "unit": "g",
+        "basis": "per_person_board_evening"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "Recherche: ca. 4 Dosen pro Crew und Woche"
+    },
+    {
+      "id": "canned",
+      "category": "grundnahrung",
+      "name_de": "Konserven",
+      "need": {
+        "amount": 2,
+        "unit": "Dose",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "Reserve für Ankertage"
+    },
+    {
+      "id": "soups",
+      "category": "grundnahrung",
+      "name_de": "Suppen und Brühe",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_crew_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "oil_vinegar",
+      "category": "saucen_wuerzen",
+      "name_de": "Öl und Essig",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "basics",
+      "category": "saucen_wuerzen",
+      "name_de": "Grundwürzen",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "oft von zu Hause mitgebracht"
+    },
+    {
+      "id": "spices",
+      "category": "saucen_wuerzen",
+      "name_de": "Kräuter und Gewürze",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "condiments",
+      "category": "saucen_wuerzen",
+      "name_de": "Saucen",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "fruit",
+      "category": "frisches",
+      "name_de": "Obst",
+      "need": {
+        "amount": 1.5,
+        "unit": "kg",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "frisch zuerst, unterwegs nachkaufen"
+    },
+    {
+      "id": "veg_salad",
+      "category": "frisches",
+      "name_de": "Gemüse und Salat für Mittag",
+      "need": {
+        "amount": 1,
+        "unit": "kg",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "frisch nachkaufen"
+    },
+    {
+      "id": "veg_evening",
+      "category": "frisches",
+      "name_de": "Gemüse für Bordabende",
+      "need": {
+        "amount": 175,
+        "unit": "g",
+        "basis": "per_person_board_evening"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "veg_basics",
+      "category": "frisches",
+      "name_de": "Zwiebeln, Knoblauch, Zitronen",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "meat_fish",
+      "category": "frisches",
+      "name_de": "Fleisch und Fisch für Bordabende",
+      "need": {
+        "amount": 175,
+        "unit": "g",
+        "basis": "per_person_board_evening"
+      },
+      "profile": "eat",
+      "applies_to": "non_vegetarian",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "kurze Haltbarkeit: für die ersten Tage kaufen, später in Häfen nachkaufen"
+    },
+    {
+      "id": "veg_protein",
+      "category": "frisches",
+      "name_de": "Vegetarische Hauptkomponente",
+      "need": {
+        "amount": 150,
+        "unit": "g",
+        "basis": "per_person_board_evening"
+      },
+      "profile": "eat",
+      "applies_to": "vegetarian",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "sweets",
+      "category": "suesses_snacks",
+      "name_de": "Süßes",
+      "need": {
+        "amount": 300,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "Urlaubszuschlag beachten"
+    },
+    {
+      "id": "savory_snacks",
+      "category": "suesses_snacks",
+      "name_de": "Salzige Snacks",
+      "need": {
+        "amount": 300,
+        "unit": "g",
+        "basis": "per_person_week"
+      },
+      "profile": "eat",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "water",
+      "category": "getraenke",
+      "name_de": "Trinkwasser",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "Menge je Revier aus quantities; Kochwasser aus dem Bordtank"
+    },
+    {
+      "id": "soft",
+      "category": "getraenke",
+      "name_de": "Softdrinks",
+      "need": {
+        "amount": 0.5,
+        "unit": "l",
+        "basis": "per_person_day"
+      },
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "juice",
+      "category": "getraenke",
+      "name_de": "Säfte",
+      "need": {
+        "amount": 1,
+        "unit": "l",
+        "basis": "per_person_week"
+      },
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "coffee",
+      "category": "getraenke",
+      "name_de": "Kaffee",
+      "need": {
+        "amount": 15,
+        "unit": "g",
+        "basis": "per_person_day"
+      },
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "ca. 2 Tassen"
+    },
+    {
+      "id": "tea",
+      "category": "getraenke",
+      "name_de": "Tee",
+      "need": {
+        "amount": 2,
+        "unit": "Beutel",
+        "basis": "per_person_day"
+      },
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "coffee_milk",
+      "category": "getraenke",
+      "name_de": "Kaffeemilch",
+      "need": {
+        "amount": 0.5,
+        "unit": "l",
+        "basis": "per_person_week"
+      },
+      "profile": "none",
+      "applies_to": "all",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "beer",
+      "category": "alkohol",
+      "name_de": "Bier",
+      "need": {
+        "amount": 1,
+        "unit": "Portion 0,5 l",
+        "basis": "per_adult_evening"
+      },
+      "profile": "drink",
+      "applies_to": "adults",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "Startwert, über Trinkprofil und Gesamtzahl einstellbar"
+    },
+    {
+      "id": "wine",
+      "category": "alkohol",
+      "name_de": "Wein und Sekt",
+      "need": {
+        "amount": 0.25,
+        "unit": "l",
+        "basis": "per_adult_evening"
+      },
+      "profile": "drink",
+      "applies_to": "adults",
+      "split": "equal",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "Praxisberichte liegen teils deutlich höher"
+    },
+    {
+      "id": "spirits",
+      "category": "alkohol",
+      "name_de": "Spirituosen und Aperitif",
+      "need": null,
+      "profile": "drink",
+      "applies_to": "adults",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "kitchen",
+      "category": "haushalt",
+      "name_de": "Küche und Abwasch",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": "wird laut Charter-Leitfäden oft vergessen"
+    },
+    {
+      "id": "packaging",
+      "category": "haushalt",
+      "name_de": "Verpacken und Aufbewahren",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "fire",
+      "category": "haushalt",
+      "name_de": "Feuer und Grill",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "research",
+      "note": ""
+    },
+    {
+      "id": "hygiene",
+      "category": "hygiene",
+      "name_de": "Hygiene und Pflege",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "sun_insects",
+      "category": "hygiene",
+      "name_de": "Sonne und Insekten",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "first_aid",
+      "category": "hygiene",
+      "name_de": "Bordapotheke prüfen",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "check",
+      "source": "estimate",
+      "note": "nur Prüfliste; Inhalt der Bordapotheke mit der Basis abgleichen"
+    },
+    {
+      "id": "tech_everyday",
+      "category": "technik",
+      "name_de": "Alltag an Bord",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "all",
+      "mode": "quantity",
+      "source": "estimate",
+      "note": "auch beim Charter sichtbar"
+    },
+    {
+      "id": "tech_engine",
+      "category": "technik",
+      "name_de": "Motor",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "owner",
+      "mode": "check",
+      "source": "estimate",
+      "note": "beim Charter Sache der Basis"
+    },
+    {
+      "id": "tech_electric",
+      "category": "technik",
+      "name_de": "Elektrik",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "owner",
+      "mode": "check",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "tech_rig",
+      "category": "technik",
+      "name_de": "Rigg und Deck",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "owner",
+      "mode": "check",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "tech_repair",
+      "category": "technik",
+      "name_de": "Reparatur allgemein",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "owner",
+      "mode": "check",
+      "source": "estimate",
+      "note": ""
+    },
+    {
+      "id": "tech_water",
+      "category": "technik",
+      "name_de": "Wasser und Sanitär",
+      "need": null,
+      "profile": "none",
+      "applies_to": "all",
+      "split": "each",
+      "visibility": "owner",
+      "mode": "check",
+      "source": "estimate",
+      "note": ""
+    }
+  ],
+  "variants": [
+    {
+      "id": "bread_wholegrain",
+      "group": "bread",
+      "name_de": "Vollkornbrot",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "bread_white",
+      "group": "bread",
+      "name_de": "Weißbrot / Bauernbrot",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "baguette",
+      "group": "bread",
+      "name_de": "Baguette",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch in jedem Hafen nachkaufen"
+    },
+    {
+      "id": "rolls",
+      "group": "bread",
+      "name_de": "Brötchen",
+      "pack": {
+        "size": 60,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch nachkaufen"
+    },
+    {
+      "id": "rolls_wholegrain",
+      "group": "bread",
+      "name_de": "Vollkornbrötchen",
+      "pack": {
+        "size": 70,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "frisch nachkaufen"
+    },
+    {
+      "id": "bake_rolls",
+      "group": "bread",
+      "name_de": "Aufbackbrötchen",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "nur mit Backofen an Bord"
+    },
+    {
+      "id": "toast",
+      "group": "bread",
+      "name_de": "Toastbrot",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "crispbread",
+      "group": "bread",
+      "name_de": "Knäckebrot",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "Reserve für Ankertage"
+    },
+    {
+      "id": "wraps",
+      "group": "bread",
+      "name_de": "Wraps / Tortillas",
+      "pack": {
+        "size": 320,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "backwaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "butter_std",
+      "group": "butter",
+      "name_de": "Butter",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "butter_salted",
+      "group": "butter",
+      "name_de": "Gesalzene Butter",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "hält ungekühlt länger"
+    },
+    {
+      "id": "margarine",
+      "group": "butter",
+      "name_de": "Margarine / veganes Streichfett",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "jam_strawberry",
+      "group": "spread_sweet",
+      "name_de": "Marmelade Erdbeere",
+      "pack": {
+        "size": 340,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "jam_apricot",
+      "group": "spread_sweet",
+      "name_de": "Marmelade Aprikose",
+      "pack": {
+        "size": 340,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "honey",
+      "group": "spread_sweet",
+      "name_de": "Honig",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "nutella",
+      "group": "spread_sweet",
+      "name_de": "Nuss-Nougat-Creme",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "nuts",
+        "dairy"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "peanut_butter",
+      "group": "spread_sweet",
+      "name_de": "Erdnussbutter",
+      "pack": {
+        "size": 350,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "nuts"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "cream_cheese",
+      "group": "spread_savory",
+      "name_de": "Frischkäse",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "hummus",
+      "group": "spread_savory",
+      "name_de": "Hummus",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "liver_sausage",
+      "group": "spread_savory",
+      "name_de": "Streichwurst / Leberwurst",
+      "pack": {
+        "size": 125,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": "nur nicht vegetarisch"
+    },
+    {
+      "id": "gouda",
+      "group": "cheese",
+      "name_de": "Gouda / Butterkäse in Scheiben",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "emmental",
+      "group": "cheese",
+      "name_de": "Emmentaler / Bergkäse",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "brie",
+      "group": "cheese",
+      "name_de": "Brie / Camembert",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 10,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "feta",
+      "group": "cheese",
+      "name_de": "Feta",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "mozzarella",
+      "group": "cheese",
+      "name_de": "Mozzarella",
+      "pack": {
+        "size": 125,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "parmesan",
+      "group": "cheese",
+      "name_de": "Parmesan / Hartkäse am Stück",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "hält auch ungekühlt lange"
+    },
+    {
+      "id": "salami",
+      "group": "cold_cuts",
+      "name_de": "Salami",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [],
+      "note": "luftgetrocknet, gut haltbar"
+    },
+    {
+      "id": "ham_cooked",
+      "group": "cold_cuts",
+      "name_de": "Kochschinken",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "ham_cured",
+      "group": "cold_cuts",
+      "name_de": "Rohschinken",
+      "pack": {
+        "size": 100,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "turkey",
+      "group": "cold_cuts",
+      "name_de": "Putenbrust",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "eggs_std",
+      "group": "eggs",
+      "name_de": "Eier (10er)",
+      "pack": {
+        "size": 10,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "egg"
+      ],
+      "storage": [
+        "eggs",
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "milk_fresh",
+      "group": "milk",
+      "name_de": "Frischmilch",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "milk_uht",
+      "group": "milk",
+      "name_de": "H-Milch",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "an Bord meist die bessere Wahl"
+    },
+    {
+      "id": "oat_drink",
+      "group": "milk",
+      "name_de": "Haferdrink",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "soy_drink",
+      "group": "milk",
+      "name_de": "Sojadrink",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "yogurt_plain",
+      "group": "yogurt",
+      "name_de": "Naturjoghurt",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "yogurt_fruit",
+      "group": "yogurt",
+      "name_de": "Fruchtjoghurt",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "skyr",
+      "group": "yogurt",
+      "name_de": "Skyr / Quark",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "muesli",
+      "group": "cereal",
+      "name_de": "Müsli",
+      "pack": {
+        "size": 750,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten",
+        "nuts"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "oats",
+      "group": "cereal",
+      "name_de": "Haferflocken",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "cornflakes",
+      "group": "cereal",
+      "name_de": "Cornflakes",
+      "pack": {
+        "size": 375,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "granola",
+      "group": "cereal",
+      "name_de": "Granola / Knuspermüsli",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten",
+        "nuts"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "spaghetti",
+      "group": "carbs",
+      "name_de": "Spaghetti",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": "",
+      "portion": [
+        130,
+        "g"
+      ]
+    },
+    {
+      "id": "penne",
+      "group": "carbs",
+      "name_de": "Penne / Fusilli",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": "",
+      "portion": [
+        130,
+        "g"
+      ]
+    },
+    {
+      "id": "rice",
+      "group": "carbs",
+      "name_de": "Reis",
+      "pack": {
+        "size": 1000,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": "",
+      "portion": [
+        70,
+        "g"
+      ]
+    },
+    {
+      "id": "potatoes",
+      "group": "carbs",
+      "name_de": "Kartoffeln",
+      "pack": {
+        "size": 2000,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "potatoes_onions"
+      ],
+      "note": "",
+      "portion": [
+        225,
+        "g"
+      ]
+    },
+    {
+      "id": "couscous",
+      "group": "carbs",
+      "name_de": "Couscous / Bulgur",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "kocht mit wenig Wasser und Gas",
+      "portion": [
+        70,
+        "g"
+      ]
+    },
+    {
+      "id": "gnocchi",
+      "group": "carbs",
+      "name_de": "Gnocchi",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 60,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "",
+      "portion": [
+        200,
+        "g"
+      ]
+    },
+    {
+      "id": "tortellini",
+      "group": "carbs",
+      "name_de": "Tortellini / Ravioli frisch",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "gluten",
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": "",
+      "portion": [
+        125,
+        "g"
+      ]
+    },
+    {
+      "id": "passata",
+      "group": "sauces_pasta",
+      "name_de": "Passierte Tomaten",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "tomatoes_can",
+      "group": "sauces_pasta",
+      "name_de": "Gehackte Tomaten (Dose)",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "sauce_jar",
+      "group": "sauces_pasta",
+      "name_de": "Fertigsauce im Glas",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "pesto",
+      "group": "sauces_pasta",
+      "name_de": "Pesto",
+      "pack": {
+        "size": 190,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [
+        "nuts",
+        "dairy"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "tomato_paste",
+      "group": "sauces_pasta",
+      "name_de": "Tomatenmark",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "tuna",
+      "group": "canned",
+      "name_de": "Thunfisch",
+      "pack": {
+        "size": 160,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [
+        "fish"
+      ],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "corn",
+      "group": "canned",
+      "name_de": "Mais",
+      "pack": {
+        "size": 340,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "kidney",
+      "group": "canned",
+      "name_de": "Kidneybohnen",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "chickpeas",
+      "group": "canned",
+      "name_de": "Kichererbsen",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "lentils",
+      "group": "canned",
+      "name_de": "Linsen",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": ""
+    },
+    {
+      "id": "olives",
+      "group": "canned",
+      "name_de": "Oliven",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "ravioli_can",
+      "group": "canned",
+      "name_de": "Ravioli / Eintopf (Dose)",
+      "pack": {
+        "size": 800,
+        "unit": "g"
+      },
+      "shelf_life_days": 1095,
+      "buy_fresh_underway": false,
+      "department": "konserven",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_labels"
+      ],
+      "note": "Notreserve bei schlechtem Wetter"
+    },
+    {
+      "id": "broth",
+      "group": "soups",
+      "name_de": "Gemüsebrühe",
+      "pack": {
+        "size": 100,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "instant_soup",
+      "group": "soups",
+      "name_de": "Instantsuppe / Tütensuppe",
+      "pack": {
+        "size": 4,
+        "unit": "Beutel"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "warm auf Nachtfahrten"
+    },
+    {
+      "id": "instant_noodles",
+      "group": "soups",
+      "name_de": "Instant-Nudelsuppe",
+      "pack": {
+        "size": 5,
+        "unit": "Beutel"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "flour",
+      "group": "soups",
+      "name_de": "Mehl",
+      "pack": {
+        "size": 1000,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "olive_oil",
+      "group": "oil_vinegar",
+      "name_de": "Olivenöl",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "l",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "sunflower_oil",
+      "group": "oil_vinegar",
+      "name_de": "Sonnenblumenöl",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "l",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "balsamico",
+      "group": "oil_vinegar",
+      "name_de": "Balsamico",
+      "pack": {
+        "size": 0.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "vinegar_white",
+      "group": "oil_vinegar",
+      "name_de": "Weißweinessig",
+      "pack": {
+        "size": 0.75,
+        "unit": "l"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "salt",
+      "group": "basics",
+      "name_de": "Salz",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "pepper",
+      "group": "basics",
+      "name_de": "Pfeffer",
+      "pack": {
+        "size": 50,
+        "unit": "g"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "sugar",
+      "group": "basics",
+      "name_de": "Zucker",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "",
+      "need": {
+        "amount": 500,
+        "unit": "g",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "spice_0",
+      "group": "spices",
+      "name_de": "Oregano",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_1",
+      "group": "spices",
+      "name_de": "Paprika edelsüß",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_2",
+      "group": "spices",
+      "name_de": "Curry",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_3",
+      "group": "spices",
+      "name_de": "Chili / Cayenne",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_4",
+      "group": "spices",
+      "name_de": "Italienische Kräuter",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_5",
+      "group": "spices",
+      "name_de": "Knoblauchpulver",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_6",
+      "group": "spices",
+      "name_de": "Muskat",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "spice_7",
+      "group": "spices",
+      "name_de": "Zimt",
+      "pack": {
+        "size": 1,
+        "unit": "Dose"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Dose",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "soy_sauce",
+      "group": "condiments",
+      "name_de": "Sojasauce",
+      "pack": {
+        "size": 250,
+        "unit": "ml"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "ketchup",
+      "group": "condiments",
+      "name_de": "Ketchup",
+      "pack": {
+        "size": 500,
+        "unit": "ml"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "mustard",
+      "group": "condiments",
+      "name_de": "Senf",
+      "pack": {
+        "size": 200,
+        "unit": "ml"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Tube",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "mayo",
+      "group": "condiments",
+      "name_de": "Mayonnaise",
+      "pack": {
+        "size": 250,
+        "unit": "ml"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [
+        "egg"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Tube",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "bbq_sauce",
+      "group": "condiments",
+      "name_de": "Grillsauce",
+      "pack": {
+        "size": 500,
+        "unit": "ml"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "sweet_chili",
+      "group": "condiments",
+      "name_de": "Sweet-Chili-Sauce",
+      "pack": {
+        "size": 300,
+        "unit": "ml"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "tabasco",
+      "group": "condiments",
+      "name_de": "Tabasco / scharfe Sauce",
+      "pack": {
+        "size": 60,
+        "unit": "ml"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "apples",
+      "group": "fruit",
+      "name_de": "Äpfel",
+      "pack": {
+        "size": 1,
+        "unit": "kg"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": "halten lange"
+    },
+    {
+      "id": "bananas",
+      "group": "fruit",
+      "name_de": "Bananen",
+      "pack": {
+        "size": 1,
+        "unit": "kg"
+      },
+      "shelf_life_days": 4,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": "nicht eine ganze Staude: reifen alle am selben Tag"
+    },
+    {
+      "id": "oranges",
+      "group": "fruit",
+      "name_de": "Orangen / Mandarinen",
+      "pack": {
+        "size": 1.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "grapes",
+      "group": "fruit",
+      "name_de": "Trauben",
+      "pack": {
+        "size": 0.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "melon",
+      "group": "fruit",
+      "name_de": "Melone",
+      "pack": {
+        "size": 1.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "stone_fruit",
+      "group": "fruit",
+      "name_de": "Nektarinen / Pfirsiche",
+      "pack": {
+        "size": 1,
+        "unit": "kg"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "tomatoes",
+      "group": "veg_salad",
+      "name_de": "Tomaten",
+      "pack": {
+        "size": 0.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": "grüne und rote mischen, reifen gestaffelt"
+    },
+    {
+      "id": "cucumber",
+      "group": "veg_salad",
+      "name_de": "Gurke",
+      "pack": {
+        "size": 0.4,
+        "unit": "kg"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "bell_pepper",
+      "group": "veg_salad",
+      "name_de": "Paprika",
+      "pack": {
+        "size": 0.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 10,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "lettuce",
+      "group": "veg_salad",
+      "name_de": "Kopfsalat / Eisbergsalat",
+      "pack": {
+        "size": 0.3,
+        "unit": "kg"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": "Eisberg hält länger"
+    },
+    {
+      "id": "carrots",
+      "group": "veg_salad",
+      "name_de": "Karotten",
+      "pack": {
+        "size": 1,
+        "unit": "kg"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "radishes",
+      "group": "veg_salad",
+      "name_de": "Radieschen",
+      "pack": {
+        "size": 0.15,
+        "unit": "kg"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "zucchini",
+      "group": "veg_evening",
+      "name_de": "Zucchini",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "aubergine",
+      "group": "veg_evening",
+      "name_de": "Aubergine",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "broccoli",
+      "group": "veg_evening",
+      "name_de": "Brokkoli",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 4,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "mushrooms",
+      "group": "veg_evening",
+      "name_de": "Champignons",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 4,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "green_beans",
+      "group": "veg_evening",
+      "name_de": "Grüne Bohnen",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": ""
+    },
+    {
+      "id": "onions",
+      "group": "veg_basics",
+      "name_de": "Zwiebeln",
+      "pack": {
+        "size": 1,
+        "unit": "kg"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "potatoes_onions"
+      ],
+      "note": "",
+      "need": {
+        "amount": 0.5,
+        "unit": "Stück",
+        "basis": "per_person_board_evening"
+      }
+    },
+    {
+      "id": "garlic",
+      "group": "veg_basics",
+      "name_de": "Knoblauch",
+      "pack": {
+        "size": 1,
+        "unit": "Knolle"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "potatoes_onions"
+      ],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Knolle",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "lemons",
+      "group": "veg_basics",
+      "name_de": "Zitronen",
+      "pack": {
+        "size": 0.5,
+        "unit": "kg"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "wash_produce"
+      ],
+      "note": "",
+      "need": {
+        "amount": 0.5,
+        "unit": "Stück",
+        "basis": "per_person_week"
+      }
+    },
+    {
+      "id": "ginger",
+      "group": "veg_basics",
+      "name_de": "Ingwer",
+      "pack": {
+        "size": 100,
+        "unit": "g"
+      },
+      "shelf_life_days": 21,
+      "buy_fresh_underway": false,
+      "department": "obst_gemuese",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "auch gegen Seekrankheit beliebt",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "chicken",
+      "group": "meat_fish",
+      "name_de": "Hähnchenbrust / -schenkel",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "minced",
+      "group": "meat_fish",
+      "name_de": "Hackfleisch",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 2,
+      "buy_fresh_underway": true,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "beef",
+      "group": "meat_fish",
+      "name_de": "Steak / Rind",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "pork",
+      "group": "meat_fish",
+      "name_de": "Schweinekotelett / -filet",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 3,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "sausages",
+      "group": "meat_fish",
+      "name_de": "Bratwurst / Grillwurst",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 5,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "chorizo",
+      "group": "meat_fish",
+      "name_de": "Chorizo / luftgetrocknete Wurst",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "fleisch_fisch",
+      "default_selected": true,
+      "tags": [
+        "meat"
+      ],
+      "storage": [],
+      "note": "Reserve, hält ungekühlt"
+    },
+    {
+      "id": "fish_fillet",
+      "group": "meat_fish",
+      "name_de": "Fischfilet",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 2,
+      "buy_fresh_underway": true,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "fish"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": "frisch im Hafen kaufen"
+    },
+    {
+      "id": "prawns",
+      "group": "meat_fish",
+      "name_de": "Garnelen (TK)",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 1,
+      "buy_fresh_underway": true,
+      "department": "fleisch_fisch",
+      "default_selected": false,
+      "tags": [
+        "fish"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": "nur mit Tiefkühlfach"
+    },
+    {
+      "id": "halloumi",
+      "group": "veg_protein",
+      "name_de": "Halloumi",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 30,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "tofu",
+      "group": "veg_protein",
+      "name_de": "Tofu",
+      "pack": {
+        "size": 400,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "falafel",
+      "group": "veg_protein",
+      "name_de": "Falafel",
+      "pack": {
+        "size": 300,
+        "unit": "g"
+      },
+      "shelf_life_days": 7,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "veggie_burger",
+      "group": "veg_protein",
+      "name_de": "Veggie-Burger / -Würstchen",
+      "pack": {
+        "size": 226,
+        "unit": "g"
+      },
+      "shelf_life_days": 14,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "cool_first"
+      ],
+      "note": ""
+    },
+    {
+      "id": "chocolate",
+      "group": "sweets",
+      "name_de": "Schokolade",
+      "pack": {
+        "size": 100,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": "schmilzt im Sommer: kühl lagern"
+    },
+    {
+      "id": "biscuits",
+      "group": "sweets",
+      "name_de": "Kekse",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard",
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "gummies",
+      "group": "sweets",
+      "name_de": "Gummibärchen / Fruchtgummi",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "cereal_bars",
+      "group": "sweets",
+      "name_de": "Müsliriegel",
+      "pack": {
+        "size": 150,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": false,
+      "tags": [
+        "gluten",
+        "nuts"
+      ],
+      "storage": [],
+      "note": "gut für Nachtwachen"
+    },
+    {
+      "id": "chips",
+      "group": "savory_snacks",
+      "name_de": "Chips",
+      "pack": {
+        "size": 175,
+        "unit": "g"
+      },
+      "shelf_life_days": 120,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "nuts",
+      "group": "savory_snacks",
+      "name_de": "Nüsse / Studentenfutter",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [
+        "nuts"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "pretzels",
+      "group": "savory_snacks",
+      "name_de": "Salzstangen / Brezeln",
+      "pack": {
+        "size": 250,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": true,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "crackers",
+      "group": "savory_snacks",
+      "name_de": "Cracker",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "suesswaren",
+      "default_selected": false,
+      "tags": [
+        "gluten"
+      ],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "water_5l",
+      "group": "water",
+      "name_de": "Wasser 5-l-Kanister",
+      "pack": {
+        "size": 5,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": "platzsparend, weniger Plastik"
+    },
+    {
+      "id": "water_15",
+      "group": "water",
+      "name_de": "Wasser 1,5-l-Flaschen",
+      "pack": {
+        "size": 1.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": "handlich für unterwegs"
+    },
+    {
+      "id": "sparkling",
+      "group": "water",
+      "name_de": "Mineralwasser mit Kohlensäure",
+      "pack": {
+        "size": 1.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "cola",
+      "group": "soft",
+      "name_de": "Cola",
+      "pack": {
+        "size": 1.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "lemonade",
+      "group": "soft",
+      "name_de": "Zitronenlimonade",
+      "pack": {
+        "size": 1.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "iced_tea",
+      "group": "soft",
+      "name_de": "Eistee",
+      "pack": {
+        "size": 1.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "tonic",
+      "group": "soft",
+      "name_de": "Tonic Water",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "auch als Longdrink-Mixer"
+    },
+    {
+      "id": "oj",
+      "group": "juice",
+      "name_de": "Orangensaft",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "apple_juice",
+      "group": "juice",
+      "name_de": "Apfelsaft",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "multivit",
+      "group": "juice",
+      "name_de": "Multivitaminsaft",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "coffee_ground",
+      "group": "coffee",
+      "name_de": "Kaffee gemahlen",
+      "pack": {
+        "size": 500,
+        "unit": "g"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "für Espressokocher oder Filter"
+    },
+    {
+      "id": "coffee_instant",
+      "group": "coffee",
+      "name_de": "Instantkaffee",
+      "pack": {
+        "size": 200,
+        "unit": "g"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "schnell bei Seegang"
+    },
+    {
+      "id": "black_tea",
+      "group": "tea",
+      "name_de": "Schwarztee",
+      "pack": {
+        "size": 25,
+        "unit": "Beutel"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "herbal_tea",
+      "group": "tea",
+      "name_de": "Kräutertee / Pfefferminz",
+      "pack": {
+        "size": 20,
+        "unit": "Beutel"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "fruit_tea",
+      "group": "tea",
+      "name_de": "Früchtetee",
+      "pack": {
+        "size": 20,
+        "unit": "Beutel"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "trockenware",
+      "default_selected": false,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": ""
+    },
+    {
+      "id": "uht_coffee",
+      "group": "coffee_milk",
+      "name_de": "H-Milch für Kaffee",
+      "pack": {
+        "size": 1,
+        "unit": "l"
+      },
+      "shelf_life_days": 90,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": true,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "condensed",
+      "group": "coffee_milk",
+      "name_de": "Kondensmilch",
+      "pack": {
+        "size": 0.34,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "molkerei",
+      "default_selected": false,
+      "tags": [
+        "dairy"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "beer_can",
+      "group": "beer",
+      "name_de": "Bier Dose 0,5 l",
+      "pack": {
+        "size": 0.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [
+        "alcohol",
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": "Dosen brechen nicht"
+    },
+    {
+      "id": "beer_bottle",
+      "group": "beer",
+      "name_de": "Bier Flasche 0,33 l",
+      "pack": {
+        "size": 0.33,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol",
+        "gluten"
+      ],
+      "storage": [
+        "remove_cardboard"
+      ],
+      "note": ""
+    },
+    {
+      "id": "local_beer",
+      "group": "beer",
+      "name_de": "Lokales Bier",
+      "pack": {
+        "size": 0.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol",
+        "gluten"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "white_wine",
+      "group": "wine",
+      "name_de": "Weißwein",
+      "pack": {
+        "size": 0.75,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "red_wine",
+      "group": "wine",
+      "name_de": "Rotwein",
+      "pack": {
+        "size": 0.75,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": true,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "rose",
+      "group": "wine",
+      "name_de": "Rosé",
+      "pack": {
+        "size": 0.75,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "sparkling_wine",
+      "group": "wine",
+      "name_de": "Sekt / Prosecco",
+      "pack": {
+        "size": 0.75,
+        "unit": "l"
+      },
+      "shelf_life_days": 365,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": ""
+    },
+    {
+      "id": "bag_in_box",
+      "group": "wine",
+      "name_de": "Wein im Karton (Bag-in-Box)",
+      "pack": {
+        "size": 3,
+        "unit": "l"
+      },
+      "shelf_life_days": 180,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": "bruchsicher und platzsparend"
+    },
+    {
+      "id": "rum",
+      "group": "spirits",
+      "name_de": "Rum",
+      "pack": {
+        "size": 0.7,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "gin",
+      "group": "spirits",
+      "name_de": "Gin",
+      "pack": {
+        "size": 0.7,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "aperol",
+      "group": "spirits",
+      "name_de": "Aperol / Aperitif",
+      "pack": {
+        "size": 0.7,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "local_spirit",
+      "group": "spirits",
+      "name_de": "Lokale Spezialität (Ouzo, Rakija …)",
+      "pack": {
+        "size": 0.7,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "getraenke",
+      "default_selected": false,
+      "tags": [
+        "alcohol"
+      ],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "dish_soap",
+      "group": "kitchen",
+      "name_de": "Spülmittel",
+      "pack": {
+        "size": 0.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "sponges",
+      "group": "kitchen",
+      "name_de": "Schwämme",
+      "pack": {
+        "size": 3,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 2,
+        "unit": "Stück",
+        "basis": "per_crew_week"
+      }
+    },
+    {
+      "id": "tea_towels",
+      "group": "kitchen",
+      "name_de": "Geschirrtücher",
+      "pack": {
+        "size": 2,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 2,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "kitchen_roll",
+      "group": "kitchen",
+      "name_de": "Küchenrolle",
+      "pack": {
+        "size": 2,
+        "unit": "Rollen"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "",
+      "need": {
+        "amount": 0.5,
+        "unit": "Rolle",
+        "basis": "per_person_week"
+      }
+    },
+    {
+      "id": "all_purpose",
+      "group": "kitchen",
+      "name_de": "Allzweckreiniger",
+      "pack": {
+        "size": 0.5,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "trash_bags",
+      "group": "packaging",
+      "name_de": "Müllsäcke",
+      "pack": {
+        "size": 20,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Rolle",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "foil",
+      "group": "packaging",
+      "name_de": "Alufolie",
+      "pack": {
+        "size": 1,
+        "unit": "Rolle"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Rolle",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "cling_film",
+      "group": "packaging",
+      "name_de": "Frischhaltefolie",
+      "pack": {
+        "size": 1,
+        "unit": "Rolle"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Rolle",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "zip_bags",
+      "group": "packaging",
+      "name_de": "Gefrier- / Zipbeutel",
+      "pack": {
+        "size": 20,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "für umgefüllte Lebensmittel und nasse Sachen",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "marker",
+      "group": "packaging",
+      "name_de": "Wasserfester Stift",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "für Dosen ohne Etikett",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "pegs",
+      "group": "packaging",
+      "name_de": "Wäscheklammern",
+      "pack": {
+        "size": 20,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 20,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "matches",
+      "group": "fire",
+      "name_de": "Streichhölzer",
+      "pack": {
+        "size": 1,
+        "unit": "Packung"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "für den Gasherd",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "lighter",
+      "group": "fire",
+      "name_de": "Gasfeuerzeug (Stabfeuerzeug)",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "charcoal",
+      "group": "fire",
+      "name_de": "Grillkohle",
+      "pack": {
+        "size": 3,
+        "unit": "kg"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "haushalt",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "nur wenn Grill an Bord",
+      "need": {
+        "amount": 1,
+        "unit": "Sack",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "toilet_paper",
+      "group": "hygiene",
+      "name_de": "Toilettenpapier (bordtauglich, schnell auflösend)",
+      "pack": {
+        "size": 8,
+        "unit": "Rollen"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "Bordtoiletten verstopfen leicht; Hinweis der Basis beachten",
+      "need": {
+        "amount": 2,
+        "unit": "Rollen",
+        "basis": "per_person_week"
+      }
+    },
+    {
+      "id": "hand_soap",
+      "group": "hygiene",
+      "name_de": "Handseife",
+      "pack": {
+        "size": 0.3,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "shower_gel",
+      "group": "hygiene",
+      "name_de": "Duschgel (biologisch abbaubar)",
+      "pack": {
+        "size": 0.25,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 0.25,
+        "unit": "Flasche",
+        "basis": "per_person_week"
+      }
+    },
+    {
+      "id": "shampoo",
+      "group": "hygiene",
+      "name_de": "Shampoo",
+      "pack": {
+        "size": 0.25,
+        "unit": "l"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "wet_wipes",
+      "group": "hygiene",
+      "name_de": "Feuchttücher",
+      "pack": {
+        "size": 60,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "sunscreen",
+      "group": "sun_insects",
+      "name_de": "Sonnencreme",
+      "pack": {
+        "size": 200,
+        "unit": "ml"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 100,
+        "unit": "ml",
+        "basis": "per_person_week"
+      }
+    },
+    {
+      "id": "after_sun",
+      "group": "sun_insects",
+      "name_de": "After-Sun",
+      "pack": {
+        "size": 200,
+        "unit": "ml"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": false,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "repellent",
+      "group": "sun_insects",
+      "name_de": "Mückenschutz",
+      "pack": {
+        "size": 100,
+        "unit": "ml"
+      },
+      "shelf_life_days": 730,
+      "buy_fresh_underway": false,
+      "department": "drogerie",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Flasche",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "plasters",
+      "group": "first_aid",
+      "name_de": "Pflaster und Wundversorgung",
+      "pack": {
+        "size": 1,
+        "unit": "Set"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "apotheke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Set",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "pain",
+      "group": "first_aid",
+      "name_de": "Schmerzmittel",
+      "pack": {
+        "size": 1,
+        "unit": "Packung"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "apotheke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "seasick",
+      "group": "first_aid",
+      "name_de": "Mittel gegen Seekrankheit",
+      "pack": {
+        "size": 1,
+        "unit": "Packung"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "apotheke",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "aa",
+      "group": "tech_everyday",
+      "name_de": "Batterien AA",
+      "pack": {
+        "size": 8,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "Stirnlampen, Handfunkgerät",
+      "need": {
+        "amount": 8,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "aaa",
+      "group": "tech_everyday",
+      "name_de": "Batterien AAA",
+      "pack": {
+        "size": 8,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [
+        "keep_dry"
+      ],
+      "note": "",
+      "need": {
+        "amount": 8,
+        "unit": "Stück",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "headlamp",
+      "group": "tech_everyday",
+      "name_de": "Stirnlampe",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "prüfen, ob jeder eine hat",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "per_person_trip"
+      }
+    },
+    {
+      "id": "powerbank",
+      "group": "tech_everyday",
+      "name_de": "Powerbank",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "usb12v",
+      "group": "tech_everyday",
+      "name_de": "12-V-USB-Adapter",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "für Handys am Bordnetz",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "duct_tape",
+      "group": "tech_everyday",
+      "name_de": "Gewebeband",
+      "pack": {
+        "size": 1,
+        "unit": "Rolle"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Rolle",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "cable_ties",
+      "group": "tech_everyday",
+      "name_de": "Kabelbinder",
+      "pack": {
+        "size": 1,
+        "unit": "Packung"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Packung",
+        "basis": "per_trip"
+      }
+    },
+    {
+      "id": "eng_0",
+      "group": "tech_engine",
+      "name_de": "Motoröl",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_1",
+      "group": "tech_engine",
+      "name_de": "Ölfilter",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_2",
+      "group": "tech_engine",
+      "name_de": "Dieselfilter",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_3",
+      "group": "tech_engine",
+      "name_de": "Impeller",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_4",
+      "group": "tech_engine",
+      "name_de": "Keilriemen",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_5",
+      "group": "tech_engine",
+      "name_de": "Kühlmittel",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "eng_6",
+      "group": "tech_engine",
+      "name_de": "Fett",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "el_0",
+      "group": "tech_electric",
+      "name_de": "Ersatzsicherungen",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "el_1",
+      "group": "tech_electric",
+      "name_de": "Ersatzlampen / LED",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "el_2",
+      "group": "tech_electric",
+      "name_de": "Kabelschuhe",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "el_3",
+      "group": "tech_electric",
+      "name_de": "Isolierband",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "el_4",
+      "group": "tech_electric",
+      "name_de": "Multimeter",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rig_0",
+      "group": "tech_rig",
+      "name_de": "Schäkel",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rig_1",
+      "group": "tech_rig",
+      "name_de": "Takelgarn",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rig_2",
+      "group": "tech_rig",
+      "name_de": "Ersatzleinen",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rig_3",
+      "group": "tech_rig",
+      "name_de": "Segelreparaturband",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rep_0",
+      "group": "tech_repair",
+      "name_de": "Kriechöl (z. B. WD-40)",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rep_1",
+      "group": "tech_repair",
+      "name_de": "Dichtmasse",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rep_2",
+      "group": "tech_repair",
+      "name_de": "Schlauchschellen",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "rep_3",
+      "group": "tech_repair",
+      "name_de": "Epoxid-Knetmasse",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "wat_0",
+      "group": "tech_water",
+      "name_de": "Ersatzdichtungen Pumpe / Toilette",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "wat_1",
+      "group": "tech_water",
+      "name_de": "Bordtauglicher Toilettenreiniger",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    },
+    {
+      "id": "wat_2",
+      "group": "tech_water",
+      "name_de": "Tankreiniger",
+      "pack": {
+        "size": 1,
+        "unit": "Stück"
+      },
+      "shelf_life_days": 3650,
+      "buy_fresh_underway": false,
+      "department": "technik",
+      "default_selected": true,
+      "tags": [],
+      "storage": [],
+      "note": "",
+      "need": {
+        "amount": 1,
+        "unit": "Stück",
+        "basis": "check"
+      }
+    }
+  ]
+}
