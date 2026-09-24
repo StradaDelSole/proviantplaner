@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-25 – Design-Brief v0.3, Slice-Plan v0.11
+
+- Dritter Farbmodus "Nachtwache" (Rot auf Schwarz) zur Schonung der Nachtsicht, umgesetzt in S-UI
+
 ## 2026-09-25 – Design-Brief v0.2, Slice-Plan v0.10
 
 - Review der Stitch-Mockups: 12 verbindliche Designregeln, Hinweise je Bildschirm, Theme aus `technical_maritime_m3/DESIGN.md`

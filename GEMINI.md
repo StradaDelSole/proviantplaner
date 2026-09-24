@@ -11,7 +11,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6 und S2a. S2a hat Vorrang und wird als nächstes umgesetzt (Review: docs/impl/REVIEW_S2_v0.1.md), danach S-UI. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.2.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6 und S2a. S2a hat Vorrang und wird als nächstes umgesetzt (Review: docs/impl/REVIEW_S2_v0.1.md), danach S-UI. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.3.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
