@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-25 – Design-Brief v0.2, Slice-Plan v0.10
+
+- Review der Stitch-Mockups: 12 verbindliche Designregeln, Hinweise je Bildschirm, Theme aus `technical_maritime_m3/DESIGN.md`
+- Neuer Slice S-UI (nach S2a): Theme zentral, bereits gebaute Oberflächen angleichen
+
 ## 2026-09-24 – GEMINI.md v0.4
 
 - Gehärtete Programmierregeln (feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Toleranz bei Kommazahlen, Cent-Beträge, Struktur, Testregeln); erweiterter Abschlussbericht mit Selbstprüfung

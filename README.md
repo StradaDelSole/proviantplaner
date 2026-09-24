@@ -7,11 +7,11 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | Pfad | Inhalt |
 | --- | --- |
 | `docs/PRD_v0.16.md` | Produktanforderungen, Quelle der Wahrheit |
-| `docs/SLICES_v0.9.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
+| `docs/SLICES_v0.10.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
 | `docs/KATALOG_v0.7.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.7.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.4.json` | Mengen, Konsumprofile, Faktoren |
-| `docs/design/DESIGN_BRIEF_v0.1.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
+| `docs/design/DESIGN_BRIEF_v0.2.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
@@ -27,4 +27,4 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 Konzeptphase läuft (PRD v0.16). Es gilt jeweils die höchste Versionsnummer.
 Umgesetzt: S0, S1, S2, S3.
 
-**Freigegeben für Gemini: S0 bis S6 und S2a (Korrektur, Vorrang: als nächstes umsetzen).** Mengen und Oberfläche vorläufig. S1 und folgende erst nach Freigabe hier.
+**Freigegeben für Gemini: S0 bis S6, S2a (Korrektur, Vorrang: als nächstes umsetzen) und danach S-UI (Design-Angleichung).** Mengen und Oberfläche vorläufig. S1 und folgende erst nach Freigabe hier.
