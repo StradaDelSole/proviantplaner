@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-25 – Design-Brief v0.4, Slice-Plan v0.12
+
+- Detailspezifikation: Informationsarchitektur, Startbildschirm, Setup-Assistent, Hierarchie der Warengruppen, alle Bildschirme mit IDs, Tokens für drei Modi, Komponenten, Texte, Bewegung, Barrierefreiheit
+
 ## 2026-09-25 – Design-Brief v0.3, Slice-Plan v0.11
 
 - Dritter Farbmodus "Nachtwache" (Rot auf Schwarz) zur Schonung der Nachtsicht, umgesetzt in S-UI

@@ -7,11 +7,11 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | Pfad | Inhalt |
 | --- | --- |
 | `docs/PRD_v0.16.md` | Produktanforderungen, Quelle der Wahrheit |
-| `docs/SLICES_v0.11.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
+| `docs/SLICES_v0.12.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
 | `docs/KATALOG_v0.7.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.7.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.4.json` | Mengen, Konsumprofile, Faktoren |
-| `docs/design/DESIGN_BRIEF_v0.3.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
+| `docs/design/DESIGN_BRIEF_v0.4.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
