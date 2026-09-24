@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Törn Kroatien · Tagesleiste &amp; Einkaufsstopps</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Typography Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#0b1c30",
+            "surface-container-low": "#eff4ff",
+            "surface-container-high": "#dce9ff",
+            "primary": "#03111f",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "primary-fixed": "#d5e4f8",
+            "on-primary": "#ffffff",
+            "surface-variant": "#d3e4fe",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-secondary-container": "#077167",
+            "on-tertiary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#0e1d2b",
+            "on-error": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-secondary-fixed": "#00201d",
+            "surface-tint": "#526071",
+            "outline": "#74777d",
+            "surface-container": "#e5eeff",
+            "secondary": "#006a61",
+            "tertiary-container": "#3c1d00",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#3a4858",
+            "outline-variant": "#c4c6cc",
+            "tertiary-fixed": "#ffdcc2",
+            "on-secondary-fixed-variant": "#005049",
+            "surface-dim": "#cbdbf5",
+            "surface": "#f8f9ff",
+            "tertiary": "#1d0b00",
+            "background": "#f8f9ff",
+            "surface-bright": "#f8f9ff",
+            "primary-fixed-dim": "#b9c8dc",
+            "inverse-on-surface": "#eaf1ff",
+            "on-surface-variant": "#44474c",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#cc7720",
+            "on-tertiary-fixed": "#2e1500",
+            "inverse-primary": "#b9c8dc",
+            "secondary-container": "#9df2e5",
+            "tertiary-fixed-dim": "#ffb77a",
+            "primary-container": "#182635",
+            "secondary-fixed-dim": "#81d5c9",
+            "on-primary-container": "#7f8da0",
+            "secondary-fixed": "#9df2e5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Maritime Blueprint Grid Pattern */
+    .bg-nav-grid {
+      background-color: #0b141e;
+      background-image: 
+        radial-gradient(rgba(45, 71, 102, 0.22) 1px, transparent 1px),
+        linear-gradient(to right, rgba(45, 71, 102, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(45, 71, 102, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px, 48px 48px, 48px 48px;
+    }
+    .custom-dashed-line {
+      background-image: linear-gradient(to bottom, #2d4766 50%, transparent 50%);
+      background-size: 2px 10px;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-nav-grid text-inverse-on-surface font-body-md antialiased min-h-screen selection:bg-secondary selection:text-on-secondary">
+<!-- Mobile Viewport Wrapper (Ergonomic Phone Width with Max-MD centered) -->
+<div class="max-w-md mx-auto min-h-screen flex flex-col pb-28 relative">
+<!-- TopAppBar Component (from Shared Components JSON: type medium, headline, leading/trailing icon) -->
+<header class="sticky top-0 z-40 w-full px-margin py-space-sm bg-primary-container border-b border-primary-container text-on-primary shadow-md">
+<div class="flex items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-secondary-fixed text-[20px] flex-shrink-0" data-icon="directions_boat">directions_boat</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold tracking-wider uppercase text-inverse-on-surface truncate">
+              Törn Kroatien
+            </span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">
+              SPLIT · HVAR · VIS · 43°30'N 16°26'E
+            </span>
+</div>
+</div>
+<button aria-label="Einstellungen und Filter" class="p-1.5 rounded text-on-primary-container hover:bg-inverse-surface hover:text-inverse-on-surface active:opacity-80 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="tune">tune</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="px-margin pt-space-md flex-1 flex flex-col gap-space-md">
+<!-- Header Section -->
+<section class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-2">
+<span class="inline-block w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+<span class="font-label-sm text-label-sm tracking-widest uppercase text-on-primary-container">
+            NAVIGATIONS- &amp; VERPFLEGUNGSLOG
+          </span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold tracking-tight text-on-primary">
+          Törnplan &amp; Verpflegung
+        </h1>
+<p class="font-body-sm text-body-sm text-on-primary-container">
+          Törn Kroatien · Split → Hvar → Vis · 7 Tage · Monohull 45ft
+        </p>
+<!-- Primary Action CTA -->
+<div class="pt-space-xs">
+<button class="w-full h-12 flex items-center justify-center gap-2 bg-primary-container hover:bg-inverse-surface active:scale-[0.99] border border-[#2d4766] text-on-primary rounded-lg font-label-lg text-label-lg transition-all duration-150 shadow-sm" type="button">
+<span class="material-symbols-outlined text-secondary-fixed text-[18px]" data-icon="add_shopping_cart">add_shopping_cart</span>
+<span>+ Einkaufsstopp hinzufügen</span>
+</button>
+</div>
+</section>
+<!-- Metric Telemetry Card -->
+<section class="rounded-lg bg-[#132130] border border-[#2d4766] p-space-md">
+<div class="flex items-center justify-between border-b border-[#24374e] pb-2 mb-3">
+<span class="font-label-sm text-label-sm text-on-primary-container tracking-wider uppercase">
+            TÖRN-BILANZ VERPFLEGUNG · 7 ETAPPEN · 11 MAHLZEITEN BORD
+          </span>
+<span class="font-label-sm text-label-sm font-semibold text-secondary-fixed px-1.5 py-0.5 rounded bg-secondary/20">
+            STATUS: BEREIT
+          </span>
+</div>
+<div class="grid grid-cols-3 gap-2 text-center">
+<div class="flex flex-col items-center justify-center p-2 rounded bg-[#0b141e]/70 border border-[#20344b]">
+<span class="font-headline-sm text-headline-sm font-bold text-on-primary tabular-nums">5</span>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase mt-0.5">Bord-Abend</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-semibold">71.4%</span>
+</div>
+<div class="flex flex-col items-center justify-center p-2 rounded bg-[#0b141e]/70 border border-[#20344b]">
+<span class="font-headline-sm text-headline-sm font-bold text-on-primary tabular-nums">4</span>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase mt-0.5">Bord-Mittag</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-semibold">57.1%</span>
+</div>
+<div class="flex flex-col items-center justify-center p-2 rounded bg-[#0b141e]/70 border border-[#20344b]">
+<span class="font-headline-sm text-headline-sm font-bold text-on-primary tabular-nums">2</span>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase mt-0.5">Restaurant</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">2 TAGE</span>
+</div>
+</div>
+<!-- Progress telemetry bar -->
+<div class="mt-3 pt-2 border-t border-[#24374e] flex items-center justify-between text-on-primary-container">
+<span class="font-label-sm text-label-sm">AUTONOMIE PROVIANT</span>
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-secondary-fixed tabular-nums">
+<span class="inline-block w-24 h-1.5 bg-[#0b141e] rounded-full overflow-hidden">
+<span class="block h-full bg-secondary w-[82%] rounded-full"></span>
+</span>
+            82%
+          </div>
+</div>
+</section>
+<!-- Section Subtitle / Telemetry Axis Label -->
+<div class="flex items-center justify-between px-0.5">
+<span class="font-label-sm text-label-sm text-on-primary-container tracking-wider uppercase">
+          TAGESROUTEN &amp; PROVIANTPLAN · KOORDINATEN GITTER 0.8 NM / DIV
+        </span>
+<span class="material-symbols-outlined text-on-primary-container text-[16px]" data-icon="route">route</span>
+</div>
+<!-- Timeline & Waypoints List connected with fine dashed technical course line -->
+<section class="relative flex flex-col gap-4">
+<!-- Dashed Course Blueprint Guide Line -->
+<div class="absolute left-[19px] top-6 bottom-6 w-[2px] custom-dashed-line pointer-events-none z-0"></div>
+<!-- TAG 1: SPLIT CHECK-IN & BASIS EINKAUF -->
+<div class="relative z-10 flex items-start gap-3">
+<!-- Waypoint Marker -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-secondary-fixed text-label-sm font-label-sm font-bold shadow-sm">
+            01
+          </div>
+<!-- Card Container -->
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm font-semibold text-secondary-fixed uppercase">SA · Tag 1</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Split (ACI Marina) // Check-in</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums">0.0 NM</span>
+</div>
+<!-- Mahlzeiten Tags -->
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/20 text-secondary-fixed border border-secondary/40">
+<span class="material-symbols-outlined text-[13px]" data-icon="restaurant">restaurant</span>
+                Mittags Restaurant
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Abends Bordküche
+              </span>
+</div>
+<!-- Stopp Box: Basis Einkauf -->
+<div class="mt-1 p-2 rounded bg-[#0b141e]/90 border border-secondary/40 flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary-fixed text-[18px] mt-0.5 flex-shrink-0" data-icon="shopping_basket">shopping_basket</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<p class="font-label-md text-label-md font-semibold text-inverse-on-surface truncate">
+                    Basis-Einkauf Tag 1 · Konzum Split
+                  </p>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-bold">14:30</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-primary-container mt-0.5">
+                  Törn-Grundproviantierung: 48L Trinkwasser, Trockenvorräte, Kaffee, Notrationen.
+                </p>
+</div>
+</div>
+</div>
+</div>
+<!-- TAG 2: BRAČ ANKERBUCHT -->
+<div class="relative z-10 flex items-start gap-3">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-on-primary-container text-label-sm font-label-sm font-bold">
+            02
+          </div>
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase">SO · Tag 2</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Bucht Brač // Ankerbucht</h2>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums block">14.2 NM</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed">ANKER</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Mittags Bordküche
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Abends Bordküche
+              </span>
+</div>
+</div>
+</div>
+<!-- TAG 3: HVAR STADTHAFEN -->
+<div class="relative z-10 flex items-start gap-3">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-on-primary-container text-label-sm font-label-sm font-bold">
+            03
+          </div>
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase">MO · Tag 3</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Hvar Stadt // Stadthafen</h2>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums block">18.6 NM</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-semibold">MOORING</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Mittags Bordküche
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/20 text-secondary-fixed border border-secondary/40">
+<span class="material-symbols-outlined text-[13px]" data-icon="restaurant">restaurant</span>
+                Abends Restaurant
+              </span>
+</div>
+</div>
+</div>
+<!-- TAG 4: ACTIVE HIGHLIGHT CARD WITH PETROL BORDER & CALLOUT -->
+<div class="relative z-10 flex items-start gap-3">
+<!-- Active Pulsing Waypoint Pin -->
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-secondary text-on-secondary border-2 border-secondary-fixed flex items-center justify-center text-label-sm font-label-sm font-bold shadow-[0_0_12px_rgba(0,106,97,0.5)]">
+            04
+          </div>
+<!-- Highlighted Card -->
+<div class="flex-1 bg-[#152637] rounded-lg border-2 border-secondary p-space-sm flex flex-col gap-2 relative shadow-lg">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm font-bold text-secondary-fixed uppercase tracking-wider">DI · Tag 4 · AKTUELLER FOKUS</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Hvar // Hafen</h2>
+</div>
+<span class="font-label-sm text-label-sm text-secondary-fixed bg-secondary/25 px-2 py-0.5 rounded border border-secondary/40 font-semibold uppercase">
+                PROVIANT-AUFSTOCKUNG
+              </span>
+</div>
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#2d4766]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Mittags Bordküche
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#2d4766]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Abends Bordküche
+              </span>
+</div>
+<!-- Distinct Callout Card: Einkauf Tag 4 -->
+<div class="mt-1 p-2.5 rounded bg-[#0e1b27] border border-secondary-fixed/50 flex items-start gap-2.5">
+<div class="p-1.5 rounded bg-secondary/30 text-secondary-fixed flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]" data-icon="shopping_cart">shopping_cart</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<h3 class="font-label-md text-label-md font-bold text-on-primary">
+                    Einkauf Tag 4 · Supermarkt Hvar
+                  </h3>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-mono font-bold">10:00 VORM.</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-primary-container mt-0.5">
+                  6 Frischeartikel &amp; Brot: Gemüse, frischer Fisch vom Markt, Weißbrot, Olivenöl.
+                </p>
+<div class="flex items-center gap-3 mt-2 text-label-sm font-label-sm text-secondary-fixed">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                    Einkaufsliste synchronisiert
+                  </span>
+<span class="text-on-primary-container font-mono">Bordkasse: ~€65.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TAG 5: VIS BOJENFELD -->
+<div class="relative z-10 flex items-start gap-3">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-on-primary-container text-label-sm font-label-sm font-bold">
+            05
+          </div>
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase">MI · Tag 5</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Vis // Bojenfeld</h2>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums block">16.8 NM</span>
+<span class="font-label-sm text-label-sm text-on-primary-container">BOJE</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Bordverpflegung Tag &amp; Nacht
+              </span>
+</div>
+</div>
+</div>
+<!-- TAG 6: ŠOLTA BUCHT -->
+<div class="relative z-10 flex items-start gap-3">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-on-primary-container text-label-sm font-label-sm font-bold">
+            06
+          </div>
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase">DO · Tag 6</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Šolta // Bucht</h2>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums block">19.1 NM</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed">ANKER</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-[#0b141e] text-on-primary-container border border-[#24374e]">
+<span class="material-symbols-outlined text-[13px]" data-icon="skillet">skillet</span>
+                Mittags &amp; Abends Bordküche
+              </span>
+</div>
+</div>
+</div>
+<!-- TAG 7: RÜCKKEHR SPLIT -->
+<div class="relative z-10 flex items-start gap-3">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#132130] border-2 border-[#2d4766] flex items-center justify-center text-on-primary-container text-label-sm font-label-sm font-bold">
+            07
+          </div>
+<div class="flex-1 bg-[#132130] rounded-lg border border-[#2d4766] p-space-sm flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase">FR · Tag 7</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-primary leading-tight">Rückkehr Split</h2>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-primary-container tabular-nums block">9.8 NM</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed">HAFEN</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-primary-container pt-1 border-t border-[#24374e]">
+<span>Törn-Abschlussessen</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-semibold">TAVERNE SPLIT</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical System Footer Attribution (Style Guidance requirement) -->
+<footer class="pt-space-md pb-4 flex flex-col items-center justify-center text-center gap-1">
+<span class="font-label-sm text-label-sm text-[#50667f] tracking-widest uppercase">
+          POWERED BY HULLQ · MARITIME TELEMETRY SPEC V3.4
+        </span>
+<span class="font-label-sm text-label-sm text-[#3b4e63]">
+          WGS84 DATUM · ADRIATIC ZONE 33T · ELEVATION LEVEL 0
+        </span>
+</footer>
+</main>
+<!-- BottomNavBar Component (from Shared Components JSON: type label_icon, destination_count 4, active tab "Törn") -->
+<!-- Applying exact JSON instructions: bg-primary-container, border-t border-outline, active style with rounded-full pill -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin py-space-xs bg-primary-container border-t border-primary-container shadow-2xl">
+<!-- Tab 1: Liste (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#liste">
+<span class="material-symbols-outlined text-[22px]" data-icon="checklist">checklist</span>
+<span class="font-label-sm text-label-sm mt-0.5">Liste</span>
+</a>
+<!-- Tab 2: Törn (ACTIVE MATCH for "06 Törn (Tagesleiste & Einkaufsstopps)") -->
+<a class="flex flex-col items-center justify-center bg-secondary text-on-secondary rounded-full px-space-md py-space-xs font-semibold shadow-inner active:scale-95 transition-transform duration-150" href="#toern">
+<span class="material-symbols-outlined text-[22px]" data-icon="route" style="font-variation-settings: 'FILL' 1;">route</span>
+<span class="font-label-sm text-label-sm mt-0.5">Törn</span>
+</a>
+<!-- Tab 3: Bordkasse (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#bordkasse">
+<span class="material-symbols-outlined text-[22px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm mt-0.5">Bordkasse</span>
+</a>
+<!-- Tab 4: Mehr (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#mehr">
+<span class="material-symbols-outlined text-[22px]" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-sm text-label-sm mt-0.5">Mehr</span>
+</a>
+</nav>
+</div>
+</body></html>

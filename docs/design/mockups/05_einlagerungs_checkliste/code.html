@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Einlagerungs-Checkliste · HullQ Maritime Telemetry</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#077167",
+            "on-surface": "#0b1c30",
+            "inverse-surface": "#213145",
+            "surface-bright": "#f8f9ff",
+            "on-secondary-fixed-variant": "#005049",
+            "background": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "surface-tint": "#526071",
+            "primary-fixed": "#d5e4f8",
+            "on-secondary": "#ffffff",
+            "surface-container": "#e5eeff",
+            "surface-container-lowest": "#ffffff",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#dce9ff",
+            "primary-fixed-dim": "#b9c8dc",
+            "on-primary-fixed": "#0e1d2b",
+            "surface-container-highest": "#d3e4fe",
+            "surface-dim": "#cbdbf5",
+            "on-secondary-fixed": "#00201d",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "outline": "#74777d",
+            "inverse-on-surface": "#eaf1ff",
+            "on-background": "#0b1c30",
+            "tertiary-container": "#3c1d00",
+            "secondary-fixed": "#9df2e5",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "primary": "#03111f",
+            "outline-variant": "#c4c6cc",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2e1500",
+            "on-surface-variant": "#44474c",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#ffb77a",
+            "surface-container-low": "#eff4ff",
+            "primary-container": "#182635",
+            "secondary-container": "#9df2e5",
+            "tertiary-fixed": "#ffdcc2",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-tertiary-container": "#cc7720",
+            "on-primary-container": "#7f8da0",
+            "secondary": "#006a61",
+            "inverse-primary": "#b9c8dc",
+            "tertiary": "#1d0b00",
+            "on-primary-fixed-variant": "#3a4858",
+            "secondary-fixed-dim": "#81d5c9"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .check-active {
+      background-color: #006a61;
+      border-color: #006a61;
+    }
+    .check-active .check-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+  </style>
+</head>
+<body class="h-full bg-background text-on-surface antialiased flex flex-col font-body-md text-body-md select-none">
+<!-- System Status Telemetry bar (Simulated Android System Header) -->
+<header class="w-full bg-surface-container-lowest border-b border-outline-variant/50 sticky top-0 z-40">
+<div class="px-margin pt-space-xs pb-1 flex justify-between items-center text-outline font-label-sm text-label-sm border-b border-outline-variant/30">
+<span class="tracking-widest">SYS.ID // STOWAGE-LOG · REV 02</span>
+<span class="tracking-normal tabular-nums">43°30'41.2"N 16°26'12.8"E</span>
+</div>
+<!-- TopAppBar as dictated by Shared Components JSON -->
+<div class="flex justify-between items-center w-full px-margin py-space-sm">
+<div class="flex items-center space-x-space-sm">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="directions_boat">directions_boat</span>
+<div class="flex flex-col">
+<span class="text-label-md font-label-md font-semibold tracking-wider uppercase text-on-surface">Törn Kroatien</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-normal">Kombüse &amp; Proviantstauung</span>
+</div>
+</div>
+<button aria-label="Einstellungen" class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-surface-container-low active:opacity-80 transition-opacity text-on-surface-variant" type="button">
+<span class="material-symbols-outlined text-xl" data-icon="tune">tune</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Canvas -->
+<main class="flex-1 overflow-y-auto px-margin pt-space-md pb-44 space-y-space-md max-w-xl mx-auto w-full">
+<!-- Title & Stowage Counter Section -->
+<section class="space-y-space-xs">
+<div class="flex items-baseline justify-between">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tight">Einlagern</h1>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container border border-outline-variant/60 font-label-md text-label-md tabular-nums text-primary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-semibold" id="counter-text">0 von 6 Posten</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Systematische Stauung zur Seetüchtigkeit und Werterhaltung der Güter.</p>
+</section>
+<!-- Blueprint Hint / Warning Box: Warm amber/sand nautical instruction -->
+<div class="rounded-lg border border-on-tertiary-container/40 bg-tertiary-fixed/20 p-space-md flex gap-space-sm items-start relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-on-tertiary-container"></div>
+<span class="material-symbols-outlined text-on-tertiary-container shrink-0 mt-0.5" data-icon="lightbulb">lightbulb</span>
+<div class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-tertiary-container font-semibold uppercase tracking-wider">Stauvorschrift · Quarantäne</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container/80">HULL-PROV-04</span>
+</div>
+<p class="font-body-md text-body-md text-primary font-medium leading-snug">
+          Kartons an Land auspacken – Ungeziefer reist in Wellpappe mit.
+        </p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Pappverpackungen ziehen Feuchtigkeit aus der Bilge, zersetzen sich im Schapp und bieten Schädlingen (z.B. Kakerlakennester) perfekten Nährboden. Sämtliche Trockenware in dichte Vorratsboxen umfüllen.
+        </p>
+</div>
+</div>
+<!-- Checklist Group 1: Bilge & Schapps / Trockenlager -->
+<section class="space-y-2">
+<div class="flex items-center justify-between pb-1 border-b border-outline-variant/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="inventory_2">inventory_2</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">Bilge &amp; Schapps / Trockenlager</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">SEKTOR B + C</span>
+</div>
+<div class="space-y-2.5 pt-1">
+<!-- Item 1: Dosen -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-1')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-1">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Dosen: Etiketten entfernen, Inhalt auf den Deckel schreiben</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40">Bilge</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Feuchtigkeit im Schiff löst Papier ab, Korrosion &amp; Verwechslung verhindern (wasserfester Lackstift).
+            </p>
+</div>
+</article>
+<!-- Item 2: Kartoffeln & Zwiebeln -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-2')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-2">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Kartoffeln trocken und dunkel, getrennt von Zwiebeln</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40">Schapp</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Zwiebelgase beschleunigen Keimung drastisch. Idealerweise in luftigen Netzen freischwingend lagern.
+            </p>
+</div>
+</article>
+<!-- Item 3: Brot -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-3')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-3">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Brot: Schnittkante nach unten</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40">Kombüse</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              In Leinenbeutel oder stabiler Brotdose; nicht luftdicht in Plastik (Schimmelbildung durch Kondenswasser).
+            </p>
+</div>
+</article>
+</div>
+</section>
+<!-- Checklist Group 2: Kühlbox & Frische -->
+<section class="space-y-2 pt-2">
+<div class="flex items-center justify-between pb-1 border-b border-outline-variant/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg" data-icon="ac_unit">ac_unit</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">Kühlbox &amp; Frische</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">SEKTOR K · 12V COMP</span>
+</div>
+<div class="space-y-2.5 pt-1">
+<!-- Item 4: Obst und Gemüse -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-4')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-4">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Obst und Gemüse waschen und trocknen</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-secondary-fixed/50 text-on-secondary-fixed font-semibold border border-secondary-fixed-dim/40">Frische</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Trocken lagern, keine Druckstellen zulassen. Feuchtigkeit vor dem Einlagern restlos abtupfen.
+            </p>
+</div>
+</article>
+<!-- Item 5: Eier -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-5')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-5">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Eier kühl lagern, regelmäßig wenden</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/40">Kühlbox</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Dotter bleibt zentriert, Luftkammer oben, natürliche Kutikula-Schutzschicht intakt halten (nicht waschen).
+            </p>
+</div>
+</article>
+<!-- Item 6: Fleisch -->
+<article class="stowage-item group cursor-pointer bg-surface-container-lowest border border-outline-variant/70 rounded-lg p-3.5 transition-all duration-150 hover:border-outline flex gap-3 items-start" onclick="toggleItem('check-6')">
+<div class="pt-0.5">
+<div class="w-5 h-5 rounded border border-outline flex items-center justify-center transition-colors" id="check-6">
+<span class="material-symbols-outlined text-white text-base opacity-0 transition-opacity check-icon" data-icon="check">check</span>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<div class="flex items-start justify-between gap-2">
+<span class="font-body-lg text-body-lg font-medium text-primary item-label leading-tight">Fleisch sofort in den Kühlschrank</span>
+<span class="shrink-0 font-label-sm text-label-sm uppercase tracking-wider px-2 py-0.5 rounded bg-secondary-fixed/50 text-on-secondary-fixed font-semibold border border-secondary-fixed-dim/40">Tiefpunkt</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Tiefste Stelle in der Kühlbox nutzen (Kaltluftsee), absolut auslaufsicher in Hartplastik versiegeln.
+            </p>
+</div>
+</article>
+</div>
+</section>
+<!-- Technical Stowage Note / Metadata Telemetry Card -->
+<div class="mt-space-md p-space-md bg-surface-container-low border border-outline-variant/50 rounded-lg flex flex-col gap-2 font-label-sm text-label-sm">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span>SCHIFFSLAGE / KRÄNGUNGSTOLERANZ</span>
+<span class="font-semibold text-primary">MAX 25°</span>
+</div>
+<div class="w-full bg-outline-variant/30 h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-2/3"></div>
+</div>
+<div class="flex justify-between text-outline text-[9px] pt-1">
+<span>TRIMM: AUSTARIERT</span>
+<span>LASTVERTEILUNG: ZENTRAL</span>
+<span>STATUS: IN BEARBEITUNG</span>
+</div>
+</div>
+<!-- Micro-brand attribution as defined by Brand System -->
+<div class="pt-4 pb-2 text-center">
+<span class="font-label-sm text-label-sm tracking-widest uppercase text-outline">POWERED BY HULLQ</span>
+</div>
+</main>
+<!-- Sticky Bottom Action Tray & Bottom Navigation -->
+<div class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant">
+<!-- Action Button Bar (Integrated seamlessly above the 64dp bottom navigation) -->
+<div class="max-w-xl mx-auto px-margin pt-3 pb-2">
+<button class="w-full h-12 rounded-lg bg-primary-container text-white font-label-lg text-label-lg font-medium flex items-center justify-center gap-2 hover:bg-inverse-surface active:scale-[0.99] transition-all" id="complete-btn" onclick="completeStowage()">
+<span class="material-symbols-outlined text-xl" data-icon="task_alt">task_alt</span>
+<span>Einlagerung abschließen</span>
+</button>
+</div>
+<!-- BottomNavBar matching Shared Components JSON specification -->
+<nav class="max-w-xl mx-auto h-16 flex justify-around items-center px-margin border-t border-outline-variant/40">
+<!-- Item 1: Liste (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-space-md py-space-xs font-semibold active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="checklist">checklist</span>
+<span class="text-label-sm font-label-sm">Liste</span>
+</a>
+<!-- Item 2: Törn (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-full px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="route">route</span>
+<span class="text-label-sm font-label-sm">Törn</span>
+</a>
+<!-- Item 3: Bordkasse (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-full px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-label-sm font-label-sm">Bordkasse</span>
+</a>
+<!-- Item 4: Mehr (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface rounded-full px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="more_horiz">more_horiz</span>
+<span class="text-label-sm font-label-sm">Mehr</span>
+</a>
+</nav>
+</div>
+<script>
+    const totalItems = 6;
+    let checkedCount = 0;
+
+    function toggleItem(id) {
+      const el = document.getElementById(id);
+      const article = el.closest('article');
+      const label = article.querySelector('.item-label');
+      
+      const isChecked = el.classList.toggle('check-active');
+      
+      if (isChecked) {
+        checkedCount++;
+        label.classList.add('line-through', 'text-outline');
+        article.classList.add('opacity-75', 'bg-surface-container-low/40');
+      } else {
+        checkedCount--;
+        label.classList.remove('line-through', 'text-outline');
+        article.classList.remove('opacity-75', 'bg-surface-container-low/40');
+      }
+
+      updateCounter();
+    }
+
+    function updateCounter() {
+      const counter = document.getElementById('counter-text');
+      counter.textContent = `${checkedCount} von ${totalItems} Posten`;
+      
+      const btn = document.getElementById('complete-btn');
+      if (checkedCount === totalItems) {
+        btn.classList.remove('bg-primary-container');
+        btn.classList.add('bg-secondary', 'text-white');
+      } else {
+        btn.classList.add('bg-primary-container');
+        btn.classList.remove('bg-secondary');
+      }
+    }
+
+    function completeStowage() {
+      if (checkedCount < totalItems) {
+        const remaining = totalItems - checkedCount;
+        alert(`Hinweis: Noch ${remaining} Posten offen. Seemännische Sorgfaltspflicht beachten.`);
+      } else {
+        alert('Stauung protokolliert und seefest versiegelt. Törn bereit zum Auslaufen.');
+      }
+    }
+  </script>
+</body></html>

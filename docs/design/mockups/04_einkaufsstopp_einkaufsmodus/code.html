@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Einkauf Tag 4 · Supermarkt Hvar</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- IBM Plex Sans & JetBrains Mono Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#1d0b00",
+            "on-background": "#0b1c30",
+            "primary-container": "#182635",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#ffdcc2",
+            "tertiary-fixed-dim": "#ffb77a",
+            "secondary-container": "#9df2e5",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#7f8da0",
+            "on-secondary-container": "#077167",
+            "inverse-on-surface": "#eaf1ff",
+            "outline": "#74777d",
+            "on-primary": "#ffffff",
+            "on-surface-variant": "#44474c",
+            "on-error-container": "#93000a",
+            "surface-variant": "#d3e4fe",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#005049",
+            "surface": "#f8f9ff",
+            "surface-tint": "#526071",
+            "surface-container-high": "#dce9ff",
+            "on-secondary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "inverse-surface": "#213145",
+            "on-tertiary-fixed": "#2e1500",
+            "on-surface": "#0b1c30",
+            "primary": "#03111f",
+            "secondary": "#006a61",
+            "surface-container-highest": "#d3e4fe",
+            "outline-variant": "#c4c6cc",
+            "tertiary-container": "#3c1d00",
+            "surface-bright": "#f8f9ff",
+            "on-primary-fixed-variant": "#3a4858",
+            "secondary-fixed-dim": "#81d5c9",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d5e4f8",
+            "background": "#f8f9ff",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "secondary-fixed": "#9df2e5",
+            "on-tertiary-container": "#cc7720",
+            "primary-fixed-dim": "#b9c8dc",
+            "surface-dim": "#cbdbf5",
+            "on-primary-fixed": "#0e1d2b",
+            "surface-container": "#e5eeff",
+            "on-secondary-fixed": "#00201d",
+            "inverse-primary": "#b9c8dc"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "headline-md": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="h-full flex flex-col antialiased selection:bg-secondary-fixed selection:text-on-secondary-fixed font-body-md text-on-surface">
+<!-- Top App Bar / Operational Header -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant/60 shadow-sm">
+<div class="max-w-3xl mx-auto px-margin py-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<button aria-label="Zurück zur Törnübersicht" class="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-surface-container transition-colors text-primary active:scale-95">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<div>
+<div class="font-label-sm text-label-sm text-outline tracking-wider uppercase">TÖRN KROATIEN // PROVIANT</div>
+<h1 class="font-headline-sm text-headline-sm text-primary tracking-tight">Einkauf Tag 4 · Supermarkt Hvar</h1>
+</div>
+</div>
+<!-- Top Action Chip: Einkauf als Ausgabe erfassen -->
+<button class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low transition-colors active:scale-95 text-primary">
+<span class="material-symbols-outlined text-secondary text-[18px]" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label-md text-label-md font-medium text-primary hidden sm:inline">Einkauf als Ausgabe erfassen</span>
+<span class="font-label-md text-label-md font-medium text-primary sm:hidden">Ausgabe</span>
+</button>
+</div>
+<!-- Telemetry Progress Subheader -->
+<div class="bg-surface-container-lowest px-margin pb-space-sm max-w-3xl mx-auto">
+<div class="flex items-center justify-between pt-1 pb-1.5">
+<div class="flex items-center space-x-2">
+<span class="inline-block w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-md text-label-md font-semibold text-primary tracking-wide">EINKAUFSMODUS // 12 VON 18 ERLEDIGT</span>
+</div>
+<span class="font-label-md text-label-md text-secondary font-semibold">66.7%</span>
+</div>
+<!-- Thin Linear Progress Bar in Petrol/Teal -->
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary transition-all duration-300 rounded-full" style="width: 66.66%;"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas (Bento-structured telemetry checklist) -->
+<main class="flex-1 overflow-y-auto max-w-3xl w-full mx-auto px-margin pt-space-md pb-32 space-y-space-md">
+<!-- Store Status & Location Telemetry Bento Strip -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-label-sm text-label-sm">
+<div class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/60 flex flex-col">
+<span class="text-outline uppercase">Lagerort</span>
+<span class="font-semibold text-primary mt-0.5 truncate">Konzum Supermarket Hvar</span>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/60 flex flex-col">
+<span class="text-outline uppercase">Bordwährung</span>
+<span class="font-semibold text-primary mt-0.5 font-label-md">EUR (€)</span>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/60 flex flex-col">
+<span class="text-outline uppercase">Besatzung</span>
+<span class="font-semibold text-primary mt-0.5">6 Personen</span>
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/60 flex flex-col">
+<span class="text-outline uppercase">Bordkasse</span>
+<span class="font-semibold text-secondary mt-0.5 font-label-md">€ 420,00 Rest</span>
+</div>
+</div>
+<!-- SECTION 1: OBST & GEMÜSE (Completed) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 overflow-hidden shadow-none">
+<!-- Section Header -->
+<div class="px-space-md py-space-sm bg-surface-container-low/60 flex items-center justify-between border-b border-outline-variant/40">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-[18px] text-secondary">nutrition</span>
+<span class="font-label-md text-label-md font-semibold text-primary tracking-wider">01 // OBST &amp; GEMÜSE</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-semibold bg-secondary-container/30 px-2 py-0.5 rounded border border-secondary/20">3/3 erledigt</span>
+</div>
+<!-- Item List -->
+<ul class="divide-y divide-outline-variant/30">
+<!-- Item 1.1: Tomaten -->
+<li class="px-space-md py-3 flex items-center justify-between opacity-50 bg-surface/30 hover:opacity-75 transition-opacity cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary">
+<span class="material-symbols-outlined text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="min-w-0">
+<p class="font-body-md text-body-md line-through text-on-surface-variant truncate">Tomaten Strauchtomaten</p>
+<p class="font-label-sm text-label-sm text-outline">Frischeabteilung</p>
+</div>
+</div>
+<span class="font-label-md text-label-md text-outline font-medium whitespace-nowrap ml-4">1,5 kg</span>
+</li>
+<!-- Item 1.2: Zitronen & Limetten -->
+<li class="px-space-md py-3 flex items-center justify-between opacity-50 bg-surface/30 hover:opacity-75 transition-opacity cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary">
+<span class="material-symbols-outlined text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="min-w-0">
+<p class="font-body-md text-body-md line-through text-on-surface-variant truncate">Zitronen &amp; Limetten</p>
+<p class="font-label-sm text-label-sm text-outline">Cocktails &amp; Küche</p>
+</div>
+</div>
+<span class="font-label-md text-label-md text-outline font-medium whitespace-nowrap ml-4">6 Stück</span>
+</li>
+<!-- Item 1.3: Bananen -->
+<li class="px-space-md py-3 flex items-center justify-between opacity-50 bg-surface/30 hover:opacity-75 transition-opacity cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary">
+<span class="material-symbols-outlined text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="min-w-0">
+<p class="font-body-md text-body-md line-through text-on-surface-variant truncate">Bananen</p>
+<p class="font-label-sm text-label-sm text-outline">Halbreif bevorzugt</p>
+</div>
+</div>
+<span class="font-label-md text-label-md text-outline font-medium whitespace-nowrap ml-4">1 kg</span>
+</li>
+</ul>
+</section>
+<!-- SECTION 2: KÜHLREGAL & KÄSE (In Progress) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 overflow-hidden shadow-none">
+<!-- Section Header -->
+<div class="px-space-md py-space-sm bg-surface-container-low/60 flex items-center justify-between border-b border-outline-variant/40">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-[18px] text-primary">kitchen</span>
+<span class="font-label-md text-label-md font-semibold text-primary tracking-wider">02 // KÜHLREGAL &amp; KÄSE</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-medium bg-surface-container px-2 py-0.5 rounded border border-outline-variant/50">2/4 erledigt</span>
+</div>
+<!-- Item List -->
+<ul class="divide-y divide-outline-variant/30">
+<!-- Struck Item 2.1: Feta -->
+<li class="px-space-md py-3 flex items-center justify-between opacity-50 bg-surface/30 hover:opacity-75 transition-opacity cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary">
+<span class="material-symbols-outlined text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<p class="font-body-md text-body-md line-through text-on-surface-variant truncate">Feta Schafskäse</p>
+</div>
+<span class="font-label-md text-label-md text-outline font-medium whitespace-nowrap ml-4">2 × 200 g</span>
+</li>
+<!-- Struck Item 2.2: Butter -->
+<li class="px-space-md py-3 flex items-center justify-between opacity-50 bg-surface/30 hover:opacity-75 transition-opacity cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary">
+<span class="material-symbols-outlined text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<p class="font-body-md text-body-md line-through text-on-surface-variant truncate">Butter</p>
+</div>
+<span class="font-label-md text-label-md text-outline font-medium whitespace-nowrap ml-4">2 × 250 g</span>
+</li>
+<!-- Active Large Item 2.3: Gouda (Active / High sunlight readability) -->
+<li class="px-space-md py-3.5 flex items-center justify-between hover:bg-surface-container-low/40 active:bg-surface-container cursor-pointer transition-colors border-l-4 border-l-secondary bg-surface-container-lowest">
+<div class="flex items-center space-x-3.5 min-w-0">
+<input class="w-6 h-6 rounded border-2 border-outline text-secondary focus:ring-0 cursor-pointer" type="checkbox"/>
+<div class="min-w-0">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-primary truncate">Gouda jung / mittelalt</span>
+</div>
+<div class="flex items-center space-x-1.5 mt-0.5">
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-label-sm font-medium bg-tertiary-fixed text-on-tertiary-fixed border border-on-tertiary-container/20">
+<span class="material-symbols-outlined text-[12px] mr-1 text-on-tertiary-container">ac_unit</span>
+                  Kühlbox 4°C
+                </span>
+<span class="font-body-sm text-body-sm text-outline">Am Stück für Bordvesper</span>
+</div>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary whitespace-nowrap ml-4">1 × 400 g</span>
+</li>
+<!-- Active Item 2.4: Joghurt Natur -->
+<li class="px-space-md py-3.5 flex items-center justify-between hover:bg-surface-container-low/40 active:bg-surface-container cursor-pointer transition-colors bg-surface-container-lowest">
+<div class="flex items-center space-x-3.5 min-w-0">
+<input class="w-6 h-6 rounded border-2 border-outline text-secondary focus:ring-0 cursor-pointer" type="checkbox"/>
+<div class="min-w-0">
+<span class="font-body-lg text-body-lg font-semibold text-primary truncate">Joghurt Natur 3,5 %</span>
+<p class="font-body-sm text-body-sm text-outline">Große Becher bevorzugt</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary whitespace-nowrap ml-4">4 × 500 g</span>
+</li>
+</ul>
+</section>
+<!-- SECTION 3: GETRÄNKE & WASSER (Open) -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant/60 overflow-hidden shadow-none">
+<!-- Section Header -->
+<div class="px-space-md py-space-sm bg-surface-container-low/60 flex items-center justify-between border-b border-outline-variant/40">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-[18px] text-primary">water_drop</span>
+<span class="font-label-md text-label-md font-semibold text-primary tracking-wider">03 // GETRÄNKE &amp; WASSER</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline font-medium bg-surface-container px-2 py-0.5 rounded">0/2 erledigt</span>
+</div>
+<!-- Item List -->
+<ul class="divide-y divide-outline-variant/30">
+<!-- Active Item 3.1: Trinkwasser (still) -->
+<li class="px-space-md py-3.5 flex items-center justify-between hover:bg-surface-container-low/40 active:bg-surface-container cursor-pointer transition-colors border-l-4 border-l-tertiary-container bg-surface-container-lowest">
+<div class="flex items-center space-x-3.5 min-w-0">
+<input class="w-6 h-6 rounded border-2 border-outline text-secondary focus:ring-0 cursor-pointer" type="checkbox"/>
+<div class="min-w-0">
+<div class="flex items-center space-x-2 flex-wrap gap-y-1">
+<span class="font-body-lg text-body-lg font-semibold text-primary">Trinkwasser (still)</span>
+<!-- Warning/Priority Badge -->
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-label-sm font-semibold bg-tertiary-fixed-dim/30 text-on-tertiary-fixed-variant border border-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[12px] mr-1 text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">warning</span>
+                  Wichtig: Grundreserve
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-outline">Bunkern in Bilge Fach 2</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary whitespace-nowrap ml-4">4 × 6er Pack 1,5 l</span>
+</li>
+<!-- Active Item 3.2: Mineralwasser Sprudel -->
+<li class="px-space-md py-3.5 flex items-center justify-between hover:bg-surface-container-low/40 active:bg-surface-container cursor-pointer transition-colors bg-surface-container-lowest">
+<div class="flex items-center space-x-3.5 min-w-0">
+<input class="w-6 h-6 rounded border-2 border-outline text-secondary focus:ring-0 cursor-pointer" type="checkbox"/>
+<div class="min-w-0">
+<span class="font-body-lg text-body-lg font-semibold text-primary truncate">Mineralwasser Sprudel</span>
+<p class="font-body-sm text-body-sm text-outline">Gazirana Voda</p>
+</div>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary whitespace-nowrap ml-4">2 × 6er Pack 1,5 l</span>
+</li>
+</ul>
+</section>
+<!-- HullQ Technical Provenance Footer -->
+<div class="pt-4 pb-2 text-center">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-widest">POWERED BY HULLQ // SYSTEM TELEMETRY V2.4</p>
+</div>
+</main>
+<!-- Sticky Bottom Operational Action Bar -->
+<footer class="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest border-t border-outline-variant/80 p-margin shadow-lg">
+<div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
+<!-- Quick Sum & Quantity Telemetry -->
+<div class="flex flex-col justify-center">
+<div class="flex items-center space-x-1.5">
+<span class="font-label-sm text-label-sm text-outline uppercase">Geschätzt:</span>
+<span class="font-label-md text-label-md font-bold text-primary">~ € 78,50</span>
+</div>
+<div class="font-body-sm text-body-sm text-outline mt-0.5">
+<span class="font-semibold text-primary">6</span> Artikel noch offen
+        </div>
+</div>
+<!-- Large High-Contrast Main Action Button -->
+<button class="flex-1 max-w-xs h-12 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-headline-sm text-[16px] font-semibold flex items-center justify-center space-x-2 transition-all active:scale-[0.98] shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Fertig eingekauft</span>
+<span class="ml-1 px-1.5 py-0.5 rounded bg-surface/20 text-on-primary font-label-sm text-label-sm">12/18</span>
+</button>
+</div>
+</footer>
+</body></html>

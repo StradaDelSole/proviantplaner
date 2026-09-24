@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>01 Törn anlegen (Nachtmodus) - Crew &amp; Verpflegung</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "tertiary-container": "#3c1d00",
+            "surface-bright": "#f8f9ff",
+            "on-tertiary-fixed": "#2e1500",
+            "inverse-on-surface": "#eaf1ff",
+            "on-primary-container": "#7f8da0",
+            "inverse-primary": "#b9c8dc",
+            "secondary": "#006a61",
+            "on-surface-variant": "#44474c",
+            "on-primary-fixed-variant": "#3a4858",
+            "on-primary-fixed": "#0e1d2b",
+            "outline": "#74777d",
+            "primary": "#03111f",
+            "on-background": "#0b1c30",
+            "on-error-container": "#93000a",
+            "surface": "#f8f9ff",
+            "primary-container": "#182635",
+            "tertiary-fixed-dim": "#ffb77a",
+            "surface-variant": "#d3e4fe",
+            "error": "#ba1a1a",
+            "surface-dim": "#cbdbf5",
+            "surface-tint": "#526071",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "tertiary-fixed": "#ffdcc2",
+            "surface-container": "#e5eeff",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed-variant": "#005049",
+            "inverse-surface": "#213145",
+            "on-secondary-container": "#077167",
+            "surface-container-highest": "#d3e4fe",
+            "on-primary": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-high": "#dce9ff",
+            "surface-container-lowest": "#ffffff",
+            "secondary-fixed-dim": "#81d5c9",
+            "on-error": "#ffffff",
+            "background": "#f8f9ff",
+            "on-tertiary-container": "#cc7720",
+            "on-secondary-fixed": "#00201d",
+            "primary-fixed-dim": "#b9c8dc",
+            "error-container": "#ffdad6",
+            "primary-fixed": "#d5e4f8",
+            "secondary-container": "#9df2e5",
+            "secondary-fixed": "#9df2e5",
+            "outline-variant": "#c4c6cc"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "gutter": "1rem"
+          },
+          fontFamily: {
+            "headline-lg-mobile": ["IBM Plex Sans", "sans-serif"],
+            "label-lg": ["IBM Plex Sans", "sans-serif"],
+            "headline-md": ["IBM Plex Sans", "sans-serif"],
+            "body-md": ["IBM Plex Sans", "sans-serif"],
+            "body-lg": ["IBM Plex Sans", "sans-serif"],
+            "label-sm": ["JetBrains Mono", "monospace"],
+            "headline-lg": ["IBM Plex Sans", "sans-serif"],
+            "body-sm": ["IBM Plex Sans", "sans-serif"],
+            "headline-sm": ["IBM Plex Sans", "sans-serif"],
+            "label-md": ["JetBrains Mono", "monospace"]
+          },
+          fontSize: {
+            "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "600" }],
+            "label-lg": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            "headline-md": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "label-sm": ["10px", { lineHeight: "14px", fontWeight: "500" }],
+            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+            "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+            "headline-sm": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+            "label-md": ["12px", { lineHeight: "16px", fontWeight: "500" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    /* Technical Grid Overlay */
+    .blueprint-bg {
+      background-color: #0b141e;
+      background-image: 
+        linear-gradient(to right, rgba(35, 53, 73, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(35, 53, 73, 0.25) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="blueprint-bg text-slate-100 min-h-screen flex flex-col justify-between selection:bg-teal-500 selection:text-slate-950 font-body-md text-body-md antialiased">
+<!-- Main Container -->
+<div class="w-full max-w-xl mx-auto flex flex-col flex-1 pb-32">
+<!-- Top Technical App Bar / Setup Header -->
+<header class="w-full bg-[#132130]/90 backdrop-blur border-b border-[#233549] px-margin py-3 sticky top-0 z-30">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="inline-block w-2 h-2 rounded-full bg-[#00b49f] animate-pulse"></span>
+<span class="font-label-sm text-label-sm tracking-widest text-[#00b49f] uppercase font-semibold">SYS.ID // SETUP-03</span>
+</div>
+<button aria-label="Abbrechen" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a293b] transition-colors flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-slate-400 tracking-wider uppercase block mb-0.5">SCHRITT 3 VON 4</span>
+<h1 class="font-headline-sm text-headline-sm font-semibold text-white tracking-tight">Crew &amp; Verpflegung</h1>
+</div>
+<div class="bg-[#1a293b] border border-[#233549] px-2.5 py-1 rounded flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[15px] text-[#00b49f]" data-icon="group">group</span>
+<span class="font-label-md text-label-md font-semibold text-white">4 PERS</span>
+</div>
+</div>
+<!-- Segmented Step Progress Bar -->
+<div class="grid grid-cols-4 gap-1.5 mt-3 pt-2 border-t border-[#233549]/60">
+<div class="h-1.5 bg-[#00b49f] rounded-full shadow-[0_0_8px_rgba(0,180,159,0.3)]"></div>
+<div class="h-1.5 bg-[#00b49f] rounded-full shadow-[0_0_8px_rgba(0,180,159,0.3)]"></div>
+<div class="h-1.5 bg-[#00b49f] rounded-full shadow-[0_0_8px_rgba(0,180,159,0.3)]"></div>
+<div class="h-1.5 bg-[#1a293b] border border-[#233549] rounded-full"></div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="px-margin pt-5 space-y-6">
+<!-- Section: Crew Members -->
+<section aria-labelledby="section-crew" class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-baseline gap-2">
+<h2 class="font-headline-sm text-headline-sm text-white font-semibold tracking-tight" id="section-crew">Crew</h2>
+<span class="font-label-sm text-label-sm text-slate-400 uppercase tracking-wider">TEILNEHMERLISTE</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold text-[#00b49f] bg-[#00b49f]/10 border border-[#00b49f]/30 px-2 py-0.5 rounded">4 ERFASST</span>
+</div>
+<!-- Crew Cards Container -->
+<div class="space-y-2">
+<!-- Crew Card 1: Anna -->
+<article class="bg-[#132130] border border-[#233549] rounded-lg p-3 hover:border-slate-500/50 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded bg-[#1a293b] border border-[#233549] flex items-center justify-center font-label-md text-label-md font-bold text-white text-center">
+                  AS
+                </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-body-md text-body-md font-semibold text-white">Anna</span>
+<span class="font-label-sm text-label-sm text-[#00b49f] bg-[#00b49f]/10 border border-[#00b49f]/30 px-1.5 py-0.5 rounded font-mono">(Skipper)</span>
+</div>
+<div class="flex flex-wrap gap-1.5 mt-1.5">
+<span class="inline-flex items-center font-label-sm text-label-sm bg-[#1a293b] text-slate-300 border border-[#233549] px-2 py-0.5 rounded">
+                      Erwachsener
+                    </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm bg-[#00b49f]/15 text-[#00b49f] border border-[#00b49f]/40 px-2 py-0.5 rounded font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="eco">eco</span>
+                      vegetarisch
+                    </span>
+</div>
+</div>
+</div>
+<button aria-label="Anna bearbeiten" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a293b] transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</article>
+<!-- Crew Card 2: Ben -->
+<article class="bg-[#132130] border border-[#233549] rounded-lg p-3 hover:border-slate-500/50 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded bg-[#1a293b] border border-[#233549] flex items-center justify-center font-label-md text-label-md font-bold text-white text-center">
+                  BK
+                </div>
+<div>
+<span class="font-body-md text-body-md font-semibold text-white block">Ben</span>
+<div class="flex flex-wrap gap-1.5 mt-1.5">
+<span class="inline-flex items-center font-label-sm text-label-sm bg-[#1a293b] text-slate-300 border border-[#233549] px-2 py-0.5 rounded">
+                      Erwachsener
+                    </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm bg-indigo-950/60 text-indigo-300 border border-indigo-700/40 px-2 py-0.5 rounded font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="no_drinks">no_drinks</span>
+                      trinkt keinen Alkohol
+                    </span>
+</div>
+</div>
+</div>
+<button aria-label="Ben bearbeiten" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a293b] transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</article>
+<!-- Crew Card 3: Clara -->
+<article class="bg-[#132130] border border-[#233549] rounded-lg p-3 hover:border-slate-500/50 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded bg-[#1a293b] border border-[#233549] flex items-center justify-center font-label-md text-label-md font-bold text-white text-center">
+                  CR
+                </div>
+<div>
+<span class="font-body-md text-body-md font-semibold text-white block">Clara</span>
+<div class="flex flex-wrap gap-1.5 mt-1.5">
+<span class="inline-flex items-center font-label-sm text-label-sm bg-[#1a293b] text-slate-300 border border-[#233549] px-2 py-0.5 rounded">
+                      Erwachsener
+                    </span>
+</div>
+</div>
+</div>
+<button aria-label="Clara bearbeiten" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a293b] transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</article>
+<!-- Crew Card 4: David -->
+<article class="bg-[#132130] border border-[#233549] rounded-lg p-3 hover:border-slate-500/50 transition-colors">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded bg-[#1a293b] border border-[#233549] flex items-center justify-center font-label-md text-label-md font-bold text-amber-400 text-center">
+                  DW
+                </div>
+<div>
+<span class="font-body-md text-body-md font-semibold text-white block">David</span>
+<div class="flex flex-wrap gap-1.5 mt-1.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm bg-amber-500/15 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="child_care">child_care</span>
+                      Kind
+                    </span>
+</div>
+</div>
+</div>
+<button aria-label="David bearbeiten" class="text-slate-400 hover:text-white p-1 rounded hover:bg-[#1a293b] transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Add Person Dashed Button -->
+<button class="w-full py-3 px-4 border border-dashed border-[#233549] hover:border-[#00b49f] bg-[#132130]/40 hover:bg-[#1a293b] text-slate-300 hover:text-[#00b49f] rounded-lg flex items-center justify-center gap-2 transition-colors group" type="button">
+<span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-[#00b49f] transition-colors" data-icon="person_add">person_add</span>
+<span class="font-label-lg text-label-lg font-medium">+ Person hinzufügen</span>
+</button>
+</section>
+<!-- Section: Verpflegungs-Profil -->
+<section aria-labelledby="section-verpflegung" class="space-y-4 pt-3 border-t border-[#233549]">
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-headline-sm text-headline-sm text-white font-semibold tracking-tight" id="section-verpflegung">Verpflegungs-Profil</h2>
+</div>
+<span class="font-label-sm text-label-sm text-[#00b49f] tracking-wider uppercase font-semibold">BORDMETRIK // KALKULATION</span>
+</div>
+<!-- Question 1: Essensgewohnheiten -->
+<div class="bg-[#132130] border border-[#233549] rounded-lg p-3.5 space-y-2.5">
+<label class="block font-label-lg text-label-lg text-white font-medium">
+            Wie isst eure Crew?
+          </label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-[#0b141e] border border-[#233549] rounded-lg">
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded text-slate-400 hover:text-white hover:bg-[#1a293b]/60 transition-colors" type="button">
+              Eher leicht
+            </button>
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded bg-[#1a293b] text-white border border-[#00b49f] font-semibold shadow-[0_0_10px_rgba(0,180,159,0.2)]" type="button">
+              Ganz normal
+            </button>
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded text-slate-400 hover:text-white hover:bg-[#1a293b]/60 transition-colors" type="button">
+              Gut und gern
+            </button>
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded text-slate-400 hover:text-white hover:bg-[#1a293b]/60 transition-colors" type="button">
+              Hungrige Segler
+            </button>
+</div>
+</div>
+<!-- Question 2: Trinkgewohnheiten -->
+<div class="bg-[#132130] border border-[#233549] rounded-lg p-3.5 space-y-2.5">
+<label class="block font-label-lg text-label-lg text-white font-medium">
+            Wie viel wird an Bord getrunken?
+          </label>
+<div class="grid grid-cols-3 gap-1.5 p-1 bg-[#0b141e] border border-[#233549] rounded-lg">
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded text-slate-400 hover:text-white hover:bg-[#1a293b]/60 transition-colors" type="button">
+              Gemütlich
+            </button>
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded bg-[#1a293b] text-white border border-[#00b49f] font-semibold shadow-[0_0_10px_rgba(0,180,159,0.2)]" type="button">
+              Normal
+            </button>
+<button class="py-2 px-1 text-center font-label-sm text-label-sm rounded text-slate-400 hover:text-white hover:bg-[#1a293b]/60 transition-colors" type="button">
+              Feierfreudig
+            </button>
+</div>
+</div>
+<!-- Switch Card: Wetter-Reserve -->
+<div class="bg-[#132130] border border-[#233549] rounded-lg p-3.5 flex items-center justify-between gap-3">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-[20px] text-amber-400 mt-0.5 flex-shrink-0" data-icon="cloud">cloud</span>
+<div>
+<span class="font-body-md text-body-md text-white font-medium block">
+                Reserve für Ankertage und schlechtes Wetter
+              </span>
+<span class="font-label-sm text-label-sm text-[#00b49f] font-semibold font-mono tracking-tight">
+                +10 % PROVIANTZUSCHLAG EMPFOHLEN
+              </span>
+</div>
+</div>
+<!-- Active Petrol Toggle Switch -->
+<button aria-checked="true" aria-label="Wetter-Reserve aktivieren" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-[#00b49f] transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-[#00b49f]" role="switch" type="button">
+<span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[#0b141e] shadow translate-x-5 transition duration-200 ease-in-out"></span>
+</button>
+</div>
+</section>
+<!-- Technical Micro Note -->
+<div class="px-2 pt-1 flex items-center gap-2 text-slate-500">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span class="font-label-sm text-label-sm">Bedarfsrechnung passt Packlisten &amp; Einkaufsmenge automatisch an.</span>
+</div>
+</main>
+</div>
+<!-- Sticky Bottom Navigation / Actions Footer -->
+<aside class="fixed bottom-0 left-0 w-full z-40 bg-[#0b141e]/95 backdrop-blur border-t border-[#233549] py-3 px-margin">
+<div class="max-w-xl mx-auto flex flex-col items-center gap-2.5">
+<div class="w-full flex items-center gap-3">
+<!-- Back Button -->
+<button class="w-1/3 py-3 px-4 rounded-lg border border-[#233549] bg-[#132130] text-slate-300 hover:text-white hover:bg-[#1a293b] font-label-lg text-label-lg font-medium transition-colors text-center active:scale-95 duration-150" type="button">
+          Zurück
+        </button>
+<!-- Forward / Primary Button -->
+<button class="w-2/3 py-3 px-4 rounded-lg bg-[#00b49f] hover:bg-[#009b88] text-slate-950 font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(0,180,159,0.3)] active:scale-95 duration-150" type="button">
+<span>Weiter</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<!-- Provenance Attribution -->
+<span class="font-label-sm text-label-sm tracking-widest text-slate-400 uppercase font-semibold">
+        POWERED BY HULLQ
+      </span>
+</div>
+</aside>
+</body></html>

@@ -1,0 +1,35 @@
+﻿{
+  "@@locale": "en",
+  "appTitle": "Proviantplaner",
+  "@appTitle": {
+    "description": "App title"
+  },
+  "poweredBy": "powered by HullQ",
+  "@poweredBy": {
+    "description": "HullQ endorsement mark"
+  },
+  "navShoppingList": "List",
+  "@navShoppingList": {
+    "description": "Tab for shopping and provisions list"
+  },
+  "navTrip": "Trip",
+  "@navTrip": {
+    "description": "Tab for trip itinerary and day overview"
+  },
+  "navKitty": "Kitty",
+  "@navKitty": {
+    "description": "Tab for shared kitty and expenses"
+  },
+  "navMore": "More",
+  "@navMore": {
+    "description": "Tab for more options"
+  },
+  "welcomeHeadline": "Trip Planning Made Easy",
+  "@welcomeHeadline": {
+    "description": "Welcome headline"
+  },
+  "welcomeSubline": "Calculate provisions, manage stores and split expenses fairly.",
+  "@welcomeSubline": {
+    "description": "Welcome subline"
+  }
+}

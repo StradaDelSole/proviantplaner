@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neuer Törn – Crew &amp; Verpflegung</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#1d0b00",
+            "on-background": "#0b1c30",
+            "primary-container": "#182635",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#ffdcc2",
+            "tertiary-fixed-dim": "#ffb77a",
+            "secondary-container": "#9df2e5",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#7f8da0",
+            "on-secondary-container": "#077167",
+            "inverse-on-surface": "#eaf1ff",
+            "outline": "#74777d",
+            "on-primary": "#ffffff",
+            "on-surface-variant": "#44474c",
+            "on-error-container": "#93000a",
+            "surface-variant": "#d3e4fe",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#005049",
+            "surface": "#f8f9ff",
+            "surface-tint": "#526071",
+            "surface-container-high": "#dce9ff",
+            "on-secondary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "inverse-surface": "#213145",
+            "on-tertiary-fixed": "#2e1500",
+            "on-surface": "#0b1c30",
+            "primary": "#03111f",
+            "secondary": "#006a61",
+            "surface-container-highest": "#d3e4fe",
+            "outline-variant": "#c4c6cc",
+            "tertiary-container": "#3c1d00",
+            "surface-bright": "#f8f9ff",
+            "on-primary-fixed-variant": "#3a4858",
+            "secondary-fixed-dim": "#81d5c9",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d5e4f8",
+            "background": "#f8f9ff",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "secondary-fixed": "#9df2e5",
+            "on-tertiary-container": "#cc7720",
+            "primary-fixed-dim": "#b9c8dc",
+            "surface-dim": "#cbdbf5",
+            "on-primary-fixed": "#0e1d2b",
+            "surface-container": "#e5eeff",
+            "on-secondary-fixed": "#00201d",
+            "inverse-primary": "#b9c8dc"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "headline-md": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="h-full bg-background text-on-surface antialiased flex flex-col font-body-md text-body-md select-none">
+<!-- Linear Task Flow Header (BottomNavBar is suppressed per Task-Focused Journey Mandate) -->
+<header class="w-full bg-surface-container-lowest border-b border-outline-variant shrink-0 sticky top-0 z-40">
+<div class="max-w-2xl mx-auto px-margin pt-space-sm pb-space-xs">
+<!-- Technical blueprint metadata line -->
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center space-x-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider">SYS.ID // SETUP-03</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary"></span>
+</div>
+<span class="font-label-sm text-label-sm tracking-widest text-outline">POWERED BY HULLQ</span>
+</div>
+<!-- Linear Stepper Navigation Title -->
+<div class="flex items-center justify-between py-1">
+<div class="flex items-center space-x-2">
+<button aria-label="Abbrechen" class="p-1 -ml-1 text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="close">close</span>
+</button>
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-semibold block">Schritt 3 von 4</span>
+<h1 class="font-headline-sm text-headline-sm text-primary tracking-tight">Crew &amp; Verpflegung</h1>
+</div>
+</div>
+<!-- Hull telemetry indicator -->
+<span class="font-label-md text-label-md px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant font-medium">
+          4 PERS
+        </span>
+</div>
+<!-- Segmented Progress Bar (Step 3 of 4 Active) -->
+<div class="grid grid-cols-4 gap-1.5 pt-space-xs pb-1.5">
+<div class="h-1 bg-secondary rounded-full"></div>
+<div class="h-1 bg-secondary rounded-full"></div>
+<div class="h-1 bg-primary-container rounded-full"></div>
+<div class="h-1 bg-surface-container-high rounded-full"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-24">
+<div class="max-w-2xl mx-auto px-margin py-space-md space-y-space-lg">
+<!-- Section: Crew Members -->
+<section class="space-y-space-sm">
+<div class="flex items-baseline justify-between border-b border-outline-variant pb-1">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="group">group</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Crew</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">4 Erfasst</span>
+</div>
+<div class="grid grid-cols-1 gap-2 pt-1">
+<!-- Member 1: Anna -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary font-label-md font-semibold shrink-0 border border-outline-variant">
+                AS
+              </div>
+<div class="min-w-0">
+<div class="flex items-center space-x-1.5">
+<span class="font-headline-sm text-[15px] text-primary truncate">Anna</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-primary-container text-surface font-semibold tracking-wide">(Skipper)</span>
+</div>
+<div class="flex flex-wrap gap-1.5 mt-1">
+<span class="inline-flex items-center font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant">
+                    Erwachsener
+                  </span>
+<span class="inline-flex items-center space-x-1 font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="eco">eco</span>
+<span>vegetarisch</span>
+</span>
+</div>
+</div>
+</div>
+<button aria-label="Bearbeiten" class="p-1.5 text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+<!-- Member 2: Ben -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary font-label-md font-semibold shrink-0 border border-outline-variant">
+                BK
+              </div>
+<div class="min-w-0">
+<span class="font-headline-sm text-[15px] text-primary block truncate">Ben</span>
+<div class="flex flex-wrap gap-1.5 mt-1">
+<span class="inline-flex items-center font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant">
+                    Erwachsener
+                  </span>
+<span class="inline-flex items-center space-x-1 font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="no_drinks">no_drinks</span>
+<span>trinkt keinen Alkohol</span>
+</span>
+</div>
+</div>
+</div>
+<button aria-label="Bearbeiten" class="p-1.5 text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+<!-- Member 3: Clara -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary font-label-md font-semibold shrink-0 border border-outline-variant">
+                CR
+              </div>
+<div class="min-w-0">
+<span class="font-headline-sm text-[15px] text-primary block truncate">Clara</span>
+<div class="flex flex-wrap gap-1.5 mt-1">
+<span class="inline-flex items-center font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant border border-outline-variant">
+                    Erwachsener
+                  </span>
+</div>
+</div>
+</div>
+<button aria-label="Bearbeiten" class="p-1.5 text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+<!-- Member 4: David -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-sm flex items-center justify-between">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary font-label-md font-semibold shrink-0 border border-outline-variant">
+                DW
+              </div>
+<div class="min-w-0">
+<span class="font-headline-sm text-[15px] text-primary block truncate">David</span>
+<div class="flex flex-wrap gap-1.5 mt-1">
+<span class="inline-flex items-center space-x-1 font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-medium">
+<span class="material-symbols-outlined text-[13px]" data-icon="child_care">child_care</span>
+<span>Kind</span>
+</span>
+</div>
+</div>
+</div>
+<button aria-label="Bearbeiten" class="p-1.5 text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</div>
+<!-- Dashed Blueprint Action Button -->
+<button class="w-full py-2.5 px-space-md border border-dashed border-outline hover:border-primary-container bg-surface-container-lowest hover:bg-surface-container-low text-primary rounded-lg flex items-center justify-center space-x-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="person_add">person_add</span>
+<span class="font-label-lg text-label-lg font-medium">+ Person hinzufügen</span>
+</button>
+</section>
+<!-- Section: Provisioning Calibration / Crew Questions -->
+<section class="space-y-space-md pt-2">
+<div class="flex items-baseline justify-between border-b border-outline-variant pb-1">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="restaurant">restaurant</span>
+<h2 class="font-headline-sm text-headline-sm text-primary tracking-tight">Verpflegungs-Profil</h2>
+</div>
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Bordmetrik</span>
+</div>
+<!-- Question 1: Essensgewohnheiten -->
+<div class="space-y-2">
+<label class="block font-headline-sm text-[15px] text-on-surface">
+            Wie isst eure Crew?
+          </label>
+<div aria-label="Wie isst eure Crew?" class="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-surface-container rounded-lg border border-outline-variant" role="radiogroup">
+<!-- Option 1 -->
+<button aria-checked="false" class="py-2 px-2 text-center rounded text-on-surface-variant font-label-md text-[11px] hover:text-on-surface transition-all" role="radio" type="button">
+              Eher leicht
+            </button>
+<!-- Option 2 (Selected: Petrol / Navy Accent) -->
+<button aria-checked="true" class="py-2 px-2 text-center rounded bg-primary-container text-on-primary font-label-md text-[11px] font-semibold transition-all" role="radio" type="button">
+              Ganz normal
+            </button>
+<!-- Option 3 -->
+<button aria-checked="false" class="py-2 px-2 text-center rounded text-on-surface-variant font-label-md text-[11px] hover:text-on-surface transition-all" role="radio" type="button">
+              Gut und gern
+            </button>
+<!-- Option 4 -->
+<button aria-checked="false" class="py-2 px-2 text-center rounded text-on-surface-variant font-label-md text-[11px] hover:text-on-surface transition-all" role="radio" type="button">
+              Hungrige Segler
+            </button>
+</div>
+</div>
+<!-- Question 2: Trinkgewohnheiten -->
+<div class="space-y-2">
+<label class="block font-headline-sm text-[15px] text-on-surface">
+            Wie viel wird an Bord getrunken?
+          </label>
+<div aria-label="Wie viel wird an Bord getrunken?" class="grid grid-cols-3 gap-1 p-1 bg-surface-container rounded-lg border border-outline-variant" role="radiogroup">
+<!-- Option 1 -->
+<button aria-checked="false" class="py-2 px-2 text-center rounded text-on-surface-variant font-label-md text-[11px] hover:text-on-surface transition-all" role="radio" type="button">
+              Gemütlich
+            </button>
+<!-- Option 2 (Selected) -->
+<button aria-checked="true" class="py-2 px-2 text-center rounded bg-primary-container text-on-primary font-label-md text-[11px] font-semibold transition-all" role="radio" type="button">
+              Normal
+            </button>
+<!-- Option 3 -->
+<button aria-checked="false" class="py-2 px-2 text-center rounded text-on-surface-variant font-label-md text-[11px] hover:text-on-surface transition-all" role="radio" type="button">
+              Feierfreudig
+            </button>
+</div>
+</div>
+<!-- Reserve Weather Switch Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md">
+<label class="flex items-start justify-between cursor-pointer space-x-3">
+<div class="space-y-1">
+<span class="font-headline-sm text-[15px] text-primary block">
+                Reserve für Ankertage und schlechtes Wetter (+10 %)
+              </span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Berechnet automatisch 1 zusätzliche Trockenration &amp; 1,5 L Trinkwasser pro Person für Notlagen.
+              </p>
+</div>
+<!-- M3 Clean Switch (Active) -->
+<div class="relative inline-flex items-center shrink-0 pt-0.5">
+<input checked="" class="sr-only peer" id="weather-reserve-toggle" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:bg-secondary transition-colors"></div>
+<div class="absolute left-1 top-1.5 bg-surface w-5 h-5 rounded-full transition-transform peer-checked:translate-x-5 flex items-center justify-center">
+<span class="material-symbols-outlined text-[13px] text-secondary font-bold" data-icon="check">check</span>
+</div>
+</div>
+</label>
+</div>
+<!-- Subtle Expandable Link -->
+<div class="text-center pt-1">
+<button class="inline-flex items-center space-x-1.5 font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span>Individuelle Angaben pro Person anpassen</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+</div>
+<!-- Telemetry Summary Note -->
+<div class="border border-outline-variant rounded-lg bg-surface-container-low p-space-sm flex items-center space-x-3">
+<span class="material-symbols-outlined text-secondary text-[20px] shrink-0" data-icon="info">info</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant leading-relaxed">
+            PROVIANT-PROGNOSE: 4 Crew-Mitglieder über 7 Tage = ca. 84 Mahlzeiten, davon 21 vegetarisch. Alkoholbudget: 3 Erwachsene.
+          </p>
+</div>
+</section>
+</div>
+</main>
+<!-- Sticky Footer Bar (Linear Task Flow: Zurück & Weiter, No Bottom Nav) -->
+<footer class="w-full bg-surface-container-lowest border-t border-outline-variant fixed bottom-0 left-0 z-40">
+<div class="max-w-2xl mx-auto px-margin py-3 flex items-center justify-between gap-4">
+<!-- Subtle Back Button -->
+<button class="h-12 px-space-md rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-primary font-label-lg text-label-lg font-medium inline-flex items-center space-x-2 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span>
+<span>Zurück</span>
+</button>
+<!-- Primary Next Button -->
+<button class="h-12 flex-1 max-w-xs px-space-lg rounded-lg bg-primary-container text-on-primary hover:bg-primary font-label-lg text-label-lg font-semibold inline-flex items-center justify-center space-x-2 transition-colors" type="button">
+<span>Weiter</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</footer>
+</body></html>

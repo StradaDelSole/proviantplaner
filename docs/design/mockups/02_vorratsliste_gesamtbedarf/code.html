@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Vorratsliste - Törn Kroatien</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#81d5c9",
+            "on-surface-variant": "#44474c",
+            "on-secondary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "background": "#f8f9ff",
+            "surface-variant": "#d3e4fe",
+            "surface-container-high": "#dce9ff",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-background": "#0b1c30",
+            "secondary-container": "#9df2e5",
+            "tertiary": "#1d0b00",
+            "surface-container-lowest": "#ffffff",
+            "on-error": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-primary": "#ffffff",
+            "error": "#ba1a1a",
+            "on-primary-container": "#7f8da0",
+            "tertiary-fixed-dim": "#ffb77a",
+            "on-surface": "#0b1c30",
+            "surface-bright": "#f8f9ff",
+            "on-tertiary-fixed": "#2e1500",
+            "primary-fixed-dim": "#b9c8dc",
+            "on-secondary-fixed-variant": "#005049",
+            "surface": "#f8f9ff",
+            "primary-container": "#182635",
+            "on-tertiary-container": "#cc7720",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c4c6cc",
+            "outline": "#74777d",
+            "surface-tint": "#526071",
+            "primary-fixed": "#d5e4f8",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary": "#ffffff",
+            "surface-dim": "#cbdbf5",
+            "on-primary-fixed-variant": "#3a4858",
+            "on-error-container": "#93000a",
+            "primary": "#03111f",
+            "tertiary-container": "#3c1d00",
+            "secondary-fixed": "#9df2e5",
+            "inverse-on-surface": "#eaf1ff",
+            "on-secondary-fixed": "#00201d",
+            "surface-container": "#e5eeff",
+            "inverse-primary": "#b9c8dc",
+            "on-secondary-container": "#077167",
+            "on-primary-fixed": "#0e1d2b",
+            "tertiary-fixed": "#ffdcc2",
+            "secondary": "#006a61"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "margin": "1rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "headline-lg": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-sm": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill-1 {
+      font-variation-settings: 'FILL' 1;
+    }
+    /* Blueprint hairline divider */
+    .blueprint-line {
+      background-image: linear-gradient(to right, #c4c6cc 50%, rgba(255, 255, 255, 0) 0%);
+      background-position: bottom;
+      background-size: 6px 1px;
+      background-repeat: repeat-x;
+    }
+  </style>
+</head>
+<body class="h-full bg-background text-on-surface antialiased flex flex-col font-body-md text-body-md select-none">
+<!-- Mobile Viewport Wrapper -->
+<div class="flex-1 flex flex-col w-full max-w-md mx-auto bg-background min-h-screen relative pb-28">
+<!-- Top App Bar & Telemetry Header -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant">
+<!-- Status Meta Bar / System Telemetry -->
+<div class="flex justify-between items-center px-margin pt-space-xs pb-1 text-on-surface-variant border-b border-outline-variant/30">
+<span class="font-label-sm text-label-sm tracking-wider uppercase text-outline">SYS.ID // PROV-24-ADRIA</span>
+<span class="font-label-sm text-label-sm font-semibold tracking-widest text-outline">POWERED BY HULLQ</span>
+</div>
+<!-- App Bar Content -->
+<div class="flex items-center justify-between px-margin py-space-sm">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-xl">inventory_2</span>
+<h1 class="font-headline-md text-headline-md tracking-tight text-primary">Vorratsliste</h1>
+</div>
+<p class="font-label-md text-label-md text-on-surface-variant mt-0.5 tracking-tight">
+            Törn Kroatien · 5 Personen · 7 Tage
+          </p>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="Suche" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">search</span>
+</button>
+<button aria-label="Filter konfigurieren" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Horizontal Blueprint Scroller / Filter Chips -->
+<div class="flex items-center gap-2 px-margin py-2.5 overflow-x-auto no-scrollbar border-t border-outline-variant/40 bg-surface-container-low/40">
+<!-- Selected Pill -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-semibold shrink-0 border border-secondary/20">
+<span class="material-symbols-outlined text-[15px] fill-1">domain</span>
+<span>Nach Abteilung</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md hover:bg-surface-container shrink-0 border border-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[15px]">category</span>
+<span>Nach Kategorie</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-lowest text-on-surface-variant font-label-md text-label-md hover:bg-surface-container shrink-0 border border-outline-variant transition-colors">
+<span class="material-symbols-outlined text-[15px]">event</span>
+<span>Einkauf: Tag 1 (Basis)</span>
+</button>
+</div>
+</header>
+<!-- Telemetry Overview Banner -->
+<div class="px-margin mt-3 mb-2">
+<div class="bg-surface-container-lowest border border-outline-variant p-3 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-2.5 h-2.5 rounded-full bg-secondary"></div>
+<div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Erfasste Positionen</div>
+<div class="font-label-md text-label-md font-semibold text-primary">9 Artikel · 100% Proviantiert</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Verbrauchsplan</div>
+<div class="font-label-md text-label-md font-semibold text-secondary">Split Tag 1 &amp; 4</div>
+</div>
+</div>
+</div>
+<!-- Main Content List -->
+<main class="flex-1 px-margin space-y-4 pt-1">
+<!-- SECTION 1: BACKWAREN -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-surface-container-low border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-primary uppercase">01 // Backwaren</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">4 Posten</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">DECK &amp; KOMBÜSE</span>
+</div>
+<!-- Row 1: Vollkornbrot -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Vollkornbrot</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">3 × 750 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 2,1 kg · +150 g Reserve</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/50">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+                hält 5 Tage
+              </span>
+</div>
+</div>
+<!-- Numeric Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">3</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 2: Baguette -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Baguette</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">4 × 250 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 900 g · Tag 1 &amp; 2</p>
+<div class="pt-0.5">
+<!-- Warning badge: Sand amber -->
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant border border-on-tertiary-container/30">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+                hält 1 Tag
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">4</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 3: Toastbrot -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Toastbrot</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">2 × 500 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 800 g</p>
+<div class="flex items-center gap-2 pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-surface border border-outline-variant/60">
+<span class="material-symbols-outlined text-[12px]">edit</span>
+                überschrieben
+              </span>
+<button class="font-label-sm text-label-sm text-outline hover:text-primary transition-colors underline decoration-outline-variant">
+                zurücksetzen
+              </button>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">2</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 4: Knäckebrot -->
+<div class="p-3.5 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Knäckebrot</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">2 × 250 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Haltbar &amp; Notration</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed-variant border border-secondary/30">
+<span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                → Tag 4
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">2</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 2: MOLKEREI UND KÜHLREGAL -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-surface-container-low border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-primary uppercase">02 // Molkerei und Kühlregal</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">3 Posten</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">KÜHLBOX 4°C</span>
+</div>
+<!-- Row 1: Butter -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Butter</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">3 × 250 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 650 g</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60">
+<span class="material-symbols-outlined text-[13px]">ac_unit</span>
+                Gekühlt lagern
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">3</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 2: Kuhmilch (H-Milch) -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Kuhmilch (H-Milch)</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">6 × 1,0 l</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 5,5 l</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60">
+<span class="material-symbols-outlined text-[13px]">inventory</span>
+                ungekühlt haltbar
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">6</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 3: Gouda jung (Scheiben) -->
+<div class="p-3.5 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Gouda jung (Scheiben)</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">4 × 200 g</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 750 g</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+                hält 7 Tage
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">4</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 3: OBST UND GEMÜSE -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden">
+<!-- Section Header -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-surface-container-low border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-semibold tracking-wider text-primary uppercase">03 // Obst und Gemüse</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">2 Posten</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">FRISCHWARE</span>
+</div>
+<!-- Row 1: Äpfel (Braeburn) -->
+<div class="p-3.5 border-b border-outline-variant/60 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Äpfel (Braeburn)</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">2,0 kg</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 1,8 kg</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-on-surface-variant border border-outline-variant/60">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+                hält 7 Tage
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">2</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<!-- Row 2: Tomaten (Rispentomaten) -->
+<div class="p-3.5 flex items-center justify-between gap-2">
+<div class="space-y-1 flex-1 min-w-0">
+<div class="flex items-baseline gap-2">
+<span class="font-body-md text-body-md font-semibold text-primary truncate">Tomaten (Rispentomaten)</span>
+<span class="font-label-md text-label-md font-semibold text-primary shrink-0 tabular-nums">1,5 kg</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Bedarf ca. 1,2 kg</p>
+<div class="pt-0.5">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed-variant border border-on-tertiary-container/30">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+                hält 3 Tage
+              </span>
+</div>
+</div>
+<!-- Stepper -->
+<div class="flex items-center border border-outline-variant rounded shrink-0 bg-surface-container-lowest">
+<button aria-label="Verringern" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-6 text-center font-label-md text-label-md font-semibold text-primary">1</span>
+<button aria-label="Erhöhen" class="w-8 h-8 flex items-center justify-center text-primary hover:bg-surface-container-low active:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Technical Footer Watermark -->
+<div class="pt-4 pb-2 text-center">
+<p class="font-label-sm text-label-sm uppercase tracking-widest text-outline/80">
+          POWERED BY HULLQ · PROVISIONING LOG 0.9.4
+        </p>
+</div>
+</main>
+<!-- Floating Action Button (FAB): + Eigene Position -->
+<div class="fixed bottom-20 right-4 z-40 max-w-md w-full pointer-events-none flex justify-end pr-4">
+<button class="pointer-events-auto flex items-center gap-2 px-4 py-3 bg-primary-container text-on-primary rounded-lg shadow-sm border border-primary hover:opacity-95 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="font-label-lg text-label-lg font-medium tracking-tight">Eigene Position</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar (4 Destinations) -->
+<!-- Mapped directly from Shared Components JSON logic & styling -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin py-space-xs border-t border-outline-variant bg-surface-container-lowest">
+<!-- Tab 1: Liste (ACTIVE) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-space-md py-space-xs font-semibold active:scale-95 transition-transform duration-150" href="#liste">
+<span class="material-symbols-outlined text-[22px] fill-1">checklist</span>
+<span class="font-label-sm text-label-sm">Liste</span>
+</a>
+<!-- Tab 2: Törn (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#toern">
+<span class="material-symbols-outlined text-[22px]">route</span>
+<span class="font-label-sm text-label-sm">Törn</span>
+</a>
+<!-- Tab 3: Bordkasse (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#bordkasse">
+<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm">Bordkasse</span>
+</a>
+<!-- Tab 4: Mehr (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface px-space-md py-space-xs active:scale-95 transition-transform duration-150" href="#mehr">
+<span class="material-symbols-outlined text-[22px]">more_horiz</span>
+<span class="font-label-sm text-label-sm">Mehr</span>
+</a>
+</nav>
+</div>
+<!-- Micro-interactions: Stepper feedback -->
+<script>
+    document.querySelectorAll('.material-symbols-outlined').forEach(icon => {
+      if (icon.textContent.trim() === 'add' || icon.textContent.trim() === 'remove') {
+        const btn = icon.parentElement;
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const stepper = btn.closest('.flex.items-center.border');
+          const valueDisplay = stepper ? stepper.querySelector('span:not(.material-symbols-outlined)') : null;
+          if (!valueDisplay) return;
+          let val = parseInt(valueDisplay.textContent, 10);
+          if (isNaN(val)) return;
+          if (icon.textContent.trim() === 'add') {
+            val++;
+          } else if (icon.textContent.trim() === 'remove' && val > 0) {
+            val--;
+          }
+          valueDisplay.textContent = val;
+        });
+      }
+    });
+  </script>
+</body></html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Vorratsliste (Gesamtbedarf) - HullQ Night Mode</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-surface": "#0b1c30",
+            "surface-container-low": "#eff4ff",
+            "surface-container-high": "#dce9ff",
+            "primary": "#03111f",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "primary-fixed": "#d5e4f8",
+            "on-primary": "#ffffff",
+            "surface-variant": "#d3e4fe",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-secondary-container": "#077167",
+            "on-tertiary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#0e1d2b",
+            "on-error": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-secondary-fixed": "#00201d",
+            "surface-tint": "#526071",
+            "outline": "#74777d",
+            "surface-container": "#e5eeff",
+            "secondary": "#006a61",
+            "tertiary-container": "#3c1d00",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#3a4858",
+            "outline-variant": "#c4c6cc",
+            "tertiary-fixed": "#ffdcc2",
+            "on-secondary-fixed-variant": "#005049",
+            "surface-dim": "#cbdbf5",
+            "surface": "#f8f9ff",
+            "tertiary": "#1d0b00",
+            "background": "#f8f9ff",
+            "surface-bright": "#f8f9ff",
+            "primary-fixed-dim": "#b9c8dc",
+            "inverse-on-surface": "#eaf1ff",
+            "on-surface-variant": "#44474c",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#cc7720",
+            "on-tertiary-fixed": "#2e1500",
+            "inverse-primary": "#b9c8dc",
+            "secondary-container": "#9df2e5",
+            "tertiary-fixed-dim": "#ffb77a",
+            "primary-container": "#182635",
+            "secondary-fixed-dim": "#81d5c9",
+            "on-primary-container": "#7f8da0",
+            "secondary-fixed": "#9df2e5"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          spacing: {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            margin: "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            gutter: "1rem"
+          },
+          fontFamily: {
+            "label-sm": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          fontSize: {
+            "label-sm": ["10px", { lineHeight: "14px", fontWeight: "500" }],
+            "headline-lg-mobile": ["26px", { lineHeight: "34px", fontWeight: "600" }],
+            "label-md": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+            "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+            "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "headline-sm": ["18px", { lineHeight: "24px", fontWeight: "600" }],
+            "headline-md": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+            "label-lg": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-primary text-inverse-on-surface antialiased selection:bg-secondary selection:text-on-secondary min-h-screen pb-28">
+<!-- Status / Telemetry Top Bar -->
+<header class="w-full bg-primary-container px-margin py-space-xs flex justify-between items-center border-b border-outline/20">
+<div class="flex items-center space-x-2">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-on-primary-container tracking-wider uppercase">
+        SYS.ID // PROV-24-ADRIA
+      </span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="material-symbols-outlined text-[13px] text-on-primary-container">nightlight</span>
+<span class="font-label-sm text-label-sm text-on-primary-container font-semibold tracking-widest uppercase">
+        NIGHT VISION // HULLQ
+      </span>
+</div>
+</header>
+<!-- Navigation / App Bar (Shared Component: TopAppBar docked) -->
+<div class="bg-primary-container px-margin py-space-sm flex justify-between items-center border-b border-outline/20 sticky top-0 z-40 backdrop-blur">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded bg-primary flex items-center justify-center border border-outline/30 text-secondary-fixed">
+<span class="material-symbols-outlined text-[20px]">directions_boat</span>
+</div>
+<div>
+<div class="flex items-baseline space-x-2">
+<h1 class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-primary">
+            Vorratsliste
+          </h1>
+<span class="font-label-sm text-label-sm text-secondary-fixed bg-secondary/30 px-1.5 py-0.5 rounded border border-secondary/40">
+            GESAMTBEDARF
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-primary-container">
+          Törn Kroatien · 5 Personen · 7 Tage
+        </p>
+</div>
+</div>
+<div class="flex items-center space-x-1">
+<button aria-label="Suchen" class="w-9 h-9 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary border border-outline/20 active:opacity-80 transition-opacity duration-150">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</button>
+<button aria-label="Filter &amp; Einstellungen" class="w-9 h-9 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary border border-outline/20 active:opacity-80 transition-opacity duration-150">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+</div>
+<!-- Primary Content Area -->
+<main class="max-w-3xl mx-auto px-margin pt-space-md space-y-space-md">
+<!-- Filter Bar / Segmented Telemetry Chips -->
+<section class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5">
+<button class="flex items-center space-x-1.5 bg-secondary text-on-secondary px-3 py-1.5 rounded text-label-sm font-label-sm whitespace-nowrap shadow-sm border border-secondary-container/40">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">category</span>
+<span>Nach Abteilung</span>
+</button>
+<button class="flex items-center space-x-1.5 bg-primary-container text-on-primary-container px-3 py-1.5 rounded text-label-sm font-label-sm whitespace-nowrap border border-outline/20 hover:text-inverse-on-surface">
+<span class="material-symbols-outlined text-[14px]">view_agenda</span>
+<span>Nach Kategorie</span>
+</button>
+<button class="flex items-center space-x-1.5 bg-primary-container text-on-primary-container px-3 py-1.5 rounded text-label-sm font-label-sm whitespace-nowrap border border-outline/20 hover:text-inverse-on-surface">
+<span class="material-symbols-outlined text-[14px]">shopping_basket</span>
+<span>Einkauf: Tag 1 (Basis)</span>
+</button>
+</section>
+<!-- Telemetry Summary Card (Bento/Status Blueprint) -->
+<div class="bg-primary-container rounded border border-outline/30 p-space-md relative overflow-hidden">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed"></span>
+<span class="font-label-sm text-label-sm text-secondary-fixed tracking-wider uppercase font-semibold">
+              Erfasste Positionen: 9 Artikel
+            </span>
+</div>
+<p class="font-body-md text-body-md text-inverse-on-surface font-medium">
+            100% Proviantiert · Split Tag 1 &amp; 4
+          </p>
+<p class="font-label-sm text-label-sm text-on-primary-container">
+            Kombüsen-Zuweisung: 4 Trockenlager · 5 Kühllager / Frisch
+          </p>
+</div>
+<!-- Tabular metric pill -->
+<div class="flex items-center space-x-3 bg-primary px-3 py-2 rounded border border-outline/30 self-start sm:self-auto">
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-on-primary-container">SOLL/IST RATIO</div>
+<div class="font-label-md text-label-md text-secondary-fixed font-bold">1.00 NOMINAL</div>
+</div>
+<span class="material-symbols-outlined text-secondary-fixed text-[24px]">verified</span>
+</div>
+</div>
+<!-- Linear Blueprint Progress Meter -->
+<div class="mt-3 w-full bg-primary h-1.5 rounded-full overflow-hidden flex border border-outline/30">
+<div class="bg-secondary h-full w-[65%]" title="Tag 1 Einkauf (65%)"></div>
+<div class="bg-on-tertiary-container h-full w-[35%]" title="Tag 4 Nachschub (35%)"></div>
+</div>
+<div class="flex justify-between items-center mt-1 font-label-sm text-label-sm text-on-primary-container">
+<span>Basis Tag 1 (65%)</span>
+<span>Bunkern Tag 4 (35%)</span>
+</div>
+</div>
+<!-- Section 01: Backwaren -->
+<section class="space-y-2">
+<!-- Section Header with Technical Spec -->
+<div class="flex items-baseline justify-between px-1 border-b border-outline/20 pb-1.5">
+<div class="flex items-center space-x-2">
+<span class="font-label-md text-label-md text-secondary-fixed font-semibold">01 //</span>
+<h2 class="font-headline-sm text-headline-sm font-semibold tracking-wide text-on-primary uppercase">
+            Backwaren
+          </h2>
+<span class="font-label-sm text-label-sm text-on-primary-container bg-primary px-2 py-0.5 rounded border border-outline/30">
+            4 Posten · Deck &amp; Kombüse
+          </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-primary-container">SEKTION T-01</span>
+</div>
+<!-- Item 1: Vollkornbrot -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Vollkornbrot 3 × 750 g
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-container/60 text-tertiary-fixed border border-tertiary-fixed-dim/30">
+              hält 5 Tage
+            </span>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">scale</span>
+<span>Bedarf ca. 2,1 kg · +150 g Reserve</span>
+</div>
+</div>
+<!-- Stepper Component -->
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              3
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2: Baguette -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Baguette 4 × 250 g
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-tertiary-container/80 text-tertiary-fixed-dim border border-on-tertiary-container/40">
+              hält 1 Tag
+            </span>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">event_repeat</span>
+<span>Bedarf ca. 900 g · Tag 1 &amp; 2</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              4
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 3: Toastbrot (Overridden with reset affordance) -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2 flex-wrap gap-y-1">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Toastbrot 2 × 500 g
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-dim/20 text-inverse-primary border border-outline/30 inline-flex items-center space-x-1">
+<span class="material-symbols-outlined text-[11px]">edit</span>
+<span>überschrieben</span>
+</span>
+<button class="font-label-sm text-label-sm text-on-primary-container hover:text-secondary-fixed underline underline-offset-2">
+              zurücksetzen
+            </button>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">calculate</span>
+<span>Bedarf ca. 800 g</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              2
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 4: Knäckebrot -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Knäckebrot 2 × 250 g
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-secondary/30 text-secondary-fixed border border-secondary/40">
+              → Tag 4
+            </span>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span>
+<span>Haltbar &amp; Notration</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              2
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 02: Molkerei und Kühlregal -->
+<section class="space-y-2 pt-2">
+<!-- Section Header -->
+<div class="flex items-baseline justify-between px-1 border-b border-outline/20 pb-1.5">
+<div class="flex items-center space-x-2">
+<span class="font-label-md text-label-md text-secondary-fixed font-semibold">02 //</span>
+<h2 class="font-headline-sm text-headline-sm font-semibold tracking-wide text-on-primary uppercase">
+            Molkerei und Kühlregal
+          </h2>
+<span class="font-label-sm text-label-sm text-on-primary-container bg-primary px-2 py-0.5 rounded border border-outline/30">
+            3 Posten · Kühlbox 4°C
+          </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-primary-container">SEKTION C-02</span>
+</div>
+<!-- Item 1: Butter -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Butter 3 × 250 g
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary text-secondary-fixed border border-secondary/30 flex items-center space-x-1">
+<span class="material-symbols-outlined text-[11px]">ac_unit</span>
+<span>Gekühlt lagern</span>
+</span>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">scale</span>
+<span>Bedarf ca. 650 g</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              3
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2: H-Milch -->
+<div class="bg-primary-container rounded border border-outline/25 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-outline/50 transition-colors">
+<div class="space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-body-lg text-body-lg font-semibold text-inverse-on-surface">
+              Kuhmilch (H-Milch) 6 × 1,0 l
+            </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary text-on-primary-container border border-outline/30">
+              ungekühlt haltbar
+            </span>
+</div>
+<div class="font-label-md text-label-md text-on-primary-container flex items-center space-x-2">
+<span class="material-symbols-outlined text-[14px]">water_drop</span>
+<span>Täglicher Verbrauch ca. 0,85 l</span>
+</div>
+</div>
+<div class="flex items-center space-x-3 self-end sm:self-auto">
+<div class="inline-flex items-center bg-primary rounded border border-outline/30 p-0.5">
+<button aria-label="Menge verringern" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="w-10 text-center font-label-md text-label-md font-bold text-inverse-on-surface">
+              6
+            </span>
+<button aria-label="Menge erhöhen" class="w-8 h-8 rounded flex items-center justify-center text-inverse-on-surface hover:bg-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical System Attribution -->
+<footer class="pt-6 pb-4 text-center">
+<p class="font-label-sm text-label-sm text-on-primary-container/60 tracking-widest uppercase">
+        POWERED BY HULLQ · MARITIME INVENTORY TELEMETRY ENGINE
+      </p>
+</footer>
+</main>
+<!-- Contextual Floating Action Button (+ Eigene Position) -->
+<div class="fixed bottom-20 right-4 z-40">
+<button class="flex items-center space-x-2 bg-secondary text-on-secondary px-4 py-3 rounded-lg border border-secondary-container/40 shadow-lg active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="font-label-md text-label-md font-semibold tracking-wider uppercase">+ Eigene Position</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar (Shared Component strictly mapped to JSON specifications & active tab "Liste") -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin py-space-xs bg-primary-container border-t border-outline/20">
+<!-- Tab 1: Liste (ACTIVE per Semantic Mapping) -->
+<a class="flex flex-col items-center justify-center bg-secondary text-on-secondary rounded-full px-space-md py-space-xs font-semibold active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">checklist</span>
+<span class="font-label-sm text-label-sm">Liste</span>
+</a>
+<!-- Tab 2: Törn (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[22px]">route</span>
+<span class="font-label-sm text-label-sm">Törn</span>
+</a>
+<!-- Tab 3: Bordkasse (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm">Bordkasse</span>
+</a>
+<!-- Tab 4: Mehr (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-primary-container px-space-md py-space-xs hover:text-inverse-on-surface active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[22px]">more_horiz</span>
+<span class="font-label-sm text-label-sm">Mehr</span>
+</a>
+</nav>
+</body></html>

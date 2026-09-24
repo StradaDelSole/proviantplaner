@@ -1,0 +1,35 @@
+﻿{
+  "@@locale": "de",
+  "appTitle": "Proviantplaner",
+  "@appTitle": {
+    "description": "Name der App (vorläufiger Arbeitstitel)"
+  },
+  "poweredBy": "powered by HullQ",
+  "@poweredBy": {
+    "description": "Dezenter Markenhinweis auf HullQ"
+  },
+  "navShoppingList": "Liste",
+  "@navShoppingList": {
+    "description": "Navigationsreiter für die Vorrats- und Einkaufsliste"
+  },
+  "navTrip": "Törn",
+  "@navTrip": {
+    "description": "Navigationsreiter für den Törn und die Tagesleiste"
+  },
+  "navKitty": "Bordkasse",
+  "@navKitty": {
+    "description": "Navigationsreiter für die Bordkasse"
+  },
+  "navMore": "Mehr",
+  "@navMore": {
+    "description": "Navigationsreiter für Einstellungen und Konto"
+  },
+  "welcomeHeadline": "Törnplanung leicht gemacht",
+  "@welcomeHeadline": {
+    "description": "Überschrift auf dem Startbildschirm"
+  },
+  "welcomeSubline": "Proviant kalkulieren, Vorräte verwalten und Bordkasse fair aufteilen.",
+  "@welcomeSubline": {
+    "description": "Untertitel auf dem Startbildschirm"
+  }
+}

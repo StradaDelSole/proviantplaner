@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>HullQ — Freischalten mit HullQ-Login</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#077167",
+            "on-surface": "#0b1c30",
+            "inverse-surface": "#213145",
+            "surface-bright": "#f8f9ff",
+            "on-secondary-fixed-variant": "#005049",
+            "background": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "surface-tint": "#526071",
+            "primary-fixed": "#d5e4f8",
+            "on-secondary": "#ffffff",
+            "surface-container": "#e5eeff",
+            "surface-container-lowest": "#ffffff",
+            "on-error-container": "#93000a",
+            "surface-container-high": "#dce9ff",
+            "primary-fixed-dim": "#b9c8dc",
+            "on-primary-fixed": "#0e1d2b",
+            "surface-container-highest": "#d3e4fe",
+            "surface-dim": "#cbdbf5",
+            "on-secondary-fixed": "#00201d",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "outline": "#74777d",
+            "inverse-on-surface": "#eaf1ff",
+            "on-background": "#0b1c30",
+            "tertiary-container": "#3c1d00",
+            "secondary-fixed": "#9df2e5",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "primary": "#03111f",
+            "outline-variant": "#c4c6cc",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2e1500",
+            "on-surface-variant": "#44474c",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#ffb77a",
+            "surface-container-low": "#eff4ff",
+            "primary-container": "#182635",
+            "secondary-container": "#9df2e5",
+            "tertiary-fixed": "#ffdcc2",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-tertiary-container": "#cc7720",
+            "on-primary-container": "#7f8da0",
+            "secondary": "#006a61",
+            "inverse-primary": "#b9c8dc",
+            "tertiary": "#1d0b00",
+            "on-primary-fixed-variant": "#3a4858",
+            "secondary-fixed-dim": "#81d5c9"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "body-sm": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+    }
+    body {
+      font-feature-settings: "tnum" 1;
+    }
+  </style>
+</head>
+<body class="h-full bg-background text-on-surface antialiased overflow-hidden select-none">
+<!-- Android Framing Shell (Max 440px Mobile Profile centered on desktop view) -->
+<div class="relative w-full h-full max-w-md mx-auto bg-surface-container-low flex flex-col justify-end shadow-2xl overflow-hidden">
+<!-- 1. Background Content (Blurred & Dimmed Previous Screen: Törn Übersicht & Proviantliste) -->
+<div class="absolute inset-0 z-0 flex flex-col filter blur-sm brightness-[0.70] pointer-events-none select-none overflow-hidden">
+<!-- Simulated Top Bar from JSON Shared Components -->
+<header class="bg-surface-container-lowest text-primary flex justify-between items-center w-full px-margin py-space-sm border-b border-outline-variant">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary">directions_boat</span>
+<span class="font-headline-sm text-headline-sm text-primary">Törn Kroatien</span>
+</div>
+<div class="flex items-center space-x-2">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface">KORNATEN 2024</span>
+<span class="material-symbols-outlined text-on-surface-variant">tune</span>
+</div>
+</header>
+<!-- Simulated Trip Dashboard Content -->
+<main class="flex-1 p-space-md space-y-space-md overflow-hidden bg-background">
+<!-- Telemetry Widget -->
+<div class="bg-surface-container-lowest border border-outline-variant p-space-md rounded-lg space-y-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">STATUS LOG</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">AKTIV</span>
+</div>
+<div class="flex justify-between items-baseline">
+<span class="font-headline-md text-headline-md text-primary">Bavaria C46</span>
+<span class="font-label-md text-label-md text-on-surface-variant">420 L / 500 L</span>
+</div>
+</div>
+<!-- Provision List Block -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md space-y-space-sm">
+<div class="flex justify-between items-center border-b border-outline-variant pb-space-xs">
+<span class="font-label-md text-label-md text-primary font-semibold">Bunkern: Etappe 1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">€ 384,20</span>
+</div>
+<div class="space-y-space-xs pt-1">
+<div class="flex justify-between text-body-sm font-body-sm text-on-surface">
+<span>Mineralwasser (still)</span>
+<span class="font-label-md text-label-md">24 Fl.</span>
+</div>
+<div class="flex justify-between text-body-sm font-body-sm text-on-surface">
+<span>Olivenöl Extra Vergine</span>
+<span class="font-label-md text-label-md">2 Fl.</span>
+</div>
+<div class="flex justify-between text-body-sm font-body-sm text-on-surface">
+<span>Brot &amp; Hartweizen</span>
+<span class="font-label-md text-label-md">8 Stk.</span>
+</div>
+</div>
+</div>
+<!-- Additional Action Cards -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="bg-surface-container-lowest border border-outline-variant p-space-md rounded-lg">
+<div class="font-label-sm text-label-sm text-on-surface-variant">CREW KASSE</div>
+<div class="font-headline-sm text-headline-sm text-primary mt-1">€ 1.240,00</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant p-space-md rounded-lg">
+<div class="font-label-sm text-label-sm text-on-surface-variant">ROUTE</div>
+<div class="font-headline-sm text-headline-sm text-primary mt-1">148.5 NM</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Background placeholder -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant flex justify-around items-center px-margin py-space-xs">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-on-surface-variant">checklist</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Liste</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-on-surface-variant">route</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Törn</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-on-surface-variant">account_balance_wallet</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Bordkasse</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-on-surface-variant">more_horiz</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mehr</span>
+</div>
+</footer>
+</div>
+<!-- 2. Dark Modal Scrim Backdrop -->
+<div class="absolute inset-0 z-10 bg-primary/40 backdrop-blur-[2px] transition-opacity duration-200"></div>
+<!-- 3. Modal Bottom Sheet (Screen 09: "Freischalten mit HullQ-Login") -->
+<section aria-labelledby="sheet-title" aria-modal="true" class="relative z-20 w-full bg-surface-container-lowest rounded-t-xl border-t border-outline-variant shadow-2xl flex flex-col max-h-[92%] overflow-y-auto animate-in slide-in-from-bottom duration-200" role="dialog">
+<!-- Android Drag Handle & Technical Header Tag -->
+<div class="w-full pt-3 pb-2 flex flex-col items-center justify-center space-y-2 border-b border-outline-variant/40 bg-surface-container-lowest sticky top-0 z-30">
+<!-- Mechanical Sheet Handle (32dp x 4dp) -->
+<div class="w-8 h-1 rounded-full bg-outline-variant"></div>
+<div class="w-full px-margin flex items-center justify-between">
+<span class="font-label-sm text-label-sm tracking-widest text-on-surface-variant uppercase">AUTH PROTOCOL · LEVEL 01</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">SECURE SSL</span>
+</div>
+</div>
+<div class="px-margin pt-space-md pb-space-lg flex flex-col space-y-space-md">
+<!-- Header: Title & Subtitle -->
+<div class="space-y-space-xs text-left">
+<h1 class="font-headline-md text-headline-md text-primary font-semibold tracking-tight" id="sheet-title">
+            Weiteren Törn planen
+          </h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Mit einem kostenlosen HullQ-Konto planst du unbegrenzt Törns und sicherst sie geräteübergreifend.
+          </p>
+</div>
+<!-- Blueprint Feature Highlight Badges (Structured Cards) -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-sm space-y-2">
+<!-- Item 1 -->
+<div class="flex items-center space-x-space-sm">
+<div class="w-6 h-6 rounded bg-secondary/10 flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[16px]">folder_special</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Unbegrenzte Törns &amp; Archiv</span>
+</div>
+<!-- Divider -->
+<div class="h-[1px] w-full bg-outline-variant/60"></div>
+<!-- Item 2 -->
+<div class="flex items-center space-x-space-sm">
+<div class="w-6 h-6 rounded bg-secondary/10 flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Automatische Cloud-Synchronisation</span>
+</div>
+<!-- Divider -->
+<div class="h-[1px] w-full bg-outline-variant/60"></div>
+<!-- Item 3 -->
+<div class="flex items-center space-x-space-sm">
+<div class="w-6 h-6 rounded bg-secondary/10 flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[16px]">group_add</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Crew-Einladungen per Link</span>
+</div>
+</div>
+<!-- SSO & Login Button Cluster -->
+<div class="space-y-space-sm pt-1">
+<!-- 1. Google SSO Button -->
+<button class="w-full h-12 px-space-md rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low active:bg-surface-container text-on-surface font-label-lg text-label-lg font-semibold flex items-center justify-center space-x-space-md transition-colors" type="button">
+<!-- Google G Symbol SVG -->
+<svg class="w-5 h-5 flex-shrink-0" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
+</svg>
+<span>Mit Google fortfahren</span>
+</button>
+<!-- 2. Apple SSO Button -->
+<button class="w-full h-12 px-space-md rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low active:bg-surface-container text-on-surface font-label-lg text-label-lg font-semibold flex items-center justify-center space-x-space-md transition-colors" type="button">
+<!-- Apple Icon SVG -->
+<svg class="w-5 h-5 flex-shrink-0 fill-current text-primary" viewbox="0 0 24 24">
+<path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.85-.9.04-2 .6-2.64 1.35-.56.65-1.05 1.72-.92 2.74 1.01.08 2.03-.49 2.64-1.24z"></path>
+</svg>
+<span>Mit Apple fortfahren</span>
+</button>
+<!-- 3. E-Mail Option (Primary M3 Deep Navy Container) -->
+<button class="w-full h-12 px-space-md rounded-lg bg-primary-container hover:bg-primary active:opacity-90 text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center space-x-space-md transition-all shadow-none" type="button">
+<span class="material-symbols-outlined text-[20px] text-white">mail</span>
+<span>Mit E-Mail fortfahren</span>
+</button>
+</div>
+<!-- Compliance Checkbox (Negative Constraint: STRICTLY UNCHECKED BY DEFAULT) -->
+<div class="pt-2">
+<label class="flex items-start space-x-3 cursor-pointer group select-none">
+<div class="relative flex items-center justify-center mt-0.5">
+<input class="w-5 h-5 rounded border border-outline text-secondary focus:ring-0 focus:ring-offset-0 transition-colors bg-surface-container-lowest checked:bg-secondary checked:border-secondary cursor-pointer" id="marketing-optin" name="marketing-optin" type="checkbox"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-on-surface transition-colors leading-snug">
+              Ja, ich möchte über den aktuellen Bootsmarkt und maritime Ausrüstung informiert werden.
+            </span>
+</label>
+</div>
+<!-- Legal Footer Link Cluster -->
+<div class="pt-4 border-t border-outline-variant flex items-center justify-center space-x-3 text-on-surface-variant font-label-sm text-label-sm">
+<a class="hover:text-primary transition-colors underline-offset-2 hover:underline" href="#">Datenschutz</a>
+<span class="text-outline-variant">·</span>
+<a class="hover:text-primary transition-colors underline-offset-2 hover:underline" href="#">Nutzungsbedingungen</a>
+<span class="text-outline-variant">·</span>
+<a class="hover:text-primary transition-colors underline-offset-2 hover:underline" href="#">Impressum</a>
+</div>
+<!-- Architectural Micro-Attribution & Hardware Spec Footer -->
+<div class="pt-1 pb-1 flex flex-col items-center justify-center space-y-0.5 text-center">
+<span class="font-label-sm text-label-sm font-semibold tracking-widest uppercase text-on-primary-container">
+            POWERED BY HULLQ
+          </span>
+<span class="font-label-sm text-label-sm tracking-wider text-outline">
+            HULLQ MARITIME SPEC V3.4
+          </span>
+</div>
+</div>
+</section>
+</div>
+<script>
+    // Pure interaction detail: Ensure explicit unchecked state on page initialization
+    document.addEventListener("DOMContentLoaded", () => {
+      const checkbox = document.getElementById("marketing-optin");
+      if (checkbox) {
+        checkbox.checked = false;
+      }
+    });
+  </script>
+</body></html>

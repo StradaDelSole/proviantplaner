@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Einkaufsmodus - Törn Kroatien</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface": "#0b1c30",
+            "surface-container-low": "#eff4ff",
+            "surface-container-high": "#dce9ff",
+            "primary": "#03111f",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "primary-fixed": "#d5e4f8",
+            "on-primary": "#ffffff",
+            "surface-variant": "#d3e4fe",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "on-secondary-container": "#077167",
+            "on-tertiary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-background": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#0e1d2b",
+            "on-error": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-secondary-fixed": "#00201d",
+            "surface-tint": "#526071",
+            "outline": "#74777d",
+            "surface-container": "#e5eeff",
+            "secondary": "#006a61",
+            "tertiary-container": "#3c1d00",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#3a4858",
+            "outline-variant": "#c4c6cc",
+            "tertiary-fixed": "#ffdcc2",
+            "on-secondary-fixed-variant": "#005049",
+            "surface-dim": "#cbdbf5",
+            "surface": "#f8f9ff",
+            "tertiary": "#1d0b00",
+            "background": "#f8f9ff",
+            "surface-bright": "#f8f9ff",
+            "primary-fixed-dim": "#b9c8dc",
+            "inverse-on-surface": "#eaf1ff",
+            "on-surface-variant": "#44474c",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#cc7720",
+            "on-tertiary-fixed": "#2e1500",
+            "inverse-primary": "#b9c8dc",
+            "secondary-container": "#9df2e5",
+            "tertiary-fixed-dim": "#ffb77a",
+            "primary-container": "#182635",
+            "secondary-fixed-dim": "#81d5c9",
+            "on-primary-container": "#7f8da0",
+            "secondary-fixed": "#9df2e5"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "label-sm": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "headline-md": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-primary text-inverse-on-surface antialiased selection:bg-secondary selection:text-on-secondary min-h-screen pb-28 flex justify-center">
+<!-- Main Mobile Container (Focused Shopping Mode Task Screen - Nav Shell Suppressed per Semantic Rules) -->
+<main class="w-full max-w-md min-h-screen bg-primary flex flex-col relative">
+<!-- Top Blueprint Status Bar -->
+<header class="sticky top-0 z-40 bg-primary-container px-margin py-space-sm border-b border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<button aria-label="Zurück zur Übersicht" class="w-9 h-9 rounded-lg flex items-center justify-center text-inverse-on-surface hover:bg-surface-tint/20 active:opacity-80 transition-opacity" type="button">
+<span class="material-symbols-outlined text-inverse-on-surface" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm tracking-wider uppercase text-on-primary-container">TÖRN KROATIEN // PROVIANT</span>
+<h1 class="font-headline-sm text-headline-sm text-on-primary leading-tight">Einkauf Tag 4 · Supermarkt Hvar</h1>
+</div>
+</div>
+<button class="flex items-center gap-space-xs px-space-sm py-1.5 rounded-lg bg-surface-tint/20 text-secondary-fixed hover:bg-surface-tint/30 active:opacity-80 border border-outline-variant/30 font-label-md text-label-md" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="add_circle">add_circle</span>
+<span>Ausgabe</span>
+</button>
+</header>
+<!-- Subheader: Shopping Progress Telemetry -->
+<section class="px-margin pt-space-md pb-space-sm bg-primary border-b border-outline-variant/20">
+<div class="flex items-center justify-between mb-space-xs">
+<span class="font-label-sm text-label-sm tracking-widest text-secondary-fixed font-semibold uppercase">EINKAUFSMODUS // 12 VON 18 ERLEDIGT · 66.7%</span>
+<span class="font-label-sm text-label-sm text-on-primary-container">6 OFFEN</span>
+</div>
+<!-- Technical High-Contrast Progress Bar -->
+<div class="w-full h-1.5 bg-primary-container rounded-full overflow-hidden border border-outline-variant/20">
+<div class="h-full bg-secondary w-2/3 rounded-full transition-all duration-300"></div>
+</div>
+</section>
+<div class="px-margin flex flex-col gap-space-md mt-space-md">
+<!-- 2x2 Instrument Telemetry Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Tile 1: Lagerort -->
+<div class="bg-primary-container p-space-sm rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-primary-container mb-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Lagerort</span>
+<span class="material-symbols-outlined text-base" data-icon="storefront">storefront</span>
+</div>
+<div class="font-label-md text-label-md font-semibold text-inverse-on-surface truncate">Konzum Hvar</div>
+<div class="font-label-sm text-label-sm text-on-primary-container">Supermarket Port</div>
+</div>
+<!-- Tile 2: Bordwährung -->
+<div class="bg-primary-container p-space-sm rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-primary-container mb-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Währung</span>
+<span class="material-symbols-outlined text-base" data-icon="currency_exchange">currency_exchange</span>
+</div>
+<div class="font-label-md text-label-md font-semibold text-inverse-on-surface">EUR (€)</div>
+<div class="font-label-sm text-label-sm text-secondary-fixed">Wechselkurs fix</div>
+</div>
+<!-- Tile 3: Besatzung -->
+<div class="bg-primary-container p-space-sm rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-primary-container mb-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Besatzung</span>
+<span class="material-symbols-outlined text-base" data-icon="group">group</span>
+</div>
+<div class="font-label-md text-label-md font-semibold text-inverse-on-surface">6 Personen</div>
+<div class="font-label-sm text-label-sm text-on-primary-container">Skipper + 5 Crew</div>
+</div>
+<!-- Tile 4: Bordkasse -->
+<div class="bg-primary-container p-space-sm rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-primary-container mb-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Bordkasse</span>
+<span class="material-symbols-outlined text-base text-secondary-fixed" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="font-label-md text-label-md font-semibold text-secondary-fixed">€ 420,00 Rest</div>
+<div class="font-label-sm text-label-sm text-on-primary-container">Budget auskömmlich</div>
+</div>
+</div>
+<!-- Checklist Section 01: Obst & Gemüse -->
+<section class="bg-primary-container rounded-lg border border-outline-variant/30 overflow-hidden">
+<!-- Section Header -->
+<div class="px-space-md py-space-sm bg-primary/40 border-b border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary-fixed text-base" data-icon="nutrition">nutrition</span>
+<h2 class="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-inverse-on-surface">01 // OBST &amp; GEMÜSE</h2>
+</div>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-secondary/20 text-secondary-fixed border border-secondary/40 font-semibold">3/3 erledigt</span>
+</div>
+<div class="divide-y divide-outline-variant/20">
+<!-- Item 1.1 Checked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm opacity-60">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-inverse-on-surface line-through truncate">Tomaten Strauchtomaten</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Frischeabteilung</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-primary-container text-right shrink-0">1,5 kg</span>
+</div>
+<!-- Item 1.2 Checked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm opacity-60">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-inverse-on-surface line-through truncate">Zitronen &amp; Limetten</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Cocktails &amp; Küche</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-primary-container text-right shrink-0">6 Stück</span>
+</div>
+<!-- Item 1.3 Checked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm opacity-60">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-inverse-on-surface line-through truncate">Bananen</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Halbreif bevorzugt</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-primary-container text-right shrink-0">1 kg</span>
+</div>
+</div>
+</section>
+<!-- Checklist Section 02: Kühlregal & Käse -->
+<section class="bg-primary-container rounded-lg border border-outline-variant/30 overflow-hidden">
+<!-- Section Header -->
+<div class="px-space-md py-space-sm bg-primary/40 border-b border-outline-variant/20 flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary-fixed text-base" data-icon="ac_unit">ac_unit</span>
+<h2 class="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-inverse-on-surface">02 // KÜHLREGAL &amp; KÄSE</h2>
+</div>
+<span class="font-label-sm text-label-sm px-space-xs py-0.5 rounded bg-surface-tint/20 text-inverse-on-surface border border-outline-variant/40 font-semibold">2/4 erledigt</span>
+</div>
+<div class="divide-y divide-outline-variant/20">
+<!-- Item 2.1 Checked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm opacity-60">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-inverse-on-surface line-through truncate">Feta Schafskäse</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Salat &amp; Vorspeisen</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-primary-container text-right shrink-0">2 × 200 g</span>
+</div>
+<!-- Item 2.2 Checked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm opacity-60">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<div class="w-6 h-6 rounded flex items-center justify-center bg-secondary text-on-secondary shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-inverse-on-surface line-through truncate">Butter</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Kühlschrank Fach 1</span>
+</div>
+</div>
+<span class="font-label-md text-label-md text-on-primary-container text-right shrink-0">2 × 250 g</span>
+</div>
+<!-- Item 2.3 Unchecked (Active Task Focus) -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm bg-surface-tint/10">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<button aria-label="Als erledigt markieren" class="w-6 h-6 rounded border border-outline-variant flex items-center justify-center bg-primary hover:border-secondary transition-colors shrink-0" type="button">
+<!-- Empty checkbox placeholder -->
+</button>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-body-md text-body-md font-medium text-inverse-on-surface">Gouda jung / mittelalt</span>
+<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-tertiary-container text-on-tertiary-container border border-on-tertiary-container/40 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[11px]" data-icon="ac_unit">ac_unit</span>
+<span>Kühlbox 4°C</span>
+</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Am Stück für Bordvesper</span>
+</div>
+</div>
+<span class="font-label-md text-label-md font-semibold text-inverse-on-surface text-right shrink-0">1 × 400 g</span>
+</div>
+<!-- Item 2.4 Unchecked -->
+<div class="p-space-sm flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm flex-1 min-w-0">
+<button aria-label="Als erledigt markieren" class="w-6 h-6 rounded border border-outline-variant flex items-center justify-center bg-primary hover:border-secondary transition-colors shrink-0" type="button">
+<!-- Empty checkbox placeholder -->
+</button>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md font-medium text-inverse-on-surface truncate">Joghurt Natur 3,5 %</span>
+<span class="font-label-sm text-label-sm text-on-primary-container truncate">Große Becher bevorzugt</span>
+</div>
+</div>
+<span class="font-label-md text-label-md font-semibold text-inverse-on-surface text-right shrink-0">4 × 500 g</span>
+</div>
+</div>
+</section>
+<!-- Technical Micro Attribution -->
+<footer class="text-center py-space-sm mb-space-lg">
+<span class="font-label-sm text-label-sm tracking-widest text-on-primary-container uppercase opacity-70">POWERED BY HULLQ</span>
+</footer>
+</div>
+<!-- Bottom Sticky Shopping Action Bar (High Legibility under sunlight & store glare) -->
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-50 bg-primary-container border-t border-outline-variant/30 px-margin py-space-sm flex flex-col gap-space-xs shadow-2xl">
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-label-sm text-label-sm text-on-primary-container uppercase tracking-wider">GESCHÄTZT: ~ € 78,50</span>
+<span class="font-label-sm text-label-sm text-secondary-fixed font-semibold uppercase">6 Artikel noch offen</span>
+</div>
+<button class="w-full h-12 rounded-lg bg-secondary text-on-secondary font-headline-sm text-headline-sm flex items-center justify-center gap-space-sm hover:brightness-110 active:scale-[0.99] transition-transform" type="button">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+<span>Fertig eingekauft 12/18</span>
+</button>
+</div>
+</main>
+</body></html>

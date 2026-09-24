@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-24 – S0: Projekt-Setup und Architektur
+
+- Flutter-Projekt im Repo-Root aufgesetzt (`com.hullq.proviantplaner`)
+- Technische Leitplanken integriert: Riverpod, GoRouter, Drift, Flutter Secure Storage, Intl/Localizations
+- Feature-First Ordnerstruktur angelegt (`lib/core`, `lib/features/<feature>/{data,domain,ui}`, `lib/l10n`)
+- Zentrales Theme mit Blueprint Navy, Petrol Akzent und Amber Hinweisen gemäß Design-Brief
+- Interfaces und Mock-Implementierungen für `HullqAuthService` und `HullqBackupService`
+- Startbildschirm mit App-Name, dezentem "powered by HullQ" und 4 Hauptnavigationsreitern
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` 8/8 Tests grün, Android-Debug-APK gebaut und Start im Android-Emulator verifiziert
+
 ## 2026-09-23 – GEMINI.md v0.3 (Durchlauf-Modus)
 
 - Gemini arbeitet alle freigegebenen Slices nacheinander ab, committet und pusht nach jedem grünen Slice auf main

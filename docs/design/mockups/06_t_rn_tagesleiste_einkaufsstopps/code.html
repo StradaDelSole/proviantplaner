@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="de"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Törnplan &amp; Verpflegung · Törn Kroatien</title>
+<!-- Google Fonts: IBM Plex Sans & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#1d0b00",
+            "on-background": "#0b1c30",
+            "primary-container": "#182635",
+            "on-tertiary": "#ffffff",
+            "tertiary-fixed": "#ffdcc2",
+            "tertiary-fixed-dim": "#ffb77a",
+            "secondary-container": "#9df2e5",
+            "error": "#ba1a1a",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#7f8da0",
+            "on-secondary-container": "#077167",
+            "inverse-on-surface": "#eaf1ff",
+            "outline": "#74777d",
+            "on-primary": "#ffffff",
+            "on-surface-variant": "#44474c",
+            "on-error-container": "#93000a",
+            "surface-variant": "#d3e4fe",
+            "on-error": "#ffffff",
+            "on-secondary-fixed-variant": "#005049",
+            "surface": "#f8f9ff",
+            "surface-tint": "#526071",
+            "surface-container-high": "#dce9ff",
+            "on-secondary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "inverse-surface": "#213145",
+            "on-tertiary-fixed": "#2e1500",
+            "on-surface": "#0b1c30",
+            "primary": "#03111f",
+            "secondary": "#006a61",
+            "surface-container-highest": "#d3e4fe",
+            "outline-variant": "#c4c6cc",
+            "tertiary-container": "#3c1d00",
+            "surface-bright": "#f8f9ff",
+            "on-primary-fixed-variant": "#3a4858",
+            "secondary-fixed-dim": "#81d5c9",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed": "#d5e4f8",
+            "background": "#f8f9ff",
+            "on-tertiary-fixed-variant": "#6d3a00",
+            "secondary-fixed": "#9df2e5",
+            "on-tertiary-container": "#cc7720",
+            "primary-fixed-dim": "#b9c8dc",
+            "surface-dim": "#cbdbf5",
+            "on-primary-fixed": "#0e1d2b",
+            "surface-container": "#e5eeff",
+            "on-secondary-fixed": "#00201d",
+            "inverse-primary": "#b9c8dc"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem",
+            "margin": "1rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["IBM Plex Sans"],
+            "body-md": ["IBM Plex Sans"],
+            "body-sm": ["IBM Plex Sans"],
+            "label-md": ["JetBrains Mono"],
+            "headline-lg-mobile": ["IBM Plex Sans"],
+            "headline-sm": ["IBM Plex Sans"],
+            "label-sm": ["JetBrains Mono"],
+            "headline-md": ["IBM Plex Sans"],
+            "body-lg": ["IBM Plex Sans"],
+            "label-lg": ["IBM Plex Sans"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "headline-lg-mobile": ["26px", { "lineHeight": "34px", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "500" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Technical course grid pattern */
+    .bg-grid-blueprint {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(196, 198, 204, 0.22) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(196, 198, 204, 0.22) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="min-h-full bg-background text-on-surface antialiased flex flex-col font-body-md text-body-md pb-24">
+<!-- TOP APP BAR (Shared Component) -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest dark:bg-primary-container text-primary dark:text-on-primary border-b border-outline-variant dark:border-outline">
+<div class="max-w-4xl mx-auto flex justify-between items-center w-full px-margin py-space-sm">
+<div class="flex items-center space-x-3">
+<button aria-label="Bootsstatus" class="p-1.5 rounded-lg text-primary hover:bg-surface-container-low transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-primary text-xl">directions_boat</span>
+</button>
+<div>
+<span class="block text-label-md font-label-md font-semibold tracking-wider uppercase text-on-surface dark:text-inverse-on-surface">
+            Törn Kroatien
+          </span>
+<span class="block text-label-sm font-label-sm text-on-surface-variant font-medium">
+            SPLIT · HVAR · VIS · 43°30′N 16°26′E
+          </span>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<span class="hidden sm:inline-block px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface-variant border border-outline-variant font-medium">
+          AKTIV · TAG 1-7
+        </span>
+<button aria-label="Einstellungen" class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-xl">tune</span>
+</button>
+</div>
+</div>
+</header>
+<!-- MAIN CANVAS -->
+<main class="flex-1 max-w-4xl w-full mx-auto px-margin pt-6 space-y-6">
+<!-- PAGE TITLE & METADATA HEADER -->
+<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-outline-variant pb-5">
+<div>
+<div class="flex items-center space-x-2 mb-1.5">
+<span class="h-2 w-2 rounded-full bg-secondary"></span>
+<span class="text-label-sm font-label-sm text-secondary font-semibold uppercase tracking-wider">Navigations- &amp; Verpflegungslog</span>
+</div>
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-on-background tracking-tight">
+          Törnplan &amp; Verpflegung
+        </h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+          Törn Kroatien · Split → Hvar → Vis · 7 Tage · Monohull 45ft
+        </p>
+</div>
+<!-- Top Action Button -->
+<div class="flex-shrink-0">
+<button class="inline-flex items-center space-x-2 bg-primary-container hover:bg-primary text-on-primary px-4 py-2.5 rounded-lg transition-colors duration-150 border border-primary-container text-label-lg font-label-lg shadow-sm" type="button">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="font-medium">+ Einkaufsstopp hinzufügen</span>
+</button>
+</div>
+</div>
+<!-- SUMMARY LINE CARD (Blueprint Instrumentation Metric) -->
+<section aria-label="Bordverpflegungs-Metriken" class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm">
+<div class="px-4 py-3 bg-surface-container-low border-b border-outline-variant flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-base text-secondary">restaurant_menu</span>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Törn-Bilanz Verpflegung</span>
+</div>
+<div class="flex items-center space-x-3 text-label-sm font-label-sm text-on-surface-variant font-mono">
+<span>7 ETAPPEN</span>
+<span>·</span>
+<span>11 MAHLZEITEN BORD</span>
+<span>·</span>
+<span>STATUS: BEREIT</span>
+</div>
+</div>
+<div class="p-4 grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-outline-variant gap-y-4 sm:gap-y-0">
+<!-- Metric 1 -->
+<div class="sm:px-4 first:pl-0 flex items-center justify-between">
+<div>
+<div class="text-headline-sm font-headline-sm text-on-surface font-semibold tracking-tight">5</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">Bord-Abendessen</div>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container text-label-sm font-label-sm font-mono text-on-surface-variant border border-outline-variant">
+            71.4%
+          </span>
+</div>
+<!-- Metric 2 -->
+<div class="sm:px-4 pt-3 sm:pt-0 flex items-center justify-between">
+<div>
+<div class="text-headline-sm font-headline-sm text-on-surface font-semibold tracking-tight">4</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">Bord-Mittagessen</div>
+</div>
+<span class="px-2 py-1 rounded bg-surface-container text-label-sm font-label-sm font-mono text-on-surface-variant border border-outline-variant">
+            57.1%
+          </span>
+</div>
+<!-- Metric 3 -->
+<div class="sm:px-4 pt-3 sm:pt-0 last:pr-0 flex items-center justify-between">
+<div>
+<div class="text-headline-sm font-headline-sm text-secondary font-semibold tracking-tight">2</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">Restaurantbesuche</div>
+</div>
+<span class="px-2 py-1 rounded bg-secondary-container text-label-sm font-label-sm font-mono text-on-secondary-container font-semibold">
+            2 TAGE
+          </span>
+</div>
+</div>
+</section>
+<!-- TIMELINE SECTION HEADER -->
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center space-x-2">
+<span class="text-label-md font-label-md text-on-surface uppercase tracking-wider font-semibold">Tagesrouten &amp; Proviantplan</span>
+</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant font-mono">
+        KOORDINATEN GITTER 0.8 NM / DIV
+      </div>
+</div>
+<!-- COURSE TIMELINE (Vertical technical nautical schematic) -->
+<div class="relative pl-6 sm:pl-8 space-y-7 pb-4">
+<!-- Fine Dashed Technical Course Line -->
+<div aria-hidden="true" class="absolute top-3 bottom-6 left-[19px] sm:left-[27px] w-0 border-l-2 border-dashed border-outline-variant pointer-events-none"></div>
+<!-- TAG 1 -->
+<div class="relative group">
+<!-- Waypoint Indicator -->
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-primary shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-primary">01</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3 transition-colors duration-150">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 1 (SA)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Split (Aci Marina) // Check-in</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">ETAPPE 0.0 NM</span>
+</div>
+<!-- Provisioning / Meal Chips -->
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<!-- Active Restaurant Chip -->
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-secondary-container text-on-secondary-container font-semibold border border-secondary/20">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Mittags Restaurant</span>
+</span>
+<!-- Bordküche Chip -->
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Abends Bordküche</span>
+</span>
+</div>
+<!-- Special Marker: Basis-Einkauf -->
+<div class="mt-2 flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-outline-variant/80">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded bg-surface-container-lowest flex items-center justify-center text-primary border border-outline-variant">
+<span class="material-symbols-outlined text-lg">checklist</span>
+</div>
+<div>
+<div class="text-body-md font-body-md font-semibold text-on-surface">Basis-Einkauf Tag 1 · Konzum Split</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Törn-Grundproviantierung (Getränke, Trockenware, Galley-Kit)</div>
+</div>
+</div>
+<span class="hidden sm:inline-block px-2.5 py-1 rounded text-label-sm font-label-sm font-mono bg-surface-container-lowest text-secondary font-semibold border border-outline-variant">
+              ERLEDIGT (14/14)
+            </span>
+</div>
+</div>
+</div>
+<!-- TAG 2 -->
+<div class="relative group">
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-outline-variant shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-on-surface-variant">02</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 2 (SO)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Bucht Brač // Ankerbucht</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">14.2 NM · ANKER</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Abends Bordküche</span>
+</span>
+</div>
+</div>
+</div>
+<!-- TAG 3 -->
+<div class="relative group">
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-outline-variant shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-on-surface-variant">03</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 3 (MO)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Hvar Stadt // Stadthafen</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">18.6 NM · MOORING</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<!-- Active Restaurant Chip -->
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-secondary-container text-on-secondary-container font-semibold border border-secondary/20">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Abends Restaurant</span>
+</span>
+</div>
+</div>
+</div>
+<!-- TAG 4 (Prominent shopping stop marker card) -->
+<div class="relative group">
+<!-- Waypoint Indicator highlighted -->
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary text-on-secondary shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold">04</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border-2 border-secondary/40 p-4 space-y-3 shadow-xs">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-mono font-semibold">TAG 4 (DI)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Hvar // Hafen</h2>
+</div>
+<span class="text-label-sm font-label-sm text-secondary font-mono font-medium">PROVIANT-AUFSTOCKUNG</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Abends Bordküche</span>
+</span>
+</div>
+<!-- PROMINENT SHOPPING STOP MARKER CARD -->
+<div class="mt-3 p-3.5 rounded-lg bg-surface-container border border-outline-variant flex items-center justify-between transition-all hover:border-secondary cursor-pointer">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-10 h-10 rounded-lg bg-secondary text-on-secondary flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-xl">shopping_cart</span>
+</div>
+<div class="truncate">
+<div class="flex items-center space-x-2">
+<span class="text-body-md font-body-md font-bold text-on-surface truncate">Einkauf Tag 4 · Supermarkt Hvar</span>
+</div>
+<div class="flex items-center space-x-2 mt-1">
+<!-- Badge -->
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded bg-surface-container-lowest text-on-secondary-container border border-outline-variant text-label-sm font-label-sm font-mono font-semibold">
+<span class="material-symbols-outlined text-xs">bakery_dining</span>
+<span>6 Frischeartikel &amp; Brot</span>
+</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant hidden sm:inline">· Riva Markt 250m</span>
+</div>
+</div>
+</div>
+<!-- Arrow icon -->
+<div class="flex items-center pl-2 flex-shrink-0 text-on-surface-variant">
+<span class="material-symbols-outlined text-xl">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+<!-- TAG 5 -->
+<div class="relative group">
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-outline-variant shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-on-surface-variant">05</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 5 (MI)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Vis // Bojenfeld</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">16.8 NM · BOJE</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Abends Bordküche</span>
+</span>
+</div>
+</div>
+</div>
+<!-- TAG 6 -->
+<div class="relative group">
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-outline-variant shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-on-surface-variant">06</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 6 (DO)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Šolta // Bucht</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">19.1 NM · ANKER</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Abends Bordküche</span>
+</span>
+</div>
+</div>
+</div>
+<!-- TAG 7 -->
+<div class="relative group">
+<div class="absolute -left-6 sm:-left-8 top-1.5 flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-lowest border-2 border-primary shadow-xs z-10">
+<span class="text-label-sm font-label-sm font-semibold text-primary">07</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-4 space-y-3">
+<div class="flex flex-wrap items-baseline justify-between gap-1 border-b border-outline-variant pb-2.5">
+<div class="flex items-center space-x-2">
+<span class="text-label-sm font-label-sm bg-surface-container px-2 py-0.5 rounded font-mono text-on-surface font-semibold">TAG 7 (FR)</span>
+<h2 class="text-headline-sm font-headline-sm text-on-surface font-semibold">Rückkehr Split</h2>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono">9.8 NM · TANKEN &amp; CHECK-OUT</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 pt-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-medium mr-1">Mahlzeiten:</span>
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-surface-container-low text-on-surface-variant border border-outline-variant font-medium">
+<span class="material-symbols-outlined text-sm">soup_kitchen</span>
+<span>Mittags Bordküche</span>
+</span>
+<!-- Active Restaurant Chip -->
+<span class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-label-md font-label-md bg-secondary-container text-on-secondary-container font-semibold border border-secondary/20">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Abends Restaurant</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- TECHNICAL FOOTER ATTRIBUTION -->
+<div class="pt-6 pb-2 text-center border-t border-outline-variant">
+<p class="text-label-sm font-label-sm text-outline tracking-widest font-mono uppercase">
+        POWERED BY HULLQ · MARITIME TELEMETRY SPEC V3.4
+      </p>
+</div>
+</main>
+<!-- BOTTOM NAVIGATION BAR (Shared Component) -->
+<!-- Strict semantic mapping: Destination "Törn" is active -->
+<nav aria-label="Hauptnavigation" class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-margin py-space-xs border-t border-outline-variant dark:border-outline bg-surface-container-lowest dark:bg-primary-container">
+<div class="max-w-md w-full flex justify-around items-center">
+<!-- 1. Liste -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-primary-container px-space-md py-space-xs hover:bg-surface-container-low transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl mb-0.5 group-hover:scale-105 transition-transform">checklist</span>
+<span class="text-label-sm font-label-sm">Liste</span>
+</a>
+<!-- 2. Törn [ACTIVE] -->
+<a aria-current="page" class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full px-space-md py-space-xs font-semibold shadow-xs" href="#">
+<span class="material-symbols-outlined text-xl mb-0.5" style="font-variation-settings: 'FILL' 1;">route</span>
+<span class="text-label-sm font-label-sm">Törn</span>
+</a>
+<!-- 3. Bordkasse -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-primary-container px-space-md py-space-xs hover:bg-surface-container-low transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl mb-0.5 group-hover:scale-105 transition-transform">account_balance_wallet</span>
+<span class="text-label-sm font-label-sm">Bordkasse</span>
+</a>
+<!-- 4. Mehr -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-primary-container px-space-md py-space-xs hover:bg-surface-container-low transition-colors duration-150 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl mb-0.5 group-hover:scale-105 transition-transform">more_horiz</span>
+<span class="text-label-sm font-label-sm">Mehr</span>
+</a>
+</div>
+</nav>
+</body></html>
