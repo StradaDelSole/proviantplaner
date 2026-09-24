@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-24 – S2: Mengen-Engine mit Katalog und Konsumprofilen
+
+- Reine Dart-Rechen-Engine `QuantityEngine` ohne Flutter-Abhängigkeit implementiert
+- Alle 10 Rechenbasen umgesetzt: `per_person_day`, `per_person_day_region`, `per_person_week`, `per_person_board_evening`, `per_person_board_lunch`, `per_adult_evening`, `per_crew_week`, `per_trip`, `per_person_trip`, `check`
+- Konsumprofile und Crew-Fragen integriert (Appetit-Aufschlag, Trinklevel, Nicht-Trinker, Kinderfaktor 0.6) inklusive Vorrang personenspezifischer Details vor Crew-Einstellungen
+- Dynamische Revier-Wasserbedarfe aus `quantities_v0.3.json` (gemäßigt 2,0 l, Mittelmeer 2,5 l, heiß/abgelegen 3,5 l)
+- Aufteilung: `split=equal` (anteilig oder gleichmäßig, mit Portionsunterstützung und Gruppenausgleich) sowie `split=each`
+- Rundungslogik für Packungen: haltbare Artikel immer aufrunden (ceil), frische Artikel nur bei Überschuss <= 25 % aufrunden, sonst abrunden und Rest als Nachkauf unterwegs
+- Reserve-Zuschlag (+10 %) gezielt nur auf haltbare Produkte (Haltbarkeit >= 14 Tage) angewendet
+- Persistenz von Mengenangaben: Vom Nutzer überschriebene Packungszahlen bleiben bei Änderungen an Crew oder Reisedauer unangetastet
+- Automatische Berechnung des Kühlraum-Bedarfs für die ersten 3 Tage mit Warnung bei Überschreitung der Kühlkapazität
+- `CatalogRepository` zum Laden und Parsen von `catalog_v0.6.json` und `quantities_v0.3.json`
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` alle 31 Tests grün inkl. festem PRD-Referenzszenario (5 Erwachsene, 1 veg, 1 kein Alk, 7 Tage, Mittelmeer, 4 Bordabende)
+
 ## 2026-09-24 – S1: Datenmodell und lokale Datenbank
 
 - Alle 8 Entitäten in Drift (SQLite) modelliert: `Trip`, `TripDay`, `CrewMember`, `ShoppingStop`, `ListItem`, `ListItemAllocation`, `Expense`, `KittyPayment`
