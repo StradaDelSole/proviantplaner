@@ -17,6 +17,20 @@
 
 - Gehärtete Programmierregeln (feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Toleranz bei Kommazahlen, Cent-Beträge, Struktur, Testregeln); erweiterter Abschlussbericht mit Selbstprüfung
 
+## 2026-09-24 – S2a: Korrektur Mengen-Engine nach Review
+
+- Befunde 1–6 aus `docs/impl/REVIEW_S2_v0.1.md` und Programmierregeln 1–7 aus `GEMINI.md v0.4` vollständig umgesetzt
+- Feste Enums für alle Katalog- und Mengenkonfigurationen; `FormatException` bei unbekannten Werten
+- Strenge Einheitenkompatibilität in `UnitConverter` (nur g<->kg und ml<->l; `Packung` bedeutet reine Packungszahl)
+- Gruppenausgleich `_applyGroupBalancing` nach `quantities_v0.4.json` (Deckung sicherstellen, Überdeckung abbauen)
+- Frische Artikel: Automatische Aufteilung entfernt, Gesamtbedarf berechnet, Rest-Hinweis bei Überschuss
+- Urlaubszuschlag (1.2) datengetrieben auf `holiday_snack_drink_uplift.applies_to_groups` angewendet
+- Wasserbedarfs-Berechnung generisch über `CalculationBasis.perPersonDayRegion`
+- Katalog-Validierungstest `catalog_validation_test.dart` über alle Einträge von `catalog_v0.7.json` und `quantities_v0.4.json`
+- Umfassende Unit-Tests mit explizit kommentierten Rechenwegen und Randfällen (1 Person, 14 Tage, 0 Bordabende, nur Kinder, alle Vegetarier, keine Trinker, überschriebene Mengen)
+- Vorschlag für das PRD: In `data/catalog_vX.Y.json` Gruppe `water` mit `need: { amount: 0, unit: "l", basis: "per_person_day_region" }` ausstatten (bisher `need: null`).
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` 45/45 Tests grün
+
 ## 2026-09-24 – Review S2, Korrektur-Slice S2a
 
 - `docs/impl/REVIEW_S2_v0.1.md`: 2 kritische, 2 hohe, 1 mittlerer, 2 niedrige Befunde

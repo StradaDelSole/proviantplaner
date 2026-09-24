@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
 class CrewMemberDialog extends StatefulWidget {
   final CrewMemberInput? initialMember;
@@ -19,8 +20,8 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
   late bool _isAdult;
   late bool _isVegetarian;
   late bool _noAlcohol;
-  String? _customEatLevel;
-  String? _customDrinkLevel;
+  EatProfileLevel? _customEatLevel;
+  DrinkProfileLevel? _customDrinkLevel;
 
   @override
   void initState() {
@@ -105,7 +106,7 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
               ),
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String?>(
+            DropdownButtonFormField<EatProfileLevel?>(
               value: _customEatLevel,
               decoration: InputDecoration(
                 labelText: l10n.customEatLevel,
@@ -114,14 +115,14 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
               ),
               items: [
                 DropdownMenuItem(value: null, child: Text(l10n.appetiteNormal)),
-                DropdownMenuItem(value: 'small', child: Text(l10n.appetiteLight)),
-                DropdownMenuItem(value: 'big', child: Text(l10n.appetiteHearty)),
+                DropdownMenuItem(value: EatProfileLevel.small, child: Text(l10n.appetiteLight)),
+                DropdownMenuItem(value: EatProfileLevel.big, child: Text(l10n.appetiteHearty)),
               ],
               onChanged: (val) => setState(() => _customEatLevel = val),
             ),
             if (_isAdult && !_noAlcohol) ...[
               const SizedBox(height: 12),
-              DropdownButtonFormField<String?>(
+              DropdownButtonFormField<DrinkProfileLevel?>(
                 value: _customDrinkLevel,
                 decoration: InputDecoration(
                   labelText: l10n.customDrinkLevel,
@@ -130,8 +131,8 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
                 ),
                 items: [
                   DropdownMenuItem(value: null, child: Text(l10n.drinkingNormal)),
-                  DropdownMenuItem(value: 'little', child: Text(l10n.drinkingRelaxed)),
-                  DropdownMenuItem(value: 'a_lot', child: Text(l10n.drinkingFestive)),
+                  DropdownMenuItem(value: DrinkProfileLevel.little, child: Text(l10n.drinkingRelaxed)),
+                  DropdownMenuItem(value: DrinkProfileLevel.aLot, child: Text(l10n.drinkingFestive)),
                 ],
                 onChanged: (val) => setState(() => _customDrinkLevel = val),
               ),

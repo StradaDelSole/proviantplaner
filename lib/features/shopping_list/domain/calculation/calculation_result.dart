@@ -1,11 +1,16 @@
-/// Ergebnis-Datenmodelle für die Mengen-Berechnung (Slice S2).
+/// Ergebnis-Datenmodelle für die Mengen-Berechnung (Slice S2a).
+/// Gemäß REVIEW_S2_v0.1.md: Keine automatische Aufteilung von Frischem mehr;
+/// stattdessen Resthinweis `remainderNotice`, wenn Frisches abgerundet wurde.
 library;
 
+import '../models/catalog_models.dart';
+
+/// Berechnetes Ergebnis einer einzelnen Produktvariante.
 class VariantCalculationResult {
   final String variantId;
   final String groupId;
   final String nameDe;
-  final String department;
+  final CatalogDepartment department;
   final bool isSelected;
   final double share;
   final double calculatedNeedAmount;
@@ -15,9 +20,9 @@ class VariantCalculationResult {
   final int calculatedPackages;
   final int? overriddenPackages;
   final int effectivePackages;
-  final double buyFreshUnderwayAmount;
-  final int buyFreshUnderwayPackages;
   final int shelfLifeDays;
+  final bool buyFreshUnderway;
+  final String? remainderNotice;
   final List<String> storage;
   final List<String> tags;
 
@@ -35,20 +40,20 @@ class VariantCalculationResult {
     required this.calculatedPackages,
     this.overriddenPackages,
     required this.effectivePackages,
-    required this.buyFreshUnderwayAmount,
-    required this.buyFreshUnderwayPackages,
     required this.shelfLifeDays,
+    required this.buyFreshUnderway,
+    this.remainderNotice,
     required this.storage,
     required this.tags,
   });
 }
 
+/// Berechnetes Ergebnis einer Bedarfsgruppe.
 class GroupCalculationResult {
   final String groupId;
   final String categoryId;
   final String nameDe;
-  final String mode; // quantity, check
-  final bool isCheckMode;
+  final GroupMode mode;
   final double rawGroupNeed;
   final String unit;
   final List<VariantCalculationResult> variantResults;
@@ -58,13 +63,15 @@ class GroupCalculationResult {
     required this.categoryId,
     required this.nameDe,
     required this.mode,
-    required this.isCheckMode,
     required this.rawGroupNeed,
     required this.unit,
     required this.variantResults,
   });
+
+  bool get isCheckMode => mode == GroupMode.check;
 }
 
+/// Gesamtergebnis einer Törn-Bedarfsberechnung.
 class TripCalculationResult {
   final List<GroupCalculationResult> groupResults;
   final double fridgeLitersNeededFirstDays;

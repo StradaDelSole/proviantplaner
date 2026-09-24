@@ -1,6 +1,78 @@
-/// Mengenfaktoren, Profile und Rundungsregeln (data/quantities_v0.3.json).
+/// Mengenfaktoren, Profile und Rundungsregeln (data/quantities_v0.4.json).
+/// Strikte Typisierung mit Enums gemäß GEMINI.md v0.4 Programmierregel 1.
 library;
 
+/// Appetit-Einstufung der Crew.
+enum CrewAppetite {
+  light('light'),
+  normal('normal'),
+  hearty('hearty'),
+  hungrySailors('hungry_sailors');
+
+  final String rawValue;
+  const CrewAppetite(this.rawValue);
+
+  static CrewAppetite fromString(String val) {
+    for (final a in values) {
+      if (a.rawValue == val) return a;
+    }
+    throw FormatException('quantities_v0.4.json: Unbekannter Appetit: "$val"');
+  }
+}
+
+/// Trinkverhalten der Crew für alkoholische Getränke.
+enum CrewDrinking {
+  relaxed('relaxed'),
+  normal('normal'),
+  festive('festive');
+
+  final String rawValue;
+  const CrewDrinking(this.rawValue);
+
+  static CrewDrinking fromString(String val) {
+    for (final d in values) {
+      if (d.rawValue == val) return d;
+    }
+    throw FormatException('quantities_v0.4.json: Unbekanntes Trinklevel: "$val"');
+  }
+}
+
+/// Individuelles Ess-Profil pro Person.
+enum EatProfileLevel {
+  small('small'),
+  normal('normal'),
+  big('big');
+
+  final String rawValue;
+  const EatProfileLevel(this.rawValue);
+
+  static EatProfileLevel fromString(String val) {
+    for (final e in values) {
+      if (e.rawValue == val) return e;
+    }
+    throw FormatException('quantities_v0.4.json: Unbekanntes Ess-Profil: "$val"');
+  }
+}
+
+/// Individuelles Trink-Profil pro Person.
+enum DrinkProfileLevel {
+  none('none'),
+  little('little'),
+  normal('normal'),
+  aLot('a_lot');
+
+  final String rawValue;
+  const DrinkProfileLevel(this.rawValue);
+
+  static DrinkProfileLevel fromString(String val) {
+    for (final d in values) {
+      if (d.rawValue == val) return d;
+    }
+    throw FormatException('quantities_v0.4.json: Unbekanntes Trink-Profil: "$val"');
+  }
+}
+
+/// Wasserbedarfswerte für ein Revier.
 class WaterRange {
   final double min;
   final double max;
@@ -21,26 +93,74 @@ class WaterRange {
   }
 }
 
+/// Urlaubszuschlag für Snacks und Genussmittel (Snacks, Softdrinks, Bier, Wein).
+class HolidayUpliftInfo {
+  final double defaultValue;
+  final List<String> appliesToGroups;
+  final String? note;
+
+  const HolidayUpliftInfo({
+    required this.defaultValue,
+    required this.appliesToGroups,
+    this.note,
+  });
+
+  factory HolidayUpliftInfo.fromJson(Map<String, dynamic> json) {
+    return HolidayUpliftInfo(
+      defaultValue: (json['default'] as num? ?? 1.2).toDouble(),
+      appliesToGroups: (json['applies_to_groups'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      note: json['note'] as String?,
+    );
+  }
+}
+
+/// Faktoren aus quantities_v0.4.json.
+class QuantitiesFactors {
+  final int freshFirstDays;
+  final HolidayUpliftInfo holidaySnackDrinkUplift;
+  final double child;
+
+  const QuantitiesFactors({
+    required this.freshFirstDays,
+    required this.holidaySnackDrinkUplift,
+    required this.child,
+  });
+
+  factory QuantitiesFactors.fromJson(Map<String, dynamic> json) {
+    final holidayJson = json['holiday_snack_drink_uplift'];
+    if (holidayJson == null || holidayJson is! Map<String, dynamic>) {
+      throw const FormatException('quantities_v0.4.json: Fehlendes holiday_snack_drink_uplift');
+    }
+
+    return QuantitiesFactors(
+      freshFirstDays: json['fresh_first_days'] as int? ?? 3,
+      holidaySnackDrinkUplift: HolidayUpliftInfo.fromJson(holidayJson),
+      child: (json['child'] as num? ?? 0.6).toDouble(),
+    );
+  }
+}
+
+/// Gesamtmodell für Mengen, Faktoren und Rundungsregeln (data/quantities_v0.4.json).
 class QuantitiesData {
   final String version;
   final Map<String, WaterRange> waterLiters;
-  final double childFactor;
-  final int freshFirstDays;
-  final double holidayUplift;
-  final Map<String, double> eatProfiles;
-  final Map<String, double> drinkProfiles;
-  final Map<String, double> appetiteOptions;
+  final QuantitiesFactors factors;
+  final Map<EatProfileLevel, double> eatProfiles;
+  final Map<DrinkProfileLevel, double> drinkProfiles;
+  final Map<CrewAppetite, double> appetiteOptions;
   final double reserveUplift;
-  final Map<String, double> drinkingOptions;
+  final Map<CrewDrinking, double> drinkingOptions;
   final int durableMinShelfLifeDays;
   final double freshMaxOvershootFraction;
+  final String groupBalancingDescription;
 
   const QuantitiesData({
     required this.version,
     required this.waterLiters,
-    required this.childFactor,
-    required this.freshFirstDays,
-    required this.holidayUplift,
+    required this.factors,
     required this.eatProfiles,
     required this.drinkProfiles,
     required this.appetiteOptions,
@@ -48,6 +168,7 @@ class QuantitiesData {
     required this.drinkingOptions,
     required this.durableMinShelfLifeDays,
     required this.freshMaxOvershootFraction,
+    required this.groupBalancingDescription,
   });
 
   factory QuantitiesData.fromJson(Map<String, dynamic> json) {
@@ -61,69 +182,85 @@ class QuantitiesData {
       });
     }
 
-    final factors = json['factors'] as Map<String, dynamic>? ?? {};
-    final child = (factors['child'] as num?)?.toDouble() ?? 0.6;
-    final freshDays = factors['fresh_first_days'] as int? ?? 3;
-    final holiday = (factors['holiday_snack_drink_uplift']?['default'] as num?)?.toDouble() ?? 1.2;
+    final factorsJson = json['factors'];
+    if (factorsJson == null || factorsJson is! Map<String, dynamic>) {
+      throw const FormatException('quantities_v0.4.json: Fehlendes factors-Objekt');
+    }
+    final factors = QuantitiesFactors.fromJson(factorsJson);
 
-    final profiles = json['profiles'] as Map<String, dynamic>? ?? {};
-    final eatP = <String, double>{
-      'small': (profiles['eat']?['small'] as num?)?.toDouble() ?? 0.8,
-      'normal': (profiles['eat']?['normal'] as num?)?.toDouble() ?? 1.0,
-      'big': (profiles['eat']?['big'] as num?)?.toDouble() ?? 1.25,
-    };
-    final drinkP = <String, double>{
-      'none': (profiles['drink']?['none'] as num?)?.toDouble() ?? 0.0,
-      'little': (profiles['drink']?['little'] as num?)?.toDouble() ?? 0.5,
-      'normal': (profiles['drink']?['normal'] as num?)?.toDouble() ?? 1.0,
-      'a_lot': (profiles['drink']?['a_lot'] as num?)?.toDouble() ?? 1.75,
-    };
-
-    final crewQ = json['crew_questions'] as Map<String, dynamic>? ?? {};
-    final appetiteOpts = <String, double>{};
-    if (crewQ['appetite']?['options'] is Map) {
-      (crewQ['appetite']['options'] as Map<String, dynamic>).forEach((k, v) {
-        appetiteOpts[k] = (v as num).toDouble();
+    // Profile: eat
+    final eatMap = <EatProfileLevel, double>{};
+    if (json['profiles']?['eat'] is Map) {
+      final m = json['profiles']['eat'] as Map<String, dynamic>;
+      m.forEach((k, v) {
+        if (v is num) {
+          try {
+            eatMap[EatProfileLevel.fromString(k)] = v.toDouble();
+          } catch (_) {}
+        }
       });
     }
 
-    final reserveUplift = (crewQ['reserve']?['uplift'] as num?)?.toDouble() ?? 0.1;
-
-    final drinkOpts = <String, double>{};
-    if (crewQ['drinking']?['options'] is Map) {
-      (crewQ['drinking']['options'] as Map<String, dynamic>).forEach((k, v) {
-        drinkOpts[k] = (v as num).toDouble();
+    // Profile: drink
+    final drinkMap = <DrinkProfileLevel, double>{};
+    if (json['profiles']?['drink'] is Map) {
+      final m = json['profiles']['drink'] as Map<String, dynamic>;
+      m.forEach((k, v) {
+        if (v is num) {
+          try {
+            drinkMap[DrinkProfileLevel.fromString(k)] = v.toDouble();
+          } catch (_) {}
+        }
       });
     }
 
+    // Crew questions: appetite
+    final appetiteMap = <CrewAppetite, double>{};
+    if (json['crew_questions']?['appetite']?['options'] is Map) {
+      final m = json['crew_questions']['appetite']['options'] as Map<String, dynamic>;
+      m.forEach((k, v) {
+        if (v is num) {
+          try {
+            appetiteMap[CrewAppetite.fromString(k)] = v.toDouble();
+          } catch (_) {}
+        }
+      });
+    }
+
+    // Crew questions: reserve
+    final reserveUplift = (json['crew_questions']?['reserve']?['uplift'] as num? ?? 0.1).toDouble();
+
+    // Crew questions: drinking
+    final drinkingMap = <CrewDrinking, double>{};
+    if (json['crew_questions']?['drinking']?['options'] is Map) {
+      final m = json['crew_questions']['drinking']['options'] as Map<String, dynamic>;
+      m.forEach((k, v) {
+        if (v is num) {
+          try {
+            drinkingMap[CrewDrinking.fromString(k)] = v.toDouble();
+          } catch (_) {}
+        }
+      });
+    }
+
+    // Rounding
     final rounding = json['rounding'] as Map<String, dynamic>? ?? {};
-    final durableShelf = rounding['durable_min_shelf_life_days'] as int? ?? 14;
-    final freshOvershoot = (rounding['fresh_max_overshoot_pack_fraction'] as num?)?.toDouble() ?? 0.25;
+    final durableDays = rounding['durable_min_shelf_life_days'] as int? ?? 14;
+    final freshMaxOvershoot = (rounding['fresh_max_overshoot_pack_fraction'] as num? ?? 0.25).toDouble();
+    final balancingDesc = rounding['group_balancing'] as String? ?? '';
 
     return QuantitiesData(
-      version: json['version'] as String? ?? '0.3',
+      version: json['version'] as String? ?? '0.4',
       waterLiters: waterMap,
-      childFactor: child,
-      freshFirstDays: freshDays,
-      holidayUplift: holiday,
-      eatProfiles: eatP,
-      drinkProfiles: drinkP,
-      appetiteOptions: appetiteOpts,
+      factors: factors,
+      eatProfiles: eatMap,
+      drinkProfiles: drinkMap,
+      appetiteOptions: appetiteMap,
       reserveUplift: reserveUplift,
-      drinkingOptions: drinkOpts,
-      durableMinShelfLifeDays: durableShelf,
-      freshMaxOvershootFraction: freshOvershoot,
+      drinkingOptions: drinkingMap,
+      durableMinShelfLifeDays: durableDays,
+      freshMaxOvershootFraction: freshMaxOvershoot,
+      groupBalancingDescription: balancingDesc,
     );
-  }
-
-  double getWaterLitersForRegion(String? region) {
-    if (region == null) return 2.0;
-    final reg = region.toLowerCase();
-    if (reg.contains('mediterranean') || reg.contains('mittelmeer')) {
-      return waterLiters['mediterranean_summer']?.defaultValue ?? 2.5;
-    } else if (reg.contains('hot') || reg.contains('remote') || reg.contains('karibik') || reg.contains('tropen')) {
-      return waterLiters['hot_or_remote']?.defaultValue ?? 3.5;
-    }
-    return waterLiters['temperate']?.defaultValue ?? 2.0;
   }
 }

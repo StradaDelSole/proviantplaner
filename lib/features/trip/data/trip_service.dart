@@ -6,6 +6,7 @@ import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
 class TripService {
   final TripDao tripDao;
@@ -59,8 +60,8 @@ class TripService {
           isChild: Value(!member.isAdult),
           isVegetarian: Value(member.isVegetarian),
           isNonDrinker: Value(member.noAlcohol),
-          customEatLevel: Value(member.customEatLevel),
-          customDrinkLevel: Value(member.customDrinkLevel),
+          customEatLevel: Value(member.customEatLevel?.rawValue),
+          customDrinkLevel: Value(member.customDrinkLevel?.rawValue),
         ),
       );
     }
@@ -103,8 +104,8 @@ class TripService {
       isAdult: !c.isChild,
       isVegetarian: c.isVegetarian,
       noAlcohol: c.isNonDrinker,
-      customEatLevel: c.customEatLevel,
-      customDrinkLevel: c.customDrinkLevel,
+      customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
+      customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
     )).toList();
 
     // Map der Nutzertätigkeiten (Überschreibungen, Abwahlen etc.)
@@ -121,15 +122,17 @@ class TripService {
     }
 
     final calculationResult = engine.calculateTrip(
-      daysCount: trip.daysCount,
-      region: trip.region,
-      fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
-      crewAppetite: trip.appetite,
-      crewReserve: trip.reserveDays == 'all_anchoring_days',
-      crewDrinking: trip.drinkingHabit,
-      tripDays: tripDayInputs,
-      crewMembers: crewInputs,
-      userItemStates: userItemStates,
+      QuantityCalculationInput(
+        daysCount: trip.daysCount,
+        region: trip.region,
+        fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
+        crewAppetite: CrewAppetite.fromString(trip.appetite),
+        crewReserve: trip.reserveDays == 'all_anchoring_days',
+        crewDrinking: CrewDrinking.fromString(trip.drinkingHabit),
+        tripDays: tripDayInputs,
+        crewMembers: crewInputs,
+        userItemStates: userItemStates,
+      ),
     );
 
     // Ergebnisse in DB aktualisieren / einfügen
