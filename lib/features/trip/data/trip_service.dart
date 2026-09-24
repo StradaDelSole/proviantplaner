@@ -1,0 +1,217 @@
+/// Service für Törn-Verwaltung, Restaurant-Toggles und reaktive Mengenberechnung (Slice S3).
+library;
+
+import 'package:drift/drift.dart';
+import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+
+class TripService {
+  final TripDao tripDao;
+  final ListItemDao listItemDao;
+  final CatalogRepository catalogRepository;
+
+  TripService({
+    required this.tripDao,
+    required this.listItemDao,
+    required this.catalogRepository,
+  });
+
+  /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
+  /// Führt unmittelbar die Initial-Berechnung aller Vorräte durch.
+  Future<int> createTripWithCrew({
+    required String name,
+    required DateTime startDate,
+    required int daysCount,
+    required bool isCharter,
+    required String boatType,
+    required String region,
+    required double fridgeCapacityLiters,
+    required String crewAppetite,
+    required bool crewReserve,
+    required String crewDrinking,
+    required List<CrewMemberInput> crewMembers,
+  }) async {
+    // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
+    final tripCompanion = TripsCompanion.insert(
+      name: name,
+      startDate: startDate,
+      daysCount: Value(daysCount),
+      region: Value(region),
+      isCharter: Value(isCharter),
+      boatType: Value(boatType),
+      fridgeCapacity: Value(fridgeCapacityLiters.round()),
+      appetite: Value(crewAppetite),
+      reserveDays: Value(crewReserve ? 'all_anchoring_days' : 'none'),
+      drinkingHabit: Value(crewDrinking),
+      createdAt: Value(DateTime.now()),
+    );
+
+    final tripId = await tripDao.createTrip(tripCompanion, initialStopName: 'Ersteinkauf Basis');
+
+    // 2. Crew-Mitglieder speichern
+    for (final member in crewMembers) {
+      await tripDao.addCrewMember(
+        CrewMembersCompanion.insert(
+          tripId: tripId,
+          name: member.name,
+          isChild: Value(!member.isAdult),
+          isVegetarian: Value(member.isVegetarian),
+          isNonDrinker: Value(member.noAlcohol),
+          customEatLevel: Value(member.customEatLevel),
+          customDrinkLevel: Value(member.customDrinkLevel),
+        ),
+      );
+    }
+
+    // 3. Vorratsmengen initial berechnen und persistieren
+    await recalculateTrip(tripId);
+
+    return tripId;
+  }
+
+  /// Berechnet alle Vorräte für den Törn reaktiv neu.
+  /// Bestehende manuelle Überschreibungen (overriddenPackages) bleiben unberührt erhalten!
+  Future<void> recalculateTrip(int tripId) async {
+    final trip = await tripDao.getTripById(tripId);
+    if (trip == null) return;
+
+    final days = await tripDao.getDaysForTrip(tripId);
+    final crew = await tripDao.getCrewForTrip(tripId);
+    final existingItems = await listItemDao.getListItemsForTrip(tripId);
+
+    // Katalog-Repositories sicherstellen
+    if (catalogRepository.catalog == null || catalogRepository.quantities == null) {
+      await catalogRepository.loadFromBundle();
+    }
+
+    final engine = QuantityEngine(
+      catalog: catalogRepository.catalog!,
+      quantities: catalogRepository.quantities!,
+    );
+
+    final tripDayInputs = days.map((d) => TripDayInput(
+      dayNumber: d.dayNumber,
+      isLunchRestaurant: d.lunchRestaurant,
+      isEveningRestaurant: d.dinnerRestaurant,
+    )).toList();
+
+    final crewInputs = crew.map((c) => CrewMemberInput(
+      id: c.id.toString(),
+      name: c.name,
+      isAdult: !c.isChild,
+      isVegetarian: c.isVegetarian,
+      noAlcohol: c.isNonDrinker,
+      customEatLevel: c.customEatLevel,
+      customDrinkLevel: c.customDrinkLevel,
+    )).toList();
+
+    // Map der Nutzertätigkeiten (Überschreibungen, Abwahlen etc.)
+    final userItemStates = <String, UserItemState>{};
+    final existingItemMap = <String, ListItem>{};
+    for (final item in existingItems) {
+      existingItemMap[item.catalogId] = item;
+      userItemStates[item.catalogId] = UserItemState(
+        isSelected: item.selected,
+        share: item.share,
+        overriddenPackages: item.overriddenPackages,
+        customPackSize: item.customPackageSize,
+      );
+    }
+
+    final calculationResult = engine.calculateTrip(
+      daysCount: trip.daysCount,
+      region: trip.region,
+      fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
+      crewAppetite: trip.appetite,
+      crewReserve: trip.reserveDays == 'all_anchoring_days',
+      crewDrinking: trip.drinkingHabit,
+      tripDays: tripDayInputs,
+      crewMembers: crewInputs,
+      userItemStates: userItemStates,
+    );
+
+    // Ergebnisse in DB aktualisieren / einfügen
+    for (final group in calculationResult.groupResults) {
+      for (final variant in group.variantResults) {
+        final existing = existingItemMap[variant.variantId];
+        if (existing != null) {
+          // Nur berechnete Menge & Packungen aktualisieren (overriddenPackages bleibt erhalten)
+          await listItemDao.updateListItem(
+            existing.copyWith(
+              calculatedQuantity: variant.calculatedNeedAmount,
+              calculatedPackages: variant.calculatedPackages,
+            ),
+          );
+        } else {
+          // Neu einfügen
+          await listItemDao.addListItem(
+            ListItemsCompanion.insert(
+              tripId: tripId,
+              catalogId: variant.variantId,
+              calculatedQuantity: Value(variant.calculatedNeedAmount),
+              calculatedPackages: Value(variant.calculatedPackages),
+              selected: Value(variant.isSelected),
+              share: Value(variant.share),
+              overriddenPackages: Value(variant.overriddenPackages),
+              customPackageSize: Value(variant.packSize),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Schaltet Mittags-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
+  Future<void> toggleLunchRestaurant(TripDay day) async {
+    final updated = day.copyWith(lunchRestaurant: !day.lunchRestaurant);
+    await tripDao.updateTripDay(updated);
+    await recalculateTrip(day.tripId);
+  }
+
+  /// Schaltet Abends-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
+  Future<void> toggleEveningRestaurant(TripDay day) async {
+    final updated = day.copyWith(dinnerRestaurant: !day.dinnerRestaurant);
+    await tripDao.updateTripDay(updated);
+    await recalculateTrip(day.tripId);
+  }
+
+  /// Aktualisiert Hafenname oder Tagestyp für einen Tag (reine Info, keine Rechenlogik).
+  Future<void> updateDayInfo(TripDay day, {String? portName, String? dayType}) async {
+    final updated = day.copyWith(
+      portName: Value(portName ?? day.portName),
+      dayType: Value(dayType ?? day.dayType),
+    );
+    await tripDao.updateTripDay(updated);
+  }
+
+  // --- Einkaufsstopps CRUD ---
+
+  /// Fügt einen neuen Einkaufsstopp hinzu.
+  Future<int> addShoppingStop({
+    required int tripId,
+    required String name,
+    required int dayNumber,
+  }) {
+    return tripDao.addShoppingStop(
+      ShoppingStopsCompanion.insert(
+        tripId: tripId,
+        name: name,
+        dayNumber: Value(dayNumber),
+        isInitial: const Value(false),
+      ),
+    );
+  }
+
+  /// Aktualisiert einen Einkaufsstopp (z. B. Umbenennen).
+  Future<bool> updateShoppingStop(ShoppingStop stop) {
+    return tripDao.updateShoppingStop(stop);
+  }
+
+  /// Löscht einen Einkaufsstopp.
+  /// Gibt false zurück, wenn es der initiale Stopp ist (dieser darf nicht gelöscht werden).
+  Future<bool> deleteShoppingStop(int stopId) {
+    return tripDao.deleteShoppingStop(stopId);
+  }
+}

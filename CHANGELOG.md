@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-24 – S3: Törn anlegen und Törnverlauf
+
+- Mehrschritt-Assistent `TripWizardScreen` zum Anlegen eines Törns implementiert (Schritt 1: Basisdaten & Reisedauer, Schritt 2: Bootstyp, Revier & Kühlkapazität, Schritt 3: Crew-Zusammenstellung mit individuellen Profilen und Crew-Fragen zu Appetit & Alkohol)
+- `TripService` mit reaktiver Mengen-Neuberechnung bei Änderungen an Restaurant-Schaltern oder Crew
+- Tagesleiste `TripTimelineScreen` mit Schaltern für Mittag- und Abendessen (Bordküche vs. Restaurant)
+- Reine Info-Felder für Hafenname und Tagestyp ohne Pflichtangaben
+- CRUD für Einkaufsstopps (Hinzufügen, Umbenennen, Löschen) mit automatischem Löschschutz für den ersten Einkaufsstopp ("Ersteinkauf Basis")
+- Reaktive Kennzahlenkarte zur Törn-Bilanz (Bord-Abendessen, Bord-Mittagessen, Restaurantbesuche)
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` alle 37 Tests grün
+
 ## 2026-09-24 – S2: Mengen-Engine mit Katalog und Konsumprofilen
 
 - Reine Dart-Rechen-Engine `QuantityEngine` ohne Flutter-Abhängigkeit implementiert
