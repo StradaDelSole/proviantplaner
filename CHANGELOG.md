@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-24 – GEMINI.md v0.4
+
+- Gehärtete Programmierregeln (feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Toleranz bei Kommazahlen, Cent-Beträge, Struktur, Testregeln); erweiterter Abschlussbericht mit Selbstprüfung
+
 ## 2026-09-24 – Review S2, Korrektur-Slice S2a
 
 - `docs/impl/REVIEW_S2_v0.1.md`: 2 kritische, 2 hohe, 1 mittlerer, 2 niedrige Befunde

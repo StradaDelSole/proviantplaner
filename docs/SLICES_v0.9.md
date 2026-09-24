@@ -102,6 +102,7 @@ Grundlage: `docs/impl/REVIEW_S2_v0.1.md`. Alle Befunde 1–6 beheben und die dor
 - Keine automatische Aufteilung von Frischem; beim Abrunden nur Rest-Hinweis im Ergebnis
 - Urlaubszuschlag auf die Gruppen aus `factors.holiday_snack_drink_uplift.applies_to_groups`
 - Wasser generisch über `per_person_day_region`
+- Engine an die Programmierregeln aus GEMINI.md v0.4 angleichen: feste Typen beim Laden, lange Hauptfunktion zerlegen, doppelte Ergebnis-Konstruktion zusammenführen, Eingabeobjekt statt langer Parameterliste, Toleranz beim Runden, keine harten IDs/Abteilungen (Kühlschätzung über Daten oder als Vorschlag melden)
 
 **Abnahme:** Katalog-Validierungstest über alle Varianten grün; Tests für Vegetarier, Packungszahlen (Bier, Wein, Spülmittel, Duschgel, Konserven, Brot, Spaghetti/Reis), Gruppenausgleich und Urlaubszuschlag grün; bestehende Tests nur angepasst, wo sie das alte Fehlverhalten festschrieben (im Bericht begründen). Falls S4 bereits umgesetzt ist: dortige Anzeige der automatischen "unterwegs"-Mengen entfernen.
 
