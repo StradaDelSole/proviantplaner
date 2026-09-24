@@ -1,0 +1,48 @@
+﻿import 'package:drift/drift.dart';
+import 'package:proviantplaner/core/database/connection.dart';
+import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/database/tables.dart';
+
+part 'app_database.g.dart';
+
+/// Zentrale Drift-Datenbank für den Proviantplaner.
+/// Verwaltet Trips, TripDays, CrewMembers, ShoppingStops, ListItems,
+/// ListItemAllocations, Expenses und KittyPayments.
+@DriftDatabase(
+  tables: [
+    Trips,
+    TripDays,
+    CrewMembers,
+    ShoppingStops,
+    ListItems,
+    ListItemAllocations,
+    Expenses,
+    KittyPayments,
+  ],
+  daos: [
+    TripDao,
+    ListItemDao,
+    ExpenseDao,
+  ],
+)
+class AppDatabase extends _$AppDatabase {
+  AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
+
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        // Zukünftige Schema-Migrationen
+      },
+      beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
+    );
+  }
+}

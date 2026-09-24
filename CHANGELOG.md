@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-24 – S1: Datenmodell und lokale Datenbank
+
+- Alle 8 Entitäten in Drift (SQLite) modelliert: `Trip`, `TripDay`, `CrewMember`, `ShoppingStop`, `ListItem`, `ListItemAllocation`, `Expense`, `KittyPayment`
+- Automatische Initialisierung des ersten Einkaufsstopps ("Ersteinkauf Basis") und der `TripDays` (1..daysCount) beim Anlegen eines Törns
+- Schutz vor Löschung des initialen Einkaufsstopps
+- Strenge Allokationsvalidierung: Die Summe aller zugeordneten Teilmengen eines `ListItem` kann die Gesamtpackungszahl nicht überschreiten (`AllocationExceededException`)
+- Ermittlung nicht zugeordneter Restmengen, die standardmäßig dem ersten Stopp zugeordnet sind
+- DAOs für Trips, Vorratsliste und Bordkasse implementiert inkl. Riverpod-Provider
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` 17/17 Tests grün (CRUD, Schema-Migration, Allokations-Constraint, Persistenz über DB-Neustart)
+
 ## 2026-09-24 – S0: Projekt-Setup und Architektur
 
 - Flutter-Projekt im Repo-Root aufgesetzt (`com.hullq.proviantplaner`)
