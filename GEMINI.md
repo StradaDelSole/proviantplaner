@@ -10,7 +10,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6 und S2a. S2a hat Vorrang und wird als nächstes umgesetzt (Review: docs/impl/REVIEW_S2_v0.1.md).
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 

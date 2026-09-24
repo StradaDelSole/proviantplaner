@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-24 – Review S2, Korrektur-Slice S2a
+
+- `docs/impl/REVIEW_S2_v0.1.md`: 2 kritische, 2 hohe, 1 mittlerer, 2 niedrige Befunde
+- Katalog v0.7, Quantities v0.4, PRD v0.16, Slice-Plan v0.9 (S2a mit Vorrang)
+
 ## 2026-09-24 – S3: Törn anlegen und Törnverlauf
 
 - Mehrschritt-Assistent `TripWizardScreen` zum Anlegen eines Törns implementiert (Schritt 1: Basisdaten & Reisedauer, Schritt 2: Bootstyp, Revier & Kühlkapazität, Schritt 3: Crew-Zusammenstellung mit individuellen Profilen und Crew-Fragen zu Appetit & Alkohol)
