@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-25 – Review S2a–S5, GEMINI.md v0.5, Slice-Plan v0.13, Katalog v0.8
+
+- Review: S2a-Befunde behoben; kritisch: selbstgebauter QR-Generator vermutlich nicht scannbar
+- Neuer Korrektur-Slice S5a (Vorrang); Regel 8 gegen Eigenbauten von Standards; freigegebene Zusatzpakete
+
 ## 2026-09-25 – S6: Freischaltungslogik
 
 - Reine Dart-Entitlement-Engine `EntitlementsManager` in `lib/features/entitlements/domain/entitlements.dart` mit typisierten Enums (`EntitlementLevel`, `AppFeature`).

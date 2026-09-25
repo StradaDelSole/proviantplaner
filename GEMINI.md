@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.4
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.5
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -8,10 +8,11 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.2 | 23.09.2026 | Klare Regeln "Darf / Darf nicht", Pflichtablauf pro Sitzung, Stoppregeln, Berichtsformat |
 | v0.3 | 23.09.2026 | Durchlauf-Modus: alle freigegebenen Slices nacheinander ohne Freigabe pro Plan; Commit und Push auf main nach jedem grünen Slice; Review erst am Ende |
 | v0.4 | 24.09.2026 | Gehärtete Programmierregeln nach Review S2: feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Kommazahlen mit Toleranz, Testregeln |
+| v0.5 | 25.09.2026 | Regel 8: keine Eigenbauten von Standards; freigegebene Pakete; Abnahme nur mit echtem Nachweis |
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S0 bis S6 und S2a. S2a hat Vorrang und wird als nächstes umgesetzt (Review: docs/impl/REVIEW_S2_v0.1.md), danach S-UI. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S5a (Korrektur, Vorrang, Review: docs/impl/REVIEW_S2a-S5_v0.1.md), danach S6. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
@@ -112,6 +113,12 @@ Jeder Verstoß gilt als nicht erfüllte Abnahme, auch wenn die Tests grün sind.
 - Randfälle: 1 Person, 0 Bordabende, nur Kinder, alle Vegetarier, keine Trinker, 14 Tage, überschriebene Werte.
 - Tests werden nie an falsches Verhalten angepasst. Muss ein bestehender Test geändert werden, steht die Begründung im Bericht.
 
+### 8. Keine Eigenbauten von Standards
+- Standardaufgaben werden NIE selbst implementiert, sondern mit etablierten Paketen gelöst: QR-Codes, PDF, Kryptografie/Hashing, Datums- und Zeitzonenrechnung, Zahlen-/Währungsformate, IBAN-Prüfung, Teilen, Links öffnen.
+- Fehlt dafür ein Paket in den Leitplanken: Stoppregel – anhalten und Paket anfragen, nicht selbst bauen.
+- Freigegebene Zusatzpakete (ab v0.5): `qr_flutter` (bzw. `qr`), `share_plus`, `url_launcher`, `pdf`, `printing`; nur für Tests: `zxing2`, `image`.
+- Abnahmekriterien, die ein reales Verhalten verlangen (z. B. "wird von einer Banking-App gelesen"), gelten nur mit echtem Nachweis (z. B. Dekodier-Test plus manueller Scan, im Bericht vermerkt), nie allein durch einen Widget-Test auf sichtbaren Text.
+
 ## Technische Grundsätze
 
 - Offline zuerst: außer Login, Sicherung und Konto löschen setzt nichts Netz voraus
@@ -131,7 +138,7 @@ flutter test: <Ergebnis, Anzahl Tests>
 Abnahmekriterien: <je Kriterium: erfüllt (Testname) / teilweise, fehlt: … / nicht erfüllt / nicht belegt>
 Offen / Risiken: <Stichpunkte; NICHT UMGESETZTES ausdrücklich so benennen>
 Annahmen / Abweichungen vom PRD: <oder "keine">
-Selbstprüfung Programmierregeln 1–7: <je Regel eingehalten / Verstoß mit Stelle>
+Selbstprüfung Programmierregeln 1–8: <je Regel eingehalten / Verstoß mit Stelle>
 Vorschläge für das PRD: <oder "keine">
 Commit: S<Nr>: <Beschreibung> (gepusht: ja/nein)
 ```
