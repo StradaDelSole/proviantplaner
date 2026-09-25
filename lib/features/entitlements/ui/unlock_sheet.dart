@@ -1,4 +1,7 @@
-/// Bottom Sheet zum Freischalten mit HullQ-Konto oder Törn-Code (SC-ACC-01).
+/// Bottom Sheet zur Kontoaktivierung / Freischaltung (SC-ACC-01).
+///
+/// Törn-Codes sind für v1.1 vorgesehen und in v1 standardmäßig hinter
+/// [tripCodeFeatureFlagProvider] verborgen (GEMINI.md Regel 10).
 library;
 
 import 'package:flutter/material.dart';
@@ -87,6 +90,7 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final showTripCode = ref.watch(tripCodeFeatureFlagProvider);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -109,8 +113,10 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
             _buildLoginButtons(theme, l10n),
             const SizedBox(height: 12),
             _buildConsentCheckbox(theme, l10n),
-            const SizedBox(height: 16),
-            _buildCodeSection(theme, l10n),
+            if (showTripCode) ...[
+              const SizedBox(height: 16),
+              _buildCodeSection(theme, l10n),
+            ],
             const SizedBox(height: 16),
             _buildLegalFooter(theme, l10n),
             const SizedBox(height: 12),

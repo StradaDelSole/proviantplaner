@@ -25,6 +25,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.16). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8.
+Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a.
 
-**Freigegeben für Gemini: nur S8a (Nachbesserung, Vorrang).** Umgesetzt: S0–S8, S2a, S5a, S-UI. S9 und S10 noch nicht freigegeben. Offen: manueller QR-Scan durch den Menschen (siehe docs/impl/REVIEW_S5a-S8_v0.1.md).
+**Freigegeben für Gemini: nur S8a (Nachbesserung, Vorrang – abgeschlossen).** Umgesetzt: S0–S8, S2a, S5a, S-UI, S8a. S9 und S10 noch nicht freigegeben. Offen: manueller QR-Scan und PDF-Viewer-Test durch den Menschen (siehe docs/impl/REVIEW_S5a-S8_v0.1.md).

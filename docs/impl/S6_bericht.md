@@ -1,3 +1,6 @@
+> **Nachtrag / Korrektur vom 25.09.2026 (Slice S8a):**
+> In S6 war der Törn-Code-Einlösebereich in `UnlockSheet` fälschlicherweise sichtbar eingebaut worden, obwohl Törn-Codes erst für v1.1 vorgesehen sind (Verstoß gegen Regel 10). In Slice S8a wurde die Einlöse-Oberfläche hinter das Feature-Flag `tripCodeFeatureFlagProvider` (`FeatureFlags.enableTripCodePasses = false`) gelegt, sodass in v1 standardmäßig keine Törn-Code-UI sichtbar oder erreichbar ist. Das Domänenmodell `TripCodePass` bleibt wie gefordert für v1.1 erhalten.
+
 # Abschlussbericht Slice S6 – Freischaltungslogik
 
 Slice: S6 – Freischaltungslogik
@@ -13,10 +16,11 @@ Umgesetzt:
   - Titel "Weiteren Törn planen" und Untertitel mit Hervorhebung der Vorteile (Unbegrenzte Törns, Sicherung, Mehrere Geräte).
   - Social-Logins (Google, Apple, E-Mail) mit Anbindung an `HullqAuthService`.
   - Checkbox "Ja, ich möchte über den aktuellen Bootsmarkt informiert werden." strikt nicht vorausgewählt (`false`) gemäß Designregel 4 und PRD.
-  - Törn-Code-Einlösebereich mit Validierung und Erfolgsmeldung.
+  - Törn-Code-Einlösebereich (für v1.1 hinter Feature-Schalter gelegt).
   - Rechtliche Links (Datenschutz, Nutzungsbedingungen, Impressum).
   - Volle Unterstützung für Hell-, Dunkel- und Nachtwache-Modus.
 - `StartScreen`-Gating: Bei Versuch, im Probetörn einen zweiten Törn anzulegen, öffnet sich automatisch das `UnlockSheet` statt des Setup-Wizards.
+
 Geänderte/neue Dateien:
 - `lib/features/entitlements/domain/entitlements.dart` (neu)
 - `lib/features/entitlements/data/entitlements_service.dart` (neu)
@@ -28,18 +32,23 @@ Geänderte/neue Dateien:
 - `docs/impl/S6_bericht.md` (neu)
 - `test/features/entitlements/entitlements_test.dart` (neu)
 - `test/features/entitlements/unlock_ui_test.dart` (neu)
+
 flutter analyze: No issues found! (0 Fehler, 0 Warnungen, 0 Infos)
 flutter test: 98/98 Tests bestanden (22 neue Tests für S6)
+
 Abnahmekriterien:
-- Unit-Tests decken jede Zeile der Funktionstabelle im PRD ab: erfüllt (`Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Probetörn (trial)`, `Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Mitglied (member)`, `Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Pro (pro)`)
-- Der zweite Törn zeigt den Freischalten-Dialog: erfüllt (`StartScreen: Zweiter Törn im Probetörn öffnet UnlockSheet statt Setup`)
-- Das Modell erlaubt später eine zeitlich begrenzte Freischaltung pro Törn (Törn-Code, v1.1), ohne Umbau: erfüllt (`Entitlements: TripCodePass Zeitlich begrenzte und törn-spezifische Freischaltung ohne Umbau (v1.1 Vorbereitung)`)
-- Freischalten-Dialog SC-ACC-01 in allen Themes (Hell, Dunkel, Nachtwache) & leere Checkbox: erfüllt (`SC-ACC-01: UnlockSheet rendert Titel, Vorteile, Buttons und leere Checkbox`)
+- Unit-Tests decken jede Zeile der Funktionstabelle im PRD ab: erfüllt – Nachweis: automatischer Test (`entitlements_test.dart`: "Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Probetörn (trial)", "Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Mitglied (member)", "Entitlements: Funktionstabelle Zeile für Zeile nach PRD v0.16 Abschnitt 2 Pro (pro)")
+- Der zweite Törn zeigt den Freischalten-Dialog: erfüllt – Nachweis: automatischer Test (`unlock_ui_test.dart`: "StartScreen: Zweiter Törn im Probetörn öffnet UnlockSheet statt Setup")
+- Das Modell erlaubt später eine zeitlich begrenzte Freischaltung pro Törn (Törn-Code, v1.1), ohne Umbau: erfüllt – Nachweis: automatischer Test (`entitlements_test.dart`: "Entitlements: TripCodePass Zeitlich begrenzte und törn-spezifische Freischaltung ohne Umbau (v1.1 Vorbereitung)")
+- Freischalten-Dialog SC-ACC-01 in allen Themes (Hell, Dunkel, Nachtwache) & leere Checkbox: erfüllt – Nachweis: automatischer Test (`unlock_ui_test.dart`: "SC-ACC-01: UnlockSheet rendert Titel, Vorteile, Buttons und leere Checkbox")
+
 Offen / Risiken:
 - Echte HullQ-OAuth- und Backend-Anbindung folgt in S7 (bestehender `MockHullqAuthService` wird derzeit genutzt).
+
 Annahmen / Abweichungen vom PRD:
 - keine
-Selbstprüfung Programmierregeln 1–7:
+
+Selbstprüfung Programmierregeln 1–10:
 - Regel 1 (Feste Typen): Eingehalten. `EntitlementLevel` und `AppFeature` sind typisierte Enums. Keine String-Vergleiche in der Berechtigungslogik.
 - Regel 2 (Keine versteckten Platzhalter): Eingehalten. Alle 16 Zeilen der PRD-Tabelle sind vollständig abgebildet; keine Platzhalter oder Stubs.
 - Regel 3 (Ehrliche Berichte): Eingehalten. Alle Abnahmekriterien durch explizite Testnamen belegt.
@@ -47,6 +56,11 @@ Selbstprüfung Programmierregeln 1–7:
 - Regel 5 (Rechnen mit Kommazahlen / Cent-Beträge): Eingehalten. Berechtigungsprüfungen sind boolesch; keine Geldbeträge in S6.
 - Regel 6 (Struktur): Eingehalten. Funktionen <= 40 Zeilen, modulare Aufteilung, vollständige Dokumentationskommentare.
 - Regel 7 (Tests): Eingehalten. 22 Tests in 2 Testdateien für S6, inklusive Prüfung aller 16 PRD-Zeilen, Pass-Gültigkeiten, Randfälle und UI in drei Theme-Modi.
+- Regel 8 (Keine Eigenbauten von Standards): Eingehalten. Keine eigenen Kryptografie- oder Auth-Eigenbauten.
+- Regel 9 (Nur tatsächlich Geschehenes berichten): Eingehalten. Alle Nachweise als automatischer Test belegt.
+- Regel 10 (Nichts aus späteren Versionen sichtbar bauen): In der Erstfassung verletzt (Törn-Code-UI war sichtbar). In Slice S8a behoben: Törn-Code-Einlösung hinter `tripCodeFeatureFlagProvider` (`FeatureFlags.enableTripCodePasses = false`) gelegt.
+
 Vorschläge für das PRD:
 - keine
+
 Commit: S6: Freischaltungslogik (gepusht: ja)

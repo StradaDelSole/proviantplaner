@@ -41,6 +41,7 @@ void main() {
     Widget child, {
     ThemeData? theme,
     AppThemeMode themeMode = AppThemeMode.light,
+    bool enableTripCode = false,
   }) {
     return ProviderScope(
       overrides: [
@@ -48,6 +49,7 @@ void main() {
         hullqAuthServiceProvider.overrideWithValue(mockAuth),
         entitlementsServiceProvider.overrideWithValue(entitlementsService),
         themeControllerProvider.overrideWith((ref) => _MockThemeController(themeMode)),
+        tripCodeFeatureFlagProvider.overrideWithValue(enableTripCode),
       ],
       child: MaterialApp(
         theme: theme ?? AppTheme.lightTheme,
@@ -91,11 +93,24 @@ void main() {
     expect(find.text('Weiteren Törn planen'), findsOneWidget);
   });
 
-  testWidgets('SC-ACC-01: Törn-Code einlösen schaltet Mitglied frei', (tester) async {
-    await tester.pumpWidget(buildTestableWidget(const Scaffold(body: UnlockSheet())));
+  testWidgets('S8a / GEMINI.md Regel 10: Bei ausgeschaltetem Feature-Schalter (v1-Standard) ist keine Törn-Code-Oberfläche erreichbar', (tester) async {
+    // Standard-Verhalten für v1 (Schalter ist aus):
+    await tester.pumpWidget(buildTestableWidget(const Scaffold(body: UnlockSheet()), enableTripCode: false));
+    await tester.pumpAndSettle();
+
+    // Sicherstellen, dass weder Button noch Eingabefeld für Törn-Codes existieren oder sichtbar sind
+    expect(find.text('Törn-Code einlösen'), findsNothing);
+    expect(find.byIcon(Icons.vpn_key_outlined), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('SC-ACC-01 / v1.1: Bei aktiviertem Feature-Schalter ist Törn-Code-Einlösung erreichbar und schaltet Mitglied frei', (tester) async {
+    // Törn-Code-Einlösung nur wenn Feature-Flag aktiv (für v1.1 vorbereitet)
+    await tester.pumpWidget(buildTestableWidget(const Scaffold(body: UnlockSheet()), enableTripCode: true));
     await tester.pumpAndSettle();
 
     // Klick auf "Törn-Code einlösen"
+    expect(find.text('Törn-Code einlösen'), findsOneWidget);
     await tester.tap(find.text('Törn-Code einlösen'));
     await tester.pumpAndSettle();
 

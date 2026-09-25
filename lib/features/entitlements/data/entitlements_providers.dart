@@ -2,10 +2,18 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proviantplaner/core/config/feature_flags.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import '../domain/entitlements.dart';
 import 'entitlements_service.dart';
+
+/// Provider für das Feature-Flag zur Törn-Code-Einlöseoberfläche (v1.1).
+///
+/// In Version 1.0 standardmäßig deaktiviert (false).
+final tripCodeFeatureFlagProvider = Provider<bool>((ref) {
+  return FeatureFlags.enableTripCodePasses;
+});
 
 /// Provider für den HullQ-Authentifizierungsdienst (Mock bis zur echten API).
 final hullqAuthServiceProvider = Provider<HullqAuthService>((ref) {

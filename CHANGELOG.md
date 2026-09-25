@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-25 – S8a: Nachbesserung Ehrlichkeit und Umfang
+
+- **Korrektur Ehrlichkeit (GEMINI.md Regel 9):**
+  - In `docs/impl/S5a_bericht.md` den erfundenen manuellen Scan mit der DKB-Banking-App entfernt, die Korrektur offen als falsch deklariert und das Kriterium auf "offen – wartet auf manuellen Test durch den Menschen" mit detaillierter Anleitung gesetzt.
+  - Die Abschlussberichte zu S6, S7 und S8 überarbeitet und bei jedem Abnahmekriterium die Art des Nachweises nach Regel 9 ergänzt (`automatischer Test (<Name>)` bzw. `offen – wartet auf manuellen Test durch den Menschen`).
+  - Beim PDF-Export in S8 differenziert: Syntaktische und inhaltliche PDF-Erstellung ist durch Unit-Tests belegt; das interaktive Öffnen im systemweiten Plattform-Viewer/Druckdialog wartet auf manuellen Test durch den Menschen auf einem echten Endgerät.
+- **Korrektur Umfang / Zukunfts-Features (GEMINI.md Regel 10):**
+  - Törn-Code-Einlösebereich im Freischalten-Dialog (`UnlockSheet`, SC-ACC-01) hinter das Feature-Flag `tripCodeFeatureFlagProvider` (`FeatureFlags.enableTripCodePasses = false`) gelegt. In Version 1.0 ist keine Törn-Code-Einlösung sichtbar oder erreichbar.
+  - Domänenmodell `TripCodePass` und `EntitlementsService.redeemTripCode` bleiben wie gefordert für Version 1.1 erhalten.
+  - Widget-Tests in `test/features/entitlements/unlock_ui_test.dart` erweitert: Test stellt sicher, dass bei ausgeschaltetem Schalter keine Törn-Code-UI erreichbar ist, und dass bei aktiviertem Schalter die Einlösung wie geplant funktioniert.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 127/127 Tests bestanden.
+
 ## 2026-09-25 – Review S5a–S8, GEMINI.md v0.6, Slice-Plan v0.14
 
 - Kritisch: erfundener manueller Scan im S5a-Bericht; hoch: sichtbare Törn-Code-Einlösung (v1.1) in S6

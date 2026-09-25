@@ -38,27 +38,30 @@ flutter analyze: Keine Fehler (0 issues)
 flutter test: 126 von 126 Tests bestanden (inklusive 9 neuer Unit- und Widget-Tests für S8)
 
 Abnahmekriterien:
-- Neuinstallation plus Login stellt alle Törns wieder her (Mock): erfüllt (test/core/services/backup_coordinator_test.dart: "S8 Abnahmekriterium: Neuinstallation plus Login stellt alle Törns wieder her (Mock)")
-- PDF öffnet sich korrekt: erfüllt (test/core/services/pdf_export_test.dart: "generateShoppingListPdf erzeugt valides PDF mit %PDF-Header und Abteilungen", "generateSettlementPdf erzeugt valides PDF mit Wer zahlt wem und Salden")
-- Sicherung speichert alle 8 Entitäten vollständig als JSON: erfüllt (test/core/services/backup_coordinator_test.dart: "Sicherung speichert alle 8 Entitäten vollständig als JSON")
-- Sicherung & Wiederherstellung nur für Mitglieder: erfüllt (test/core/services/backup_coordinator_test.dart: "Sicherung erfordert HullQ-Mitgliedschaft (Trial wirft StateError)", "Wiederherstellung erfordert HullQ-Mitgliedschaft (Trial wirft StateError)")
-- Mehr-Screen zeigt Status, Jetzt sichern und Bestätigungsdialog: erfüllt (test/features/more/backup_ui_test.dart: 3 Widget-Tests)
+- Neuinstallation plus Login stellt alle Törns wieder her (Mock): erfüllt – Nachweis: automatischer Test (test/core/services/backup_coordinator_test.dart: "S8 Abnahmekriterium: Neuinstallation plus Login stellt alle Törns wieder her (Mock)")
+- PDF öffnet sich korrekt: teilweise – Nachweis: automatischer Test (test/core/services/pdf_export_test.dart: "generateShoppingListPdf erzeugt valides PDF mit %PDF-Header und Abteilungen", "generateSettlementPdf erzeugt valides PDF mit Wer zahlt wem und Salden" belegt syntaktisch und inhaltlich korrekte PDF-Erstellung); interaktives Öffnen im System-Viewer: offen – wartet auf manuellen Test durch den Menschen (Anleitung: App auf physischem Gerät oder Emulator starten, auf Vorratsliste bzw. Abrechnung auf PDF-Export tippen und prüfen, ob der Druckdialog/PDF-Viewer der Plattform das Dokument anzeigt)
+- Sicherung speichert alle 8 Entitäten vollständig als JSON: erfüllt – Nachweis: automatischer Test (test/core/services/backup_coordinator_test.dart: "Sicherung speichert alle 8 Entitäten vollständig als JSON")
+- Sicherung & Wiederherstellung nur für Mitglieder: erfüllt – Nachweis: automatischer Test (test/core/services/backup_coordinator_test.dart: "Sicherung erfordert HullQ-Mitgliedschaft (Trial wirft StateError)", "Wiederherstellung erfordert HullQ-Mitgliedschaft (Trial wirft StateError)")
+- Mehr-Screen zeigt Status, Jetzt sichern und Bestätigungsdialog: erfüllt – Nachweis: automatischer Test (test/features/more/backup_ui_test.dart: "MoreScreen zeigt Status 'Noch nie gesichert' für angemeldetes Mitglied ohne Backup", "Tippen auf 'Jetzt sichern' führt Sicherung durch und zeigt Erfolgsmeldung", "Tippen auf 'Sicherung wiederherstellen' öffnet Bestätigungsdialog")
 
 Offen / Risiken:
+- Manuelles Öffnen des PDFs auf echtem Endgerät im nativen Viewer (siehe Anleitung oben).
 - Echte HullQ-API ist noch nicht dokumentiert; Anbindung erfolgt bis dahin über `MockHullqBackupService` und `MockHullqAuthService`. Sobald die echte API vorliegt, werden die Mocks durch HTTP-Client-Implementierungen ersetzt.
 - S9 (Sechs Sprachen und Formate) und S10 (Store-Bereitschaft) sind noch nicht freigegeben.
 
 Annahmen / Abweichungen vom PRD: keine
 
-Selbstprüfung Programmierregeln 1–8:
-- Regel 1 (Feste Typen): eingehalten (alle Entitäten und Felder werden mit typisierten Klassen/Enums wie `CrewAppetite`, `CrewDrinking`, `TripPhase`, `KittyModel`, `ExpenseCategory`, `CatalogDepartment` verarbeitet).
-- Regel 2 (Keine versteckten Platzhalter): eingehalten (keine leeren Funktionen, keine TODOs, keine Stubs).
-- Regel 3 (Ehrliche Berichte): eingehalten (alle Abnahmekriterien durch konkret benannte Tests belegt).
-- Regel 4 (Alles datengetrieben): eingehalten (alle UI-Texte und Meldungen in den ARB-Dateien gepflegt).
-- Regel 5 (Rechnen mit Kommazahlen): eingehalten (alle Kassenbeträge strikt in Cent als ganzzahlige `int` gerechnet).
-- Regel 6 (Struktur): eingehalten (Funktionen übersichtlich gegliedert, Teilschritte in benannte Hilfsfunktionen wie `_serializeTrip`, `_serializeExpense` zerlegt).
-- Regel 7 (Tests): eingehalten (vollständiger Integrationsnachweis für alle 8 Entitäten, Fremdschlüssel-Remapping, PDF-Magic-Header-Prüfung und UI-Tests).
-- Regel 8 (Keine Eigenbauten von Standards): eingehalten (Nutzung der freigegebenen Pakete `pdf`, `printing`, `share_plus`, `flutter_secure_storage`).
+Selbstprüfung Programmierregeln 1–10:
+- Regel 1 (Feste Typen): Eingehalten (alle Entitäten und Felder werden mit typisierten Klassen/Enums wie `CrewAppetite`, `CrewDrinking`, `TripPhase`, `KittyModel`, `ExpenseCategory`, `CatalogDepartment` verarbeitet).
+- Regel 2 (Keine versteckten Platzhalter): Eingehalten (keine leeren Funktionen, keine TODOs, keine Stubs).
+- Regel 3 (Ehrliche Berichte): Eingehalten (alle Abnahmekriterien durch konkret benannte Tests belegt; PDF-Öffnen ehrlich als teilweise mit offenem manuellem Test ausgewiesen).
+- Regel 4 (Alles datengetrieben): Eingehalten (alle UI-Texte und Meldungen in den ARB-Dateien gepflegt).
+- Regel 5 (Rechnen mit Kommazahlen): Eingehalten (alle Kassenbeträge strikt in Cent als ganzzahlige `int` gerechnet).
+- Regel 6 (Struktur): Eingehalten (Funktionen übersichtlich gegliedert, Teilschritte in benannte Hilfsfunktionen wie `_serializeTrip`, `_serializeExpense` zerlegt).
+- Regel 7 (Tests): Eingehalten (vollständiger Integrationsnachweis für alle 8 Entitäten, Fremdschlüssel-Remapping, PDF-Magic-Header-Prüfung und UI-Tests).
+- Regel 8 (Keine Eigenbauten von Standards): Eingehalten (Nutzung der freigegebenen Pakete `pdf`, `printing`, `share_plus`, `flutter_secure_storage`).
+- Regel 9 (Nur tatsächlich Geschehenes berichten): Eingehalten (alle Kriterien präzise nachgewiesen, keine erfundenen Scans oder Viewer-Behauptungen).
+- Regel 10 (Nichts aus späteren Versionen sichtbar bauen): Eingehalten (keine sichtbaren v1.1-Features in S8).
 
 Vorschläge für das PRD: keine
 Commit: S8: Sicherung, Wiederherstellung, Export (gepusht: ja)
