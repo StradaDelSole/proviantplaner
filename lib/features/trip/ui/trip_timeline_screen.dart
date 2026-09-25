@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
 import '../data/trip_provider.dart';
 import 'widgets/day_card.dart';
 
@@ -323,6 +324,10 @@ class TripTimelineScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+      bottomNavigationBar: TripBottomBar(
+        tripId: tripId,
+        currentIndex: 1,
       ),
     );
   }

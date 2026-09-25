@@ -1,4 +1,4 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/tables.dart';
 
@@ -214,6 +214,130 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
     final allocated = allocations.fold<int>(0, (sum, a) => sum + a.allocatedPackages);
     final remaining = total - allocated;
     return remaining < 0 ? 0 : remaining;
+  }
+
+  /// Überschreibt die Packungsanzahl für ein ListItem oder setzt sie bei null zurück.
+  Future<bool> setOverriddenPackages(int listItemId, int? packages) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    return updateListItem(item.copyWith(overriddenPackages: Value(packages)));
+  }
+
+  /// Ändert und merkt eine individuelle Packungsgröße für das ListItem.
+  Future<bool> setCustomPackageSize(int listItemId, double? packSize) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    return updateListItem(item.copyWith(customPackageSize: Value(packSize)));
+  }
+
+  /// Setzt den Auswahlstatus einer Variante (an- oder abgewählt).
+  Future<bool> setSelected(int listItemId, bool isSelected) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    return updateListItem(item.copyWith(selected: isSelected));
+  }
+
+  /// Setzt den Prozent-Anteil einer Variante innerhalb ihrer Bedarfsgruppe (0.0 bis 1.0).
+  Future<bool> setShare(int listItemId, double share) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    return updateListItem(item.copyWith(share: share));
+  }
+
+  /// Schaltet den Gekauft-Status (Häkchen) für einen bestimmten Einkaufsstopp um.
+  Future<bool> toggleBought({
+    required int tripId,
+    required int listItemId,
+    required int shoppingStopId,
+    required bool isBought,
+  }) async {
+    final allocations = await getAllocationsForListItem(listItemId);
+    final stopAlloc = allocations.where((a) => a.shoppingStopId == shoppingStopId).firstOrNull;
+
+    if (stopAlloc != null) {
+      return update(listItemAllocations).replace(stopAlloc.copyWith(isBought: isBought));
+    } else {
+      // Wenn noch keine explizite Teilmenge existiert (z. B. am Ersteinkauf Basis),
+      // Allokation mit unallocated Packages anlegen
+      final remaining = await getUnallocatedPackages(listItemId);
+      final packages = remaining > 0 ? remaining : 1;
+      await into(listItemAllocations).insert(
+        ListItemAllocationsCompanion.insert(
+          tripId: tripId,
+          listItemId: listItemId,
+          shoppingStopId: shoppingStopId,
+          allocatedPackages: packages,
+          isBought: Value(isBought),
+        ),
+      );
+      return true;
+    }
+  }
+
+  /// Schaltet den Eingelagert-Status eines ListItems um.
+  Future<void> setStored(int listItemId, bool isStored) async {
+    final allocations = await getAllocationsForListItem(listItemId);
+    if (allocations.isNotEmpty) {
+      for (final a in allocations) {
+        await update(listItemAllocations).replace(a.copyWith(isStored: isStored));
+      }
+    } else {
+      final item = await getListItemById(listItemId);
+      if (item != null) {
+        final stops = await (select(shoppingStops)..where((s) => s.tripId.equals(item.tripId))).get();
+        final firstStop = stops.where((s) => s.isInitial).firstOrNull ?? stops.firstOrNull;
+        if (firstStop != null) {
+          final effective = getEffectivePackages(item);
+          await into(listItemAllocations).insert(
+            ListItemAllocationsCompanion.insert(
+              tripId: item.tripId,
+              listItemId: listItemId,
+              shoppingStopId: firstStop.id,
+              allocatedPackages: effective,
+              isStored: Value(isStored),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Fügt eine benutzerdefinierte Position (SC-LST-05) hinzu.
+  Future<int> addCustomItem({
+    required int tripId,
+    required String name,
+    required double quantity,
+    required String unit,
+    required String department,
+    String? categoryId,
+    int? shoppingStopId,
+  }) async {
+    final packages = quantity.ceil();
+    final listItemId = await into(listItems).insert(
+      ListItemsCompanion.insert(
+        tripId: tripId,
+        catalogId: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+        isCustom: const Value(true),
+        customName: Value(name),
+        customUnit: Value(unit),
+        customDepartment: Value(department),
+        selected: const Value(true),
+        calculatedQuantity: Value(quantity),
+        calculatedPackages: Value(packages),
+        overriddenPackages: Value(packages),
+      ),
+    );
+
+    if (shoppingStopId != null) {
+      await setAllocation(
+        tripId: tripId,
+        listItemId: listItemId,
+        shoppingStopId: shoppingStopId,
+        packages: packages,
+      );
+    }
+
+    return listItemId;
   }
 }
 

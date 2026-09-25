@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-25 – S4: Vorratsliste und Einlagerungs-Checkliste
+
+- Vorratsliste mit zwei Hauptsichten gemäß SC-LST-01:
+  - **Planen (5.2):** Hierarchie Kategorie → Bedarfsgruppe → Varianten mit Deckungsanzeigen (`✓ gedeckt`, `~ knapp`, `keine gewählt`, Prüflisten), Zählern und Einklapp-Funktion.
+  - **Einkaufen (5.3):** Feste Supermarkt-Ladenreihenfolge nach Abteilungen mit Variantenzeilen ($\ge 72\text{ dp}$), Steppern [−]/[+] ($\ge 48\text{ dp}$), JetBrains Mono Packungszahlen (`3 × 750 g`), Bedarf/Reserve und Badges (*hält X Tage*, *gekühlt*, *überschrieben* mit Reset-Button, *eigene Position*).
+- Stopp-Filter Chip im Kopf: Wechsel zwischen "Alle Stopps" und spezifischen Einkaufsstopps; Mengen passen sich dynamisch an.
+- Detailkomponenten und Interaktionen:
+  - `GroupDetailSheet` (SC-LST-02): Varianten an-/abwählen, Anteilsregler bei `split=equal`, Link zur Packungsgrößen-Änderung, Summenleiste mit Deckungsanzeige, Charter-Hinweis bei `visibility=owner`.
+  - `PackageSizeDialog` (SC-LST-03): Packungsgröße ändern mit Option zum Speichern und automatischer Neuberechnung.
+  - `StopAllocationSheet` (SC-LST-04): Teilmengen auf Einkaufsstopps verteilen; nicht-zugeordnete Mengen verbleiben beim Ersteinkauf; Sperre bei Überbelegung (`AllocationExceededException`).
+  - `CustomItemSheet` (SC-LST-05): Manuelle Positionen erfassen (Name, Menge, Einheit, Abteilung, Stopp) mit Kennzeichnung "eigene Position".
+  - `CatalogSearchDelegate` (SC-LST-06): Sofortsuche über Varianten, Gruppen und Kategorien mit Option "Als eigene Position anlegen".
+  - `ShoppingModeScreen` (SC-SHOP-01): Abhakbare Einkaufsliste je Stopp im Laden mit Fortschrittsanzeige, gedimmten/durchgestrichenen Zeilen und Abschlussdialog bei offenen Posten.
+  - `StorageChecklistScreen` (SC-STO-01): Checkliste nach `storage_hints` aus dem Katalog mit Wellpappe-Warnung und betroffenen Artikeln als Kurzliste.
+  - Fester Hinweis: "Ernährungs-Tags sind kein Allergieschutz".
+  - Gemeinsame 4-Reiter-Navigation `TripBottomBar` (Liste, Törn, Kasse, Mehr) integriert.
+- Offline-Persistenz: Überschreibungen, Abwahlen und Häkchen bleiben nach Reload und Crewänderung vollständig in SQLite erhalten.
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` 65/65 Tests grün (10 neue Tests für S4).
+
 ## 2026-09-25 – S-UI: Angleichung an Design-System und Nachtwache-Modus
 
 - Zentrales Flutter-Theme für alle 3 Modi implementiert: Hell, Dunkel und Nachtwache (strikt Rot auf Schwarz nach Designregel 13)
