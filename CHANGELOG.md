@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-25 – S5a: Korrektur QR und Validierung
+
+- Selbstgebauten QR-Generator (`qr_generator.dart`) gelöscht; EPC-QR-Code (GiroCode) mit Standard-Paketen `qr_flutter` und `qr` (Fehlerkorrektur M, UTF-8) implementiert.
+- EPC-Validierung in `EpcQrPayload`: Name max. 70 Zeichen, Verwendungszweck max. 140 Zeichen, Betrag 1 Cent bis 999.999.999,99 EUR, Modulo-97-IBAN-Prüfung (`IbanValidator` mit `BigInt`), Zeilenumbruchsverbot gegen Injection.
+- Zahlungs-Links und Teilen von Überweisungsdetails mit `url_launcher` und `share_plus` angebunden.
+- S3: Alle String-Literale für Crew-Fragen im Setup-Wizard auf feste Enums `CrewAppetite` und `CrewDrinking` umgestellt.
+- S1: Drift-`TypeConverter` für sämtliche Enum-Spalten in der lokalen SQLite-Datenbank implementiert (`TripPhaseConverter`, `KittyModelConverter`, `CrewAppetiteConverter`, `CrewDrinkingConverter`, `ExpenseCategoryConverter`).
+- Katalog v0.8 (`data/catalog_v0.8.json`) eingebunden und Not-Need-Synthese für Wasser im Parser entfernt.
+- Umfassende Testabdeckung: Validierungsgrenzen-Tests und verlustfreie Dekodierung mit `zxing2` (`epc_qr_zxing_test.dart`); 105/105 Tests grün.
+
 ## 2026-09-25 – Freigabe S7, S8
 
 - Reihenfolge: S5a (Vorrang), dann S7 und S8 gegen Mocks; S9/S10 noch nicht freigegeben

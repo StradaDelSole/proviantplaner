@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 
 void main() {
   late Directory tempDir;
@@ -52,7 +53,7 @@ void main() {
       ExpensesCompanion.insert(
         tripId: tripId,
         amount: 45.0,
-        category: 'drinks',
+        category: ExpenseCategory.drinks,
         note: const Value('Bordbier'),
       ),
     );

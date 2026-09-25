@@ -8,6 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
@@ -21,7 +22,7 @@ void main() {
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
-    final catalogFile = File('data/catalog_v0.7.json');
+    final catalogFile = File('data/catalog_v0.8.json');
     final quantitiesFile = File('data/quantities_v0.4.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catalogFile.readAsStringSync(),
@@ -101,9 +102,9 @@ void main() {
         boatType: 'monohull',
         region: 'mediterranean_summer',
         fridgeCapacityLiters: 100.0,
-        crewAppetite: 'normal',
+        crewAppetite: CrewAppetite.normal,
         crewReserve: false,
-        crewDrinking: 'normal',
+        crewDrinking: CrewDrinking.normal,
         crewMembers: const [],
       );
 

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import '../domain/calculation/kitty_engine.dart';
 import '../domain/models/kitty_models.dart';
 
@@ -87,7 +88,7 @@ class KittyService {
     final expenses = rawExpenses.map(_mapExpense).toList();
     final deposits = rawDeposits.map(_mapDeposit).toList();
 
-    final model = KittyModel.fromString(trip.kittyModel);
+    final model = trip.kittyModel;
 
     SharedKittyCalculationResult? sharedRes;
     IndividualSettlementResult? indRes;
@@ -152,10 +153,10 @@ class KittyService {
     return KittyExpense(
       id: e.id,
       tripId: e.tripId,
-      title: e.note ?? e.category,
+      title: e.note ?? e.category.displayName,
       amountInCents: (e.amount * 100).round(),
       currency: e.currency,
-      category: ExpenseCategory.fromString(e.category),
+      category: e.category,
       paidByMemberId: e.paidByCrewMemberId,
       isPaidFromKitty: e.isPaidFromKitty,
       createdAt: e.createdAt,
@@ -186,7 +187,7 @@ class KittyService {
       ExpensesCompanion.insert(
         tripId: input.tripId,
         amount: euros,
-        category: input.category.rawValue,
+        category: input.category,
         note: Value(input.title),
         isPaidFromKitty: Value(input.isPaidFromKitty),
         paidByCrewMemberId: Value(input.paidByMemberId),
@@ -217,7 +218,7 @@ class KittyService {
   Future<bool> switchKittyModel(int tripId, KittyModel newModel) async {
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return false;
-    return tripDao.updateTrip(trip.copyWith(kittyModel: newModel.rawValue));
+    return tripDao.updateTrip(trip.copyWith(kittyModel: newModel));
   }
 
   /// Aktualisiert die Kategoriebeteiligung eines Mitglieds (SC-KAS-04).
@@ -253,7 +254,7 @@ class KittyService {
     return tripDao.updateTrip(
       trip.copyWith(
         isArchived: true,
-        phase: 'conclusion',
+        phase: TripPhase.conclusion,
       ),
     );
   }

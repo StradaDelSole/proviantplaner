@@ -29,9 +29,9 @@ class TripService {
     required String boatType,
     required String region,
     required double fridgeCapacityLiters,
-    required String crewAppetite,
+    required CrewAppetite crewAppetite,
     required bool crewReserve,
-    required String crewDrinking,
+    required CrewDrinking crewDrinking,
     required List<CrewMemberInput> crewMembers,
   }) async {
     // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
@@ -126,9 +126,9 @@ class TripService {
         daysCount: trip.daysCount,
         region: trip.region,
         fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
-        crewAppetite: CrewAppetite.fromString(trip.appetite),
+        crewAppetite: trip.appetite,
         crewReserve: trip.reserveDays == 'all_anchoring_days',
-        crewDrinking: CrewDrinking.fromString(trip.drinkingHabit),
+        crewDrinking: trip.drinkingHabit,
         tripDays: tripDayInputs,
         crewMembers: crewInputs,
         userItemStates: userItemStates,

@@ -21,6 +21,7 @@ import 'package:proviantplaner/features/kitty/ui/widgets/epc_qr_widget.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/payment_sheet.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/participation_matrix_sheet.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 void main() {
   late AppDatabase db;
@@ -42,7 +43,7 @@ void main() {
         name: 'Kroatien Törn 2026',
         startDate: DateTime(2026, 9, 20),
         daysCount: const Value(7),
-        kittyModel: const Value('shared_kitty'),
+        kittyModel: const Value(KittyModel.sharedKitty),
       ),
     );
 
@@ -272,7 +273,7 @@ void main() {
 
     final trip = await db.tripDao.getTripById(tripId);
     expect(trip?.isArchived, isTrue);
-    expect(trip?.phase, 'conclusion');
+    expect(trip?.phase, TripPhase.conclusion);
   });
 
   testWidgets('S5 Designregeln: Tippflächen >= 48 dp und Barrierefreiheit', (tester) async {

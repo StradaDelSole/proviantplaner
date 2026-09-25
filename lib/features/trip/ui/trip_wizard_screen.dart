@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import '../data/trip_provider.dart';
 import 'widgets/crew_member_dialog.dart';
 
@@ -39,8 +40,8 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     const CrewMemberInput(id: '5', name: 'Gast 3', isAdult: true, isVegetarian: false, noAlcohol: true),
   ];
 
-  String _crewAppetite = 'normal'; // light, normal, hearty, hungry_sailors
-  String _crewDrinking = 'normal'; // relaxed, normal, festive
+  CrewAppetite _crewAppetite = CrewAppetite.normal;
+  CrewDrinking _crewDrinking = CrewDrinking.normal;
   bool _crewReserve = false;
 
   bool _isSaving = false;
@@ -421,23 +422,23 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           children: [
             ChoiceChip(
               label: Text(l10n.appetiteLight),
-              selected: _crewAppetite == 'light',
-              onSelected: (_) => setState(() => _crewAppetite = 'light'),
+              selected: _crewAppetite == CrewAppetite.light,
+              onSelected: (_) => setState(() => _crewAppetite = CrewAppetite.light),
             ),
             ChoiceChip(
               label: Text(l10n.appetiteNormal),
-              selected: _crewAppetite == 'normal',
-              onSelected: (_) => setState(() => _crewAppetite = 'normal'),
+              selected: _crewAppetite == CrewAppetite.normal,
+              onSelected: (_) => setState(() => _crewAppetite = CrewAppetite.normal),
             ),
             ChoiceChip(
               label: Text(l10n.appetiteHearty),
-              selected: _crewAppetite == 'hearty',
-              onSelected: (_) => setState(() => _crewAppetite = 'hearty'),
+              selected: _crewAppetite == CrewAppetite.hearty,
+              onSelected: (_) => setState(() => _crewAppetite = CrewAppetite.hearty),
             ),
             ChoiceChip(
               label: Text(l10n.appetiteHungrySailors),
-              selected: _crewAppetite == 'hungry_sailors',
-              onSelected: (_) => setState(() => _crewAppetite = 'hungry_sailors'),
+              selected: _crewAppetite == CrewAppetite.hungrySailors,
+              onSelected: (_) => setState(() => _crewAppetite = CrewAppetite.hungrySailors),
             ),
           ],
         ),
@@ -450,18 +451,18 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           children: [
             ChoiceChip(
               label: Text(l10n.drinkingRelaxed),
-              selected: _crewDrinking == 'relaxed',
-              onSelected: (_) => setState(() => _crewDrinking = 'relaxed'),
+              selected: _crewDrinking == CrewDrinking.relaxed,
+              onSelected: (_) => setState(() => _crewDrinking = CrewDrinking.relaxed),
             ),
             ChoiceChip(
               label: Text(l10n.drinkingNormal),
-              selected: _crewDrinking == 'normal',
-              onSelected: (_) => setState(() => _crewDrinking = 'normal'),
+              selected: _crewDrinking == CrewDrinking.normal,
+              onSelected: (_) => setState(() => _crewDrinking = CrewDrinking.normal),
             ),
             ChoiceChip(
               label: Text(l10n.drinkingFestive),
-              selected: _crewDrinking == 'festive',
-              onSelected: (_) => setState(() => _crewDrinking = 'festive'),
+              selected: _crewDrinking == CrewDrinking.festive,
+              onSelected: (_) => setState(() => _crewDrinking = CrewDrinking.festive),
             ),
           ],
         ),

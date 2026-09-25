@@ -5,8 +5,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
-import '../../domain/calculation/qr_generator.dart';
 import '../../domain/models/kitty_models.dart';
 
 /// Stellt den EPC-QR-Code (GiroCode) mit Ausrichtungsmarkierungen dar.
@@ -26,7 +26,6 @@ class EpcQrWidget extends ConsumerWidget {
     final isNightwatch = themeMode == AppThemeMode.nightwatch;
 
     final epcString = payload.toEpcString();
-    final matrix = QrCodeGenerator(epcString).generateMatrix();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -72,10 +71,14 @@ class EpcQrWidget extends ConsumerWidget {
                     Container(
                       width: 176,
                       height: 176,
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(4),
                       color: Colors.white,
-                      child: CustomPaint(
-                        painter: _QrPainter(matrix),
+                      child: QrImageView(
+                        data: epcString,
+                        version: QrVersions.auto,
+                        errorCorrectionLevel: QrErrorCorrectLevel.M,
+                        size: 168,
+                        backgroundColor: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -210,33 +213,3 @@ class _CornerPainter extends CustomPainter {
       oldDelegate.left != left;
 }
 
-class _QrPainter extends CustomPainter {
-  final List<List<bool>> matrix;
-
-  _QrPainter(this.matrix);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final moduleCount = matrix.length;
-    if (moduleCount == 0) return;
-
-    final moduleSize = size.width / moduleCount;
-    final paint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.fill;
-
-    for (int r = 0; r < moduleCount; r++) {
-      for (int c = 0; c < moduleCount; c++) {
-        if (matrix[r][c]) {
-          canvas.drawRect(
-            Rect.fromLTWH(c * moduleSize, r * moduleSize, moduleSize, moduleSize),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _QrPainter oldDelegate) => oldDelegate.matrix != matrix;
-}

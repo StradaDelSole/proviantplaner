@@ -239,7 +239,7 @@ void main() {
 
   group('Slice S5: EPC-QR-Code (GiroCode) Spezifikation EPC069-12', () {
     test('Erzeugt validen EPC069-12 Payload-String', () {
-      const payload = EpcQrPayload(
+      final payload = EpcQrPayload(
         beneficiaryName: 'Berta Seglerin',
         iban: 'DE12 5001 0517 0648 4898 90',
         bic: 'HELAADEF100',

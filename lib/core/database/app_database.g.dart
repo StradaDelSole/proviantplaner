@@ -75,11 +75,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   static const VerificationMeta _appetiteMeta =
       const VerificationMeta('appetite');
   @override
-  late final GeneratedColumn<String> appetite = GeneratedColumn<String>(
-      'appetite', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('normal'));
+  late final GeneratedColumnWithTypeConverter<CrewAppetite, String> appetite =
+      GeneratedColumn<String>('appetite', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('normal'))
+          .withConverter<CrewAppetite>($TripsTable.$converterappetite);
   static const VerificationMeta _reserveDaysMeta =
       const VerificationMeta('reserveDays');
   @override
@@ -91,11 +92,13 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   static const VerificationMeta _drinkingHabitMeta =
       const VerificationMeta('drinkingHabit');
   @override
-  late final GeneratedColumn<String> drinkingHabit = GeneratedColumn<String>(
-      'drinking_habit', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('normal'));
+  late final GeneratedColumnWithTypeConverter<CrewDrinking, String>
+      drinkingHabit = GeneratedColumn<String>(
+              'drinking_habit', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('normal'))
+          .withConverter<CrewDrinking>($TripsTable.$converterdrinkingHabit);
   static const VerificationMeta _hasStorageChecklistMeta =
       const VerificationMeta('hasStorageChecklist');
   @override
@@ -108,11 +111,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       defaultValue: const Constant(true));
   static const VerificationMeta _phaseMeta = const VerificationMeta('phase');
   @override
-  late final GeneratedColumn<String> phase = GeneratedColumn<String>(
-      'phase', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('plan'));
+  late final GeneratedColumnWithTypeConverter<TripPhase, String> phase =
+      GeneratedColumn<String>('phase', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('plan'))
+          .withConverter<TripPhase>($TripsTable.$converterphase);
   static const VerificationMeta _isArchivedMeta =
       const VerificationMeta('isArchived');
   @override
@@ -134,11 +138,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   static const VerificationMeta _kittyModelMeta =
       const VerificationMeta('kittyModel');
   @override
-  late final GeneratedColumn<String> kittyModel = GeneratedColumn<String>(
-      'kitty_model', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('shared_kitty'));
+  late final GeneratedColumnWithTypeConverter<KittyModel, String> kittyModel =
+      GeneratedColumn<String>('kitty_model', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('shared_kitty'))
+          .withConverter<KittyModel>($TripsTable.$converterkittyModel);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -214,32 +219,21 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           fridgeCapacity.isAcceptableOrUnknown(
               data['fridge_capacity']!, _fridgeCapacityMeta));
     }
-    if (data.containsKey('appetite')) {
-      context.handle(_appetiteMeta,
-          appetite.isAcceptableOrUnknown(data['appetite']!, _appetiteMeta));
-    }
+    context.handle(_appetiteMeta, const VerificationResult.success());
     if (data.containsKey('reserve_days')) {
       context.handle(
           _reserveDaysMeta,
           reserveDays.isAcceptableOrUnknown(
               data['reserve_days']!, _reserveDaysMeta));
     }
-    if (data.containsKey('drinking_habit')) {
-      context.handle(
-          _drinkingHabitMeta,
-          drinkingHabit.isAcceptableOrUnknown(
-              data['drinking_habit']!, _drinkingHabitMeta));
-    }
+    context.handle(_drinkingHabitMeta, const VerificationResult.success());
     if (data.containsKey('has_storage_checklist')) {
       context.handle(
           _hasStorageChecklistMeta,
           hasStorageChecklist.isAcceptableOrUnknown(
               data['has_storage_checklist']!, _hasStorageChecklistMeta));
     }
-    if (data.containsKey('phase')) {
-      context.handle(
-          _phaseMeta, phase.isAcceptableOrUnknown(data['phase']!, _phaseMeta));
-    }
+    context.handle(_phaseMeta, const VerificationResult.success());
     if (data.containsKey('is_archived')) {
       context.handle(
           _isArchivedMeta,
@@ -250,12 +244,7 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       context.handle(_currencyMeta,
           currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta));
     }
-    if (data.containsKey('kitty_model')) {
-      context.handle(
-          _kittyModelMeta,
-          kittyModel.isAcceptableOrUnknown(
-              data['kitty_model']!, _kittyModelMeta));
-    }
+    context.handle(_kittyModelMeta, const VerificationResult.success());
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -285,22 +274,25 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           .read(DriftSqlType.string, data['${effectivePrefix}boat_type'])!,
       fridgeCapacity: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}fridge_capacity'])!,
-      appetite: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}appetite'])!,
+      appetite: $TripsTable.$converterappetite.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}appetite'])!),
       reserveDays: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}reserve_days'])!,
-      drinkingHabit: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}drinking_habit'])!,
+      drinkingHabit: $TripsTable.$converterdrinkingHabit.fromSql(
+          attachedDatabase.typeMapping.read(
+              DriftSqlType.string, data['${effectivePrefix}drinking_habit'])!),
       hasStorageChecklist: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}has_storage_checklist'])!,
-      phase: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}phase'])!,
+      phase: $TripsTable.$converterphase.fromSql(attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}phase'])!),
       isArchived: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_archived'])!,
       currency: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}currency'])!,
-      kittyModel: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}kitty_model'])!,
+      kittyModel: $TripsTable.$converterkittyModel.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}kitty_model'])!),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -310,6 +302,15 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   $TripsTable createAlias(String alias) {
     return $TripsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<CrewAppetite, String> $converterappetite =
+      const CrewAppetiteConverter();
+  static TypeConverter<CrewDrinking, String> $converterdrinkingHabit =
+      const CrewDrinkingConverter();
+  static TypeConverter<TripPhase, String> $converterphase =
+      const TripPhaseConverter();
+  static TypeConverter<KittyModel, String> $converterkittyModel =
+      const KittyModelConverter();
 }
 
 class Trip extends DataClass implements Insertable<Trip> {
@@ -321,14 +322,14 @@ class Trip extends DataClass implements Insertable<Trip> {
   final bool isCharter;
   final String boatType;
   final int fridgeCapacity;
-  final String appetite;
+  final CrewAppetite appetite;
   final String reserveDays;
-  final String drinkingHabit;
+  final CrewDrinking drinkingHabit;
   final bool hasStorageChecklist;
-  final String phase;
+  final TripPhase phase;
   final bool isArchived;
   final String currency;
-  final String kittyModel;
+  final KittyModel kittyModel;
   final DateTime createdAt;
   const Trip(
       {required this.id,
@@ -359,14 +360,25 @@ class Trip extends DataClass implements Insertable<Trip> {
     map['is_charter'] = Variable<bool>(isCharter);
     map['boat_type'] = Variable<String>(boatType);
     map['fridge_capacity'] = Variable<int>(fridgeCapacity);
-    map['appetite'] = Variable<String>(appetite);
+    {
+      map['appetite'] =
+          Variable<String>($TripsTable.$converterappetite.toSql(appetite));
+    }
     map['reserve_days'] = Variable<String>(reserveDays);
-    map['drinking_habit'] = Variable<String>(drinkingHabit);
+    {
+      map['drinking_habit'] = Variable<String>(
+          $TripsTable.$converterdrinkingHabit.toSql(drinkingHabit));
+    }
     map['has_storage_checklist'] = Variable<bool>(hasStorageChecklist);
-    map['phase'] = Variable<String>(phase);
+    {
+      map['phase'] = Variable<String>($TripsTable.$converterphase.toSql(phase));
+    }
     map['is_archived'] = Variable<bool>(isArchived);
     map['currency'] = Variable<String>(currency);
-    map['kitty_model'] = Variable<String>(kittyModel);
+    {
+      map['kitty_model'] =
+          Variable<String>($TripsTable.$converterkittyModel.toSql(kittyModel));
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -405,15 +417,15 @@ class Trip extends DataClass implements Insertable<Trip> {
       isCharter: serializer.fromJson<bool>(json['isCharter']),
       boatType: serializer.fromJson<String>(json['boatType']),
       fridgeCapacity: serializer.fromJson<int>(json['fridgeCapacity']),
-      appetite: serializer.fromJson<String>(json['appetite']),
+      appetite: serializer.fromJson<CrewAppetite>(json['appetite']),
       reserveDays: serializer.fromJson<String>(json['reserveDays']),
-      drinkingHabit: serializer.fromJson<String>(json['drinkingHabit']),
+      drinkingHabit: serializer.fromJson<CrewDrinking>(json['drinkingHabit']),
       hasStorageChecklist:
           serializer.fromJson<bool>(json['hasStorageChecklist']),
-      phase: serializer.fromJson<String>(json['phase']),
+      phase: serializer.fromJson<TripPhase>(json['phase']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       currency: serializer.fromJson<String>(json['currency']),
-      kittyModel: serializer.fromJson<String>(json['kittyModel']),
+      kittyModel: serializer.fromJson<KittyModel>(json['kittyModel']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -429,14 +441,14 @@ class Trip extends DataClass implements Insertable<Trip> {
       'isCharter': serializer.toJson<bool>(isCharter),
       'boatType': serializer.toJson<String>(boatType),
       'fridgeCapacity': serializer.toJson<int>(fridgeCapacity),
-      'appetite': serializer.toJson<String>(appetite),
+      'appetite': serializer.toJson<CrewAppetite>(appetite),
       'reserveDays': serializer.toJson<String>(reserveDays),
-      'drinkingHabit': serializer.toJson<String>(drinkingHabit),
+      'drinkingHabit': serializer.toJson<CrewDrinking>(drinkingHabit),
       'hasStorageChecklist': serializer.toJson<bool>(hasStorageChecklist),
-      'phase': serializer.toJson<String>(phase),
+      'phase': serializer.toJson<TripPhase>(phase),
       'isArchived': serializer.toJson<bool>(isArchived),
       'currency': serializer.toJson<String>(currency),
-      'kittyModel': serializer.toJson<String>(kittyModel),
+      'kittyModel': serializer.toJson<KittyModel>(kittyModel),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -450,14 +462,14 @@ class Trip extends DataClass implements Insertable<Trip> {
           bool? isCharter,
           String? boatType,
           int? fridgeCapacity,
-          String? appetite,
+          CrewAppetite? appetite,
           String? reserveDays,
-          String? drinkingHabit,
+          CrewDrinking? drinkingHabit,
           bool? hasStorageChecklist,
-          String? phase,
+          TripPhase? phase,
           bool? isArchived,
           String? currency,
-          String? kittyModel,
+          KittyModel? kittyModel,
           DateTime? createdAt}) =>
       Trip(
         id: id ?? this.id,
@@ -584,14 +596,14 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<bool> isCharter;
   final Value<String> boatType;
   final Value<int> fridgeCapacity;
-  final Value<String> appetite;
+  final Value<CrewAppetite> appetite;
   final Value<String> reserveDays;
-  final Value<String> drinkingHabit;
+  final Value<CrewDrinking> drinkingHabit;
   final Value<bool> hasStorageChecklist;
-  final Value<String> phase;
+  final Value<TripPhase> phase;
   final Value<bool> isArchived;
   final Value<String> currency;
-  final Value<String> kittyModel;
+  final Value<KittyModel> kittyModel;
   final Value<DateTime> createdAt;
   const TripsCompanion({
     this.id = const Value.absent(),
@@ -682,14 +694,14 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       Value<bool>? isCharter,
       Value<String>? boatType,
       Value<int>? fridgeCapacity,
-      Value<String>? appetite,
+      Value<CrewAppetite>? appetite,
       Value<String>? reserveDays,
-      Value<String>? drinkingHabit,
+      Value<CrewDrinking>? drinkingHabit,
       Value<bool>? hasStorageChecklist,
-      Value<String>? phase,
+      Value<TripPhase>? phase,
       Value<bool>? isArchived,
       Value<String>? currency,
-      Value<String>? kittyModel,
+      Value<KittyModel>? kittyModel,
       Value<DateTime>? createdAt}) {
     return TripsCompanion(
       id: id ?? this.id,
@@ -740,19 +752,22 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       map['fridge_capacity'] = Variable<int>(fridgeCapacity.value);
     }
     if (appetite.present) {
-      map['appetite'] = Variable<String>(appetite.value);
+      map['appetite'] = Variable<String>(
+          $TripsTable.$converterappetite.toSql(appetite.value));
     }
     if (reserveDays.present) {
       map['reserve_days'] = Variable<String>(reserveDays.value);
     }
     if (drinkingHabit.present) {
-      map['drinking_habit'] = Variable<String>(drinkingHabit.value);
+      map['drinking_habit'] = Variable<String>(
+          $TripsTable.$converterdrinkingHabit.toSql(drinkingHabit.value));
     }
     if (hasStorageChecklist.present) {
       map['has_storage_checklist'] = Variable<bool>(hasStorageChecklist.value);
     }
     if (phase.present) {
-      map['phase'] = Variable<String>(phase.value);
+      map['phase'] =
+          Variable<String>($TripsTable.$converterphase.toSql(phase.value));
     }
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
@@ -761,7 +776,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       map['currency'] = Variable<String>(currency.value);
     }
     if (kittyModel.present) {
-      map['kitty_model'] = Variable<String>(kittyModel.value);
+      map['kitty_model'] = Variable<String>(
+          $TripsTable.$converterkittyModel.toSql(kittyModel.value));
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3184,9 +3200,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
-  late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+  late final GeneratedColumnWithTypeConverter<ExpenseCategory, String>
+      category = GeneratedColumn<String>('category', aliasedName, false,
+              type: DriftSqlType.string, requiredDuringInsert: true)
+          .withConverter<ExpenseCategory>($ExpensesTable.$convertercategory);
   static const VerificationMeta _paidByCrewMemberIdMeta =
       const VerificationMeta('paidByCrewMemberId');
   @override
@@ -3267,12 +3284,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
       context.handle(_currencyMeta,
           currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta));
     }
-    if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
-    } else if (isInserting) {
-      context.missing(_categoryMeta);
-    }
+    context.handle(_categoryMeta, const VerificationResult.success());
     if (data.containsKey('paid_by_crew_member_id')) {
       context.handle(
           _paidByCrewMemberIdMeta,
@@ -3316,8 +3328,9 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
           .read(DriftSqlType.double, data['${effectivePrefix}amount'])!,
       currency: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}currency'])!,
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      category: $ExpensesTable.$convertercategory.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!),
       paidByCrewMemberId: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}paid_by_crew_member_id']),
       isPaidFromKitty: attachedDatabase.typeMapping.read(
@@ -3335,6 +3348,9 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
   $ExpensesTable createAlias(String alias) {
     return $ExpensesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<ExpenseCategory, String> $convertercategory =
+      const ExpenseCategoryConverter();
 }
 
 class Expense extends DataClass implements Insertable<Expense> {
@@ -3342,7 +3358,7 @@ class Expense extends DataClass implements Insertable<Expense> {
   final int tripId;
   final double amount;
   final String currency;
-  final String category;
+  final ExpenseCategory category;
   final int? paidByCrewMemberId;
   final bool isPaidFromKitty;
   final String? customSplit;
@@ -3366,7 +3382,10 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['trip_id'] = Variable<int>(tripId);
     map['amount'] = Variable<double>(amount);
     map['currency'] = Variable<String>(currency);
-    map['category'] = Variable<String>(category);
+    {
+      map['category'] =
+          Variable<String>($ExpensesTable.$convertercategory.toSql(category));
+    }
     if (!nullToAbsent || paidByCrewMemberId != null) {
       map['paid_by_crew_member_id'] = Variable<int>(paidByCrewMemberId);
     }
@@ -3408,7 +3427,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       tripId: serializer.fromJson<int>(json['tripId']),
       amount: serializer.fromJson<double>(json['amount']),
       currency: serializer.fromJson<String>(json['currency']),
-      category: serializer.fromJson<String>(json['category']),
+      category: serializer.fromJson<ExpenseCategory>(json['category']),
       paidByCrewMemberId: serializer.fromJson<int?>(json['paidByCrewMemberId']),
       isPaidFromKitty: serializer.fromJson<bool>(json['isPaidFromKitty']),
       customSplit: serializer.fromJson<String?>(json['customSplit']),
@@ -3424,7 +3443,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       'tripId': serializer.toJson<int>(tripId),
       'amount': serializer.toJson<double>(amount),
       'currency': serializer.toJson<String>(currency),
-      'category': serializer.toJson<String>(category),
+      'category': serializer.toJson<ExpenseCategory>(category),
       'paidByCrewMemberId': serializer.toJson<int?>(paidByCrewMemberId),
       'isPaidFromKitty': serializer.toJson<bool>(isPaidFromKitty),
       'customSplit': serializer.toJson<String?>(customSplit),
@@ -3438,7 +3457,7 @@ class Expense extends DataClass implements Insertable<Expense> {
           int? tripId,
           double? amount,
           String? currency,
-          String? category,
+          ExpenseCategory? category,
           Value<int?> paidByCrewMemberId = const Value.absent(),
           bool? isPaidFromKitty,
           Value<String?> customSplit = const Value.absent(),
@@ -3519,7 +3538,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<int> tripId;
   final Value<double> amount;
   final Value<String> currency;
-  final Value<String> category;
+  final Value<ExpenseCategory> category;
   final Value<int?> paidByCrewMemberId;
   final Value<bool> isPaidFromKitty;
   final Value<String?> customSplit;
@@ -3542,7 +3561,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     required int tripId,
     required double amount,
     this.currency = const Value.absent(),
-    required String category,
+    required ExpenseCategory category,
     this.paidByCrewMemberId = const Value.absent(),
     this.isPaidFromKitty = const Value.absent(),
     this.customSplit = const Value.absent(),
@@ -3583,7 +3602,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       Value<int>? tripId,
       Value<double>? amount,
       Value<String>? currency,
-      Value<String>? category,
+      Value<ExpenseCategory>? category,
       Value<int?>? paidByCrewMemberId,
       Value<bool>? isPaidFromKitty,
       Value<String?>? customSplit,
@@ -3619,7 +3638,8 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       map['currency'] = Variable<String>(currency.value);
     }
     if (category.present) {
-      map['category'] = Variable<String>(category.value);
+      map['category'] = Variable<String>(
+          $ExpensesTable.$convertercategory.toSql(category.value));
     }
     if (paidByCrewMemberId.present) {
       map['paid_by_crew_member_id'] = Variable<int>(paidByCrewMemberId.value);
@@ -4084,14 +4104,14 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
-  Value<String> appetite,
+  Value<CrewAppetite> appetite,
   Value<String> reserveDays,
-  Value<String> drinkingHabit,
+  Value<CrewDrinking> drinkingHabit,
   Value<bool> hasStorageChecklist,
-  Value<String> phase,
+  Value<TripPhase> phase,
   Value<bool> isArchived,
   Value<String> currency,
-  Value<String> kittyModel,
+  Value<KittyModel> kittyModel,
   Value<DateTime> createdAt,
 });
 typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
@@ -4103,14 +4123,14 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
-  Value<String> appetite,
+  Value<CrewAppetite> appetite,
   Value<String> reserveDays,
-  Value<String> drinkingHabit,
+  Value<CrewDrinking> drinkingHabit,
   Value<bool> hasStorageChecklist,
-  Value<String> phase,
+  Value<TripPhase> phase,
   Value<bool> isArchived,
   Value<String> currency,
-  Value<String> kittyModel,
+  Value<KittyModel> kittyModel,
   Value<DateTime> createdAt,
 });
 
@@ -4256,21 +4276,27 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
       column: $table.fridgeCapacity,
       builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get appetite => $composableBuilder(
-      column: $table.appetite, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<CrewAppetite, CrewAppetite, String>
+      get appetite => $composableBuilder(
+          column: $table.appetite,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<String> get reserveDays => $composableBuilder(
       column: $table.reserveDays, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get drinkingHabit => $composableBuilder(
-      column: $table.drinkingHabit, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<CrewDrinking, CrewDrinking, String>
+      get drinkingHabit => $composableBuilder(
+          column: $table.drinkingHabit,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get hasStorageChecklist => $composableBuilder(
       column: $table.hasStorageChecklist,
       builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get phase => $composableBuilder(
-      column: $table.phase, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<TripPhase, TripPhase, String> get phase =>
+      $composableBuilder(
+          column: $table.phase,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
       column: $table.isArchived, builder: (column) => ColumnFilters(column));
@@ -4278,8 +4304,10 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
   ColumnFilters<String> get currency => $composableBuilder(
       column: $table.currency, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get kittyModel => $composableBuilder(
-      column: $table.kittyModel, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<KittyModel, KittyModel, String>
+      get kittyModel => $composableBuilder(
+          column: $table.kittyModel,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -4529,19 +4557,20 @@ class $$TripsTableAnnotationComposer
   GeneratedColumn<int> get fridgeCapacity => $composableBuilder(
       column: $table.fridgeCapacity, builder: (column) => column);
 
-  GeneratedColumn<String> get appetite =>
+  GeneratedColumnWithTypeConverter<CrewAppetite, String> get appetite =>
       $composableBuilder(column: $table.appetite, builder: (column) => column);
 
   GeneratedColumn<String> get reserveDays => $composableBuilder(
       column: $table.reserveDays, builder: (column) => column);
 
-  GeneratedColumn<String> get drinkingHabit => $composableBuilder(
-      column: $table.drinkingHabit, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<CrewDrinking, String> get drinkingHabit =>
+      $composableBuilder(
+          column: $table.drinkingHabit, builder: (column) => column);
 
   GeneratedColumn<bool> get hasStorageChecklist => $composableBuilder(
       column: $table.hasStorageChecklist, builder: (column) => column);
 
-  GeneratedColumn<String> get phase =>
+  GeneratedColumnWithTypeConverter<TripPhase, String> get phase =>
       $composableBuilder(column: $table.phase, builder: (column) => column);
 
   GeneratedColumn<bool> get isArchived => $composableBuilder(
@@ -4550,8 +4579,9 @@ class $$TripsTableAnnotationComposer
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
 
-  GeneratedColumn<String> get kittyModel => $composableBuilder(
-      column: $table.kittyModel, builder: (column) => column);
+  GeneratedColumnWithTypeConverter<KittyModel, String> get kittyModel =>
+      $composableBuilder(
+          column: $table.kittyModel, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -4744,14 +4774,14 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
-            Value<String> appetite = const Value.absent(),
+            Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
-            Value<String> drinkingHabit = const Value.absent(),
+            Value<CrewDrinking> drinkingHabit = const Value.absent(),
             Value<bool> hasStorageChecklist = const Value.absent(),
-            Value<String> phase = const Value.absent(),
+            Value<TripPhase> phase = const Value.absent(),
             Value<bool> isArchived = const Value.absent(),
             Value<String> currency = const Value.absent(),
-            Value<String> kittyModel = const Value.absent(),
+            Value<KittyModel> kittyModel = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               TripsCompanion(
@@ -4782,14 +4812,14 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
-            Value<String> appetite = const Value.absent(),
+            Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
-            Value<String> drinkingHabit = const Value.absent(),
+            Value<CrewDrinking> drinkingHabit = const Value.absent(),
             Value<bool> hasStorageChecklist = const Value.absent(),
-            Value<String> phase = const Value.absent(),
+            Value<TripPhase> phase = const Value.absent(),
             Value<bool> isArchived = const Value.absent(),
             Value<String> currency = const Value.absent(),
-            Value<String> kittyModel = const Value.absent(),
+            Value<KittyModel> kittyModel = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               TripsCompanion.insert(
@@ -7031,7 +7061,7 @@ typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
   required int tripId,
   required double amount,
   Value<String> currency,
-  required String category,
+  required ExpenseCategory category,
   Value<int?> paidByCrewMemberId,
   Value<bool> isPaidFromKitty,
   Value<String?> customSplit,
@@ -7043,7 +7073,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
   Value<int> tripId,
   Value<double> amount,
   Value<String> currency,
-  Value<String> category,
+  Value<ExpenseCategory> category,
   Value<int?> paidByCrewMemberId,
   Value<bool> isPaidFromKitty,
   Value<String?> customSplit,
@@ -7100,8 +7130,10 @@ class $$ExpensesTableFilterComposer
   ColumnFilters<String> get currency => $composableBuilder(
       column: $table.currency, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<ExpenseCategory, ExpenseCategory, String>
+      get category => $composableBuilder(
+          column: $table.category,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<bool> get isPaidFromKitty => $composableBuilder(
       column: $table.isPaidFromKitty,
@@ -7250,7 +7282,7 @@ class $$ExpensesTableAnnotationComposer
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
 
-  GeneratedColumn<String> get category =>
+  GeneratedColumnWithTypeConverter<ExpenseCategory, String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<bool> get isPaidFromKitty => $composableBuilder(
@@ -7333,7 +7365,7 @@ class $$ExpensesTableTableManager extends RootTableManager<
             Value<int> tripId = const Value.absent(),
             Value<double> amount = const Value.absent(),
             Value<String> currency = const Value.absent(),
-            Value<String> category = const Value.absent(),
+            Value<ExpenseCategory> category = const Value.absent(),
             Value<int?> paidByCrewMemberId = const Value.absent(),
             Value<bool> isPaidFromKitty = const Value.absent(),
             Value<String?> customSplit = const Value.absent(),
@@ -7357,7 +7389,7 @@ class $$ExpensesTableTableManager extends RootTableManager<
             required int tripId,
             required double amount,
             Value<String> currency = const Value.absent(),
-            required String category,
+            required ExpenseCategory category,
             Value<int?> paidByCrewMemberId = const Value.absent(),
             Value<bool> isPaidFromKitty = const Value.absent(),
             Value<String?> customSplit = const Value.absent(),

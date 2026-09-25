@@ -10,6 +10,7 @@ import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart' show CrewMemberInput;
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
 void main() {
@@ -22,7 +23,7 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
-    final catFile = File('data/catalog_v0.7.json');
+    final catFile = File('data/catalog_v0.8.json');
     final quantFile = File('data/quantities_v0.4.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catFile.readAsStringSync(),
@@ -51,9 +52,9 @@ void main() {
       boatType: 'monohull',
       region: 'mediterranean',
       fridgeCapacityLiters: 90.0,
-      crewAppetite: 'normal',
+      crewAppetite: CrewAppetite.normal,
       crewReserve: false,
-      crewDrinking: 'normal',
+      crewDrinking: CrewDrinking.normal,
       crewMembers: [
         const CrewMemberInput(id: '1', name: 'Skipper Alex', isAdult: true, isVegetarian: false, noAlcohol: false),
         const CrewMemberInput(id: '2', name: 'Berta', isAdult: true, isVegetarian: false, noAlcohol: false),

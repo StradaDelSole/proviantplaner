@@ -1,4 +1,52 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
+
+/// Drift TypeConverter für CrewAppetite
+class CrewAppetiteConverter extends TypeConverter<CrewAppetite, String> {
+  const CrewAppetiteConverter();
+  @override
+  CrewAppetite fromSql(String fromDb) => CrewAppetite.fromString(fromDb);
+  @override
+  String toSql(CrewAppetite value) => value.rawValue;
+}
+
+/// Drift TypeConverter für CrewDrinking
+class CrewDrinkingConverter extends TypeConverter<CrewDrinking, String> {
+  const CrewDrinkingConverter();
+  @override
+  CrewDrinking fromSql(String fromDb) => CrewDrinking.fromString(fromDb);
+  @override
+  String toSql(CrewDrinking value) => value.rawValue;
+}
+
+/// Drift TypeConverter für TripPhase
+class TripPhaseConverter extends TypeConverter<TripPhase, String> {
+  const TripPhaseConverter();
+  @override
+  TripPhase fromSql(String fromDb) => TripPhase.fromString(fromDb);
+  @override
+  String toSql(TripPhase value) => value.rawValue;
+}
+
+/// Drift TypeConverter für KittyModel
+class KittyModelConverter extends TypeConverter<KittyModel, String> {
+  const KittyModelConverter();
+  @override
+  KittyModel fromSql(String fromDb) => KittyModel.fromString(fromDb);
+  @override
+  String toSql(KittyModel value) => value.rawValue;
+}
+
+/// Drift TypeConverter für ExpenseCategory
+class ExpenseCategoryConverter extends TypeConverter<ExpenseCategory, String> {
+  const ExpenseCategoryConverter();
+  @override
+  ExpenseCategory fromSql(String fromDb) => ExpenseCategory.fromString(fromDb);
+  @override
+  String toSql(ExpenseCategory value) => value.rawValue;
+}
 
 /// 1. Trip: Törn-Stammdaten, Phasen, Crew-Fragen, Einstellungen
 class Trips extends Table {
@@ -12,15 +60,15 @@ class Trips extends Table {
   IntColumn get fridgeCapacity => integer().withDefault(const Constant(100))();
 
   // Crew-Fragen (Appetit, Reserve, Trinken)
-  TextColumn get appetite => text().withDefault(const Constant('normal'))(); // low, normal, high
-  TextColumn get reserveDays => text().withDefault(const Constant('few_days'))(); // none, few_days, all_anchoring_days
-  TextColumn get drinkingHabit => text().withDefault(const Constant('normal'))(); // low, normal, high
+  TextColumn get appetite => text().map(const CrewAppetiteConverter()).withDefault(const Constant('normal'))();
+  TextColumn get reserveDays => text().withDefault(const Constant('few_days'))();
+  TextColumn get drinkingHabit => text().map(const CrewDrinkingConverter()).withDefault(const Constant('normal'))();
 
   BoolColumn get hasStorageChecklist => boolean().withDefault(const Constant(true))();
-  TextColumn get phase => text().withDefault(const Constant('plan'))(); // plan, shopping, storage, underway, conclusion
+  TextColumn get phase => text().map(const TripPhaseConverter()).withDefault(const Constant('plan'))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   TextColumn get currency => text().withDefault(const Constant('EUR'))();
-  TextColumn get kittyModel => text().withDefault(const Constant('shared_kitty'))(); // shared_kitty, individual_settlement
+  TextColumn get kittyModel => text().map(const KittyModelConverter()).withDefault(const Constant('shared_kitty'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -93,7 +141,7 @@ class Expenses extends Table {
   IntColumn get tripId => integer().references(Trips, #id, onDelete: KeyAction.cascade)();
   RealColumn get amount => real()();
   TextColumn get currency => text().withDefault(const Constant('EUR'))();
-  TextColumn get category => text()(); // provisions, drinks, marina_berth, fuel, charter_deposit, restaurant, other
+  TextColumn get category => text().map(const ExpenseCategoryConverter())();
   IntColumn get paidByCrewMemberId => integer().nullable().references(CrewMembers, #id, onDelete: KeyAction.setNull)();
   BoolColumn get isPaidFromKitty => boolean().withDefault(const Constant(false))();
   TextColumn get customSplit => text().nullable()(); // JSON

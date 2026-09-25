@@ -2,6 +2,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 void main() {
   late AppDatabase db;
@@ -25,14 +28,14 @@ void main() {
           isCharter: const Value(true),
           boatType: const Value('mono'),
           fridgeCapacity: const Value(110),
-          appetite: const Value('normal'),
+          appetite: const Value(CrewAppetite.normal),
           reserveDays: const Value('few_days'),
-          drinkingHabit: const Value('normal'),
+          drinkingHabit: const Value(CrewDrinking.normal),
           hasStorageChecklist: const Value(true),
-          phase: const Value('plan'),
+          phase: const Value(TripPhase.plan),
           isArchived: const Value(false),
           currency: const Value('EUR'),
-          kittyModel: const Value('shared_kitty'),
+          kittyModel: const Value(KittyModel.sharedKitty),
         ),
       );
 
@@ -56,12 +59,12 @@ void main() {
 
       // Update Trip
       final updated = await db.tripDao.updateTrip(
-        trip.copyWith(name: 'Kornaten Törn 2026 (Aktualisiert)', phase: 'shopping'),
+        trip.copyWith(name: 'Kornaten Törn 2026 (Aktualisiert)', phase: TripPhase.shopping),
       );
       expect(updated, isTrue);
       final refreshed = await db.tripDao.getTripById(tripId);
       expect(refreshed!.name, 'Kornaten Törn 2026 (Aktualisiert)');
-      expect(refreshed.phase, 'shopping');
+      expect(refreshed.phase, TripPhase.shopping);
     });
 
     test('2. TripDay CRUD', () async {
@@ -240,7 +243,7 @@ void main() {
         ExpensesCompanion.insert(
           tripId: tripId,
           amount: 85.50,
-          category: 'provisions',
+          category: ExpenseCategory.provisions,
           isPaidFromKitty: const Value(true),
           note: const Value('Supermarkt Split'),
         ),

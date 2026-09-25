@@ -15,7 +15,7 @@ enum KittyModel {
     for (final m in values) {
       if (m.rawValue == val) return m;
     }
-    return sharedKitty;
+    throw FormatException('Unbekanntes KittyModel: "$val"');
   }
 }
 
@@ -36,7 +36,7 @@ enum ExpenseCategory {
     for (final c in values) {
       if (c.rawValue == val) return c;
     }
-    return other;
+    throw FormatException('Unbekannte ExpenseCategory: "$val"');
   }
 
   /// Deutscher Anzeigename der Kategorie.
@@ -225,6 +225,46 @@ class PaymentTransfer {
   }
 }
 
+/// Exception bei ungültigen Feldern im EPC-QR-Code (GiroCode).
+class EpcValidationException implements Exception {
+  final String field;
+  final String reason;
+
+  const EpcValidationException(this.field, this.reason);
+
+  @override
+  String toString() => 'EpcValidationException: Feld "$field" ungültig: $reason';
+}
+
+/// Prüfer für internationale Kontonummern (IBAN) nach ISO 13616 und Modulo-97-Prüfziffer.
+class IbanValidator {
+  /// Prüft, ob [iban] syntaktisch und rechnerisch (Modulo 97) valide ist.
+  static bool isValid(String iban) {
+    final clean = iban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    if (clean.length < 15 || clean.length > 34) return false;
+    if (!RegExp(r'^[A-Z]{2}[0-9]{2}[A-Z0-9]+$').hasMatch(clean)) return false;
+
+    // Erste 4 Zeichen ans Ende verschieben (Ländercode + Prüfziffer)
+    final rearranged = clean.substring(4) + clean.substring(0, 4);
+
+    // Buchstaben durch zweistellige Zahlen ersetzen (A=10, ..., Z=35)
+    final sb = StringBuffer();
+    for (int i = 0; i < rearranged.length; i++) {
+      final code = rearranged.codeUnitAt(i);
+      if (code >= 65 && code <= 90) {
+        sb.write(code - 55);
+      } else {
+        sb.writeCharCode(code);
+      }
+    }
+
+    final digits = sb.toString();
+    final bigInt = BigInt.tryParse(digits);
+    if (bigInt == null) return false;
+    return (bigInt % BigInt.from(97)) == BigInt.one;
+  }
+}
+
 /// Datenstruktur für den EPC-QR-Code (GiroCode) gemäß EPC069-12.
 class EpcQrPayload {
   final String beneficiaryName;
@@ -233,17 +273,71 @@ class EpcQrPayload {
   final int amountInCents;
   final String remittanceInformation;
 
-  const EpcQrPayload({
+  /// Erstellt und validiert die EPC-GiroCode Nutzlast strikt nach Standard EPC069-12.
+  EpcQrPayload({
     required this.beneficiaryName,
     required this.iban,
     this.bic,
     required this.amountInCents,
     required this.remittanceInformation,
-  });
+  }) {
+    validate();
+  }
 
-  /// Erzeugt die standardkonforme Byte-Zeichenkette für den GiroCode.
+  /// Führt alle Validierungsregeln gemäß EPC-Spezifikation durch.
+  void validate() {
+    if (beneficiaryName.trim().isEmpty) {
+      throw const EpcValidationException('beneficiaryName', 'Name des Empfängers darf nicht leer sein.');
+    }
+    if (beneficiaryName.length > 70) {
+      throw EpcValidationException(
+        'beneficiaryName',
+        'Name darf höchstens 70 Zeichen lang sein (aktuell: ${beneficiaryName.length}).',
+      );
+    }
+    if (beneficiaryName.contains('\n') || beneficiaryName.contains('\r')) {
+      throw const EpcValidationException('beneficiaryName', 'Name darf keine Zeilenumbrüche enthalten.');
+    }
+
+    final cleanIban = iban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    if (!IbanValidator.isValid(cleanIban)) {
+      throw EpcValidationException('iban', 'IBAN "$iban" ist ungültig (Modulo-97 Prüfsummenfehler oder falsches Format).');
+    }
+    if (iban.contains('\n') || iban.contains('\r')) {
+      throw const EpcValidationException('iban', 'IBAN darf keine Zeilenumbrüche enthalten.');
+    }
+
+    if (bic != null && bic!.isNotEmpty) {
+      if (bic!.length > 11) {
+        throw const EpcValidationException('bic', 'BIC darf höchstens 11 Zeichen lang sein.');
+      }
+      if (bic!.contains('\n') || bic!.contains('\r')) {
+        throw const EpcValidationException('bic', 'BIC darf keine Zeilenumbrüche enthalten.');
+      }
+    }
+
+    if (amountInCents < 1 || amountInCents > 99999999999) {
+      throw EpcValidationException(
+        'amountInCents',
+        'Betrag muss zwischen 0,01 € (1 Cent) und 999.999.999,99 € liegen (angegeben: $amountInCents Cents).',
+      );
+    }
+
+    if (remittanceInformation.length > 140) {
+      throw EpcValidationException(
+        'remittanceInformation',
+        'Verwendungszweck darf maximal 140 Zeichen lang sein (aktuell: ${remittanceInformation.length}).',
+      );
+    }
+    if (remittanceInformation.contains('\n') || remittanceInformation.contains('\r')) {
+      throw const EpcValidationException('remittanceInformation', 'Verwendungszweck darf keine Zeilenumbrüche enthalten.');
+    }
+  }
+
+  /// Erzeugt die standardkonforme UTF-8 Byte-Zeichenkette für den GiroCode.
   String toEpcString() {
-    final cleanIban = iban.replaceAll(' ', '').toUpperCase();
+    validate();
+    final cleanIban = iban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
     final euros = amountInCents ~/ 100;
     final cents = amountInCents % 100;
     final amountStr = 'EUR$euros.${cents.toString().padLeft(2, '0')}';
@@ -253,13 +347,13 @@ class EpcQrPayload {
       '002',
       '1',
       'SCT',
-      bic ?? '',
-      beneficiaryName,
+      bic?.trim() ?? '',
+      beneficiaryName.trim(),
       cleanIban,
       amountStr,
       '',
       '',
-      remittanceInformation,
+      remittanceInformation.trim(),
     ].join('\n');
   }
 }

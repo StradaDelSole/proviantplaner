@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
 void main() {
@@ -15,7 +16,7 @@ void main() {
   setUp(() {
     database = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
-    final catalogFile = File('data/catalog_v0.7.json');
+    final catalogFile = File('data/catalog_v0.8.json');
     final quantitiesFile = File('data/quantities_v0.4.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catalogFile.readAsStringSync(),
@@ -51,9 +52,9 @@ void main() {
         boatType: 'monohull',
         region: 'mediterranean_summer',
         fridgeCapacityLiters: 120.0,
-        crewAppetite: 'normal',
+        crewAppetite: CrewAppetite.normal,
         crewReserve: false,
-        crewDrinking: 'normal',
+        crewDrinking: CrewDrinking.normal,
         crewMembers: crew,
       );
 
@@ -91,9 +92,9 @@ void main() {
         boatType: 'monohull',
         region: 'baltic',
         fridgeCapacityLiters: 80.0,
-        crewAppetite: 'normal',
+        crewAppetite: CrewAppetite.normal,
         crewReserve: false,
-        crewDrinking: 'normal',
+        crewDrinking: CrewDrinking.normal,
         crewMembers: [
           const CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
         ],
@@ -119,9 +120,9 @@ void main() {
         boatType: 'monohull',
         region: 'mediterranean_summer',
         fridgeCapacityLiters: 100.0,
-        crewAppetite: 'normal',
+        crewAppetite: CrewAppetite.normal,
         crewReserve: false,
-        crewDrinking: 'normal',
+        crewDrinking: CrewDrinking.normal,
         crewMembers: [
           const CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
           const CrewMemberInput(id: '2', name: 'Gast', isAdult: true, isVegetarian: false, noAlcohol: false),
@@ -167,9 +168,9 @@ void main() {
         boatType: 'monohull',
         region: 'mediterranean_summer',
         fridgeCapacityLiters: 100.0,
-        crewAppetite: 'normal',
+        crewAppetite: CrewAppetite.normal,
         crewReserve: false,
-        crewDrinking: 'normal',
+        crewDrinking: CrewDrinking.normal,
         crewMembers: [
           const CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
         ],

@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
 import '../domain/models/kitty_models.dart';
@@ -274,7 +276,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     PaymentTransfer transfer,
     bool isSettled,
   ) {
-    const iban = 'DE89500105170000000042';
+    const iban = 'DE89370400440532013000';
     final remittance = 'Törn ${data.trip.name} Bordkasse ${transfer.fromMember.name}';
     final payload = EpcQrPayload(
       beneficiaryName: transfer.toMember.name,
@@ -295,7 +297,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(height: 12),
           _buildCopyButton(theme, l10n, transfer.toMember.name, iban, transfer.formattedAmount, remittance),
           const SizedBox(height: 8),
-          _buildShareRow(theme, l10n, transfer),
+          _buildShareRow(theme, l10n, transfer, iban, remittance),
           const SizedBox(height: 12),
           _buildMarkSettledRow(theme, l10n, index, isSettled),
         ],
@@ -376,7 +378,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     );
   }
 
-  Widget _buildShareRow(ThemeData theme, AppLocalizations l10n, PaymentTransfer transfer) {
+  Widget _buildShareRow(
+    ThemeData theme,
+    AppLocalizations l10n,
+    PaymentTransfer transfer,
+    String iban,
+    String remittance,
+  ) {
     return Row(
       children: [
         Expanded(
@@ -387,12 +395,23 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
-              final link = 'https://paypal.me/${transfer.toMember.name}/${transfer.amountInCents ~/ 100}';
-              Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PayPal-Link in Zwischenablage kopiert')),
-              );
+            onPressed: () async {
+              final link = 'https://paypal.me/${transfer.toMember.name}/${(transfer.amountInCents / 100).toStringAsFixed(2)}';
+              final uri = Uri.parse(link);
+              try {
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  await Clipboard.setData(ClipboardData(text: link));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('PayPal-Link in Zwischenablage kopiert')),
+                    );
+                  }
+                }
+              } catch (_) {
+                await Clipboard.setData(ClipboardData(text: link));
+              }
             },
           ),
         ),
@@ -405,12 +424,21 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
-              final link = 'https://revolut.me/${transfer.toMember.name}';
-              Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Revolut-Link in Zwischenablage kopiert')),
-              );
+            onPressed: () async {
+              final text = 'Bordkasse: ${transfer.fromMember.name} zahlt ${transfer.formattedAmount} an ${transfer.toMember.name}.\n'
+                  'IBAN: $iban\n'
+                  'Verwendungszweck: $remittance\n'
+                  'Revolut: https://revolut.me/${transfer.toMember.name}';
+              try {
+                await Share.share(text, subject: 'Bordkassen-Ausgleich ${transfer.toMember.name}');
+              } catch (_) {
+                await Clipboard.setData(ClipboardData(text: text));
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Zahlungsdetails in Zwischenablage kopiert')),
+                  );
+                }
+              }
             },
           ),
         ),

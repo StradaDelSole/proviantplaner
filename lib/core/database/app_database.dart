@@ -1,7 +1,10 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/connection.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 part 'app_database.g.dart';
 

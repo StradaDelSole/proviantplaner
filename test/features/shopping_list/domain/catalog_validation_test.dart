@@ -10,10 +10,10 @@ void main() {
   late QuantitiesData quantities;
 
   setUpAll(() {
-    final catalogFile = File('data/catalog_v0.7.json');
+    final catalogFile = File('data/catalog_v0.8.json');
     final quantitiesFile = File('data/quantities_v0.4.json');
 
-    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.7.json existiert');
+    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.8.json existiert');
     expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.4.json existiert');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;
@@ -25,7 +25,7 @@ void main() {
 
   group('Slice S2a: Katalog-Validierungstest über alle Einträge (Programmierregel 7)', () {
     test('Katalog- und Mengendateien haben korrekte Versionen', () {
-      expect(catalog.version, '0.7');
+      expect(catalog.version, '0.8');
       expect(quantities.version, '0.4');
     });
 

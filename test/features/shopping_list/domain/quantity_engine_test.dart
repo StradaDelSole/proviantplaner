@@ -9,7 +9,7 @@ void main() {
   late QuantityEngine engine;
 
   setUpAll(() {
-    final catalogFile = File('data/catalog_v0.7.json');
+    final catalogFile = File('data/catalog_v0.8.json');
     final quantitiesFile = File('data/quantities_v0.4.json');
 
     repository = CatalogRepository();

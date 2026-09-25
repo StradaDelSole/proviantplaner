@@ -257,13 +257,7 @@ class CatalogGroup {
       nameDe: json['name_de'] as String? ?? '',
       need: json['need'] != null
           ? CatalogNeed.fromJson(json['need'] as Map<String, dynamic>, id: id)
-          : (id == 'water'
-              ? const CatalogNeed(
-                  amount: 0.0,
-                  unit: 'l',
-                  basis: CalculationBasis.perPersonDayRegion,
-                )
-              : null),
+          : null,
       profile: GroupProfile.fromString(json['profile'] as String? ?? 'none', id: id, field: 'profile'),
       appliesTo: AppliesTo.fromString(json['applies_to'] as String? ?? 'all', id: id, field: 'applies_to'),
       split: GroupSplit.fromString(json['split'] as String? ?? 'equal', id: id, field: 'split'),
