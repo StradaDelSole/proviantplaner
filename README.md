@@ -25,6 +25,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.16). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S3, S-UI, S4, S5.
+Umgesetzt: S0, S1, S2, S2a, S3, S-UI, S4, S5, S6.
 
 **Freigegeben für Gemini: S0 bis S6, S2a (Korrektur, Vorrang: als nächstes umsetzen) und danach S-UI (Design-Angleichung).** Mengen und Oberfläche vorläufig. S1 und folgende erst nach Freigabe hier.

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
+import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
+import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
 /// Startbildschirm gemäß Slice S0 & S3.
@@ -18,6 +20,19 @@ class StartScreen extends ConsumerStatefulWidget {
 
 class _StartScreenState extends ConsumerState<StartScreen> {
   int _currentTabIndex = 0;
+
+  Future<void> _onNewTripPressed(BuildContext context) async {
+    final canCreate = await ref.read(entitlementsServiceProvider).canCreateNewTrip();
+    if (!context.mounted) return;
+    if (canCreate) {
+      context.go('/trips/new');
+    } else {
+      final unlocked = await UnlockSheet.show(context);
+      if (unlocked == true && context.mounted) {
+        context.go('/trips/new');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +158,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton(
-                                      onPressed: () => context.go('/trips/new'),
+                                      onPressed: () => _onNewTripPressed(context),
                                       child: Text(l10n?.newTripButton ?? '+ Neuer Törn'),
                                     ),
                                   ),
@@ -162,7 +177,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       );
                     }
                     return FilledButton.icon(
-                      onPressed: () => context.go('/trips/new'),
+                      onPressed: () => _onNewTripPressed(context),
                       icon: const Icon(Icons.add),
                       label: Text(l10n?.newTripButton ?? 'Neuen Törn anlegen'),
                     );

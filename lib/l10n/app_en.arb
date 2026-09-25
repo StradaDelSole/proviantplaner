@@ -215,6 +215,22 @@
     }
   },
   "kittyBalanced": "balanced",
-  "kittyNoExpenses": "No expenses recorded yet.",
-  "kittyNoCrew": "No crew members available."
+  "kittyNoExpenses": "Noch keine Ausgaben erfasst.",
+  "kittyNoCrew": "No crew members available.",
+  "unlockTitle": "Plan another trip",
+  "unlockSubtitle": "Plan unlimited trips and back them up across devices with a free HullQ account.",
+  "benefitUnlimitedTrips": "Unlimited trips",
+  "benefitBackup": "Backup and restore",
+  "benefitDevices": "Multiple personal devices",
+  "loginGoogle": "Continue with Google",
+  "loginApple": "Continue with Apple",
+  "loginEmail": "Continue with email",
+  "consentNewsletter": "Yes, I would like to receive updates on the boat market.",
+  "redeemTripCode": "Redeem trip code",
+  "tripCodeField": "Trip code (e.g. PRO-2026 or TRIP-ADRIA)",
+  "tripCodeSuccess": "Trip code successfully activated!",
+  "tripCodeInvalid": "Invalid trip code",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfUse": "Terms of Use",
+  "imprint": "Legal Notice"
 }

@@ -216,5 +216,21 @@
   },
   "kittyBalanced": "ausgeglichen",
   "kittyNoExpenses": "Noch keine Ausgaben erfasst.",
-  "kittyNoCrew": "Keine Crew-Mitglieder vorhanden."
+  "kittyNoCrew": "Keine Crew-Mitglieder vorhanden.",
+  "unlockTitle": "Weiteren Törn planen",
+  "unlockSubtitle": "Mit einem kostenlosen HullQ-Konto planst du unbegrenzt Törns und sicherst sie für den Gerätewechsel.",
+  "benefitUnlimitedTrips": "Unbegrenzte Törns",
+  "benefitBackup": "Sicherung und Wiederherstellung",
+  "benefitDevices": "Mehrere eigene Geräte",
+  "loginGoogle": "Mit Google fortfahren",
+  "loginApple": "Mit Apple fortfahren",
+  "loginEmail": "Mit E-Mail fortfahren",
+  "consentNewsletter": "Ja, ich möchte über den aktuellen Bootsmarkt informiert werden.",
+  "redeemTripCode": "Törn-Code einlösen",
+  "tripCodeField": "Törn-Code (z. B. PRO-2026 oder TRIP-ADRIA)",
+  "tripCodeSuccess": "Törn-Code erfolgreich aktiviert!",
+  "tripCodeInvalid": "Ungültiger Törn-Code",
+  "privacyPolicy": "Datenschutz",
+  "termsOfUse": "Nutzungsbedingungen",
+  "imprint": "Impressum"
 }

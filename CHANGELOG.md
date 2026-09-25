@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-25 – S6: Freischaltungslogik
+
+- Reine Dart-Entitlement-Engine `EntitlementsManager` in `lib/features/entitlements/domain/entitlements.dart` mit typisierten Enums (`EntitlementLevel`, `AppFeature`).
+- Vollständige Abbildung aller 16 Funktionszeilen der PRD-Tabelle (PRD v0.16 Abschnitt 2) für Probetörn (trial), Mitglied (member) und Pro (pro).
+- Vorbereitung für v1.1 Törn-Codes: `TripCodePass` unterstützt zeitlich begrenzte Gültigkeit (`validUntil`) und Törn-spezifische Freischaltungen (`targetTripId`) ohne Modellumbau.
+- `EntitlementsService` mit Riverpod-Integration (`entitlementsServiceProvider`, `canCreateTripProvider`, `entitlementLevelProvider`).
+- Freischalten-Dialog `UnlockSheet` (SC-ACC-01) gemäß Design-Brief v0.4 mit Social-Logins (Google, Apple, E-Mail), Törn-Code-Einlösung, rechtlichen Links und strikt initial nicht ausgewählter Marketing-Checkbox (Designregel 4).
+- `StartScreen`-Gating: Zweiter Törn im Probetörn öffnet automatisch das `UnlockSheet` statt des Setup-Wizards.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 98/98 Tests grün (22 neue Tests für S6).
+
 ## 2026-09-25 – S5: Bordkasse und Kostenteilung
 
 - Reine Dart-Berechnungsengine `KittyEngine` für Bordkasse und Abrechnung gemäß Programmierregel 5 strikt in ganzzahligen Cents (`int`), ohne Rundungsverluste und mit mathematischer Nullsummen-Invariante ($\sum \text{Salden} = 0$).
