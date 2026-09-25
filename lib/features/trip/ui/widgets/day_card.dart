@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/theme/app_theme.dart';
 
 class DayCard extends StatelessWidget {
   final TripDay day;
@@ -48,11 +49,21 @@ class DayCard extends StatelessWidget {
                     color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: Text(
-                    '${l10n.day.toUpperCase()} $dayFormatted',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.1,
+                  child: Text.rich(
+                    TextSpan(
+                      text: '${l10n.day.toUpperCase()} ',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: dayFormatted,
+                          style: theme.proviantTypography.numberSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -147,12 +158,18 @@ class DayCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Row(
                   children: [
-                    Icon(Icons.shopping_cart, size: 16, color: theme.colorScheme.secondary),
+                    Icon(Icons.shopping_basket_outlined, size: 16, color: theme.colorScheme.secondary),
                     const SizedBox(width: 6),
                     Text(stop.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                     if (stop.isInitial) ...[
                       const SizedBox(width: 6),
-                      Text('(Basis)', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.secondary)),
+                      Text(
+                        '(Basis)',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ],
                 ),

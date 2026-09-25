@@ -1,6 +1,17 @@
 # Changelog
 
-## 2026-09-25 – Design-Brief v0.4, Slice-Plan v0.12
+## 2026-09-25 – S-UI: Angleichung an Design-System und Nachtwache-Modus
+
+- Zentrales Flutter-Theme für alle 3 Modi implementiert: Hell, Dunkel und Nachtwache (strikt Rot auf Schwarz nach Designregel 13)
+- Farbtokens aus `docs/design/mockups/technical_maritime_m3/DESIGN.md` und `docs/design/DESIGN_BRIEF_v0.4.md` vollständig umgesetzt
+- Lokale Offline-Schriften in `assets/fonts/` eingebunden (`IBM Plex Sans` für Fließtext/Titel, `JetBrains Mono` mit `tabularFigures` für Zahlen und Messwerte)
+- `ThemeController` und `ThemeStorage` mit lokaler Offline-Persistenz via `FlutterSecureStorage` und Schnellzugriff auf Nachtwache im StartScreen-AppBar
+- Bestehende Oberflächen (S0 StartScreen, S3 TripWizardScreen, TripTimelineScreen, DayCard) an das Design-System und die Designregeln 1–13 angeglichen
+- Verbotene maritime Icons (Segel `Icons.sailing_outlined`, Bootssilhouette `Icons.directions_boat`) entfernt und durch technische Blueprint-Icons (`view_timeline_outlined`, `inventory_2_outlined`) ersetzt
+- Mindestgrößen (Fließtext >= 14 sp, Etiketten >= 12 sp, Tippflächen >= 48 dp) konsequent eingehalten
+- Nachtwache-Modus: Strikt keine Farben außerhalb des Rot/Schwarz-Spektrums in allen Theme-Komponenten (Buttons, Chips, Cards, Switch, Slider, ProgressIndicator, NavigationBar)
+- Umfassende Testsuite in `test/core/theme/design_system_and_nightwatch_test.dart` (10/10 Tests grün, gesamte Suite 55/55 Tests grün)
+- Validierung: `flutter analyze` 0 Fehler/Warnungen, `flutter test` 55/55 Tests grün
 
 - Detailspezifikation: Informationsarchitektur, Startbildschirm, Setup-Assistent, Hierarchie der Warengruppen, alle Bildschirme mit IDs, Tokens für drei Modi, Komponenten, Texte, Bewegung, Barrierefreiheit
 

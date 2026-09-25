@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/core/theme/theme_controller.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
 /// Startbildschirm gemäß Slice S0 & S3.
@@ -33,14 +35,26 @@ class _StartScreenState extends ConsumerState<StartScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Nachtwache',
+            icon: Icon(
+              ref.watch(themeControllerProvider) == AppThemeMode.nightwatch
+                  ? Icons.nightlight_round
+                  : Icons.nightlight_outlined,
+            ),
+            onPressed: () {
+              ref.read(themeControllerProvider.notifier).toggleNightwatch();
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: Text(
-                l10n?.poweredBy ?? 'powered by HullQ',
-                style: theme.textTheme.labelSmall?.copyWith(
+                l10n?.poweredBy ?? 'POWERED BY HULLQ',
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.8,
+                  fontSize: 12,
                 ),
               ),
             ),
@@ -54,7 +68,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Dezentes maritimes technisches Symbol / Blueprint Icon
+                // Dezentes maritimes technisches Symbol / Blueprint Icon (keine Segel/Anker)
                 Container(
                   width: 72,
                   height: 72,
@@ -66,7 +80,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                     ),
                   ),
                   child: Icon(
-                    Icons.sailing_outlined,
+                    Icons.view_timeline_outlined,
                     size: 36,
                     color: theme.colorScheme.primary,
                   ),
@@ -108,7 +122,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.directions_boat, color: theme.colorScheme.secondary),
+                                  Icon(Icons.inventory_2_outlined, color: theme.colorScheme.secondary),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -118,7 +132,9 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                                   ),
                                   Text(
                                     '${trip.daysCount} ${l10n?.day ?? "Tage"}',
-                                    style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.outline),
+                                    style: theme.proviantTypography.numberMedium.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -155,10 +171,11 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                 const SizedBox(height: 24),
                 // Dezentes Label unten
                 Text(
-                  l10n?.poweredBy ?? 'powered by HullQ',
+                  l10n?.poweredBy ?? 'POWERED BY HULLQ',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.outline,
                     letterSpacing: 0.8,
+                    fontSize: 12,
                   ),
                 ),
               ],

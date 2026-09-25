@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/theme/app_theme.dart';
 import '../data/trip_provider.dart';
 import 'widgets/day_card.dart';
 
@@ -139,7 +140,8 @@ class TripTimelineScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_shopping_cart),
+            icon: const Icon(Icons.shopping_basket_outlined),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             tooltip: l10n.addShoppingStop,
             onPressed: () {
               final days = daysAsync.valueOrNull ?? [];
@@ -273,12 +275,14 @@ class TripTimelineScreen extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit, size: 18),
+                                  icon: const Icon(Icons.edit, size: 20),
+                                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                   onPressed: () => _showEditStopDialog(context, ref, stop),
                                 ),
                                 if (!stop.isInitial)
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18),
+                                    icon: const Icon(Icons.delete_outline, size: 20),
+                                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                                     onPressed: () => _deleteStop(context, ref, stop),
                                   ),
                               ],
@@ -333,16 +337,19 @@ class TripTimelineScreen extends ConsumerWidget {
       children: [
         Text(
           value,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: theme.proviantTypography.numberLarge.copyWith(
+            fontSize: 26,
+            height: 32 / 26,
+            fontWeight: FontWeight.w600,
             color: valueColor ?? theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: theme.textTheme.labelSmall?.copyWith(
+          style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 12,
           ),
         ),
       ],

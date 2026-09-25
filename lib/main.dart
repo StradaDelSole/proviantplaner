@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/routing/app_router.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/core/theme/theme_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,13 +23,34 @@ class ProviantplanerApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final appThemeMode = ref.watch(themeControllerProvider);
+
+    final ThemeData currentTheme;
+    final ThemeMode mode;
+
+    switch (appThemeMode) {
+      case AppThemeMode.nightwatch:
+        currentTheme = AppTheme.nightwatchTheme;
+        mode = ThemeMode.dark;
+        break;
+      case AppThemeMode.dark:
+        currentTheme = AppTheme.darkTheme;
+        mode = ThemeMode.dark;
+        break;
+      case AppThemeMode.light:
+        currentTheme = AppTheme.lightTheme;
+        mode = ThemeMode.light;
+        break;
+    }
 
     return MaterialApp.router(
       title: 'Proviantplaner',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      theme: currentTheme,
+      darkTheme: appThemeMode == AppThemeMode.nightwatch
+          ? AppTheme.nightwatchTheme
+          : AppTheme.darkTheme,
+      themeMode: mode,
       locale: locale,
       routerConfig: router,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

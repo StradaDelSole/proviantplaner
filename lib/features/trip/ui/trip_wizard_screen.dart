@@ -123,7 +123,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
             child: Center(
               child: Text(
                 '${_crewMembers.length} ${l10n.persons.toUpperCase()}',
-                style: theme.textTheme.labelSmall?.copyWith(
+                style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                 ),
@@ -385,11 +385,13 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit, size: 18),
+                    icon: const Icon(Icons.edit, size: 20),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     onPressed: () => _editPerson(idx),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                     onPressed: () => _removePerson(idx),
                   ),
                 ],
@@ -403,7 +405,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           icon: const Icon(Icons.person_add),
           label: Text(l10n.addCrewMember),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(44),
+            minimumSize: const Size.fromHeight(48),
           ),
         ),
         const SizedBox(height: 24),
