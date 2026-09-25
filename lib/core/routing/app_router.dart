@@ -8,6 +8,7 @@ import 'package:proviantplaner/features/kitty/ui/kitty_screen.dart';
 import 'package:proviantplaner/features/kitty/ui/settlement_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
+import 'package:proviantplaner/features/more/ui/more_screen.dart';
 
 /// Provider für den GoRouter der Anwendung.
 /// Ermöglicht deklarative Navigation gemäß den technischen Leitplanken.
@@ -79,6 +80,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final idStr = state.pathParameters['id'];
           final tripId = int.tryParse(idStr ?? '') ?? 1;
           return SettlementScreen(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: '/more',
+        name: 'more',
+        builder: (context, state) => const MoreScreen(),
+      ),
+      GoRoute(
+        path: '/trips/:id/more',
+        name: 'trip_more',
+        builder: (context, state) {
+          final idStr = state.pathParameters['id'];
+          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          return MoreScreen(tripId: tripId);
         },
       ),
     ],

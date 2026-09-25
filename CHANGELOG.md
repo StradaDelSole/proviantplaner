@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-25 – S7: HullQ-Login, Einwilligung, Konto löschen (Mock)
+
+- `MockHullqAuthService` mit `FlutterSecureStorage` für verschlüsselte Persistenz von Tokens, E-Mail-Adresse und Mitgliedschaftsstatus.
+- Offline-Toleranz: Gespeicherter Status bleibt ohne Netzwerkverbindung vollständig erhalten; `UnlockSheet` informiert über fehlende Verbindung und deaktiviert Login-Aktionen (SC-ACC-01).
+- Verbindliche Designregel 4 & GEMINI.md: Checkbox für Marketing-Einwilligung ("Ja, ich möchte über den aktuellen Bootsmarkt informiert werden.") ist strikt initial unmarkiert (`false`) und wird bei Login transparent übermittelt.
+- Bildschirm "Mehr" (SC-MORE-01) als Tab 3 (`/more` und `/trips/:id/more`):
+  - HullQ-Konto Bento Card mit unterschiedlichen Zuständen für nicht-angemeldete (Freischalten-Button) und angemeldete Nutzer (E-Mail, Status-Badge, Hinweistext zur letzten Sicherung, Buttons für Sofortsicherung und Abmeldung).
+  - Sicheres Konto-Löschen ("Konto löschen") mit irreversiblem Bestätigungsdialog: löscht alle Tokens und lokalen Kontodaten und versetzt den Zustand zurück auf den Probetörn.
+  - Nachtwache-Umschalter, Platzhalter für Zahlungsdaten, Packungsgrößen und Spracheinstellungen sowie rechtliche Verlinkungen (Datenschutz, Nutzungsbedingungen, Impressum) und Versionsanzeige.
+- Reaktives State-Management mit `AuthNotifier` und `AuthState` für synchrone UI-Aktualisierungen bei Authentifizierungs- und Löschvorgängen.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 117/117 Tests bestanden (inklusive 12 neuer Tests für Token Lifecycle, Persistenz und UI-Interaktionen).
+
 ## 2026-09-25 – S5a: Korrektur QR und Validierung
 
 - Selbstgebauten QR-Generator (`qr_generator.dart`) gelöscht; EPC-QR-Code (GiroCode) mit Standard-Paketen `qr_flutter` und `qr` (Fehlerkorrektur M, UTF-8) implementiert.

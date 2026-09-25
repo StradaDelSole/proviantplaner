@@ -211,6 +211,13 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             } else {
               context.go('/trips/new');
             }
+          } else if (index == 3) {
+            final activeTrip = activeTripAsync.valueOrNull;
+            if (activeTrip != null) {
+              context.go('/trips/${activeTrip.id}/more');
+            } else {
+              context.go('/more');
+            }
           }
         },
         destinations: [

@@ -1,10 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/hullq_backup_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 
 void main() {
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+  });
+
   group('AppTheme Tests', () {
     test('lightTheme has correct brightness and primary color', () {
       final theme = AppTheme.lightTheme;

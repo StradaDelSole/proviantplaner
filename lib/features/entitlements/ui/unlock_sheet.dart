@@ -8,15 +8,17 @@ import '../data/entitlements_providers.dart';
 
 /// Sheet zur Kontoaktivierung / Freischaltung (SC-ACC-01).
 class UnlockSheet extends ConsumerStatefulWidget {
-  const UnlockSheet({super.key});
+  final bool isOffline;
+
+  const UnlockSheet({super.key, this.isOffline = false});
 
   /// Öffnet das Bottom Sheet modal.
-  static Future<bool?> show(BuildContext context) {
+  static Future<bool?> show(BuildContext context, {bool isOffline = false}) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => const UnlockSheet(),
+      builder: (ctx) => UnlockSheet(isOffline: isOffline),
     );
   }
 
@@ -28,17 +30,22 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
   // Verbindliche Designregel 4 & GEMINI.md: Checkbox IMMER initial unmarkiert (false)
   bool _newsletterOptIn = false;
   bool _showCodeInput = false;
+  bool _showEmailInput = false;
   final TextEditingController _codeController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
 
   @override
   void dispose() {
     _codeController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   Future<void> _login(Future<bool> Function() authAction) async {
     final success = await authAction();
     if (success && mounted) {
+      await ref.read(authNotifierProvider.notifier).refresh();
+      if (!mounted) return;
       ref.invalidate(entitlementLevelProvider);
       ref.invalidate(canCreateTripProvider);
       Navigator.of(context).pop(true);
@@ -188,8 +195,25 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
 
   Widget _buildLoginButtons(ThemeData theme, AppLocalizations l10n) {
     final auth = ref.read(hullqAuthServiceProvider);
+    final disabled = widget.isOffline;
+
     return Column(
       children: [
+        if (widget.isOffline)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.cloud_off, size: 16, color: theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.offlineLoginNotice,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                ),
+              ],
+            ),
+          ),
         OutlinedButton.icon(
           icon: const Icon(Icons.g_mobiledata, size: 24),
           label: Text(l10n.loginGoogle),
@@ -197,7 +221,7 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () => _login(() => auth.loginWithGoogle(newsletterOptIn: _newsletterOptIn)),
+          onPressed: disabled ? null : () => _login(() => auth.loginWithGoogle(newsletterOptIn: _newsletterOptIn)),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
@@ -207,18 +231,60 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
             minimumSize: const Size.fromHeight(48),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          onPressed: () => _login(() => auth.loginWithApple(newsletterOptIn: _newsletterOptIn)),
+          onPressed: disabled ? null : () => _login(() => auth.loginWithApple(newsletterOptIn: _newsletterOptIn)),
         ),
         const SizedBox(height: 8),
-        FilledButton.icon(
-          icon: const Icon(Icons.mail_outline, size: 18),
-          label: Text(l10n.loginEmail),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        if (!_showEmailInput)
+          FilledButton.icon(
+            icon: const Icon(Icons.mail_outline, size: 18),
+            label: Text(l10n.loginEmail),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: disabled ? null : () => setState(() => _showEmailInput = true),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: l10n.enterEmailTitle,
+                    hintText: l10n.emailHint,
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: disabled
+                      ? null
+                      : () {
+                          final email = _emailController.text.trim();
+                          if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.emailInvalid)),
+                            );
+                            return;
+                          }
+                          _login(() => auth.loginWithEmail(email, newsletterOptIn: _newsletterOptIn));
+                        },
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  child: Text(l10n.loginEmail),
+                ),
+              ],
+            ),
           ),
-          onPressed: () => _login(() => auth.loginWithEmail('user@example.com', newsletterOptIn: _newsletterOptIn)),
-        ),
       ],
     );
   }

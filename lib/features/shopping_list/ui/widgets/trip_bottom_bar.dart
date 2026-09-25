@@ -35,10 +35,7 @@ class TripBottomBar extends StatelessWidget {
             context.go('/trips/$tripId/kitty');
             break;
           case 3:
-            // S7 Mehr / Einstellungen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Einstellungen & Mehr folgen in Slice S7')),
-            );
+            context.go('/trips/$tripId/more');
             break;
         }
       },

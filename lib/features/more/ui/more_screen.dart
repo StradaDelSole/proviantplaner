@@ -1,0 +1,351 @@
+/// Bildschirm "Mehr" / Einstellungen und HullQ-Konto (SC-MORE-01).
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/hullq_auth_service.dart';
+import 'package:proviantplaner/core/theme/theme_controller.dart';
+import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
+import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
+
+/// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
+class MoreScreen extends ConsumerWidget {
+  final int? tripId;
+
+  const MoreScreen({super.key, this.tripId});
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.accountDeleteConfirmTitle),
+        content: Text(l10n.accountDeleteConfirmContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.accountDeleteConfirmButton),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(authNotifierProvider.notifier).deleteAccount();
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.accountDeletedNotice)),
+        );
+      }
+    }
+  }
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    await ref.read(authNotifierProvider.notifier).logout();
+    ref.invalidate(entitlementLevelProvider);
+    ref.invalidate(canCreateTripProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.accountLogoutNotice)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final authState = ref.watch(authNotifierProvider);
+    final status = authState.status;
+    final email = authState.email ?? '';
+    final isNightwatch = ref.watch(themeControllerProvider) == AppThemeMode.nightwatch;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.navMore),
+        actions: [
+          IconButton(
+            tooltip: 'Nachtwache',
+            icon: Icon(
+              isNightwatch ? Icons.nightlight_round : Icons.nightlight_outlined,
+            ),
+            onPressed: () {
+              ref.read(themeControllerProvider.notifier).toggleNightwatch();
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: [
+          _buildAccountCard(context, ref, theme, l10n, status, email),
+          const SizedBox(height: 16),
+          _buildNightwatchTile(ref, theme, isNightwatch),
+          const Divider(height: 24),
+          _buildSectionHeader(theme, 'Einstellungen'),
+          ListTile(
+            leading: const Icon(Icons.payment_outlined),
+            title: const Text('Meine Zahlungsdaten'),
+            subtitle: const Text('Nur auf diesem Gerät gespeichert'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Zahlungsdaten werden im Törn verwaltet.')),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.straighten_outlined),
+            title: const Text('Gemerkte Packungsgrößen'),
+            subtitle: const Text('Keine Packungsgrößen angepasst'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.language_outlined),
+            title: const Text('Sprache'),
+            subtitle: const Text('Deutsch'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {},
+          ),
+          const Divider(height: 24),
+          _buildSectionHeader(theme, 'Rechtliches & Information'),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: Text(l10n.privacyPolicy),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: Text(l10n.termsOfUse),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(l10n.imprint),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () {},
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'Version 1.0.0',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'POWERED BY HULLQ',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 1.2,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+      bottomNavigationBar: tripId != null
+          ? TripBottomBar(tripId: tripId!, currentIndex: 3)
+          : null,
+    );
+  }
+
+  Widget _buildSectionHeader(ThemeData theme, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, bottom: 8),
+      child: Text(
+        title,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNightwatchTile(WidgetRef ref, ThemeData theme, bool isNightwatch) {
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: SwitchListTile(
+        title: const Text('Nachtwache-Modus'),
+        subtitle: const Text('Reines Rot auf Schwarz zum Erhalt der Nachtsicht'),
+        secondary: Icon(
+          isNightwatch ? Icons.nightlight_round : Icons.nightlight_outlined,
+          color: isNightwatch ? theme.colorScheme.primary : null,
+        ),
+        value: isNightwatch,
+        onChanged: (_) {
+          ref.read(themeControllerProvider.notifier).toggleNightwatch();
+        },
+      ),
+    );
+  }
+
+  Widget _buildAccountCard(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    AppLocalizations l10n,
+    HullqMembershipStatus status,
+    String email,
+  ) {
+    final isLoggedIn = status != HullqMembershipStatus.trial;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: isLoggedIn
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    isLoggedIn ? Icons.person : Icons.person_outline,
+                    color: isLoggedIn
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isLoggedIn ? email : l10n.accountTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isLoggedIn
+                            ? (status == HullqMembershipStatus.pro
+                                ? l10n.accountStatusPro
+                                : l10n.accountStatusMember)
+                            : l10n.accountNotLoggedIn,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isLoggedIn)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      status == HullqMembershipStatus.pro ? 'PRO' : 'MITGLIED',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (!isLoggedIn) ...[
+              FilledButton.icon(
+                icon: const Icon(Icons.lock_open, size: 18),
+                label: Text(l10n.accountUnlockFree),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => UnlockSheet.show(context),
+              ),
+            ] else ...[
+              Text(
+                l10n.accountBackupNever,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                      label: Text(l10n.accountBackupNow),
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sicherung erfolgreich abgeschlossen.')),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.logout, size: 18),
+                      label: Text(l10n.accountLogout),
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      onPressed: () => _logout(context, ref),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  icon: Icon(Icons.delete_forever, size: 18, color: theme.colorScheme.error),
+                  label: Text(
+                    l10n.accountDelete,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                  style: TextButton.styleFrom(minimumSize: const Size(120, 48)),
+                  onPressed: () => _confirmDeleteAccount(context, ref),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
