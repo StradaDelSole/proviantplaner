@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-25 – Freigabe S7, S8
+
+- Reihenfolge: S5a (Vorrang), dann S7 und S8 gegen Mocks; S9/S10 noch nicht freigegeben
+
 ## 2026-09-25 – Review S2a–S5, GEMINI.md v0.5, Slice-Plan v0.13, Katalog v0.8
 
 - Review: S2a-Befunde behoben; kritisch: selbstgebauter QR-Generator vermutlich nicht scannbar

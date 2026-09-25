@@ -12,7 +12,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S5a (Korrektur, Vorrang, Review: docs/impl/REVIEW_S2a-S5_v0.1.md), danach S6. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S5a (Korrektur, Vorrang, Review: docs/impl/REVIEW_S2a-S5_v0.1.md), danach S7 und S8 gegen Mock-Implementierungen (HullQ-API noch nicht dokumentiert). Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
