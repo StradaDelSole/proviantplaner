@@ -1,9 +1,8 @@
-/// Bildschirm "Mehr" / Einstellungen und HullQ-Konto (SC-MORE-01).
-library;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:intl/intl.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
 import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
@@ -65,6 +64,76 @@ class MoreScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.accountLogoutNotice)),
       );
+    }
+  }
+
+  Future<void> _backupNow(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final success = await ref.read(backupCoordinatorProvider).createBackup();
+      ref.invalidate(lastBackupTimestampProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? l10n.accountBackupSuccess : 'Sicherung fehlgeschlagen.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler bei der Sicherung: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreBackup(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.accountBackupRestore),
+        content: const Text(
+          'Möchtest du alle Törns aus der Cloud-Sicherung wiederherstellen? Bestehende lokale Daten werden überschrieben.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.accountBackupRestore),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final success = await ref.read(backupCoordinatorProvider).restoreBackup();
+        ref.invalidate(canCreateTripProvider);
+        ref.invalidate(entitlementLevelProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success ? l10n.accountRestoreSuccess : 'Keine Sicherung gefunden.',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Fehler bei der Wiederherstellung: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -219,6 +288,12 @@ class MoreScreen extends ConsumerWidget {
   ) {
     final isLoggedIn = status != HullqMembershipStatus.trial;
 
+    final lastBackupAsync = ref.watch(lastBackupTimestampProvider);
+    final lastBackup = lastBackupAsync.valueOrNull;
+    final backupSubtitle = lastBackup != null
+        ? '${l10n.accountBackupStatus} ${DateFormat('dd.MM.yyyy HH:mm').format(lastBackup)}'
+        : l10n.accountBackupNever;
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainerLow,
@@ -299,7 +374,7 @@ class MoreScreen extends ConsumerWidget {
               ),
             ] else ...[
               Text(
-                l10n.accountBackupNever,
+                backupSubtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -312,11 +387,7 @@ class MoreScreen extends ConsumerWidget {
                       icon: const Icon(Icons.cloud_upload_outlined, size: 18),
                       label: Text(l10n.accountBackupNow),
                       style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sicherung erfolgreich abgeschlossen.')),
-                        );
-                      },
+                      onPressed: () => _backupNow(context, ref),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -330,6 +401,15 @@ class MoreScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (lastBackup != null) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                  label: Text(l10n.accountBackupRestore),
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                  onPressed: () => _restoreBackup(context, ref),
+                ),
+              ],
               const SizedBox(height: 8),
               Center(
                 child: TextButton.icon(

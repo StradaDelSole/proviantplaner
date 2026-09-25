@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import '../data/entitlements_providers.dart';
 
 /// Sheet zur Kontoaktivierung / Freischaltung (SC-ACC-01).
@@ -45,6 +46,13 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
     final success = await authAction();
     if (success && mounted) {
       await ref.read(authNotifierProvider.notifier).refresh();
+      if (!mounted) return;
+      try {
+        final coordinator = ref.read(backupCoordinatorProvider);
+        if (await coordinator.hasBackup()) {
+          await coordinator.restoreBackup();
+        }
+      } catch (_) {}
       if (!mounted) return;
       ref.invalidate(entitlementLevelProvider);
       ref.invalidate(canCreateTripProvider);

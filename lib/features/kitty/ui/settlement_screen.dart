@@ -8,6 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:proviantplaner/core/services/pdf_providers.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
 import '../domain/models/kitty_models.dart';
@@ -77,6 +78,17 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           onPressed: () => Navigator.of(context).pop(),
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         ),
+        actions: [
+          asyncData.maybeWhen(
+            data: (data) => IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: l10n.exportSettlementPdf,
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              onPressed: () => _exportSettlementPdf(context, data),
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: asyncData.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -118,6 +130,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(height: 12),
           _buildComplianceNotice(theme, l10n),
           const SizedBox(height: 24),
+          _buildExportPdfButton(context, theme, l10n, data),
+          const SizedBox(height: 12),
           _buildArchiveButton(context, theme, l10n),
           const SizedBox(height: 12),
           _buildPoweredBy(theme),
@@ -506,6 +520,36 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExportPdfButton(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    TripKittyData data,
+  ) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      icon: const Icon(Icons.picture_as_pdf_outlined),
+      label: Text(l10n.exportSettlementPdf),
+      onPressed: () => _exportSettlementPdf(context, data),
+    );
+  }
+
+  Future<void> _exportSettlementPdf(BuildContext context, TripKittyData data) async {
+    final pdfService = ref.read(pdfExportServiceProvider);
+    final bytes = await pdfService.generateSettlementPdf(
+      data: data,
+    );
+
+    await pdfService.shareOrPrintPdf(
+      bytes: bytes,
+      filename: 'Bordkassenabrechnung_${data.trip.name.replaceAll(' ', '_')}.pdf',
+      subject: 'Bordkassenabrechnung ${data.trip.name}',
     );
   }
 

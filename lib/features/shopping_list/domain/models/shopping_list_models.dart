@@ -167,20 +167,7 @@ class ShoppingListDepartmentView {
   });
 
   /// Name der Abteilung in deutscher Sprache.
-  String get displayName => switch (department) {
-        CatalogDepartment.obstGemuese => 'Obst und Gemüse',
-        CatalogDepartment.backwaren => 'Backwaren',
-        CatalogDepartment.molkerei => 'Molkerei und Kühlregal',
-        CatalogDepartment.fleischFisch => 'Fleisch und Fisch',
-        CatalogDepartment.trockenware => 'Trockenware',
-        CatalogDepartment.konserven => 'Konserven',
-        CatalogDepartment.suesswaren => 'Süßwaren',
-        CatalogDepartment.getraenke => 'Getränke',
-        CatalogDepartment.drogerie => 'Drogerie',
-        CatalogDepartment.haushalt => 'Haushalt',
-        CatalogDepartment.apotheke => 'Apotheke / Drogerie',
-        CatalogDepartment.technik => 'Technik / Bootszubehör',
-      };
+  String get displayName => department.displayName;
 
   /// Icon der Abteilung gemäß Design-Brief Abschnitt 2.
   IconData get icon => switch (department) {

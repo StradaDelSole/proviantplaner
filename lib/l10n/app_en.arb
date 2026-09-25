@@ -251,5 +251,11 @@
   "offlineLoginNotice": "Login requires an internet connection.",
   "enterEmailTitle": "Enter email address",
   "emailHint": "name@example.com",
-  "emailInvalid": "Please enter a valid email address."
+  "emailInvalid": "Please enter a valid email address.",
+  "accountBackupSuccess": "Backup completed successfully.",
+  "accountBackupRestore": "Restore backup",
+  "accountRestoreSuccess": "Trips successfully restored from backup.",
+  "exportPdf": "Export as PDF",
+  "exportShoppingListPdf": "Print shopping list / as PDF",
+  "exportSettlementPdf": "Print settlement / as PDF"
 }

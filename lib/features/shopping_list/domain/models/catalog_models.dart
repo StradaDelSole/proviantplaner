@@ -133,6 +133,22 @@ enum CatalogDepartment {
     }
     throw FormatException('catalog_v0.7.json: Unbekannte Abteilung "$val" in $field für ID "$id"');
   }
+
+  /// Deutscher Anzeigename der Abteilung.
+  String get displayName => switch (this) {
+        CatalogDepartment.obstGemuese => 'Obst und Gemüse',
+        CatalogDepartment.backwaren => 'Backwaren',
+        CatalogDepartment.molkerei => 'Molkerei und Kühlregal',
+        CatalogDepartment.fleischFisch => 'Fleisch und Fisch',
+        CatalogDepartment.trockenware => 'Trockenware',
+        CatalogDepartment.konserven => 'Konserven',
+        CatalogDepartment.suesswaren => 'Süßwaren',
+        CatalogDepartment.getraenke => 'Getränke',
+        CatalogDepartment.drogerie => 'Drogerie',
+        CatalogDepartment.haushalt => 'Haushalt',
+        CatalogDepartment.apotheke => 'Apotheke / Drogerie',
+        CatalogDepartment.technik => 'Technik / Bootszubehör',
+      };
 }
 
 /// Bedarfsangabe (Menge, Einheit, Rechenbasis).

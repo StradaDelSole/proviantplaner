@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-25 – S8: Sicherung, Wiederherstellung, Export (Mock)
+
+- `MockHullqBackupService` und `BackupCoordinator` für die transaktionssichere Sicherung und Wiederherstellung aller 8 SQLite-Tabellen (`Trips`, `TripDays`, `CrewMembers`, `ShoppingStops`, `ListItems`, `ListItemAllocations`, `Expenses`, `KittyPayments`) in strukturiertem JSON.
+- Verschlüsselte Persistenz der Cloud-Sicherung in `FlutterSecureStorage` zur realistischen Simulation von Geräte- und App-Neuinstallationen.
+- Relationale Integrität bei der Wiederherstellung: Automatische Neuverknüpfung aller Fremdschlüssel (`stopIdMap`, `crewIdMap`, `listItemIdMap`).
+- Sicherungsberechtigung: Sicherung und Wiederherstellung stehen gemäß PRD strikt nur angemeldeten HullQ-Mitgliedern zur Verfügung.
+- Automatische Wiederherstellung: Beim Login eines Mitglieds über das `UnlockSheet` nach einer Neuinstallation wird eine vorhandene Cloud-Sicherung automatisch erkannt und eingespielt.
+- Bildschirm "Mehr" (SC-MORE-01):
+  - Anzeige des Zeitstempels der letzten Sicherung mit formatierter Datumsangabe bzw. "Noch keine Sicherung vorhanden".
+  - Button "Jetzt sichern" mit direktem Feedback per SnackBar.
+  - Button "Sicherung wiederherstellen" mit Sicherheits-Bestätigungsdialog.
+- PDF-Exportdienst `PdfExportService` mit Standard-Paketen `pdf` und `printing` (Regel 8) unter Verwendung von Standard-PostScript-Schriften (Helvetica, Courier) für 100% Offline-Fähigkeit ohne Netzwerkzugriff:
+  - **Einkaufsliste:** Mehrseitiges, druckfertiges A4-Dokument, gegliedert nach Abteilungen, mit Packungsanzahlen, Mengenangaben, Törndetails und aktuellem Stopp.
+  - **Bordkassenabrechnung:** Mehrseitiges A4-Dokument mit Bento-Zusammenfassung (Ausgaben, Einzahlungen, Saldo), Tabelle der minimalen Ausgleichszahlungen ("Wer zahlt wem") und vollständiger Saldenübersicht pro Crewmitglied.
+  - **Teilen & Drucken:** Export und Übergabe an das System-Teilen-Menü via `Printing.sharePdf` / `share_plus`.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 126/126 Tests bestanden (inklusive 9 neuer Unit- und Widget-Tests für Sicherung, Wiederherstellung, PDF-Generierung und UI-Abläufe).
+
 ## 2026-09-25 – S7: HullQ-Login, Einwilligung, Konto löschen (Mock)
 
 - `MockHullqAuthService` mit `FlutterSecureStorage` für verschlüsselte Persistenz von Tokens, E-Mail-Adresse und Mitgliedschaftsstatus.

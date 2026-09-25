@@ -251,5 +251,11 @@
   "offlineLoginNotice": "Anmeldung braucht eine Internetverbindung.",
   "enterEmailTitle": "E-Mail-Adresse eingeben",
   "emailHint": "name@beispiel.de",
-  "emailInvalid": "Bitte eine gültige E-Mail-Adresse eingeben."
+  "emailInvalid": "Bitte eine gültige E-Mail-Adresse eingeben.",
+  "accountBackupSuccess": "Sicherung erfolgreich abgeschlossen.",
+  "accountBackupRestore": "Sicherung wiederherstellen",
+  "accountRestoreSuccess": "Törns erfolgreich aus Sicherung wiederhergestellt.",
+  "exportPdf": "Als PDF exportieren",
+  "exportShoppingListPdf": "Einkaufsliste drucken / als PDF",
+  "exportSettlementPdf": "Abrechnung drucken / als PDF"
 }

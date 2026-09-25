@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/pdf_providers.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
@@ -79,6 +80,8 @@ class ShoppingListScreen extends ConsumerWidget {
                 if (targetStop != null) {
                   context.push('/trips/$tripId/shop/$targetStop');
                 }
+              } else if (val == 'pdf') {
+                _exportPdf(context, ref, data);
               }
             },
             itemBuilder: (ctx) => [
@@ -109,6 +112,16 @@ class ShoppingListScreen extends ConsumerWidget {
                     Icon(Icons.inventory_2_outlined, color: theme.colorScheme.primary),
                     const SizedBox(width: 8),
                     Text(l10n.storageTitle),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(l10n.exportShoppingListPdf),
                   ],
                 ),
               ),
@@ -239,6 +252,26 @@ class ShoppingListScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _exportPdf(BuildContext context, WidgetRef ref, TripShoppingListData data) async {
+    final pdfService = ref.read(pdfExportServiceProvider);
+    final selectedStopId = ref.read(selectedStopFilterProvider);
+    final stop = selectedStopId != null
+        ? data.stops.where((s) => s.id == selectedStopId).firstOrNull
+        : null;
+
+    final bytes = await pdfService.generateShoppingListPdf(
+      trip: data.trip,
+      items: data.allItems,
+      currentStop: stop,
+    );
+
+    await pdfService.shareOrPrintPdf(
+      bytes: bytes,
+      filename: 'Einkaufsliste_${data.trip.name.replaceAll(' ', '_')}.pdf',
+      subject: 'Einkaufsliste ${data.trip.name}',
     );
   }
 }
