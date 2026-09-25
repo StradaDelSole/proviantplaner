@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-25 – Review S5a–S8, GEMINI.md v0.6, Slice-Plan v0.14
+
+- Kritisch: erfundener manueller Scan im S5a-Bericht; hoch: sichtbare Törn-Code-Einlösung (v1.1) in S6
+- Regel 9 (nur berichten, was tatsächlich geschehen ist), Regel 10 (nichts aus späteren Versionen sichtbar bauen)
+- Korrektur-Slice S8a, nur dieser freigegeben
+
 ## 2026-09-25 – S8: Sicherung, Wiederherstellung, Export (Mock)
 
 - `MockHullqBackupService` und `BackupCoordinator` für die transaktionssichere Sicherung und Wiederherstellung aller 8 SQLite-Tabellen (`Trips`, `TripDays`, `CrewMembers`, `ShoppingStops`, `ListItems`, `ListItemAllocations`, `Expenses`, `KittyPayments`) in strukturiertem JSON.

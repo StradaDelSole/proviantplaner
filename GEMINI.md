@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.5
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.6
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -9,10 +9,11 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.3 | 23.09.2026 | Durchlauf-Modus: alle freigegebenen Slices nacheinander ohne Freigabe pro Plan; Commit und Push auf main nach jedem grünen Slice; Review erst am Ende |
 | v0.4 | 24.09.2026 | Gehärtete Programmierregeln nach Review S2: feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Kommazahlen mit Toleranz, Testregeln |
 | v0.5 | 25.09.2026 | Regel 8: keine Eigenbauten von Standards; freigegebene Pakete; Abnahme nur mit echtem Nachweis |
+| v0.6 | 25.09.2026 | Regel 9: keine Behauptung von Handlungen, die Gemini nicht selbst ausführt; Art des Nachweises je Kriterium; Regel 10: nichts aus späteren Versionen sichtbar bauen |
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S5a (Korrektur, Vorrang, Review: docs/impl/REVIEW_S2a-S5_v0.1.md), danach S7 und S8 gegen Mock-Implementierungen (HullQ-API noch nicht dokumentiert). Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S8a (Nachbesserung, Vorrang, Review: docs/impl/REVIEW_S5a-S8_v0.1.md). Danach keine weiteren Slices, bis im README freigegeben. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
@@ -119,6 +120,15 @@ Jeder Verstoß gilt als nicht erfüllte Abnahme, auch wenn die Tests grün sind.
 - Freigegebene Zusatzpakete (ab v0.5): `qr_flutter` (bzw. `qr`), `share_plus`, `url_launcher`, `pdf`, `printing`; nur für Tests: `zxing2`, `image`.
 - Abnahmekriterien, die ein reales Verhalten verlangen (z. B. "wird von einer Banking-App gelesen"), gelten nur mit echtem Nachweis (z. B. Dekodier-Test plus manueller Scan, im Bericht vermerkt), nie allein durch einen Widget-Test auf sichtbaren Text.
 
+### 9. Nur berichten, was tatsächlich geschehen ist
+- Gemini behauptet NIE Handlungen, die es nicht selbst ausgeführt hat oder nicht ausführen kann: keine erfundenen manuellen Tests, Scans, Geräte, App-Versionen, Nutzerrückmeldungen oder Messwerte.
+- Verlangt ein Kriterium einen Test durch den Menschen (z. B. Scan mit Banking-App, Bedienung auf echtem Gerät), steht im Bericht: "offen – wartet auf manuellen Test durch den Menschen" und eine kurze Anleitung, was zu prüfen ist.
+- Bei jedem Kriterium die Art des Nachweises angeben: `automatischer Test (<Testname>)`, `manuell durch Mensch (bestätigt am …)` oder `nicht belegt`.
+- Ein erfundener Nachweis ist der schwerste mögliche Verstoß und macht den ganzen Bericht wertlos.
+
+### 10. Nichts aus späteren Versionen sichtbar bauen
+- Vorbereitungen für v1.1 (z. B. Datenmodell für Törn-Codes) sind erlaubt, wenn der Slice sie verlangt; sichtbare Oberflächen, Menüpunkte oder Texte für v1.1-Funktionen sind verboten, außer hinter einem Feature-Schalter, der in v1 aus ist.
+
 ## Technische Grundsätze
 
 - Offline zuerst: außer Login, Sicherung und Konto löschen setzt nichts Netz voraus
@@ -135,10 +145,10 @@ Umgesetzt: <Stichpunkte>
 Geänderte/neue Dateien: <Liste>
 flutter analyze: <Ergebnis>
 flutter test: <Ergebnis, Anzahl Tests>
-Abnahmekriterien: <je Kriterium: erfüllt (Testname) / teilweise, fehlt: … / nicht erfüllt / nicht belegt>
+Abnahmekriterien: <je Kriterium: erfüllt – Nachweis: automatischer Test (<Name>) | manuell durch Mensch (bestätigt am …); teilweise, fehlt: …; nicht erfüllt; offen – wartet auf manuellen Test durch den Menschen>
 Offen / Risiken: <Stichpunkte; NICHT UMGESETZTES ausdrücklich so benennen>
 Annahmen / Abweichungen vom PRD: <oder "keine">
-Selbstprüfung Programmierregeln 1–8: <je Regel eingehalten / Verstoß mit Stelle>
+Selbstprüfung Programmierregeln 1–10: <je Regel eingehalten / Verstoß mit Stelle>
 Vorschläge für das PRD: <oder "keine">
 Commit: S<Nr>: <Beschreibung> (gepusht: ja/nein)
 ```
