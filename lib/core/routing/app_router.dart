@@ -4,6 +4,8 @@ import 'package:proviantplaner/features/home/ui/start_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/storage_checklist_screen.dart';
+import 'package:proviantplaner/features/kitty/ui/kitty_screen.dart';
+import 'package:proviantplaner/features/kitty/ui/settlement_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
 
@@ -59,6 +61,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final idStr = state.pathParameters['id'];
           final tripId = int.tryParse(idStr ?? '') ?? 1;
           return StorageChecklistScreen(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: '/trips/:id/kitty',
+        name: 'trip_kitty',
+        builder: (context, state) {
+          final idStr = state.pathParameters['id'];
+          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          return KittyScreen(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: '/trips/:id/kitty/settlement',
+        name: 'trip_kitty_settlement',
+        builder: (context, state) {
+          final idStr = state.pathParameters['id'];
+          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          return SettlementScreen(tripId: tripId);
         },
       ),
     ],

@@ -137,5 +137,84 @@
   "storageFinish": "Einlagerung abschließen",
   "storageCompleted": "Einlagerung erledigt",
   "customItemBadge": "eigene Position",
-  "takeOver": "Übernehmen"
+  "takeOver": "Übernehmen",
+  "kittyTitle": "Bordkasse",
+  "kittyModelShared": "Gemeinsame Bordkasse",
+  "kittyModelIndividual": "Einzelabrechnung",
+  "kittyCurrentBalance": "Aktueller Kassenstand",
+  "kittyTotalDeposits": "Eingezahlt gesamt",
+  "kittyTotalExpenses": "Ausgegeben gesamt",
+  "kittyTotalExpensesLabel": "Gesamtausgaben",
+  "kittyOpenTransfers": "Offen: {count} Ausgleichszahlungen",
+  "@kittyOpenTransfers": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "kittyExpensesSegment": "Ausgaben",
+  "kittyPeopleSegment": "Personen & Anteile",
+  "kittyAddExpense": "Ausgabe erfassen",
+  "kittyAddDeposit": "Einzahlung erfassen",
+  "kittySettleTrip": "Törn abschließen",
+  "kittySwitchModel": "Bordkassen-Modell wechseln",
+  "kittySwitchModelExplain": "Möchtest du das Modell wechseln?",
+  "kittySwitchModelBlocked": "Das Modell kann nur gewechselt werden, solange noch keine Ausgaben erfasst sind.",
+  "kittyPaidFromKitty": "aus der Kasse",
+  "kittyPaidBy": "bezahlt von {name}",
+  "@kittyPaidBy": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "kittyPaidByTitle": "Bezahlt von",
+  "kittyExpenseCategory": "Kategorie",
+  "kittyAmount": "Betrag",
+  "kittyTitleField": "Titel / Zweck",
+  "kittySaveExpense": "Ausgabe speichern",
+  "kittyExpenseSaved": "Ausgabe gespeichert",
+  "kittyExpenseDeleted": "Ausgabe gelöscht",
+  "kittySaveDeposit": "Einzahlung speichern",
+  "kittyDepositSaved": "Einzahlung gespeichert",
+  "kittyDepositDeleted": "Einzahlung gelöscht",
+  "kittyEqualDepositForAll": "Gleicher Betrag für alle",
+  "kittyParticipationTitle": "Beteiligung je Person",
+  "kittyProfileAll": "Überall beteiligt",
+  "kittyProfileSkipperFull": "Skipper frei (ganz)",
+  "kittyProfileSkipperPartial": "Skipper frei (Charter, Hafen, Diesel)",
+  "kittyProfileNoAlcohol": "Kein Alkohol",
+  "kittySettlementTitle": "Törn abschließen",
+  "kittyWhoPaysWhom": "Wer zahlt wem",
+  "kittySettlementNotice": "Hinweis: Die App wickelt keine Zahlungen ab. Alle Transaktionen erfolgen über die eigene Bank oder Drittanbieter.",
+  "kittyCopyIbanData": "Überweisungsdaten kopieren",
+  "kittyIbanCopied": "Überweisungsdaten in die Zwischenablage kopiert",
+  "kittySharePaypal": "PayPal-Link teilen",
+  "kittyShareRevolut": "Revolut-Link teilen",
+  "kittyMarkDone": "Als erledigt markieren",
+  "kittyMarkOpen": "Wieder als offen markieren",
+  "kittySettled": "Erledigt",
+  "kittyOpen": "Offen",
+  "kittyArchiveTrip": "Törn archivieren",
+  "kittyArchiveNotice": "Törn erfolgreich archiviert.",
+  "kittyScanGiroCode": "EPC-GiroCode scannen",
+  "kittyScanGiroCodeSubtitle": "Mit Bank-App für Direktüberweisung",
+  "kittyNightwatchScanHint": "Zum Scannen kurz hell",
+  "kittyReceiver": "Empfänger",
+  "kittyIban": "IBAN",
+  "kittyRemittance": "Verwendungszweck",
+  "kittyBalancesEqual": "Bordkassen-Konto ausgeglichen",
+  "kittyDebtor": "zahlt {amount}",
+  "@kittyDebtor": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "kittyCreditor": "bekommt {amount}",
+  "@kittyCreditor": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "kittyBalanced": "ausgeglichen",
+  "kittyNoExpenses": "Noch keine Ausgaben erfasst.",
+  "kittyNoCrew": "Keine Crew-Mitglieder vorhanden."
 }

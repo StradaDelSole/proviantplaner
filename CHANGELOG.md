@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-09-25 – S5: Bordkasse und Kostenteilung
+
+- Reine Dart-Berechnungsengine `KittyEngine` für Bordkasse und Abrechnung gemäß Programmierregel 5 strikt in ganzzahligen Cents (`int`), ohne Rundungsverluste und mit mathematischer Nullsummen-Invariante ($\sum \text{Salden} = 0$).
+- Beide Berechnungsmodelle voll implementiert:
+  - **Modell 1: Gemeinsame Bordkasse (Standard):** Einzahlungen je Crewmitglied, Ausgaben aus der Kasse, Kassenstand-Bilanz, Auslastungsquote und automatischer Ausgleich bei positivem/negativem Restbetrag.
+  - **Modell 2: Einzelabrechnung:** Eigene Auslagen der Crewmitglieder, Netto-Saldenberechnung und Greedy Debt Simplification zur Minimierung der notwendigen Überweisungen.
+- 7 feste Ausgabenkategorien (`ExpenseCategory`) und Beteiligungsprofile (`ParticipationProfile`) mit Schnellauswahl "Skipper frei" (vollständig oder ohne Verpflegung) und "Kein Alkohol".
+- Reine Dart-Erzeugung standardkonformer SEPA EPC069-12 QR-Codes (GiroCode) ohne externe Drittpakete.
+- Vollständige Oberflächen nach Design-Brief v0.4:
+  - `KittyScreen` (SC-KAS-01): Bento-Kassenstandskarte mit JetBrains Mono Zahlen, Auslastungsbalken, Umschaltung zwischen "Ausgaben" und "Personen & Anteile", FAB für neue Ausgaben und Modellwechsel.
+  - `ExpenseSheet` (SC-KAS-02): Betragseingabe in JetBrains Mono, Kategorie-Chips mit Outlined-Icons, Zahler-Auswahl (Kasse oder Crewmitglied) und Option "Anders aufteilen".
+  - `PaymentSheet` (SC-KAS-03): Einzahlungsdialog mit Option "Gleicher Betrag für alle".
+  - `ParticipationMatrixSheet` (SC-KAS-04): Matrix der Kategorie-Beteiligung je Crewmitglied mit Profil-Chips und Einzelschaltern.
+  - `SettlementScreen` (SC-KAS-05): "Wer zahlt wem"-Liste mit minimalen Überweisungen, aufklappbarem EPC-GiroCode (240 dp mit weißer Ruhezone auch im Nachtmodus), Überweisungsdetails zum Kopieren, PayPal-/Revolut-Links und Törn-Archivierung.
+  - 4-Reiter-Navigation in `TripBottomBar` (Reiter 2: Bordkasse) und Routen `/trips/:id/kitty` und `/trips/:id/kitty/settlement`.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 76/76 Tests grün (11 neue Tests für S5).
+
 ## 2026-09-25 – S4: Vorratsliste und Einlagerungs-Checkliste
 
 - Vorratsliste mit zwei Hauptsichten gemäß SC-LST-01:

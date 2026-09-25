@@ -32,10 +32,7 @@ class TripBottomBar extends StatelessWidget {
             context.go('/trips/$tripId/timeline');
             break;
           case 2:
-            // S5 Bordkasse
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Bordkasse folgt in Slice S5')),
-            );
+            context.go('/trips/$tripId/kitty');
             break;
           case 3:
             // S7 Mehr / Einstellungen

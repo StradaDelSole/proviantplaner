@@ -137,5 +137,84 @@
   "storageFinish": "Finish storage",
   "storageCompleted": "Storage completed",
   "customItemBadge": "custom item",
-  "takeOver": "Apply"
+  "takeOver": "Apply",
+  "kittyTitle": "Kitty",
+  "kittyModelShared": "Shared Kitty",
+  "kittyModelIndividual": "Individual Settlement",
+  "kittyCurrentBalance": "Current Kitty Balance",
+  "kittyTotalDeposits": "Total deposited",
+  "kittyTotalExpenses": "Total expenses",
+  "kittyTotalExpensesLabel": "Total expenses",
+  "kittyOpenTransfers": "Open: {count} settlement transfers",
+  "@kittyOpenTransfers": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "kittyExpensesSegment": "Expenses",
+  "kittyPeopleSegment": "People & Shares",
+  "kittyAddExpense": "Add expense",
+  "kittyAddDeposit": "Add deposit",
+  "kittySettleTrip": "Settle trip",
+  "kittySwitchModel": "Switch kitty model",
+  "kittySwitchModelExplain": "Would you like to switch the model?",
+  "kittySwitchModelBlocked": "The model can only be changed as long as no expenses have been recorded.",
+  "kittyPaidFromKitty": "from kitty",
+  "kittyPaidBy": "paid by {name}",
+  "@kittyPaidBy": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "kittyPaidByTitle": "Paid by",
+  "kittyExpenseCategory": "Category",
+  "kittyAmount": "Amount",
+  "kittyTitleField": "Title / Purpose",
+  "kittySaveExpense": "Save expense",
+  "kittyExpenseSaved": "Expense saved",
+  "kittyExpenseDeleted": "Expense deleted",
+  "kittySaveDeposit": "Save deposit",
+  "kittyDepositSaved": "Deposit saved",
+  "kittyDepositDeleted": "Deposit deleted",
+  "kittyEqualDepositForAll": "Equal amount for all",
+  "kittyParticipationTitle": "Participation per person",
+  "kittyProfileAll": "All categories",
+  "kittyProfileSkipperFull": "Skipper free (full)",
+  "kittyProfileSkipperPartial": "Skipper free (charter, marina, fuel)",
+  "kittyProfileNoAlcohol": "No alcohol",
+  "kittySettlementTitle": "Settle trip",
+  "kittyWhoPaysWhom": "Who pays whom",
+  "kittySettlementNotice": "Notice: The app does not process payments. All transactions take place via your own bank or third-party providers.",
+  "kittyCopyIbanData": "Copy transfer details",
+  "kittyIbanCopied": "Transfer details copied to clipboard",
+  "kittySharePaypal": "Share PayPal link",
+  "kittyShareRevolut": "Share Revolut link",
+  "kittyMarkDone": "Mark as settled",
+  "kittyMarkOpen": "Mark as open again",
+  "kittySettled": "Settled",
+  "kittyOpen": "Open",
+  "kittyArchiveTrip": "Archive trip",
+  "kittyArchiveNotice": "Trip successfully archived.",
+  "kittyScanGiroCode": "Scan EPC GiroCode",
+  "kittyScanGiroCodeSubtitle": "With banking app for direct transfer",
+  "kittyNightwatchScanHint": "Briefly bright for scanning",
+  "kittyReceiver": "Recipient",
+  "kittyIban": "IBAN",
+  "kittyRemittance": "Remittance info",
+  "kittyBalancesEqual": "Kitty account balanced",
+  "kittyDebtor": "pays {amount}",
+  "@kittyDebtor": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "kittyCreditor": "receives {amount}",
+  "@kittyCreditor": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "kittyBalanced": "balanced",
+  "kittyNoExpenses": "No expenses recorded yet.",
+  "kittyNoCrew": "No crew members available."
 }
