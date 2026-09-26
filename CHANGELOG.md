@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – Entwurf Feedback-Runde 2
+
+- `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar
+
 ## 2026-09-26 – Feedback-Runde 1
 
 - `docs/impl/FEEDBACK_R1_v0.1.md`: 10 Punkte aus dem ersten Praxistest (vorrangig)
