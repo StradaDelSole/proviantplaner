@@ -54,7 +54,7 @@ Greift eine Stoppregel, wird der Durchlauf beendet: Stand committen und pushen n
 
 ## Darf nicht
 
-- Nichts in `docs/` (außer `docs/impl/`) oder `data/` ändern. Änderungswünsche als "Vorschläge für das PRD" im CHANGELOG notieren
+- Nichts in `docs/` (außer `docs/impl/`) oder `data/` ändern (Ausnahme nur in S9: neue Dateien unter `data/i18n/`). Änderungswünsche als "Vorschläge für das PRD" im CHANGELOG notieren
 - Keine Features bauen, die nicht im PRD stehen; nichts aus späteren Slices vorziehen
 - Keine Pakete außerhalb der Leitplanken ohne ausdrückliche Freigabe hinzufügen
 - Keine bestehenden Dateien löschen oder umbenennen, die nicht zum aktuellen Slice gehören
