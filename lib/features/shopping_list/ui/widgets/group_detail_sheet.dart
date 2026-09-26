@@ -410,10 +410,13 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Gesamt: $total Packungen',
-                style: theme.proviantTypography.numberMedium.copyWith(fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  'Gesamt: $total Packungen',
+                  style: theme.proviantTypography.numberMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
+              const SizedBox(width: 8),
               _buildCoverageBadge(status, theme, l10n, currentGroupView),
             ],
           ),
@@ -458,12 +461,27 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
     AppLocalizations l10n,
     ShoppingListGroupView currentGroupView,
   ) {
-    final (text, color, icon) = switch (status) {
-      GroupCoverageStatus.covered => (l10n.covered, theme.colorScheme.secondary, Icons.check_circle_outline),
-      GroupCoverageStatus.scarce => (l10n.scarce, Colors.amber, Icons.warning_amber_outlined),
-      GroupCoverageStatus.noneSelected => (l10n.noneSelected, theme.colorScheme.onSurfaceVariant, Icons.remove_circle_outline),
-      GroupCoverageStatus.checklist => ('${currentGroupView.checkedCount} geprüft', theme.colorScheme.primary, Icons.checklist),
-    };
+    if (currentGroupView.group.mode == GroupMode.check) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.checklist, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            '${currentGroupView.checkedCount} geprüft',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      );
+    }
+
+    final hasItems = currentGroupView.variants.any((v) => v.isOnList);
+    final (text, color, icon) = hasItems
+        ? ('${currentGroupView.totalPackages} Pck. auf der Liste', theme.colorScheme.secondary, Icons.check_circle_outline)
+        : (l10n.noneSelected, theme.colorScheme.onSurfaceVariant, Icons.remove_circle_outline);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

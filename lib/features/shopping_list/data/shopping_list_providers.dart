@@ -6,10 +6,15 @@ import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'shopping_list_service.dart';
 
-/// Die zwei Hauptsichten der Vorratsliste gemäß SC-LST-01.
-enum ShoppingListViewMode {
-  plan,
-  shop,
+/// Sortiermodus der Vorratsliste gemäß FEEDBACK_R1 Punkt 7:
+/// Eine Liste, umschaltbar nach Kategorie oder Supermarkt-Abteilung.
+enum ShoppingListSortMode {
+  category,
+  department;
+
+  // Rückwärtskompatibilität für bestehende S4-Tests
+  static const ShoppingListSortMode plan = ShoppingListSortMode.category;
+  static const ShoppingListSortMode shop = ShoppingListSortMode.department;
 }
 
 /// Provider für den ShoppingListService.
@@ -26,10 +31,14 @@ final shoppingListServiceProvider = Provider<ShoppingListService>((ref) {
   );
 });
 
-/// Aktiver Sichten-Modus ("Planen" oder "Einkaufen").
-final shoppingListViewModeProvider = StateProvider<ShoppingListViewMode>((ref) {
-  return ShoppingListViewMode.plan;
+/// Aktiver Sortiermodus ("Nach Kategorie" oder "Nach Abteilung").
+final shoppingListSortModeProvider = StateProvider<ShoppingListSortMode>((ref) {
+  return ShoppingListSortMode.category;
 });
+
+/// Rückwärtskompatibler Alias
+final shoppingListViewModeProvider = shoppingListSortModeProvider;
+typedef ShoppingListViewMode = ShoppingListSortMode;
 
 /// Filter nach Einkaufsstopp (null = Alle Stopps).
 final selectedStopFilterProvider = StateProvider<int?>((ref) => null);

@@ -129,7 +129,7 @@ class ShoppingListService {
       } else {
         final variant = catalog.getVariant(raw.catalogId);
         if (variant != null) {
-          result.add(_buildCatalogItemView(raw, variant, allocationsByItem[raw.id] ?? {}));
+          result.add(_buildCatalogItemView(catalog, raw, variant, allocationsByItem[raw.id] ?? {}));
         }
       }
     }
@@ -164,15 +164,18 @@ class ShoppingListService {
       shelfLifeDays: 30,
       storageHints: const [],
       checkState: raw.checkState,
+      isAdopted: raw.isAdopted,
       allocationsByStop: allocations,
     );
   }
 
   ShoppingListItemView _buildCatalogItemView(
+    CatalogData catalog,
     ListItem raw,
     CatalogVariant variant,
     Map<int, ListItemAllocation> allocations,
   ) {
+    final group = catalog.getGroup(variant.group);
     return ShoppingListItemView(
       item: raw,
       variant: variant,
@@ -180,7 +183,7 @@ class ShoppingListService {
       name: variant.nameDe,
       unit: variant.pack.unit,
       department: variant.department,
-      categoryId: variant.group,
+      categoryId: group?.category ?? variant.group,
       calculatedPackages: raw.calculatedPackages,
       overriddenPackages: raw.overriddenPackages,
       calculatedQuantity: raw.calculatedQuantity,
@@ -191,6 +194,7 @@ class ShoppingListService {
       shelfLifeDays: variant.shelfLifeDays,
       storageHints: variant.storage,
       checkState: raw.checkState,
+      isAdopted: raw.isAdopted,
       allocationsByStop: allocations,
     );
   }
@@ -253,16 +257,25 @@ class ShoppingListService {
     return departmentViews;
   }
 
-  /// Erhöht die Packungsanzahl um 1 (+ Stepper).
+  /// Erhöht die Packungsanzahl um 1 (+ Stepper). Übernimmt die Position, falls noch nicht auf der Liste.
   Future<void> incrementPackages(ShoppingListItemView itemView) async {
-    final next = itemView.effectivePackages + 1;
-    await listItemDao.setOverriddenPackages(itemView.item.id, next);
+    if (!itemView.isAdopted) {
+      final initial = itemView.calculatedPackages > 0 ? itemView.calculatedPackages : 1;
+      await listItemDao.adoptItem(itemView.item.id, packages: initial);
+    } else {
+      final next = itemView.effectivePackages + 1;
+      await listItemDao.adoptItem(itemView.item.id, packages: next);
+    }
   }
 
-  /// Verringert die Packungsanzahl um 1 (− Stepper, min. 0).
+  /// Verringert die Packungsanzahl um 1 (− Stepper, bei <= 0 wird die Position entfernt).
   Future<void> decrementPackages(ShoppingListItemView itemView) async {
-    final next = (itemView.effectivePackages - 1) < 0 ? 0 : itemView.effectivePackages - 1;
-    await listItemDao.setOverriddenPackages(itemView.item.id, next);
+    final next = itemView.effectivePackages - 1;
+    if (next <= 0) {
+      await listItemDao.unadoptItem(itemView.item.id);
+    } else {
+      await listItemDao.adoptItem(itemView.item.id, packages: next);
+    }
   }
 
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
@@ -270,10 +283,61 @@ class ShoppingListService {
     await listItemDao.setOverriddenPackages(itemView.item.id, null);
   }
 
-  /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 6).
+  /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
   Future<void> setPackages(ShoppingListItemView itemView, int packages) async {
-    final clamped = packages < 0 ? 0 : packages;
-    await listItemDao.setOverriddenPackages(itemView.item.id, clamped);
+    if (packages <= 0) {
+      await listItemDao.unadoptItem(itemView.item.id);
+    } else {
+      await listItemDao.adoptItem(itemView.item.id, packages: packages);
+    }
+  }
+
+  /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
+  Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
+    await listItemDao.adoptItem(listItemId, packages: packages);
+  }
+
+  /// Entfernt eine Position von der Vorratsliste (FB1-B).
+  Future<void> unadoptItem({required int tripId, required int listItemId}) async {
+    await listItemDao.unadoptItem(listItemId);
+  }
+
+  /// Übernimmt alle Vorschläge von Varianten mit default_selected == true (FB1-B).
+  Future<void> adoptAllSuggestions(int tripId) async {
+    if (catalogRepository.catalog == null) {
+      await catalogRepository.loadFromBundle();
+    }
+    final catalog = catalogRepository.catalog!;
+    final defaultSelectedIds = catalog.variants
+        .where((v) => v.defaultSelected)
+        .map((v) => v.id)
+        .toSet();
+
+    await listItemDao.adoptSuggestions(
+      tripId: tripId,
+      defaultSelectedCatalogIds: defaultSelectedIds,
+    );
+  }
+
+  /// Übernimmt alle Vorschläge einer bestimmten Kategorie (FB1-B).
+  Future<void> adoptCategorySuggestions({
+    required int tripId,
+    required String categoryId,
+  }) async {
+    if (catalogRepository.catalog == null) {
+      await catalogRepository.loadFromBundle();
+    }
+    final catalog = catalogRepository.catalog!;
+    final catGroupIds = catalog.groups.where((g) => g.category == categoryId).map((g) => g.id).toSet();
+    final defaultSelectedIds = catalog.variants
+        .where((v) => catGroupIds.contains(v.group) && v.defaultSelected)
+        .map((v) => v.id)
+        .toSet();
+
+    await listItemDao.adoptCategorySuggestions(
+      tripId: tripId,
+      categoryDefaultSelectedIds: defaultSelectedIds,
+    );
   }
 
   /// Aktualisiert den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
@@ -296,13 +360,17 @@ class ShoppingListService {
     await tripService.recalculateTrip(tripId);
   }
 
-  /// Schaltet die Auswahl einer Variante an oder aus.
+  /// Schaltet die Auswahl einer Variante an oder aus (FB1-B: Übernehmen / Entfernen).
   Future<void> toggleVariantSelected({
     required int tripId,
     required int listItemId,
     required bool isSelected,
   }) async {
-    await listItemDao.setSelected(listItemId, isSelected);
+    if (isSelected) {
+      await listItemDao.adoptItem(listItemId);
+    } else {
+      await listItemDao.unadoptItem(listItemId);
+    }
     await tripService.recalculateTrip(tripId);
   }
 

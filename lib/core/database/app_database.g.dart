@@ -2333,6 +2333,16 @@ class $ListItemsTable extends ListItems
               requiredDuringInsert: false,
               defaultValue: const Constant('vorhanden'))
           .withConverter<CheckItemState>($ListItemsTable.$convertercheckState);
+  static const VerificationMeta _isAdoptedMeta =
+      const VerificationMeta('isAdopted');
+  @override
+  late final GeneratedColumn<bool> isAdopted = GeneratedColumn<bool>(
+      'is_adopted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_adopted" IN (0, 1))'),
+      defaultValue: const Constant(false));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2348,7 +2358,8 @@ class $ListItemsTable extends ListItems
         calculatedPackages,
         overriddenPackages,
         customPackageSize,
-        checkState
+        checkState,
+        isAdopted
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2430,6 +2441,10 @@ class $ListItemsTable extends ListItems
               data['custom_package_size']!, _customPackageSizeMeta));
     }
     context.handle(_checkStateMeta, const VerificationResult.success());
+    if (data.containsKey('is_adopted')) {
+      context.handle(_isAdoptedMeta,
+          isAdopted.isAcceptableOrUnknown(data['is_adopted']!, _isAdoptedMeta));
+    }
     return context;
   }
 
@@ -2468,6 +2483,8 @@ class $ListItemsTable extends ListItems
       checkState: $ListItemsTable.$convertercheckState.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}check_state'])!),
+      isAdopted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_adopted'])!,
     );
   }
 
@@ -2495,6 +2512,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
   final int? overriddenPackages;
   final double? customPackageSize;
   final CheckItemState checkState;
+  final bool isAdopted;
   const ListItem(
       {required this.id,
       required this.tripId,
@@ -2509,7 +2527,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       required this.calculatedPackages,
       this.overriddenPackages,
       this.customPackageSize,
-      required this.checkState});
+      required this.checkState,
+      required this.isAdopted});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2540,6 +2559,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       map['check_state'] = Variable<String>(
           $ListItemsTable.$convertercheckState.toSql(checkState));
     }
+    map['is_adopted'] = Variable<bool>(isAdopted);
     return map;
   }
 
@@ -2569,6 +2589,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           ? const Value.absent()
           : Value(customPackageSize),
       checkState: Value(checkState),
+      isAdopted: Value(isAdopted),
     );
   }
 
@@ -2592,6 +2613,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       customPackageSize:
           serializer.fromJson<double?>(json['customPackageSize']),
       checkState: serializer.fromJson<CheckItemState>(json['checkState']),
+      isAdopted: serializer.fromJson<bool>(json['isAdopted']),
     );
   }
   @override
@@ -2612,6 +2634,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       'overriddenPackages': serializer.toJson<int?>(overriddenPackages),
       'customPackageSize': serializer.toJson<double?>(customPackageSize),
       'checkState': serializer.toJson<CheckItemState>(checkState),
+      'isAdopted': serializer.toJson<bool>(isAdopted),
     };
   }
 
@@ -2629,7 +2652,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           int? calculatedPackages,
           Value<int?> overriddenPackages = const Value.absent(),
           Value<double?> customPackageSize = const Value.absent(),
-          CheckItemState? checkState}) =>
+          CheckItemState? checkState,
+          bool? isAdopted}) =>
       ListItem(
         id: id ?? this.id,
         tripId: tripId ?? this.tripId,
@@ -2651,6 +2675,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
             ? customPackageSize.value
             : this.customPackageSize,
         checkState: checkState ?? this.checkState,
+        isAdopted: isAdopted ?? this.isAdopted,
       );
   ListItem copyWithCompanion(ListItemsCompanion data) {
     return ListItem(
@@ -2681,6 +2706,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           : this.customPackageSize,
       checkState:
           data.checkState.present ? data.checkState.value : this.checkState,
+      isAdopted: data.isAdopted.present ? data.isAdopted.value : this.isAdopted,
     );
   }
 
@@ -2700,7 +2726,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           ..write('calculatedPackages: $calculatedPackages, ')
           ..write('overriddenPackages: $overriddenPackages, ')
           ..write('customPackageSize: $customPackageSize, ')
-          ..write('checkState: $checkState')
+          ..write('checkState: $checkState, ')
+          ..write('isAdopted: $isAdopted')
           ..write(')'))
         .toString();
   }
@@ -2720,7 +2747,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       calculatedPackages,
       overriddenPackages,
       customPackageSize,
-      checkState);
+      checkState,
+      isAdopted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2738,7 +2766,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           other.calculatedPackages == this.calculatedPackages &&
           other.overriddenPackages == this.overriddenPackages &&
           other.customPackageSize == this.customPackageSize &&
-          other.checkState == this.checkState);
+          other.checkState == this.checkState &&
+          other.isAdopted == this.isAdopted);
 }
 
 class ListItemsCompanion extends UpdateCompanion<ListItem> {
@@ -2756,6 +2785,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
   final Value<int?> overriddenPackages;
   final Value<double?> customPackageSize;
   final Value<CheckItemState> checkState;
+  final Value<bool> isAdopted;
   const ListItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -2771,6 +2801,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     this.overriddenPackages = const Value.absent(),
     this.customPackageSize = const Value.absent(),
     this.checkState = const Value.absent(),
+    this.isAdopted = const Value.absent(),
   });
   ListItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -2787,6 +2818,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     this.overriddenPackages = const Value.absent(),
     this.customPackageSize = const Value.absent(),
     this.checkState = const Value.absent(),
+    this.isAdopted = const Value.absent(),
   })  : tripId = Value(tripId),
         catalogId = Value(catalogId);
   static Insertable<ListItem> custom({
@@ -2804,6 +2836,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     Expression<int>? overriddenPackages,
     Expression<double>? customPackageSize,
     Expression<String>? checkState,
+    Expression<bool>? isAdopted,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2820,6 +2853,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       if (overriddenPackages != null) 'overridden_packages': overriddenPackages,
       if (customPackageSize != null) 'custom_package_size': customPackageSize,
       if (checkState != null) 'check_state': checkState,
+      if (isAdopted != null) 'is_adopted': isAdopted,
     });
   }
 
@@ -2837,7 +2871,8 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       Value<int>? calculatedPackages,
       Value<int?>? overriddenPackages,
       Value<double?>? customPackageSize,
-      Value<CheckItemState>? checkState}) {
+      Value<CheckItemState>? checkState,
+      Value<bool>? isAdopted}) {
     return ListItemsCompanion(
       id: id ?? this.id,
       tripId: tripId ?? this.tripId,
@@ -2853,6 +2888,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       overriddenPackages: overriddenPackages ?? this.overriddenPackages,
       customPackageSize: customPackageSize ?? this.customPackageSize,
       checkState: checkState ?? this.checkState,
+      isAdopted: isAdopted ?? this.isAdopted,
     );
   }
 
@@ -2902,6 +2938,9 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       map['check_state'] = Variable<String>(
           $ListItemsTable.$convertercheckState.toSql(checkState.value));
     }
+    if (isAdopted.present) {
+      map['is_adopted'] = Variable<bool>(isAdopted.value);
+    }
     return map;
   }
 
@@ -2921,7 +2960,8 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
           ..write('calculatedPackages: $calculatedPackages, ')
           ..write('overriddenPackages: $overriddenPackages, ')
           ..write('customPackageSize: $customPackageSize, ')
-          ..write('checkState: $checkState')
+          ..write('checkState: $checkState, ')
+          ..write('isAdopted: $isAdopted')
           ..write(')'))
         .toString();
   }
@@ -6356,6 +6396,7 @@ typedef $$ListItemsTableCreateCompanionBuilder = ListItemsCompanion Function({
   Value<int?> overriddenPackages,
   Value<double?> customPackageSize,
   Value<CheckItemState> checkState,
+  Value<bool> isAdopted,
 });
 typedef $$ListItemsTableUpdateCompanionBuilder = ListItemsCompanion Function({
   Value<int> id,
@@ -6372,6 +6413,7 @@ typedef $$ListItemsTableUpdateCompanionBuilder = ListItemsCompanion Function({
   Value<int?> overriddenPackages,
   Value<double?> customPackageSize,
   Value<CheckItemState> checkState,
+  Value<bool> isAdopted,
 });
 
 final class $$ListItemsTableReferences
@@ -6463,6 +6505,9 @@ class $$ListItemsTableFilterComposer
       get checkState => $composableBuilder(
           column: $table.checkState,
           builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<bool> get isAdopted => $composableBuilder(
+      column: $table.isAdopted, builder: (column) => ColumnFilters(column));
 
   $$TripsTableFilterComposer get tripId {
     final $$TripsTableFilterComposer composer = $composerBuilder(
@@ -6559,6 +6604,9 @@ class $$ListItemsTableOrderingComposer
   ColumnOrderings<String> get checkState => $composableBuilder(
       column: $table.checkState, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get isAdopted => $composableBuilder(
+      column: $table.isAdopted, builder: (column) => ColumnOrderings(column));
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -6628,6 +6676,9 @@ class $$ListItemsTableAnnotationComposer
   GeneratedColumnWithTypeConverter<CheckItemState, String> get checkState =>
       $composableBuilder(
           column: $table.checkState, builder: (column) => column);
+
+  GeneratedColumn<bool> get isAdopted =>
+      $composableBuilder(column: $table.isAdopted, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -6710,6 +6761,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             Value<int?> overriddenPackages = const Value.absent(),
             Value<double?> customPackageSize = const Value.absent(),
             Value<CheckItemState> checkState = const Value.absent(),
+            Value<bool> isAdopted = const Value.absent(),
           }) =>
               ListItemsCompanion(
             id: id,
@@ -6726,6 +6778,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             overriddenPackages: overriddenPackages,
             customPackageSize: customPackageSize,
             checkState: checkState,
+            isAdopted: isAdopted,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6742,6 +6795,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             Value<int?> overriddenPackages = const Value.absent(),
             Value<double?> customPackageSize = const Value.absent(),
             Value<CheckItemState> checkState = const Value.absent(),
+            Value<bool> isAdopted = const Value.absent(),
           }) =>
               ListItemsCompanion.insert(
             id: id,
@@ -6758,6 +6812,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             overriddenPackages: overriddenPackages,
             customPackageSize: customPackageSize,
             checkState: checkState,
+            isAdopted: isAdopted,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

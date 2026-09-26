@@ -9,7 +9,6 @@ import 'catalog_models.dart';
 /// Deckungsstatus einer Bedarfsgruppe in der Planungsansicht.
 enum GroupCoverageStatus {
   covered,
-  scarce,
   noneSelected,
   checklist,
 }
@@ -33,6 +32,7 @@ class ShoppingListItemView {
   final int shelfLifeDays;
   final List<String> storageHints;
   final CheckItemState checkState;
+  final bool isAdopted;
   final Map<int, ListItemAllocation> allocationsByStop;
 
   const ShoppingListItemView({
@@ -53,14 +53,28 @@ class ShoppingListItemView {
     required this.shelfLifeDays,
     required this.storageHints,
     this.checkState = CheckItemState.available,
+    this.isAdopted = false,
     required this.allocationsByStop,
   });
 
-  /// Effektive Packungsanzahl (überschrieben oder berechnet).
-  int get effectivePackages => overriddenPackages ?? calculatedPackages;
+  /// Gibt an, ob dieser Artikel auf der Einkaufsliste steht (übernommen mit Menge > 0 oder eigene Position).
+  bool get isOnList => isCustom || (isAdopted && effectivePackages > 0);
+
+  /// Effektive Packungsanzahl (überschrieben oder berechnet, wenn übernommen).
+  int get effectivePackages {
+    if (isCustom) return overriddenPackages ?? calculatedPackages;
+    if (!isAdopted) return 0;
+    return overriddenPackages ?? calculatedPackages;
+  }
+
+  /// Vorgeschlagene Packungszahl aus der Rechen-Engine.
+  int get suggestedPackages => calculatedPackages;
 
   /// Gibt an, ob der Benutzer die Packungszahl manuell überschrieben hat.
   bool get isOverridden => overriddenPackages != null;
+
+  /// Gibt an, ob die übernommene Menge vom aktuellen Vorschlag abweicht.
+  bool get hasSuggestionDifference => isOnList && effectivePackages != calculatedPackages;
 
   /// Effektive Packungsgröße (benutzerdefiniert oder Standard).
   double get effectivePackSize =>
@@ -100,6 +114,17 @@ class ShoppingListItemView {
     final qtyFormatted = (qty % 1 == 0) ? qty.toInt().toString() : qty.toStringAsFixed(1);
     return 'Bedarf ca. $qtyFormatted $unit';
   }
+
+  /// Formatierte Anzeige des Vorschlags, z. B. "Vorschlag: 3 × 750 g".
+  String get suggestionDisplay {
+    final size = effectivePackSize;
+    final sizeFormatted = (size % 1 == 0) ? size.toInt().toString() : size.toStringAsFixed(1);
+    final packUnit = variant?.pack.unit ?? unit;
+    return 'Vorschlag: $calculatedPackages × $sizeFormatted $packUnit';
+  }
+
+  /// Kurze Anzeige des Vorschlags neben der übernommenen Menge, z. B. "Vorschlag 3".
+  String get shortSuggestionDisplay => 'Vorschlag $calculatedPackages';
 }
 
 /// Gruppe in der Sicht "Planen".
@@ -112,22 +137,21 @@ class ShoppingListGroupView {
     required this.variants,
   });
 
-  /// Gesamtanzahl der Packungen aller gewählten Varianten.
+  /// Gesamtanzahl der Packungen aller auf der Liste befindlichen Varianten.
   int get totalPackages {
     return variants
-        .where((v) => v.isSelected)
+        .where((v) => v.isOnList)
         .fold<int>(0, (sum, v) => sum + v.effectivePackages);
   }
 
-  /// Deckungsstatus der Gruppe.
+  /// Deckungsstatus der Gruppe (neutral: checklist, noneSelected, covered).
   GroupCoverageStatus get coverageStatus {
     if (group.mode == GroupMode.check) {
       return GroupCoverageStatus.checklist;
     }
-    final selected = variants.where((v) => v.isSelected).toList();
-    if (selected.isEmpty) return GroupCoverageStatus.noneSelected;
-    if (totalPackages >= 1) return GroupCoverageStatus.covered;
-    return GroupCoverageStatus.scarce;
+    final onList = variants.where((v) => v.isOnList).toList();
+    if (onList.isEmpty) return GroupCoverageStatus.noneSelected;
+    return GroupCoverageStatus.covered;
   }
 
   /// Anzahl geprüfter Varianten bei Prüflisten.

@@ -1,4 +1,4 @@
-/// Bildschirm für den Einkaufsmodus je Stopp (SC-SHOP-01).
+/// Bildschirm für den Einkaufsmodus je Stopp (SC-SHOP-01 / FEEDBACK_R1 Punkt 7).
 library;
 
 import 'package:flutter/material.dart';
@@ -36,9 +36,9 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         final stop = data.stops.where((s) => s.id == widget.stopId).firstOrNull ?? data.stops.first;
         final isFirstStop = data.stops.firstOrNull?.id == stop.id;
 
-        // Artikel für diesen Stopp filtern
+        // Artikel für diesen Stopp filtern: Genau die Positionen der Liste mit Menge > 0 für diesen Stopp
         final stopItems = data.allItems.where((it) {
-          if (!it.isSelected) return false;
+          if (!it.isOnList) return false;
           final totalOtherAlloc = it.allocationsByStop.entries
               .where((e) => e.key != stop.id)
               .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
@@ -71,18 +71,6 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
                 ),
               ],
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.receipt_long_outlined),
-                tooltip: 'Ausgabe erfassen',
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Ausgabe erfassen folgt in Slice S5 (Bordkasse)')),
-                  );
-                },
-              ),
-            ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(4),
               child: LinearProgressIndicator(
@@ -100,7 +88,15 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
                   itemBuilder: (ctx, i) {
                     final it = stopItems[i];
                     final isBought = it.isBoughtAtStop(stop.id);
-                    return _buildShoppingRow(context, it, isBought, stop.id, theme);
+                    final totalOtherAlloc = it.allocationsByStop.entries
+                        .where((e) => e.key != stop.id)
+                        .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+                    final count = it.packagesAtStop(
+                      stop.id,
+                      isFirstStop: isFirstStop,
+                      totalOtherAllocated: totalOtherAlloc,
+                    );
+                    return _buildShoppingRow(context, it, count, isBought, stop.id, theme);
                   },
                 ),
           bottomSheet: Container(
@@ -126,10 +122,16 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
   Widget _buildShoppingRow(
     BuildContext context,
     ShoppingListItemView it,
+    int countAtStop,
     bool isBought,
     int stopId,
     ThemeData theme,
   ) {
+    final size = it.effectivePackSize;
+    final sizeFormatted = (size % 1 == 0) ? size.toInt().toString() : size.toStringAsFixed(1);
+    final packUnit = it.variant?.pack.unit ?? it.unit;
+    final stopPackDisplay = '$countAtStop × $sizeFormatted $packUnit';
+
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 200),
       opacity: isBought ? 0.45 : 1.0,
@@ -161,7 +163,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
           ),
         ),
         trailing: Text(
-          it.packDisplay,
+          stopPackDisplay,
           style: theme.proviantTypography.numberMedium.copyWith(
             fontWeight: FontWeight.bold,
             decoration: isBought ? TextDecoration.lineThrough : null,

@@ -36,6 +36,9 @@ class TripKittyData {
   /// Gibt die Liste der berechneten Ausgleichszahlungen zurück.
   List<PaymentTransfer> get transfers =>
       sharedResult?.settlementTransfers ?? individualResult?.simplifiedTransfers ?? const [];
+
+  /// Gibt das aktuelle Kassen-Guthaben in Cent zurück (Shared Kitty).
+  int get cashBalanceCents => sharedResult?.currentBalanceInCents ?? 0;
 }
 
 /// Eingabe-Objekt zum Erfassen oder Bearbeiten einer Ausgabe (SC-KAS-02).

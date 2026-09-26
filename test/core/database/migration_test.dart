@@ -7,7 +7,7 @@ void main() {
     final db = AppDatabase(NativeDatabase.memory());
 
     // SchemaVersion prüfen
-    expect(db.schemaVersion, 2);
+    expect(db.schemaVersion, 3);
 
     // Prüfen, ob alle Tabellen angelegt wurden
     // Erneuter Aufruf von createAll oder Validierung der Tabellen über einfache Abfragen

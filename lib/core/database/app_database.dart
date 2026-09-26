@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -46,6 +46,9 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(crewMembers, crewMembers.paypalLink);
           await m.addColumn(crewMembers, crewMembers.revolutLink);
           await m.addColumn(listItems, listItems.checkState);
+        }
+        if (from < 3) {
+          await m.addColumn(listItems, listItems.isAdopted);
         }
       },
       beforeOpen: (details) async {

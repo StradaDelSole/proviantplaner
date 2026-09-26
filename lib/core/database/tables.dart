@@ -153,6 +153,7 @@ class ListItems extends Table {
   IntColumn get overriddenPackages => integer().nullable()(); // überschriebene Packungszahl oder null
   RealColumn get customPackageSize => real().nullable()(); // gemerkte Packungsgröße
   TextColumn get checkState => text().map(const CheckItemStateConverter()).withDefault(const Constant('vorhanden'))();
+  BoolColumn get isAdopted => boolean().withDefault(const Constant(false))(); // FB1-B: Übernommen auf Vorratsliste
 }
 
 /// 6. ListItemAllocation: Zuordnung von Teilmengen eines ListItem zu einem ShoppingStop

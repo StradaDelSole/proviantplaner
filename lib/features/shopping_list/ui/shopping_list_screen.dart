@@ -1,4 +1,4 @@
-/// Hauptbildschirm für die Vorrats- und Einkaufsliste (SC-LST-01).
+/// Hauptbildschirm für die Vorrats- und Einkaufsliste (SC-LST-01 / FEEDBACK_R1 Punkt 5 & 7).
 library;
 
 import 'package:flutter/material.dart';
@@ -26,7 +26,7 @@ class ShoppingListScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     final listDataAsync = ref.watch(tripShoppingListProvider(tripId));
-    final viewMode = ref.watch(shoppingListViewModeProvider);
+    final sortMode = ref.watch(shoppingListViewModeProvider);
     final selectedStopId = ref.watch(selectedStopFilterProvider);
 
     return Scaffold(
@@ -135,7 +135,7 @@ class ShoppingListScreen extends ConsumerWidget {
         data: (data) {
           return Column(
             children: [
-              // Hinweis: Ernährungs-Tags sind kein Allergieschutz
+              // Hinweis 1: Ernährungs-Tags sind kein Allergieschutz
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -155,27 +155,47 @@ class ShoppingListScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Filterleiste: Sichten-Segment (Planen/Einkaufen) & Stopp-Filter-Chip
+              // Hinweis 2 (FEEDBACK_R1 Punkt 1): Längere Törns ab 15 Tagen
+              if (data.trip.daysCount >= 15)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onTertiaryContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Bei längeren Törns lohnt es sich, Einkaufsstopps anzulegen.',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Sortier-Umschalter und Stopp-Filter
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                 child: Row(
                   children: [
-                    // Segmented Button
                     Expanded(
-                      child: SegmentedButton<ShoppingListViewMode>(
-                        segments: [
+                      child: SegmentedButton<ShoppingListSortMode>(
+                        segments: const [
                           ButtonSegment(
-                            value: ShoppingListViewMode.plan,
-                            label: Text(l10n.planView),
-                            icon: const Icon(Icons.list_alt),
+                            value: ShoppingListSortMode.category,
+                            label: Text('Nach Kategorie'),
+                            icon: Icon(Icons.category_outlined),
                           ),
                           ButtonSegment(
-                            value: ShoppingListViewMode.shop,
-                            label: Text(l10n.shopView),
-                            icon: const Icon(Icons.shopping_cart_outlined),
+                            value: ShoppingListSortMode.department,
+                            label: Text('Nach Abteilung'),
+                            icon: Icon(Icons.storefront_outlined),
                           ),
                         ],
-                        selected: {viewMode},
+                        selected: {sortMode},
                         onSelectionChanged: (newSelection) {
                           ref.read(shoppingListViewModeProvider.notifier).state =
                               newSelection.first;
@@ -183,16 +203,69 @@ class ShoppingListScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Stopp-Filter Chip
                     _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
                   ],
                 ),
               ),
+              // Aktionsleiste: "Alle Vorschläge übernehmen" & "Einkauf starten"
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonal(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                        ),
+                        onPressed: () async {
+                          await ref
+                              .read(shoppingListServiceProvider)
+                              .adoptAllSuggestions(tripId);
+                          ref.invalidate(tripShoppingListProvider(tripId));
+                        },
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.playlist_add_check, size: 20),
+                            SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'Alle Vorschläge übernehmen',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(130, 48),
+                      ),
+                      onPressed: () {
+                        final targetStop = selectedStopId ?? data.stops.firstOrNull?.id;
+                        if (targetStop != null) {
+                          context.push('/trips/$tripId/shop/$targetStop');
+                        }
+                      },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shopping_basket_outlined, size: 20),
+                          SizedBox(width: 6),
+                          Text('Einkauf starten'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const Divider(height: 1),
-              // Body je nach Sicht
+              // Einheitliche Liste je nach Sortierung
               Expanded(
-                child: viewMode == ShoppingListViewMode.plan
-                    ? PlanningView(data: data)
+                child: sortMode == ShoppingListSortMode.category
+                    ? PlanningView(data: data, selectedStopId: selectedStopId)
                     : ShoppingView(data: data, selectedStopId: selectedStopId),
               ),
             ],

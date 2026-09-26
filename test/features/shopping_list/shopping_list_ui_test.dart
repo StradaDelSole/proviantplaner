@@ -68,6 +68,7 @@ void main() {
         const CrewMemberInput(id: '2', name: 'Ben', isAdult: true, isVegetarian: true, noAlcohol: false),
       ],
     );
+    await shoppingListService.adoptAllSuggestions(tripId);
   });
 
   tearDown(() async {
@@ -105,18 +106,18 @@ void main() {
     expect(find.text('Adria Törn 2026'), findsOneWidget);
     expect(find.text('Ernährungs-Tags sind kein Allergieschutz'), findsOneWidget);
 
-    // 2. SegmentedButton für Planen & Einkaufen vorhanden
-    expect(find.text('Planen'), findsOneWidget);
-    expect(find.text('Einkaufen'), findsOneWidget);
+    // 2. SegmentedButton für Nach Kategorie & Nach Abteilung vorhanden
+    expect(find.text('Nach Kategorie'), findsOneWidget);
+    expect(find.text('Nach Abteilung'), findsOneWidget);
 
     // 3. Stopp-Filter Chip
     expect(find.text('Alle Stopps'), findsOneWidget);
 
-    // 4. In der Planen-Sicht sind Kategorien und Gruppen sichtbar
+    // 4. In der Nach Kategorie-Sicht sind Kategorien und Gruppen sichtbar
     expect(find.byType(ListView), findsWidgets);
 
-    // 5. Umschalten auf "Einkaufen"
-    await tester.tap(find.text('Einkaufen'));
+    // 5. Umschalten auf "Nach Abteilung"
+    await tester.tap(find.text('Nach Abteilung'));
     await tester.pumpAndSettle();
 
     // In der Einkaufen-Sicht sind Stepper vorhanden mit mindestens 48 dp

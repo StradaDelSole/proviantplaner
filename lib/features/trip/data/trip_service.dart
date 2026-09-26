@@ -122,7 +122,7 @@ class TripService {
       userItemStates[item.catalogId] = UserItemState(
         isSelected: item.selected,
         share: item.share,
-        overriddenPackages: item.overriddenPackages,
+        overriddenPackages: null,
         customPackSize: item.customPackageSize,
       );
     }
@@ -154,7 +154,7 @@ class TripService {
             ),
           );
         } else {
-          // Neu einfügen
+          // Neu einfügen (FB1-B: Liste startet leer, Vorschläge vorhanden)
           await listItemDao.addListItem(
             ListItemsCompanion.insert(
               tripId: tripId,
@@ -162,8 +162,9 @@ class TripService {
               calculatedQuantity: Value(variant.calculatedNeedAmount),
               calculatedPackages: Value(variant.calculatedPackages),
               selected: Value(variant.isSelected),
+              isAdopted: const Value(false),
               share: Value(variant.share),
-              overriddenPackages: Value(variant.overriddenPackages),
+              overriddenPackages: const Value(null),
               customPackageSize: Value(variant.packSize),
             ),
           );

@@ -156,6 +156,63 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
     return item.overriddenPackages ?? item.calculatedPackages;
   }
 
+  /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
+  Future<bool> adoptItem(int listItemId, {int? packages}) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    final userPackages = packages ?? (item.calculatedPackages > 0 ? item.calculatedPackages : 1);
+    return updateListItem(item.copyWith(
+      isAdopted: true,
+      selected: true,
+      overriddenPackages: Value(userPackages),
+    ));
+  }
+
+  /// Entfernt eine Position von der Vorratsliste (FB1-B).
+  Future<bool> unadoptItem(int listItemId) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    return updateListItem(item.copyWith(
+      isAdopted: false,
+      selected: false,
+      overriddenPackages: const Value(null),
+    ));
+  }
+
+  /// Übernimmt alle Vorschläge für Varianten mit defaultSelected (FB1-B).
+  Future<void> adoptSuggestions({
+    required int tripId,
+    required Set<String> defaultSelectedCatalogIds,
+  }) async {
+    final items = await getListItemsForTrip(tripId);
+    for (final item in items) {
+      if (defaultSelectedCatalogIds.contains(item.catalogId)) {
+        await updateListItem(item.copyWith(
+          isAdopted: true,
+          selected: true,
+          overriddenPackages: Value(item.calculatedPackages),
+        ));
+      }
+    }
+  }
+
+  /// Übernimmt alle Vorschläge einer bestimmten Kategorie (FB1-B).
+  Future<void> adoptCategorySuggestions({
+    required int tripId,
+    required Set<String> categoryDefaultSelectedIds,
+  }) async {
+    final items = await getListItemsForTrip(tripId);
+    for (final item in items) {
+      if (categoryDefaultSelectedIds.contains(item.catalogId)) {
+        await updateListItem(item.copyWith(
+          isAdopted: true,
+          selected: true,
+          overriddenPackages: Value(item.calculatedPackages),
+        ));
+      }
+    }
+  }
+
   /// Prüft und setzt die Zuordnung einer Packungsanzahl zu einem Einkaufsstopp.
   /// Gewährleistet das Abnahmekriterium:
   /// Die Summe aller Zuordnungen darf die Gesamtmenge (effektive Packungszahl) nicht überschreiten.
@@ -261,6 +318,7 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
     return updateListItem(item.copyWith(
       checkState: state,
       selected: isSelected,
+      isAdopted: isSelected ? true : item.isAdopted,
       overriddenPackages: isSelected ? const Value(1) : Value(item.overriddenPackages),
     ));
   }
@@ -346,6 +404,7 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
         tripId: tripId,
         catalogId: 'custom_${DateTime.now().millisecondsSinceEpoch}',
         isCustom: const Value(true),
+        isAdopted: const Value(true),
         customName: Value(name),
         customUnit: Value(unit),
         customDepartment: Value(department),

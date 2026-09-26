@@ -63,6 +63,7 @@ void main() {
         const CrewMemberInput(id: '5', name: 'Emil (NoAlk)', isAdult: true, isVegetarian: false, noAlcohol: true),
       ],
     );
+    await shoppingListService.adoptAllSuggestions(tripId);
   });
 
   tearDown(() async {

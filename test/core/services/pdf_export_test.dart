@@ -60,6 +60,7 @@ void main() {
         calculatedQuantity: 2000,
         calculatedPackages: 4,
         checkState: CheckItemState.available,
+        isAdopted: true,
       );
 
       const dummyItem2 = ListItem(
@@ -72,6 +73,7 @@ void main() {
         calculatedQuantity: 6.0,
         calculatedPackages: 6,
         checkState: CheckItemState.available,
+        isAdopted: true,
       );
 
       const items = [

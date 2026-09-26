@@ -4,6 +4,24 @@
 
 - `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar
 
+## 2026-09-26 – FB1-B: Neues Listenkonzept
+
+- **Vorratsliste & Vorschlagssystem (FEEDBACK_R1 Punkt 3, 4, 5):**
+  - Neu erstellte Vorratslisten starten leer (0 Positionen auf der Vorratsliste), während die mathematischen Mengenvorschläge der Engine im Hintergrund berechnet werden.
+  - Artikel verfügen über ein explizites `isAdopted`-Flag (Drift-Schema Version 3 mit Migration).
+  - Aktion "Alle Vorschläge übernehmen" in der Kopfzeile übernimmt alle Standard-Varianten (`defaultSelected == true`) mit der vorgeschlagenen Packungszahl.
+  - Aktion "Vorschläge übernehmen" pro Kategorie übernimmt nur die Vorschläge der jeweiligen Kategorie.
+  - Einzelne Vorschläge können per "+ übernehmen"-Button direkt übernommen werden.
+  - Stepper (+ / -) mit 48 dp Tippflächen zum Erhöhen/Verringern; bei Erreichen von 0 Packungen wird der Artikel von der Liste entfernt.
+  - Direkte Mengeneingabe per Tipp auf die Packungszahl.
+  - Vorschlagsdifferenzanzeige: Abweichende Mengen zeigen ein dezentes "Vorschlag N"-Badge daneben.
+  - Entkopplung von Crewänderung und Benutzeranpassung: Übernommene Mengen bleiben bei Änderungen der Crew oder Reisedauer unverändert, während die Vorschläge dynamisch neu berechnet werden.
+  - Umschalter "Planen / Einkaufen" entfällt und wird durch einen `SegmentedButton` ("Nach Kategorie" / "Nach Abteilung") ersetzt.
+  - "Einkauf starten" öffnet den dedizierten Einkaufsmodus nur mit übernommenen Artikeln (Menge > 0) und großen Checkboxen (48×48 dp).
+  - Warnhinweis bei Törns mit mehr als 14 Tagen bezüglich Kühlkapazitäten und Frischeempfehlungen.
+  - Statusanzeigen neutralisiert (Entfall von "knapp" und "gedeckt").
+- Validierung: `flutter analyze` 0 Fehler, `flutter test` 136/136 Tests grün.
+
 ## 2026-09-26 – FB1-A: Fehler und Technik
 
 - **Varianten-Sheet & Mengenänderung (Punkt 6):**
