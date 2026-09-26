@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-26 – UX-Konzept v0.1
+
+- `docs/design/UX_KONZEPT_v0.1.md`: Ablauf als Rückgrat, fünf Hauptbildschirme, verbindliche Bedienmuster, Bewegung, Platzhalter für v1.1; FEEDBACK_R2 eingearbeitet
+- Keine Freigabe für Gemini bis Konzept und Prototyp abgestimmt sind
+
 ## 2026-09-26 – Entwurf Feedback-Runde 2
 
 - `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar

@@ -1,5 +1,7 @@
 # Feedback-Runde 2 v0.1 – ENTWURF
 
+> **Aufgegangen in `docs/design/UX_KONZEPT_v0.1.md`.** Dieses Dokument bleibt als Historie; maßgeblich ist das UX-Konzept.
+>
 > **Entwurf, noch nicht freigegeben.** Gemini setzt diese Punkte erst um, wenn sie im README freigegeben sind. Wird nach dem Test der Feedback-Runde 1 ergänzt.
 
 Stand: 26.09.2026 · Quelle: Praxistest durch den Product Owner
