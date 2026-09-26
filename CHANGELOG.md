@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – UX-Konzept v0.6
+
+- Crew-Link optional (Hauptweg: Skipper in der App); Cloudflare als Grundlage, keine Gesundheitsdaten
+
 ## 2026-09-26 – PRD v0.19, UX-Konzept v0.5
 
 - v1.1 vorgemerkt: Crew-Wünsche per Link (aus Wettbewerbsanalyse Victuo)

@@ -252,7 +252,7 @@ Grundlage: Punkt 9. Kassenwart, Einzahlen in einem Schritt, Ausgabe mit drei Fel
 
 ### UX-A – Navigation, Törn anlegen, Törn-Übersicht
 
-Grundlage: `docs/design/UX_KONZEPT_v0.5.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
+Grundlage: `docs/design/UX_KONZEPT_v0.6.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
 
 - Reiterleiste entfernen; fünf Hauptbildschirme; keine Ebene tiefer als zwei unter "Meine Törns"
 - Meine Törns (2.1) mit "Nächster Schritt" je Karte; Einstellungen über Symbol oben rechts

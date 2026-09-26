@@ -14,7 +14,7 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/design/DESIGN_BRIEF_v0.5.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
-| `docs/design/UX_KONZEPT_v0.5.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
+| `docs/design/UX_KONZEPT_v0.6.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
 | `docs/research/WETTBEWERB_v0.4.md` | Wettbewerbsanalyse |
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
@@ -29,4 +29,4 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 Konzeptphase läuft (PRD v0.19). Es gilt jeweils die höchste Versionsnummer.
 Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D.
 
-**Freigegeben für Gemini: UX-A, UX-B, UX-C (in dieser Reihenfolge; Grundlage docs/design/UX_KONZEPT_v0.5.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A bis FB1-D. S9 und S10 erst nach der UX-Überarbeitung.
+**Freigegeben für Gemini: UX-A, UX-B, UX-C (in dieser Reihenfolge; Grundlage docs/design/UX_KONZEPT_v0.6.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A bis FB1-D. S9 und S10 erst nach der UX-Überarbeitung.
