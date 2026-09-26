@@ -29,6 +29,13 @@ Es gilt jeweils die Datei mit der HÖCHSTEN Versionsnummer:
 
 Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind unklar oder widersprüchlich? Dann NICHT raten, sondern stoppen und nachfragen.
 
+## Wiederaufnahme nach Unterbrechung (Kontingent, Absturz, neue Sitzung)
+
+1. `git status` prüfen. Gibt es unkommittete Änderungen, gehören sie zum unterbrochenen Slice: Plan in `docs/impl/<Slice>_plan.md` lesen, Änderungen prüfen und den Slice regulär fertigstellen. Nichts verwerfen, ohne es im Bericht zu begründen.
+2. `git pull --rebase`, dann README.md, GEMINI.md und die Slice-Datei mit der höchsten Versionsnummer neu lesen (Dokumente können sich während der Pause geändert haben).
+3. Der nächste Slice ist der erste in der Freigabe-Reihenfolge des README, für den es noch keinen `docs/impl/<Slice>_bericht.md` gibt.
+4. Im Bericht vermerken: "Wiederaufnahme nach Unterbrechung am <Datum>".
+
 ## Pflichtablauf: Durchlauf-Modus
 
 Alle freigegebenen Slices werden der Reihe nach abgearbeitet (S0, S1, S2 …), ohne auf eine Freigabe pro Plan zu warten. Das Review erfolgt am Ende gesammelt; Korrekturen kommen danach als Nachtrag.

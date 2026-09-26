@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – GEMINI.md: Wiederaufnahme nach Unterbrechung
+
+- Regeln, wie Gemini nach Kontingentpause oder neuer Sitzung am richtigen Slice weitermacht
+
 ## 2026-09-26 – Slice FB2-A: Rechenlogik Haltbarkeit, Tiefkühlfach, Bordtank
 
 - **Katalog & Mengendaten:**
