@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.6
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.7
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -10,10 +10,11 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.4 | 24.09.2026 | Gehärtete Programmierregeln nach Review S2: feste Typen, keine versteckten Platzhalter, ehrliche Berichte, datengetrieben, Kommazahlen mit Toleranz, Testregeln |
 | v0.5 | 25.09.2026 | Regel 8: keine Eigenbauten von Standards; freigegebene Pakete; Abnahme nur mit echtem Nachweis |
 | v0.6 | 25.09.2026 | Regel 9: keine Behauptung von Handlungen, die Gemini nicht selbst ausführt; Art des Nachweises je Kriterium; Regel 10: nichts aus späteren Versionen sichtbar bauen |
+| v0.7 | 26.09.2026 | Backend-Regeln (TypeScript, Cloudflare, Geheimnisse, kein Deployment); Freigabe B0–B5 |
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: FB2-A, FB2-B, S9, S10-T. FEEDBACK_R2 v0.3 hat Vorrang vor PRD, UX-Konzept und Design-Brief. Das UX-Konzept hat Vorrang vor dem Design-Brief bei Informationsarchitektur, Bildschirmen, Bedienmustern und Begriffen; Tokens, Farben, Schriften, Nachtwache und Barrierefreiheit aus dem Design-Brief bleiben gültig. Rechenlogik, Datenmodell (außer ausdrücklich genannt) und Bordkassen-Logik nicht verändern. Nach jedem Slice muss `git status` sauber sein. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: FB2-A, FB2-B, B0–B5, S9, S10-T (Reihenfolge laut README). FEEDBACK_R2 v0.3 hat Vorrang vor PRD, UX-Konzept und Design-Brief. Das UX-Konzept hat Vorrang vor dem Design-Brief bei Informationsarchitektur, Bildschirmen, Bedienmustern und Begriffen; Tokens, Farben, Schriften, Nachtwache und Barrierefreiheit aus dem Design-Brief bleiben gültig. Rechenlogik, Datenmodell (außer ausdrücklich genannt) und Bordkassen-Logik nicht verändern. Nach jedem Slice muss `git status` sauber sein. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
@@ -128,6 +129,17 @@ Jeder Verstoß gilt als nicht erfüllte Abnahme, auch wenn die Tests grün sind.
 
 ### 10. Nichts aus späteren Versionen sichtbar bauen
 - Vorbereitungen für v1.1 (z. B. Datenmodell für Törn-Codes) sind erlaubt, wenn der Slice sie verlangt; sichtbare Oberflächen, Menüpunkte oder Texte für v1.1-Funktionen sind verboten, außer hinter einem Feature-Schalter, der in v1 aus ist.
+
+## Backend-Regeln (ab B0)
+
+- Code in `backend/` (Cloudflare Worker) und `web/` (Cloudflare Pages); Architektur, Datenmodell und Endpunkte nach `docs/BACKEND_KONZEPT_v0.1.md`
+- TypeScript `strict`, keine `any`; Eingaben immer mit zod validieren; Fehlerantworten einheitlich (Code + Meldung, ohne interne Details)
+- Standards nur mit etablierten Paketen (Regel 8): Hono, zod, jose, offizielle Cloudflare-Werkzeuge, `auth0_flutter` in der App
+- **Keine Geheimnisse im Repo:** keine Tokens, Client-Secrets, Turnstile-Secrets, API-Schlüssel; `wrangler.toml` nur mit Platzhaltern; Geheimnisse über `wrangler secret` (Product Owner)
+- **Kein Deployment, keine Ressourcen anlegen:** `wrangler deploy`, Anlegen von D1/R2/Turnstile/Auth0-Einträgen macht ausschließlich der Product Owner; im Bericht beschreiben, welche Schritte er ausführen muss
+- Tests mit Vitest in der Workers-Testumgebung; externe Dienste (Auth0, Turnstile) in Tests durch Testschlüssel/gefälschte JWKS ersetzen
+- Keine personenbezogenen Daten in Logs; Tokens/Codes nur als Hash speichern
+- Die Programmierregeln 1–10 gelten sinngemäß auch für TypeScript
 
 ## Technische Grundsätze
 

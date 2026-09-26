@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-26 – Backend-Konzept, Slice-Plan v0.18, GEMINI.md v0.7
+
+- Planer-Backend auf Cloudflare mit Auth0 (HullQ-Tenant): Login, Konto löschen, Cloud-Sicherung, Crew-Fragebogen, Törn-Codes, Admin-Seite Charterfirmen (v1)
+- Slices B0–B5 freigegeben; Reihenfolge FB2-A, FB2-B, B0–B5, S9, S10-T
+
 ## 2026-09-26 – MVP-Abschluss freigegeben
 
 - Feedback-Runde 2 v0.3 (Bedienregel Zahleneingaben, Bordtank nur trinkbar); Katalog v0.10 (Lagerung, TK-Haltbarkeit, 20 Langfahrt-/TK-Varianten); Quantities v0.6

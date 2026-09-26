@@ -6,8 +6,8 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 
 | Pfad | Inhalt |
 | --- | --- |
-| `docs/PRD_v0.19.md` | Produktanforderungen, Quelle der Wahrheit |
-| `docs/SLICES_v0.17.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
+| `docs/PRD_v0.20.md` | Produktanforderungen, Quelle der Wahrheit |
+| `docs/SLICES_v0.18.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
 | `docs/KATALOG_v0.10.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.10.json` | Vorratskatalog, maschinenlesbar |
 | `data/quantities_v0.6.json` | Mengen, Konsumprofile, Faktoren |
@@ -16,6 +16,8 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
 | `docs/design/UX_KONZEPT_v0.6.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
 | `docs/research/WETTBEWERB_v0.4.md` | Wettbewerbsanalyse |
+| `docs/BACKEND_KONZEPT_v0.1.md` | Planer-Backend (Cloudflare, Auth0) |
+| `backend/`, `web/` | Backend-Code (Worker) und Webseiten (Pages), ab B0 |
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
 | `CHANGELOG.md` | Fortschritt pro Slice |
@@ -26,7 +28,7 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 
 ## Status
 
-Konzeptphase läuft (PRD v0.19). Es gilt jeweils die höchste Versionsnummer.
+Konzeptphase läuft (PRD v0.20). Es gilt jeweils die höchste Versionsnummer.
 Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C.
 
-**Freigegeben für Gemini: FB2-A, FB2-B, S9, S10-T (in dieser Reihenfolge; Grundlage docs/impl/FEEDBACK_R2_v0.3.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A–D, UX-A–C. S10 (Store-Einträge, Screenshots, Texte) erst nach Namensentscheidung und Testphase.
+**Freigegeben für Gemini: FB2-A, FB2-B, B0, B1, B2, B3, B4, B5, S9, S10-T (in dieser Reihenfolge; Grundlagen docs/impl/FEEDBACK_R2_v0.3.md und docs/BACKEND_KONZEPT_v0.1.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A–D, UX-A–C. S10 (Store-Einträge, Screenshots, Texte) erst nach Namensentscheidung und Testphase.
