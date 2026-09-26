@@ -26,7 +26,7 @@ Jeder Slice ist eine abgeschlossene Arbeitseinheit für eine Gemini-Sitzung: kle
 | v0.16 | 26.09.2026 | UX-Überarbeitung nach UX-Konzept v0.4: Slices UX-A bis UX-C (vorrangig vor S9/S10) |
 | v0.17 | 26.09.2026 | MVP-Abschluss: FB2-A (Rechenlogik Haltbarkeit/Tiefkühl/Tank), FB2-B (Oberfläche), S9 (sechs Sprachen, Katalogübersetzung durch Gemini als Ausnahme), S10-T (technische Store-Bereitschaft ohne Veröffentlichung); Katalog v0.10, Quantities v0.6 |
 | v0.18 | 26.09.2026 | Backend nach docs/BACKEND_KONZEPT_v0.2.md: Slices B0–B5; Charterfirmen-Paket und Crew-Fragebogen in v1; Reihenfolge: FB2-A, FB2-B, B0–B5, S9, S10-T (Übersetzung zuletzt, damit alle Texte erfasst sind) |
-| v0.19 | 26.09.2026 | Nach Review (GPT): portal/ statt web/, CI in B0, FB2-A lädt Katalog v0.10/Quantities v0.6, Router-Fehler in FB2-B, Backend-Konzept v0.2 |
+| v0.19 | 26.09.2026 | Nach Review (GPT): portal/ statt web/, CI in B0, FB2-A lädt Katalog v0.10/Quantities v0.6, Router-Fehler in FB2-B, Backend-Konzept v0.2. Reihenfolge: FB2-A, FB2-B, B0, B1, B2, S9, S10-T → interne Testphase → B3, B4, B5 (vor öffentlicher Veröffentlichung) |
 | v0.4.1 | 23.09.2026 | Verweis auf PRD v0.11; Hinweis: Törn-Code und Bestellung an die Basis sind v1.1 und nicht Teil dieser Slices. Vorbereitung in S6: Freischaltung so bauen, dass später eine zeitlich begrenzte Freischaltung per Code ergänzt werden kann |
 
 ## Technische Leitplanken (für alle Slices)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – Reihenfolge angepasst
+
+- Freigegeben: FB2-A, FB2-B, B0, B1, B2, S9, S10-T; B3–B5 erst nach interner Testphase (Charter bleibt v1, vor öffentlicher Veröffentlichung)
+
 ## 2026-09-26 – Korrekturen nach externem Review
 
 - Backend-Konzept v0.2: portal/ statt web/, D1/R2 Jurisdiktion EU, accounts als lokale Projektion, CI ab B0
