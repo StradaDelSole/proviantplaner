@@ -10,6 +10,7 @@ import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
 import 'package:proviantplaner/features/home/ui/start_screen.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
 import 'package:proviantplaner/features/trip/ui/widgets/day_card.dart';
 
@@ -151,6 +152,7 @@ void main() {
       return ProviderScope(
         overrides: [
           themeStorageProvider.overrideWithValue(MockThemeStorage()),
+          allTripsProvider.overrideWith((ref) => Future.value([])),
         ],
         child: MaterialApp(
           locale: const Locale('de'),
@@ -187,24 +189,14 @@ void main() {
         await tester.pumpWidget(buildTestApp(TripWizardScreen(key: UniqueKey()), theme));
         await tester.pumpAndSettle();
 
-        expect(find.text('Basisdaten'), findsOneWidget);
-
-        // Weiter zu Schritt 2
-        final nextBtn = find.text('Weiter');
-        expect(nextBtn, findsOneWidget);
-        await tester.tap(nextBtn);
-        await tester.pumpAndSettle();
-        expect(find.text('Boot & Revier'), findsOneWidget);
-
-        // Weiter zu Schritt 3 (Crew)
-        await tester.tap(nextBtn);
-        await tester.pumpAndSettle();
-        expect(find.text('Crew'), findsWidgets);
+        expect(find.text('1. Törn'), findsOneWidget);
+        expect(find.text('2. Crew (5)'), findsOneWidget);
+        expect(find.text('3. Essen an Bord'), findsOneWidget);
 
         // Prüfe Tippflächen von '+ Person hinzufügen' >= 48 dp
         final addPersonBtnFinder = find.ancestor(
           of: find.text('+ Person hinzufügen'),
-          matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+          matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
         );
         expect(addPersonBtnFinder, findsOneWidget);
         final addPersonBtn = tester.getRect(addPersonBtnFinder);

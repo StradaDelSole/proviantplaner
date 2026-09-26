@@ -25,15 +25,17 @@ class TripService {
     required String name,
     required DateTime startDate,
     required int daysCount,
-    required bool isCharter,
-    required String boatType,
+    bool isCharter = true,
+    String boatType = 'monohull',
     String? climate,
     String? region,
-    required double fridgeCapacityLiters,
-    required CrewAppetite crewAppetite,
-    required bool crewReserve,
-    required CrewDrinking crewDrinking,
+    double fridgeCapacityLiters = 100.0,
+    CrewAppetite crewAppetite = CrewAppetite.normal,
+    bool crewReserve = false,
+    CrewDrinking crewDrinking = CrewDrinking.normal,
     required List<CrewMemberInput> crewMembers,
+    int restaurantDinnersCount = 0,
+    int restaurantLunchesCount = 0,
   }) async {
     final effectiveClimate = climate ??
         (region != null
@@ -62,6 +64,21 @@ class TripService {
     );
 
     final tripId = await tripDao.createTrip(tripCompanion, initialStopName: 'Ersteinkauf Basis');
+
+    // 1b. Restaurantbesuche initial setzen falls angegeben
+    if (restaurantDinnersCount > 0 || restaurantLunchesCount > 0) {
+      final days = await tripDao.getDaysForTrip(tripId);
+      for (int i = 0; i < days.length; i++) {
+        final shouldDinner = i < restaurantDinnersCount;
+        final shouldLunch = i < restaurantLunchesCount;
+        if (shouldDinner || shouldLunch) {
+          await tripDao.updateTripDay(days[i].copyWith(
+            dinnerRestaurant: shouldDinner,
+            lunchRestaurant: shouldLunch,
+          ));
+        }
+      }
+    }
 
     // 2. Crew-Mitglieder speichern
     for (final member in crewMembers) {
@@ -200,6 +217,22 @@ class TripService {
     await recalculateTrip(day.tripId);
   }
 
+  /// Setzt die genaue Anzahl an Restaurant-Abendessen und -Mittagessen und berechnet Mengen sofort neu.
+  Future<void> setRestaurantCounts(int tripId, {required int dinners, required int lunches}) async {
+    final days = await tripDao.getDaysForTrip(tripId);
+    for (int i = 0; i < days.length; i++) {
+      final shouldDinner = i < dinners;
+      final shouldLunch = i < lunches;
+      if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
+        await tripDao.updateTripDay(days[i].copyWith(
+          dinnerRestaurant: shouldDinner,
+          lunchRestaurant: shouldLunch,
+        ));
+      }
+    }
+    await recalculateTrip(tripId);
+  }
+
   /// Aktualisiert Hafenname oder Tagestyp für einen Tag (reine Info, keine Rechenlogik).
   Future<void> updateDayInfo(TripDay day, {String? portName, String? dayType}) async {
     final updated = day.copyWith(
@@ -236,5 +269,12 @@ class TripService {
   /// Gibt false zurück, wenn es der initiale Stopp ist (dieser darf nicht gelöscht werden).
   Future<bool> deleteShoppingStop(int stopId) {
     return tripDao.deleteShoppingStop(stopId);
+  }
+
+  /// Archiviert oder de-archiviert einen Törn.
+  Future<bool> archiveTrip(int tripId, {bool archive = true}) async {
+    final trip = await tripDao.getTripById(tripId);
+    if (trip == null) return false;
+    return tripDao.updateTrip(trip.copyWith(isArchived: archive));
   }
 }

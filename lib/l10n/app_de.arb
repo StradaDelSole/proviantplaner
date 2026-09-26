@@ -278,5 +278,21 @@
       "startDay": { "type": "int" },
       "endDay": { "type": "int" }
     }
-  }
+  },
+  "eatOutQuestion": "Esst ihr auch auswärts?",
+  "dinnerInRestaurant": "Abendessen im Restaurant",
+  "lunchInRestaurant": "Mittagessen im Restaurant",
+  "nextStepLabel": "Nächster Schritt",
+  "daysInDetail": "Tage im Detail",
+  "tripOverviewTitle": "Törn-Übersicht",
+  "recordExpense": "Ausgabe erfassen",
+  "deposit": "Einzahlen",
+  "settle": "Abrechnen",
+  "editList": "Liste bearbeiten",
+  "startShopping": "Einkauf starten",
+  "settledCash": "Bar ausgezahlt",
+  "transferBank": "Überweisen",
+  "noFridge": "Kein Kühlschrank",
+  "archiveSectionTitle": "Archiv",
+  "whoPaysWhom": "Wer zahlt wem"
 }

@@ -211,7 +211,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     // "bekommt 18,00 € von Anna" oder "zahlt 42,10 € an Anna"
     final String personName;
     final String lineText;
-    if (data.treasurer != null && transfer.fromMember.id == data.treasurer!.id) {
+    final isPayout = data.treasurer != null && transfer.fromMember.id == data.treasurer!.id;
+    if (isPayout) {
       personName = transfer.toMember.name;
       lineText = 'bekommt ${transfer.formattedAmount} von ${transfer.fromMember.name}';
     } else {
@@ -280,7 +281,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             ),
           ),
           if (isExpanded)
-            _buildExpandedSection(theme, l10n, data, index, transfer, isSettled),
+            _buildExpandedSection(theme, l10n, data, index, transfer, isSettled, isPayout: isPayout),
         ],
       ),
     );
@@ -292,8 +293,9 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     TripKittyData data,
     int index,
     PaymentTransfer transfer,
-    bool isSettled,
-  ) {
+    bool isSettled, {
+    required bool isPayout,
+  }) {
     final memberIban = transfer.toMember.iban;
     final hasValidIban = memberIban != null &&
         memberIban.isNotEmpty &&
@@ -306,7 +308,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           children: [
             const Divider(),
             const SizedBox(height: 8),
-            _buildMissingPaymentDataBox(theme, l10n, transfer.toMember),
+            _buildMissingPaymentDataBox(theme, l10n, transfer.toMember, index, isSettled, isPayout: isPayout),
             const SizedBox(height: 8),
             _buildMarkSettledRow(theme, l10n, index, isSettled),
           ],
@@ -332,10 +334,28 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(height: 16),
           _buildTransferDetailsBox(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
           const SizedBox(height: 8),
-          TextButton.icon(
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            label: const Text('Zahlungsdaten anpassen'),
-            onPressed: () => _editMemberPaymentDetails(context, transfer.toMember),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.payments_outlined),
+                  label: const Text('Bar ausgezahlt'),
+                  onPressed: () {
+                    setState(() {
+                      _settledIndices.add(index);
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('IBAN anpassen'),
+                  onPressed: () => _editMemberPaymentDetails(context, transfer.toMember),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           _buildCopyButton(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
@@ -348,12 +368,19 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     );
   }
 
-  Widget _buildMissingPaymentDataBox(ThemeData theme, AppLocalizations l10n, KittyMember member) {
+  Widget _buildMissingPaymentDataBox(
+    ThemeData theme,
+    AppLocalizations l10n,
+    KittyMember member,
+    int index,
+    bool isSettled, {
+    required bool isPayout,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        border: Border.all(color: theme.colorScheme.errorContainer),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -361,7 +388,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: theme.colorScheme.error),
+              Icon(Icons.info_outline, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -374,11 +401,36 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          FilledButton.tonalIcon(
-            icon: const Icon(Icons.edit_outlined),
-            label: const Text('Jetzt eintragen'),
-            onPressed: () => _editMemberPaymentDetails(context, member),
-          ),
+          if (isPayout)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.payments_outlined),
+                    label: const Text('Bar ausgezahlt'),
+                    onPressed: () {
+                      setState(() {
+                        _settledIndices.add(index);
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.account_balance_outlined),
+                    label: const Text('Überweisen'),
+                    onPressed: () => _editMemberPaymentDetails(context, member),
+                  ),
+                ),
+              ],
+            )
+          else
+            FilledButton.tonalIcon(
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Jetzt eintragen'),
+              onPressed: () => _editMemberPaymentDetails(context, member),
+            ),
         ],
       ),
     );

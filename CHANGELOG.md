@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-09-26 – Slice UX-A: Navigation, Törn anlegen, Törn-Übersicht
+
+- **Startbildschirm („Meine Törns“):**
+  - Keine untere Reiterleiste mehr (Material NavigationBar entfernt).
+  - Prominenter Button „+ Neuer Törn“ (`FilledButton.icon`) stets sichtbar, auch bei vorhandenen Törns.
+  - Kachel-Anzeige mit Indikator für den nächsten logischen Schritt.
+  - Eingeklappter Bereich für archivierte Törns.
+- **Törn anlegen (`TripWizardScreen`):**
+  - Von 3-Schritt-Wizard auf eine einzige scrollbare Seite mit 3 einklappbaren Sektionen (1. Törn, 2. Crew, 3. Essen an Bord) umgestellt.
+  - Unnötige Fragen entfernt: Keine Abfragen nach Bootstyp, Revier/Klimazone oder Alkoholkonsum.
+  - Erfassung von Restaurant-Abenden und -Mittagen per Stepper (Zähler), die unmittelbar die berechneten Bordmahlzeiten verringern.
+  - Abschluss führt ohne Umwege direkt zur neuen Törn-Übersicht (`/trips/:id`).
+- **Törn-Übersicht (`TripOverviewScreen`):**
+  - Neues organisatorisches Rückgrat des Törns mit vier Ablaufphasen (1. Liste, 2. Einkaufen, 3. Unterwegs / Bordkasse, 4. Abschließen).
+  - Nächster ausstehender Schritt optisch durch Akzentumrandung hervorgehoben.
+  - Direkte Kassen-Aktionen („Ausgabe erfassen“, „Einzahlen“, „Abrechnen“) ohne Drei-Punkte-Menü erreichbar.
+  - Float Action Button „Ausgabe erfassen“ bei begonnenem Törn oder vorhandenen Buchungen.
+  - Eingeklappter Detailbereich „Tage im Detail“ zur feingranularen Steuerung von Restauranttagen.
+- **Navigation und Datenfluss:**
+  - Strikte Begrenzung: Kein Bildschirm liegt tiefer als zwei Ebenen unter „Meine Törns“.
+  - Crew-Verwaltung enthält keine Zahlungsdatenfelder mehr (IBAN, PayPal, Revolut).
+  - Einzahlungen an die Kasse nutzen stets die Kontodaten des Kassenwarts für den EPC-QR-Code.
+  - Auszahlungen an Crewmitglieder bieten „Bar ausgezahlt“ (direkter Saldenausgleich) und „Überweisen“ (mit Modulo-97-Validierung für Empfänger-IBAN).
+- **Prüfung:** `flutter analyze` 0 Fehler/Warnungen, `flutter test` 162/162 Tests grün (inklusive 9 dedizierter UX-A Abnahmetests).
+
 ## 2026-09-26 – Wettbewerbsanalyse v0.1
 
 - CrewMate, Armator.PRO, Victuo und allgemeine Alternativen; Differenzierung und Empfehlung

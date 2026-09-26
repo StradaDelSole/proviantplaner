@@ -137,8 +137,8 @@ void main() {
     await tester.pumpWidget(buildTestableWidget(const StartScreen()));
     await tester.pumpAndSettle();
 
-    // Button zum Anlegen eines weiteren Törns drücken (OutlinedButton auf der Törn-Karte)
-    final newTripBtn = find.widgetWithText(OutlinedButton, 'Neuen Törn anlegen');
+    // Button zum Anlegen eines weiteren Törns drücken
+    final newTripBtn = find.text('Neuen Törn anlegen');
     expect(newTripBtn, findsOneWidget);
     await tester.tap(newTripBtn);
     await tester.pumpAndSettle();

@@ -7,6 +7,7 @@ import 'package:proviantplaner/features/shopping_list/ui/storage_checklist_scree
 import 'package:proviantplaner/features/kitty/ui/kitty_screen.dart';
 import 'package:proviantplaner/features/kitty/ui/settlement_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
+import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
 import 'package:proviantplaner/features/more/ui/more_screen.dart';
 
@@ -25,6 +26,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/trips/new',
         name: 'new_trip',
         builder: (context, state) => const TripWizardScreen(),
+      ),
+      GoRoute(
+        path: '/trips/:id',
+        name: 'trip_overview',
+        builder: (context, state) {
+          final idStr = state.pathParameters['id'];
+          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          return TripOverviewScreen(tripId: tripId);
+        },
       ),
       GoRoute(
         path: '/trips/:id/timeline',

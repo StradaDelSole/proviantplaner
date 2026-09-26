@@ -278,5 +278,21 @@
       "startDay": { "type": "int" },
       "endDay": { "type": "int" }
     }
-  }
+  },
+  "eatOutQuestion": "Do you also eat out?",
+  "dinnerInRestaurant": "Dinner in restaurant",
+  "lunchInRestaurant": "Lunch in restaurant",
+  "nextStepLabel": "Next step",
+  "daysInDetail": "Days in detail",
+  "tripOverviewTitle": "Trip Overview",
+  "recordExpense": "Record expense",
+  "deposit": "Deposit",
+  "settle": "Settle up",
+  "editList": "Edit list",
+  "startShopping": "Start shopping",
+  "settledCash": "Settled in cash",
+  "transferBank": "Transfer",
+  "noFridge": "No fridge",
+  "archiveSectionTitle": "Archive",
+  "whoPaysWhom": "Who pays whom"
 }

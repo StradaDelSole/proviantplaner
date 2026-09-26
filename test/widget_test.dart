@@ -1,36 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/main.dart';
 
 void main() {
-  testWidgets('StartScreen zeigt App-Name, powered by HullQ und keine Reiterleiste (FEEDBACK_R1 Punkt 4)', (WidgetTester tester) async {
+  testWidgets('StartScreen zeigt Meine Törns, powered by HullQ und keine Reiterleiste (UX-A)', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: ProviantplanerApp(locale: Locale('de')),
+      ProviderScope(
+        overrides: [
+          allTripsProvider.overrideWith((ref) => Future.value([])),
+        ],
+        child: const ProviantplanerApp(locale: Locale('de')),
       ),
     );
     await tester.pumpAndSettle();
 
-    // App-Titel prüfen
-    expect(find.text('Proviantplaner'), findsWidgets);
+    // Titel "Meine Törns" prüfen (UX_KONZEPT 2.1: Titel: Meine Törns (nicht mehr „Proviantplaner“))
+    expect(find.text('Meine Törns'), findsOneWidget);
 
     // "powered by HullQ" prüfen
     expect(find.text('powered by HullQ'), findsWidgets);
 
-    // Keine Reiterleiste auf Startbildschirm gemäß FEEDBACK_R1 Punkt 4
+    // Keine Reiterleiste auf Startbildschirm gemäß UX-A
     expect(find.byType(NavigationBar), findsNothing);
   });
 
   testWidgets('StartScreen auf Englisch zeigt keinen Tab-Bar', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: ProviantplanerApp(locale: Locale('en')),
+      ProviderScope(
+        overrides: [
+          allTripsProvider.overrideWith((ref) => Future.value([])),
+        ],
+        child: const ProviantplanerApp(locale: Locale('en')),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Proviantplaner'), findsWidgets);
+    expect(find.text('Meine Törns'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 }

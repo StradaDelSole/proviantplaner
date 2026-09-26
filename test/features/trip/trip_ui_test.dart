@@ -63,33 +63,24 @@ void main() {
   }
 
   group('Trip UI Tests (Slice S3)', () {
-    testWidgets('TripWizardScreen rendert und navigiert durch die 3 Schritte', (WidgetTester tester) async {
+    testWidgets('TripWizardScreen rendert alle 3 Sektionen auf einer Seite (UX-A)', (WidgetTester tester) async {
       await tester.pumpWidget(buildTestableWidget(const TripWizardScreen()));
       await tester.pumpAndSettle();
 
-      // Schritt 1
-      expect(find.text('Basisdaten'), findsOneWidget);
+      // Sektion 1
+      expect(find.text('1. Törn'), findsOneWidget);
       expect(find.text('Törn Kroatien'), findsOneWidget);
 
-      // Weiter zu Schritt 2
-      final nextButton = find.text('Weiter');
-      expect(nextButton, findsOneWidget);
-      await tester.tap(nextButton);
-      await tester.pumpAndSettle();
-
-      // Schritt 2
-      expect(find.text('Boot & Revier'), findsOneWidget);
-      expect(find.text('Bootstyp'), findsOneWidget);
-
-      // Weiter zu Schritt 3
-      await tester.tap(nextButton);
-      await tester.pumpAndSettle();
-
-      // Schritt 3: Crew-Liste & Verpflegungsfragen
-      expect(find.text('Crew'), findsOneWidget);
-      expect(find.text('Wie isst eure Crew?'), findsOneWidget);
+      // Sektion 2
+      expect(find.text('2. Crew (5)'), findsOneWidget);
       expect(find.text('Skipper'), findsOneWidget);
       expect(find.text('Gast 2'), findsOneWidget);
+
+      // Sektion 3
+      expect(find.text('3. Essen an Bord'), findsOneWidget);
+      expect(find.text('Wie isst eure Crew?'), findsOneWidget);
+
+      // Aktions-Button unten
       expect(find.text('Törn erstellen'), findsOneWidget);
     });
 
