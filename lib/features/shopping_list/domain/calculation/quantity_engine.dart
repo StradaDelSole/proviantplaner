@@ -107,12 +107,46 @@ class UserItemState {
   });
 }
 
+/// Klimastufe für den Törn gemäß PRD v0.20 & FEEDBACK_R2 v0.3.
+enum ClimateZone {
+  cool('cool'),
+  warm('warm'),
+  hot('hot');
+
+  final String rawValue;
+  const ClimateZone(this.rawValue);
+
+  /// Parst einen String strictly oder migriert alte Revier-Werte an dieser zentralen Stelle.
+  static ClimateZone fromString(String val) {
+    for (final z in values) {
+      if (z.rawValue == val) return z;
+    }
+    // Migration alter Revierwerte (FB1-C / FB2-A Punkt 8):
+    switch (val) {
+      case 'temperate' || 'baltic' || 'north_sea' || 'ijsselmeer':
+        return ClimateZone.cool;
+      case 'mediterranean' || 'mediterranean_summer':
+        return ClimateZone.warm;
+      case 'hot_or_remote' || 'canaries' || 'caribbean':
+        return ClimateZone.hot;
+      default:
+        throw FormatException('Unbekannte Klimastufe oder veraltetes Revier: "$val"');
+    }
+  }
+}
+
 /// Zentrales Eingabeobjekt für die Mengenberechnung gemäß Programmierregel 6.
 class QuantityCalculationInput {
   final int daysCount;
-  final String climate;
-  String get region => climate;
+  final ClimateZone climate;
+  String get region => climate.rawValue;
   final double fridgeCapacityLiters;
+  final bool hasFreezer;
+  final double? freezerCapacityLiters;
+  final double? waterTankLiters;
+  final bool isWaterTankDrinkable;
+  final int? daysUntilNextStop;
+  final int currentStopDayNumber;
   final CrewAppetite crewAppetite;
   final bool crewReserve;
   final CrewDrinking crewDrinking;
@@ -120,18 +154,28 @@ class QuantityCalculationInput {
   final List<CrewMemberInput> crewMembers;
   final Map<String, UserItemState> userItemStates;
 
-  const QuantityCalculationInput({
+  QuantityCalculationInput({
     required this.daysCount,
-    String? climate,
+    dynamic climate,
     String? region,
     required this.fridgeCapacityLiters,
+    this.hasFreezer = false,
+    this.freezerCapacityLiters,
+    this.waterTankLiters,
+    this.isWaterTankDrinkable = false,
+    this.daysUntilNextStop,
+    this.currentStopDayNumber = 1,
     required this.crewAppetite,
     required this.crewReserve,
     required this.crewDrinking,
     required this.tripDays,
     required this.crewMembers,
     this.userItemStates = const {},
-  }) : climate = climate ?? region ?? 'warm';
+  }) : climate = climate is ClimateZone
+            ? climate
+            : (climate is String
+                ? ClimateZone.fromString(climate)
+                : (region != null ? ClimateZone.fromString(region) : ClimateZone.warm));
 }
 
 /// Interne Rechenstruktur für eine Variante während der Gruppenkalkulation.
@@ -147,6 +191,8 @@ class _VariantComputation {
   int packages;
   final int? overriddenPackages;
   String? remainderNotice;
+  String? storageNotice;
+  final int effectiveShelfLife;
 
   _VariantComputation({
     required this.variant,
@@ -160,6 +206,8 @@ class _VariantComputation {
     required this.packages,
     this.overriddenPackages,
     this.remainderNotice,
+    this.storageNotice,
+    required this.effectiveShelfLife,
   });
 }
 
@@ -172,6 +220,47 @@ class QuantityEngine {
     required this.catalog,
     required this.quantities,
   });
+
+  /// Berechnet das Gesamtgewicht und -volumen der übernommenen / gewählten Positionen.
+  static ProvisionWeightVolume calculateWeightAndVolume(List<VariantCalculationResult> variants) {
+    double totalWeightKg = 0.0;
+    double totalVolumeLiters = 0.0;
+    bool hasItemsWithoutWeight = false;
+
+    for (final v in variants) {
+      if (!v.isSelected || v.effectivePackages <= 0) continue;
+
+      final count = v.effectivePackages;
+      final size = v.packSize;
+      final unit = v.packUnit.toLowerCase().trim();
+
+      if (unit == 'kg') {
+        final kg = count * size;
+        totalWeightKg += kg;
+        totalVolumeLiters += kg; // 1 kg ~ 1 dm³ / Liter
+      } else if (unit == 'g') {
+        final kg = (count * size) / 1000.0;
+        totalWeightKg += kg;
+        totalVolumeLiters += kg;
+      } else if (unit == 'l') {
+        final liters = count * size;
+        totalVolumeLiters += liters;
+        totalWeightKg += liters; // 1 Liter Flüssigkeit ~ 1 kg
+      } else if (unit == 'ml') {
+        final liters = (count * size) / 1000.0;
+        totalVolumeLiters += liters;
+        totalWeightKg += liters;
+      } else {
+        hasItemsWithoutWeight = true;
+      }
+    }
+
+    return ProvisionWeightVolume(
+      totalWeightKg: totalWeightKg,
+      totalVolumeLiters: totalVolumeLiters,
+      hasItemsWithoutWeight: hasItemsWithoutWeight,
+    );
+  }
 
   /// Berechnet den vollständigen Proviantbedarf für einen Törn.
   TripCalculationResult calculateTrip(QuantityCalculationInput input) {
@@ -188,14 +277,25 @@ class QuantityEngine {
       }
     }
 
+    final allVariants = groupResults.expand((g) => g.variantResults).toList();
+    final weightVolume = calculateWeightAndVolume(allVariants);
+
     final fridgeLiters = _calculateFridgeUsage(groupResults, input.daysCount);
-    final isOverloaded = fridgeLiters > (input.fridgeCapacityLiters + epsilon);
+    final isFridgeOverloaded = fridgeLiters > (input.fridgeCapacityLiters + epsilon);
+
+    final freezerLiters = _calculateFreezerUsage(groupResults);
+    final isFreezerOverloaded = input.freezerCapacityLiters != null &&
+        freezerLiters > (input.freezerCapacityLiters! + epsilon);
 
     return TripCalculationResult(
       groupResults: groupResults,
       fridgeLitersNeededFirstDays: fridgeLiters,
       fridgeCapacityLiters: input.fridgeCapacityLiters,
-      isFridgeOverloaded: isOverloaded,
+      isFridgeOverloaded: isFridgeOverloaded,
+      freezerLitersNeeded: freezerLiters,
+      freezerCapacityLiters: input.freezerCapacityLiters,
+      isFreezerOverloaded: isFreezerOverloaded,
+      weightVolume: weightVolume,
     );
   }
 
@@ -222,6 +322,8 @@ class QuantityEngine {
         calculatedPackages: 0,
         effectivePackages: 0,
         shelfLifeDays: v.shelfLifeDays,
+        effectiveShelfLifeDays: v.shelfLifeDays,
+        chill: v.chill,
         buyFreshUnderway: v.buyFreshUnderway,
         storage: v.storage,
         tags: v.tags,
@@ -359,56 +461,79 @@ class QuantityEngine {
     required double factorSum,
   }) {
     double rawAmount = 0.0;
+    final effectiveDays = input.daysUntilNextStop ?? input.daysCount;
 
     switch (need.basis) {
       case CalculationBasis.perPersonDay:
-        rawAmount = need.amount * input.daysCount * factorSum;
+        rawAmount = need.amount * effectiveDays * factorSum;
         break;
 
       case CalculationBasis.perPersonDayRegion:
-        final climateKey = switch (input.climate) {
-          'cool' || 'temperate' => 'cool',
-          'hot' || 'hot_or_remote' => 'hot',
-          _ => 'warm',
+        final key = input.climate.rawValue;
+        final legacyKey = switch (input.climate) {
+          ClimateZone.cool => 'temperate',
+          ClimateZone.warm => 'mediterranean_summer',
+          ClimateZone.hot => 'hot_or_remote',
         };
-        final waterConfig = quantities.waterLiters[climateKey] ??
-            quantities.waterLiters[input.climate] ??
+        final waterConfig = quantities.waterLiters[key] ??
+            quantities.waterLiters[legacyKey] ??
             quantities.waterLiters['warm'] ??
             quantities.waterLiters['mediterranean_summer'];
         final dailyAmount = waterConfig?.defaultValue ?? need.amount;
-        rawAmount = dailyAmount * input.daysCount * factorSum;
+        rawAmount = dailyAmount * effectiveDays * factorSum;
+
+        // Bordtank Trinkwasser (FEEDBACK_R2 v0.3 Punkt 6):
+        if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
+          final tankLiters = input.waterTankLiters!;
+          final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
+          final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
+          final afterTank = rawAmount - tankLiters;
+          rawAmount = afterTank > minReserve ? afterTank : minReserve;
+        }
         break;
 
       case CalculationBasis.perPersonWeek:
-        final weeks = input.daysCount / 7.0;
+        final weeks = effectiveDays / 7.0;
         rawAmount = need.amount * weeks * factorSum;
         break;
 
       case CalculationBasis.perPersonBoardLunch:
-        final lunchCount = input.tripDays.where((d) => !d.isLunchRestaurant).length;
+        final startDay = input.currentStopDayNumber;
+        final endDay = startDay + effectiveDays;
+        final lunchCount = input.tripDays
+            .where((d) => d.dayNumber >= startDay && d.dayNumber < endDay && !d.isLunchRestaurant)
+            .length;
         rawAmount = need.amount * lunchCount * factorSum;
         break;
 
       case CalculationBasis.perPersonBoardEvening:
-        final dinnerCount = input.tripDays.where((d) => !d.isEveningRestaurant).length;
+        final startDay = input.currentStopDayNumber;
+        final endDay = startDay + effectiveDays;
+        final dinnerCount = input.tripDays
+            .where((d) => d.dayNumber >= startDay && d.dayNumber < endDay && !d.isEveningRestaurant)
+            .length;
         rawAmount = need.amount * dinnerCount * factorSum;
         break;
 
       case CalculationBasis.perAdultEvening:
-        rawAmount = need.amount * input.daysCount * factorSum;
+        rawAmount = need.amount * effectiveDays * factorSum;
         break;
 
       case CalculationBasis.perCrewWeek:
-        final weeksCount = (input.daysCount / 7.0 - epsilon).ceil();
+        final weeksCount = (effectiveDays / 7.0 - epsilon).ceil();
         rawAmount = need.amount * weeksCount;
         break;
 
       case CalculationBasis.perTrip:
-        rawAmount = need.amount;
+        rawAmount = (input.daysUntilNextStop != null && input.currentStopDayNumber > 1)
+            ? 0.0
+            : need.amount;
         break;
 
       case CalculationBasis.perPersonTrip:
-        rawAmount = need.amount * factorSum;
+        rawAmount = (input.daysUntilNextStop != null && input.currentStopDayNumber > 1)
+            ? 0.0
+            : need.amount * factorSum;
         break;
 
       case CalculationBasis.check:
@@ -423,6 +548,47 @@ class QuantityEngine {
     return rawAmount;
   }
 
+  int _determineEffectiveShelfLife(CatalogVariant v, QuantityCalculationInput input) {
+    if (v.chill == ChillRequirement.freezer && !input.hasFreezer) {
+      return 0;
+    }
+    if (input.hasFreezer && v.shelfLifeFrozenDays != null) {
+      return v.shelfLifeFrozenDays!;
+    }
+    return v.shelfLifeDays;
+  }
+
+  String? _determineStorageNotice(CatalogVariant v, QuantityCalculationInput input) {
+    if (v.chill == ChillRequirement.freezer && !input.hasFreezer) {
+      return null;
+    }
+    if (input.hasFreezer && v.shelfLifeFrozenDays != null) {
+      return 'gleich einfrieren';
+    }
+    if (v.chill == ChillRequirement.fridge && input.fridgeCapacityLiters <= epsilon) {
+      return 'braucht Kühlung';
+    }
+    return null;
+  }
+
+  String? _buildShelfRemainderNotice({
+    required CatalogGroup group,
+    required CatalogVariant variant,
+    required int uncoveredDays,
+    required double uncoveredAmount,
+  }) {
+    if (uncoveredDays <= 0 || uncoveredAmount <= epsilon) return null;
+    final durableAlts = catalog.getVariantsForGroup(group.id).where(
+      (a) => a.id != variant.id && a.shelfLifeDays >= quantities.durableMinShelfLifeDays,
+    ).toList();
+    final unitStr = group.need?.unit ?? variant.pack.unit;
+    if (durableAlts.isNotEmpty) {
+      final names = durableAlts.map((a) => a.nameDe).join(', ');
+      return 'Rest ca. ${uncoveredAmount.toStringAsFixed(1)} $unitStr – bei einem späteren Einkauf einplanen. Für $uncoveredDays Tage ohne Einkauf eignen sich: $names';
+    }
+    return 'Rest ca. ${uncoveredAmount.toStringAsFixed(1)} $unitStr – bei einem späteren Einkauf einplanen';
+  }
+
   /// Berechnet die Vorbedarfe und initialen Packungen für alle Varianten einer Gruppe.
   List<_VariantComputation> _computeVariantNeeds(
     CatalogGroup group,
@@ -430,59 +596,189 @@ class QuantityEngine {
     double rawGroupNeed,
     QuantityCalculationInput input,
   ) {
+    final int duration = input.daysUntilNextStop ?? input.daysCount;
+    final int tDays = duration <= 0 ? 1 : duration;
+
+    if (group.split == GroupSplit.equal) {
+      return _computeEqualSplitVariants(group, variants, rawGroupNeed, input, tDays);
+    } else {
+      return _computeEachSplitVariants(group, variants, rawGroupNeed, input, tDays);
+    }
+  }
+
+  List<_VariantComputation> _computeEqualSplitVariants(
+    CatalogGroup group,
+    List<CatalogVariant> variants,
+    double rawGroupNeed,
+    QuantityCalculationInput input,
+    int tDays,
+  ) {
     final selectedVariants = <CatalogVariant>[];
     for (final v in variants) {
       final state = input.userItemStates[v.id];
-      final isSel = state?.isSelected ?? v.defaultSelected;
+      final isSel = (state?.isSelected ?? v.defaultSelected) &&
+          !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
       if (isSel) selectedVariants.add(v);
     }
 
-    final double totalShares = selectedVariants.fold(0.0, (sum, v) {
-      final state = input.userItemStates[v.id];
-      return sum + (state?.share ?? 1.0);
-    });
+    final shelfLifeMap = {
+      for (final v in selectedVariants) v.id: _determineEffectiveShelfLife(v, input),
+    };
+    final allocatedNeedMap = <String, double>{for (final v in selectedVariants) v.id: 0.0};
+    final dailyNeed = rawGroupNeed / tDays;
+    int groupUncoveredDays = 0;
+
+    for (int d = 1; d <= tDays; d++) {
+      final active = selectedVariants.where((v) => shelfLifeMap[v.id]! >= d).toList();
+      if (active.isEmpty) {
+        groupUncoveredDays++;
+      } else {
+        final sumShares = active.fold(0.0, (sum, v) {
+          final state = input.userItemStates[v.id];
+          return sum + (state?.share ?? 1.0);
+        });
+        if (sumShares > epsilon) {
+          for (final v in active) {
+            final s = input.userItemStates[v.id]?.share ?? 1.0;
+            allocatedNeedMap[v.id] = allocatedNeedMap[v.id]! + (dailyNeed * (s / sumShares));
+          }
+        }
+      }
+    }
 
     final computations = <_VariantComputation>[];
     for (final v in variants) {
       final state = input.userItemStates[v.id];
-      final isSel = state?.isSelected ?? v.defaultSelected;
+      final isSel = (state?.isSelected ?? v.defaultSelected) &&
+          !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
       final share = state?.share ?? 1.0;
       final packSize = state?.customPackSize ?? v.pack.size;
+      final effShelfLife = _determineEffectiveShelfLife(v, input);
+      final storageNotice = _determineStorageNotice(v, input);
 
       if (!isSel) {
-        computations.add(_createUnselectedComputation(v, share, packSize, state?.overriddenPackages));
+        computations.add(_createUnselectedComputation(
+          variant: v,
+          share: share,
+          packSize: packSize,
+          overriddenPackages: state?.overriddenPackages,
+          effectiveShelfLife: effShelfLife,
+          storageNotice: storageNotice,
+        ));
         continue;
       }
 
-      final allocatedNeed = _resolveAllocatedNeed(
-        group: group,
-        variant: v,
-        rawGroupNeed: rawGroupNeed,
-        share: share,
-        totalShares: totalShares,
-        input: input,
-      );
+      final allocated = allocatedNeedMap[v.id] ?? 0.0;
+      String? shelfRemainderNotice;
+      if (effShelfLife < tDays && groupUncoveredDays > 0) {
+        final uncoveredDays = groupUncoveredDays.clamp(0, tDays - effShelfLife);
+        shelfRemainderNotice = _buildShelfRemainderNotice(
+          group: group,
+          variant: v,
+          uncoveredDays: uncoveredDays,
+          uncoveredAmount: dailyNeed * uncoveredDays,
+        );
+      }
 
       computations.add(_createSelectedComputation(
         group: group,
         variant: v,
-        allocatedNeed: allocatedNeed,
+        allocatedNeed: allocated,
         packSize: packSize,
         share: share,
         state: state,
         input: input,
+        effectiveShelfLife: effShelfLife,
+        storageNotice: storageNotice,
+        shelfRemainderNotice: shelfRemainderNotice,
       ));
     }
-
     return computations;
   }
 
-  _VariantComputation _createUnselectedComputation(
-    CatalogVariant variant,
-    double share,
-    double packSize,
-    int? overriddenPackages,
+  List<_VariantComputation> _computeEachSplitVariants(
+    CatalogGroup group,
+    List<CatalogVariant> variants,
+    double rawGroupNeed,
+    QuantityCalculationInput input,
+    int tDays,
   ) {
+    final computations = <_VariantComputation>[];
+    for (final v in variants) {
+      final state = input.userItemStates[v.id];
+      final isSel = (state?.isSelected ?? v.defaultSelected) &&
+          !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
+      final share = state?.share ?? 1.0;
+      final packSize = state?.customPackSize ?? v.pack.size;
+      final effShelfLife = _determineEffectiveShelfLife(v, input);
+      final storageNotice = _determineStorageNotice(v, input);
+
+      if (!isSel) {
+        computations.add(_createUnselectedComputation(
+          variant: v,
+          share: share,
+          packSize: packSize,
+          overriddenPackages: state?.overriddenPackages,
+          effectiveShelfLife: effShelfLife,
+          storageNotice: storageNotice,
+        ));
+        continue;
+      }
+
+      double rawVariantNeed = rawGroupNeed;
+      if (v.need != null) {
+        final factorSum = _calculateQualifyingFactorSum(
+          appliesTo: group.appliesTo,
+          profile: group.profile,
+          crew: input.crewMembers,
+          crewAppetite: input.crewAppetite,
+          crewDrinking: input.crewDrinking,
+        );
+        rawVariantNeed = _calculateBaseNeed(
+          need: v.need!,
+          groupId: group.id,
+          input: input,
+          factorSum: factorSum,
+        );
+      }
+
+      double allocated = rawVariantNeed;
+      String? shelfRemainderNotice;
+      if (effShelfLife < tDays) {
+        allocated = rawVariantNeed * (effShelfLife / tDays);
+        final uncoveredDays = tDays - effShelfLife;
+        shelfRemainderNotice = _buildShelfRemainderNotice(
+          group: group,
+          variant: v,
+          uncoveredDays: uncoveredDays,
+          uncoveredAmount: rawVariantNeed - allocated,
+        );
+      }
+
+      computations.add(_createSelectedComputation(
+        group: group,
+        variant: v,
+        allocatedNeed: allocated,
+        packSize: packSize,
+        share: share,
+        state: state,
+        input: input,
+        effectiveShelfLife: effShelfLife,
+        storageNotice: storageNotice,
+        shelfRemainderNotice: shelfRemainderNotice,
+      ));
+    }
+    return computations;
+  }
+
+  _VariantComputation _createUnselectedComputation({
+    required CatalogVariant variant,
+    required double share,
+    required double packSize,
+    required int? overriddenPackages,
+    required int effectiveShelfLife,
+    required String? storageNotice,
+  }) {
     return _VariantComputation(
       variant: variant,
       isSelected: false,
@@ -494,39 +790,9 @@ class QuantityEngine {
       packSizeInCommonUnit: 1.0,
       packages: 0,
       overriddenPackages: overriddenPackages,
+      effectiveShelfLife: effectiveShelfLife,
+      storageNotice: storageNotice,
     );
-  }
-
-  double _resolveAllocatedNeed({
-    required CatalogGroup group,
-    required CatalogVariant variant,
-    required double rawGroupNeed,
-    required double share,
-    required double totalShares,
-    required QuantityCalculationInput input,
-  }) {
-    if (group.split == GroupSplit.equal) {
-      if (totalShares <= epsilon) return 0.0;
-      return rawGroupNeed * (share / totalShares);
-    }
-
-    // split == GroupSplit.each
-    if (variant.need != null) {
-      final factorSum = _calculateQualifyingFactorSum(
-        appliesTo: group.appliesTo,
-        profile: group.profile,
-        crew: input.crewMembers,
-        crewAppetite: input.crewAppetite,
-        crewDrinking: input.crewDrinking,
-      );
-      return _calculateBaseNeed(
-        need: variant.need!,
-        groupId: group.id,
-        input: input,
-        factorSum: factorSum,
-      );
-    }
-    return rawGroupNeed;
   }
 
   _VariantComputation _createSelectedComputation({
@@ -537,12 +803,15 @@ class QuantityEngine {
     required double share,
     required UserItemState? state,
     required QuantityCalculationInput input,
+    required int effectiveShelfLife,
+    required String? storageNotice,
+    String? shelfRemainderNotice,
   }) {
     final needUnit = variant.need?.unit ?? group.need?.unit ?? variant.pack.unit;
     double effectiveNeed = allocatedNeed;
 
     // Reservezuschlag (+10 %) nur auf haltbare Produkte
-    if (input.crewReserve && variant.shelfLifeDays >= quantities.durableMinShelfLifeDays) {
+    if (input.crewReserve && effectiveShelfLife >= quantities.durableMinShelfLifeDays) {
       effectiveNeed *= (1.0 + quantities.reserveUplift);
     }
 
@@ -556,10 +825,12 @@ class QuantityEngine {
     final initialPackInfo = _calculateInitialPackages(
       needInPackUnit: conv.needInPackUnit,
       packSize: packSize,
-      shelfLifeDays: variant.shelfLifeDays,
+      shelfLifeDays: effectiveShelfLife,
       packUnit: variant.pack.unit,
       overriddenPackages: state?.overriddenPackages,
     );
+
+    final finalRemainderNotice = shelfRemainderNotice ?? initialPackInfo.remainderNotice;
 
     return _VariantComputation(
       variant: variant,
@@ -572,7 +843,9 @@ class QuantityEngine {
       packSizeInCommonUnit: conv.packSizeInCommonUnit,
       packages: initialPackInfo.packages,
       overriddenPackages: state?.overriddenPackages,
-      remainderNotice: initialPackInfo.remainderNotice,
+      remainderNotice: finalRemainderNotice,
+      storageNotice: storageNotice,
+      effectiveShelfLife: effectiveShelfLife,
     );
   }
 
@@ -658,7 +931,9 @@ class QuantityEngine {
     required String groupUnit,
     required List<_VariantComputation> variants,
   }) {
-    if (variants.isEmpty || rawGroupNeed <= epsilon) return;
+    if (variants.isEmpty) return;
+    final targetNeed = variants.fold(0.0, (sum, v) => sum + v.allocatedNeed);
+    if (targetNeed <= epsilon) return;
 
     double sumProvided = variants.fold(0.0, (sum, v) {
       final effPacks = v.overriddenPackages ?? v.packages;
@@ -666,7 +941,7 @@ class QuantityEngine {
     });
 
     // 1. Deckung sicherstellen: bei Unterdeckung Packung bei Variante mit geringstem Packmaß ergänzen
-    while (sumProvided + epsilon < rawGroupNeed) {
+    while (sumProvided + epsilon < targetNeed) {
       _VariantComputation? bestCandidate;
       for (final v in variants) {
         if (v.overriddenPackages != null) continue;
@@ -686,7 +961,7 @@ class QuantityEngine {
       _VariantComputation? bestCandidate;
       for (final v in variants) {
         if (v.overriddenPackages != null || v.packages <= 0) continue;
-        if (sumProvided - v.packSizeInCommonUnit + epsilon >= rawGroupNeed) {
+        if (sumProvided - v.packSizeInCommonUnit + epsilon >= targetNeed) {
           if (bestCandidate == null || v.packSizeInCommonUnit > bestCandidate.packSizeInCommonUnit) {
             bestCandidate = v;
           }
@@ -719,8 +994,11 @@ class QuantityEngine {
       overriddenPackages: c.overriddenPackages,
       effectivePackages: effPacks,
       shelfLifeDays: v.shelfLifeDays,
+      effectiveShelfLifeDays: c.effectiveShelfLife,
+      chill: v.chill,
       buyFreshUnderway: v.buyFreshUnderway,
       remainderNotice: c.remainderNotice,
+      storageNotice: c.storageNotice,
       storage: v.storage,
       tags: v.tags,
     );
@@ -735,9 +1013,14 @@ class QuantityEngine {
     double totalLiters = 0.0;
     for (final group in groups) {
       for (final v in group.variantResults) {
-        if (!v.isSelected) continue;
+        if (!v.isSelected || v.effectivePackages <= 0) continue;
 
-        final isCool = v.storage.contains('cool') ||
+        if (v.chill == ChillRequirement.freezer || v.effectiveShelfLifeDays > v.shelfLifeDays) {
+          continue; // im Tiefkühlfach
+        }
+
+        final isCool = v.chill == ChillRequirement.fridge ||
+            v.storage.contains('cool') ||
             v.storage.contains('cool_first') ||
             v.department == CatalogDepartment.molkerei ||
             v.department == CatalogDepartment.fleischFisch;
@@ -756,6 +1039,36 @@ class QuantityEngine {
           totalLiters += amount / 1000.0;
         } else {
           // Stück / Packung: dokumentierte Näherung 60 ml je Einheit
+          totalLiters += amount * 0.06;
+        }
+      }
+    }
+    return totalLiters;
+  }
+
+  /// Berechnet das benötigte Tiefkühlvolumen (FEEDBACK_R2 v0.3 Punkt 3).
+  double _calculateFreezerUsage(List<GroupCalculationResult> groups) {
+    double totalLiters = 0.0;
+    for (final group in groups) {
+      for (final v in group.variantResults) {
+        if (!v.isSelected || v.effectivePackages <= 0) continue;
+
+        final isFreezer = v.chill == ChillRequirement.freezer ||
+            v.effectiveShelfLifeDays > v.shelfLifeDays;
+        if (!isFreezer) continue;
+
+        final amount = v.calculatedNeedAmount;
+        final unit = v.unit.toLowerCase().trim();
+
+        if (unit == 'l') {
+          totalLiters += amount;
+        } else if (unit == 'ml') {
+          totalLiters += amount / 1000.0;
+        } else if (unit == 'kg') {
+          totalLiters += amount;
+        } else if (unit == 'g') {
+          totalLiters += amount / 1000.0;
+        } else {
           totalLiters += amount * 0.06;
         }
       }

@@ -19,8 +19,8 @@ class CatalogRepository {
         _quantities = quantities;
 
   Future<void> loadFromBundle() async {
-    final catalogString = await rootBundle.loadString('data/catalog_v0.9.json');
-    final quantitiesString = await rootBundle.loadString('data/quantities_v0.5.json');
+    final catalogString = await rootBundle.loadString('data/catalog_v0.10.json');
+    final quantitiesString = await rootBundle.loadString('data/quantities_v0.6.json');
     loadFromJsonStrings(
       catalogJson: catalogString,
       quantitiesJson: quantitiesString,

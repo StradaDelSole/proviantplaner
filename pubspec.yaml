@@ -54,9 +54,11 @@ flutter:
   generate: true
 
   assets:
+    - data/catalog_v0.10.json
     - data/catalog_v0.9.json
     - data/catalog_v0.8.json
     - data/catalog_v0.7.json
+    - data/quantities_v0.6.json
     - data/quantities_v0.5.json
     - data/quantities_v0.4.json
 

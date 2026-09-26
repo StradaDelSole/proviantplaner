@@ -10,11 +10,11 @@ void main() {
   late QuantitiesData quantities;
 
   setUpAll(() {
-    final catalogFile = File('data/catalog_v0.8.json');
-    final quantitiesFile = File('data/quantities_v0.4.json');
+    final catalogFile = File('data/catalog_v0.10.json');
+    final quantitiesFile = File('data/quantities_v0.6.json');
 
-    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.8.json existiert');
-    expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.4.json existiert');
+    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.10.json existiert');
+    expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.6.json existiert');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;
     final quantitiesMap = json.decode(quantitiesFile.readAsStringSync()) as Map<String, dynamic>;
@@ -25,8 +25,8 @@ void main() {
 
   group('Slice S2a: Katalog-Validierungstest über alle Einträge (Programmierregel 7)', () {
     test('Katalog- und Mengendateien haben korrekte Versionen', () {
-      expect(catalog.version, '0.8');
-      expect(quantities.version, '0.4');
+      expect(catalog.version, '0.10');
+      expect(quantities.version, '0.6');
     });
 
     test('Eindeutigkeit aller Gruppen- und Varianten-IDs', () {
@@ -111,14 +111,16 @@ void main() {
       }
     });
 
-    test('Wasser-Reviere in quantities_v0.4.json sind vollständig und gültig (Befund 6)', () {
-      expect(quantities.waterLiters.containsKey('temperate'), isTrue);
-      expect(quantities.waterLiters.containsKey('mediterranean_summer'), isTrue);
-      expect(quantities.waterLiters.containsKey('hot_or_remote'), isTrue);
+    test('Wasser-Klimazonen in quantities_v0.6.json sind vollständig und gültig (Befund 6)', () {
+      expect(quantities.waterLiters.containsKey('cool'), isTrue);
+      expect(quantities.waterLiters.containsKey('warm'), isTrue);
+      expect(quantities.waterLiters.containsKey('hot'), isTrue);
 
-      expect(quantities.waterLiters['temperate']!.defaultValue, 2.0);
-      expect(quantities.waterLiters['mediterranean_summer']!.defaultValue, 2.5);
-      expect(quantities.waterLiters['hot_or_remote']!.defaultValue, 3.5);
+      expect(quantities.waterLiters['cool']!.defaultValue, 2.0);
+      expect(quantities.waterLiters['warm']!.defaultValue, 2.5);
+      expect(quantities.waterLiters['hot']!.defaultValue, 3.5);
+
+      expect(quantities.waterTankReserveLitersPerPerson, 1.5);
     });
   });
 }

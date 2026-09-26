@@ -254,11 +254,11 @@ void main() {
           userItemStates: {
             'bread_wholegrain': const UserItemState(isSelected: true, share: 0.4),  // 40 % = 1680 g
             'baguette': const UserItemState(isSelected: true, share: 0.3),          // 30 % = 1260 g
-            'rolls': const UserItemState(isSelected: true, share: 0.3),             // 30 % = 1260 g
+            'toast': const UserItemState(isSelected: true, share: 0.3),             // 30 % = 1260 g (Haltbarkeit 7d deckt den 7-Tage-Törn)
+            'rolls': const UserItemState(isSelected: false),
             'bread_white': const UserItemState(isSelected: false),
             'rolls_wholegrain': const UserItemState(isSelected: false),
             'bake_rolls': const UserItemState(isSelected: false),
-            'toast': const UserItemState(isSelected: false),
             'crispbread': const UserItemState(isSelected: false),
             'pumpernickel': const UserItemState(isSelected: false),
           },
@@ -267,12 +267,12 @@ void main() {
 
       final breadWhole = res.getVariantResult('bread_wholegrain')!;
       final baguette = res.getVariantResult('baguette')!;
-      final breadRolls = res.getVariantResult('rolls')!;
+      final toast = res.getVariantResult('toast')!;
 
       // Gesamtmenge bereitgestellt:
       final totalProvided = (breadWhole.calculatedPackages * breadWhole.packSize) +
           (baguette.calculatedPackages * baguette.packSize) +
-          (breadRolls.calculatedPackages * breadRolls.packSize);
+          (toast.calculatedPackages * toast.packSize);
 
       // Kriterium 1: Summe deckt Bedarf (4200 g)
       expect(totalProvided, greaterThanOrEqualTo(4200.0));

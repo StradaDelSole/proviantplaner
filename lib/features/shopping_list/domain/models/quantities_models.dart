@@ -156,6 +156,7 @@ class QuantitiesData {
   final int durableMinShelfLifeDays;
   final double freshMaxOvershootFraction;
   final String groupBalancingDescription;
+  final double waterTankReserveLitersPerPerson;
 
   const QuantitiesData({
     required this.version,
@@ -169,6 +170,7 @@ class QuantitiesData {
     required this.durableMinShelfLifeDays,
     required this.freshMaxOvershootFraction,
     required this.groupBalancingDescription,
+    this.waterTankReserveLitersPerPerson = 1.5,
   });
 
   factory QuantitiesData.fromJson(Map<String, dynamic> json) {
@@ -249,8 +251,12 @@ class QuantitiesData {
     final freshMaxOvershoot = (rounding['fresh_max_overshoot_pack_fraction'] as num? ?? 0.25).toDouble();
     final balancingDesc = rounding['group_balancing'] as String? ?? '';
 
+    // Water tank
+    final waterTankJson = json['water_tank'] as Map<String, dynamic>?;
+    final waterTankReserve = (waterTankJson?['reserve_liters_per_person'] as num? ?? 1.5).toDouble();
+
     return QuantitiesData(
-      version: json['version'] as String? ?? '0.4',
+      version: json['version'] as String? ?? '0.6',
       waterLiters: waterMap,
       factors: factors,
       eatProfiles: eatMap,
@@ -261,6 +267,7 @@ class QuantitiesData {
       durableMinShelfLifeDays: durableDays,
       freshMaxOvershootFraction: freshMaxOvershoot,
       groupBalancingDescription: balancingDesc,
+      waterTankReserveLitersPerPerson: waterTankReserve,
     );
   }
 }

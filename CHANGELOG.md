@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-09-26 – Slice FB2-A: Rechenlogik Haltbarkeit, Tiefkühlfach, Bordtank
+
+- **Katalog & Mengendaten:**
+  - `pubspec.yaml` auf `data/catalog_v0.10.json` und `data/quantities_v0.6.json` umgestellt.
+  - Datenmodelle erweitert: `ChillRequirement` (`none`, `fridge`, `freezer`), `shelfLifeFrozenDays` an `CatalogVariant`, `waterTankReserveLitersPerPerson` (1.5 l) an `QuantitiesData`.
+- **Haltbarkeit & Vorschlagslogik:**
+  - Vorschlag je Variante auf Haltbarkeit an Bord (`shelf_life_days` bzw. `shelf_life_frozen_days`) bzw. Tage bis zum nächsten Einkaufsstopp begrenzt.
+  - Bei `GroupSplit.equal`: Nicht ausreichend haltbare Varianten decken nur ihren Haltbarkeitsanteil; die verbleibenden Tage werden von haltbaren Varianten der Gruppe gedeckt.
+  - Resthinweis generiert ("Rest ca. X – bei einem späteren Einkauf einplanen" sowie Nennung haltbarer Alternativen aus dem Katalog).
+- **Tiefkühlfach & Kühlung:**
+  - Varianten mit `chill == freezer` werden ohne Tiefkühlfach nicht vorgeschlagen (`effectivePackages = 0`).
+  - Mit Tiefkühlfach gilt für TK-fähige Artikel `shelfLifeFrozenDays` (z. B. Hähnchen bis 90 Tage) mit Gefrier-Hinweis.
+  - Tiefkühlvolumenbedarf (`freezerLitersNeeded`) und Überlastung (`isFreezerOverloaded`) werden berechnet.
+- **Bordtank-Trinkwasser:**
+  - Nur wenn `isWaterTankDrinkable == true`: Bordtankinhalt wird vom Trinkwasser-Flaschenbedarf abgezogen; mindestens 1,5 l/Person Mindestreserve bleibt erhalten.
+  - Wenn nicht trinkbar: voller Trinkwasserbedarf wird als Flaschenwasser berechnet.
+- **Gesamtgewicht und -volumen:**
+  - `QuantityEngine.calculateWeightAndVolume` berechnet Gesamtgewicht (kg) und Gesamtvolumen (l) basierend auf Packungsgrößen und erfasst Stückwaren ohne Gewichtsangabe.
+- **Revier-Migration:**
+  - `ClimateZone` Enum (`cool`, `warm`, `hot`) kapselt alle Legacy-Revierstrings (`temperate`, `baltic`, `mediterranean`, etc.) typsicher.
+- **Prüfung:** `flutter analyze` 0 Fehler, `flutter test` 181/181 Tests grün (inklusive aller 7 FB2-A Abnahmetests).
+
 ## 2026-09-26 – Reihenfolge angepasst
 
 - Freigegeben: FB2-A, FB2-B, B0, B1, B2, S9, S10-T; B3–B5 erst nach interner Testphase (Charter bleibt v1, vor öffentlicher Veröffentlichung)

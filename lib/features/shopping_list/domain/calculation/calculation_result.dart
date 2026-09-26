@@ -5,6 +5,25 @@ library;
 
 import '../models/catalog_models.dart';
 
+/// Gesamtgewicht und -volumen einer Proviantliste gemäß FEEDBACK_R2 v0.3 Punkt 6.
+class ProvisionWeightVolume {
+  final double totalWeightKg;
+  final double totalVolumeLiters;
+  final bool hasItemsWithoutWeight;
+
+  const ProvisionWeightVolume({
+    required this.totalWeightKg,
+    required this.totalVolumeLiters,
+    required this.hasItemsWithoutWeight,
+  });
+
+  static const zero = ProvisionWeightVolume(
+    totalWeightKg: 0.0,
+    totalVolumeLiters: 0.0,
+    hasItemsWithoutWeight: false,
+  );
+}
+
 /// Berechnetes Ergebnis einer einzelnen Produktvariante.
 class VariantCalculationResult {
   final String variantId;
@@ -21,8 +40,11 @@ class VariantCalculationResult {
   final int? overriddenPackages;
   final int effectivePackages;
   final int shelfLifeDays;
+  final int effectiveShelfLifeDays;
+  final ChillRequirement chill;
   final bool buyFreshUnderway;
   final String? remainderNotice;
+  final String? storageNotice;
   final List<String> storage;
   final List<String> tags;
 
@@ -41,8 +63,11 @@ class VariantCalculationResult {
     this.overriddenPackages,
     required this.effectivePackages,
     required this.shelfLifeDays,
+    required this.effectiveShelfLifeDays,
+    this.chill = ChillRequirement.none,
     required this.buyFreshUnderway,
     this.remainderNotice,
+    this.storageNotice,
     required this.storage,
     required this.tags,
   });
@@ -77,12 +102,24 @@ class TripCalculationResult {
   final double fridgeLitersNeededFirstDays;
   final double fridgeCapacityLiters;
   final bool isFridgeOverloaded;
+  final double freezerLitersNeeded;
+  final double? freezerCapacityLiters;
+  final bool isFreezerOverloaded;
+  final ProvisionWeightVolume weightVolume;
+
+  double get totalWeightKg => weightVolume.totalWeightKg;
+  double get totalVolumeLiters => weightVolume.totalVolumeLiters;
+  bool get hasItemsWithoutWeight => weightVolume.hasItemsWithoutWeight;
 
   const TripCalculationResult({
     required this.groupResults,
     required this.fridgeLitersNeededFirstDays,
     required this.fridgeCapacityLiters,
     required this.isFridgeOverloaded,
+    this.freezerLitersNeeded = 0.0,
+    this.freezerCapacityLiters,
+    this.isFreezerOverloaded = false,
+    required this.weightVolume,
   });
 
   VariantCalculationResult? getVariantResult(String variantId) {

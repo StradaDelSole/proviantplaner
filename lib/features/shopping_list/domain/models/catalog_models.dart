@@ -151,6 +151,23 @@ enum CatalogDepartment {
       };
 }
 
+/// Kühlungsvoraussetzung einer Variante an Bord (Katalog v0.10).
+enum ChillRequirement {
+  none('none'),
+  fridge('fridge'),
+  freezer('freezer');
+
+  final String rawValue;
+  const ChillRequirement(this.rawValue);
+
+  static ChillRequirement fromString(String val, {required String id, required String field}) {
+    for (final c in values) {
+      if (c.rawValue == val) return c;
+    }
+    throw FormatException('catalog_v0.10.json: Unbekannter Chill-Wert "$val" in $field für ID "$id"');
+  }
+}
+
 /// Bedarfsangabe (Menge, Einheit, Rechenbasis).
 class CatalogNeed {
   final double amount;
@@ -300,6 +317,8 @@ class CatalogVariant {
   final String? note;
   final PortionInfo? portion;
   final CatalogNeed? need;
+  final ChillRequirement chill;
+  final int? shelfLifeFrozenDays;
 
   const CatalogVariant({
     required this.id,
@@ -315,6 +334,8 @@ class CatalogVariant {
     this.note,
     this.portion,
     this.need,
+    this.chill = ChillRequirement.none,
+    this.shelfLifeFrozenDays,
   });
 
   factory CatalogVariant.fromJson(Map<String, dynamic> json) {
@@ -327,6 +348,8 @@ class CatalogVariant {
       throw FormatException('catalog_v0.7.json: Fehlendes pack-Objekt in Variante "$id"');
     }
     final deptStr = json['department'] as String? ?? '';
+    final chillStr = json['chill'] as String? ?? 'none';
+    final shelfLifeFrozen = json['shelf_life_frozen_days'] as int?;
 
     return CatalogVariant(
       id: id,
@@ -342,6 +365,8 @@ class CatalogVariant {
       note: json['note'] as String?,
       portion: json['portion'] != null ? PortionInfo.fromJson(json['portion'], id: id) : null,
       need: json['need'] != null ? CatalogNeed.fromJson(json['need'] as Map<String, dynamic>, id: id) : null,
+      chill: ChillRequirement.fromString(chillStr, id: id, field: 'chill'),
+      shelfLifeFrozenDays: shelfLifeFrozen,
     );
   }
 }
@@ -402,7 +427,7 @@ class CatalogData {
     }
 
     return CatalogData(
-      version: json['version'] as String? ?? '0.7',
+      version: json['version'] as String? ?? '0.10',
       categories: categoriesList,
       groups: groupsList,
       variants: variantsList,
