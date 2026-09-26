@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 – Korrekturen nach externem Review
+
+- Backend-Konzept v0.2: portal/ statt web/, D1/R2 Jurisdiktion EU, accounts als lokale Projektion, CI ab B0
+- Slice-Plan v0.19: CI in B0, FB2-A lädt Katalog v0.10/Quantities v0.6, Router-Fehler (?? 1) in FB2-B
+- PRD v0.21: Charter-Widersprüche bereinigt
+
 ## 2026-09-26 – Backend-Konzept, Slice-Plan v0.18, GEMINI.md v0.7
 
 - Planer-Backend auf Cloudflare mit Auth0 (HullQ-Tenant): Login, Konto löschen, Cloud-Sicherung, Crew-Fragebogen, Törn-Codes, Admin-Seite Charterfirmen (v1)

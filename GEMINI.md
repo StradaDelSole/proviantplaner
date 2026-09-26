@@ -132,7 +132,7 @@ Jeder Verstoß gilt als nicht erfüllte Abnahme, auch wenn die Tests grün sind.
 
 ## Backend-Regeln (ab B0)
 
-- Code in `backend/` (Cloudflare Worker) und `web/` (Cloudflare Pages); Architektur, Datenmodell und Endpunkte nach `docs/BACKEND_KONZEPT_v0.1.md`
+- Code in `backend/` (Cloudflare Worker) und `portal/` (Cloudflare Pages); `web/` ist das Flutter-Web-Verzeichnis und bleibt unberührt; Architektur, Datenmodell und Endpunkte nach `docs/BACKEND_KONZEPT_v0.2.md`
 - TypeScript `strict`, keine `any`; Eingaben immer mit zod validieren; Fehlerantworten einheitlich (Code + Meldung, ohne interne Details)
 - Standards nur mit etablierten Paketen (Regel 8): Hono, zod, jose, offizielle Cloudflare-Werkzeuge, `auth0_flutter` in der App
 - **Keine Geheimnisse im Repo:** keine Tokens, Client-Secrets, Turnstile-Secrets, API-Schlüssel; `wrangler.toml` nur mit Platzhaltern; Geheimnisse über `wrangler secret` (Product Owner)
