@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -61,6 +61,9 @@ class AppDatabase extends _$AppDatabase {
               ELSE 'warm'
             END
           ''');
+        }
+        if (from < 5) {
+          await m.addColumn(trips, trips.treasurerMemberId);
         }
       },
       beforeOpen: (details) async {

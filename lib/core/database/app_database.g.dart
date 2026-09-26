@@ -152,6 +152,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
               requiredDuringInsert: false,
               defaultValue: const Constant('shared_kitty'))
           .withConverter<KittyModel>($TripsTable.$converterkittyModel);
+  static const VerificationMeta _treasurerMemberIdMeta =
+      const VerificationMeta('treasurerMemberId');
+  @override
+  late final GeneratedColumn<int> treasurerMemberId = GeneratedColumn<int>(
+      'treasurer_member_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -179,6 +185,7 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         isArchived,
         currency,
         kittyModel,
+        treasurerMemberId,
         createdAt
       ];
   @override
@@ -258,6 +265,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta));
     }
     context.handle(_kittyModelMeta, const VerificationResult.success());
+    if (data.containsKey('treasurer_member_id')) {
+      context.handle(
+          _treasurerMemberIdMeta,
+          treasurerMemberId.isAcceptableOrUnknown(
+              data['treasurer_member_id']!, _treasurerMemberIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -308,6 +321,8 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       kittyModel: $TripsTable.$converterkittyModel.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}kitty_model'])!),
+      treasurerMemberId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}treasurer_member_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -346,6 +361,7 @@ class Trip extends DataClass implements Insertable<Trip> {
   final bool isArchived;
   final String currency;
   final KittyModel kittyModel;
+  final int? treasurerMemberId;
   final DateTime createdAt;
   const Trip(
       {required this.id,
@@ -365,6 +381,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       required this.isArchived,
       required this.currency,
       required this.kittyModel,
+      this.treasurerMemberId,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -397,6 +414,9 @@ class Trip extends DataClass implements Insertable<Trip> {
       map['kitty_model'] =
           Variable<String>($TripsTable.$converterkittyModel.toSql(kittyModel));
     }
+    if (!nullToAbsent || treasurerMemberId != null) {
+      map['treasurer_member_id'] = Variable<int>(treasurerMemberId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -420,6 +440,9 @@ class Trip extends DataClass implements Insertable<Trip> {
       isArchived: Value(isArchived),
       currency: Value(currency),
       kittyModel: Value(kittyModel),
+      treasurerMemberId: treasurerMemberId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treasurerMemberId),
       createdAt: Value(createdAt),
     );
   }
@@ -446,6 +469,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       currency: serializer.fromJson<String>(json['currency']),
       kittyModel: serializer.fromJson<KittyModel>(json['kittyModel']),
+      treasurerMemberId: serializer.fromJson<int?>(json['treasurerMemberId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -470,6 +494,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       'isArchived': serializer.toJson<bool>(isArchived),
       'currency': serializer.toJson<String>(currency),
       'kittyModel': serializer.toJson<KittyModel>(kittyModel),
+      'treasurerMemberId': serializer.toJson<int?>(treasurerMemberId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -492,6 +517,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           bool? isArchived,
           String? currency,
           KittyModel? kittyModel,
+          Value<int?> treasurerMemberId = const Value.absent(),
           DateTime? createdAt}) =>
       Trip(
         id: id ?? this.id,
@@ -511,6 +537,9 @@ class Trip extends DataClass implements Insertable<Trip> {
         isArchived: isArchived ?? this.isArchived,
         currency: currency ?? this.currency,
         kittyModel: kittyModel ?? this.kittyModel,
+        treasurerMemberId: treasurerMemberId.present
+            ? treasurerMemberId.value
+            : this.treasurerMemberId,
         createdAt: createdAt ?? this.createdAt,
       );
   Trip copyWithCompanion(TripsCompanion data) {
@@ -541,6 +570,9 @@ class Trip extends DataClass implements Insertable<Trip> {
       currency: data.currency.present ? data.currency.value : this.currency,
       kittyModel:
           data.kittyModel.present ? data.kittyModel.value : this.kittyModel,
+      treasurerMemberId: data.treasurerMemberId.present
+          ? data.treasurerMemberId.value
+          : this.treasurerMemberId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -565,6 +597,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('isArchived: $isArchived, ')
           ..write('currency: $currency, ')
           ..write('kittyModel: $kittyModel, ')
+          ..write('treasurerMemberId: $treasurerMemberId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -589,6 +622,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       isArchived,
       currency,
       kittyModel,
+      treasurerMemberId,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -611,6 +645,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.isArchived == this.isArchived &&
           other.currency == this.currency &&
           other.kittyModel == this.kittyModel &&
+          other.treasurerMemberId == this.treasurerMemberId &&
           other.createdAt == this.createdAt);
 }
 
@@ -632,6 +667,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<bool> isArchived;
   final Value<String> currency;
   final Value<KittyModel> kittyModel;
+  final Value<int?> treasurerMemberId;
   final Value<DateTime> createdAt;
   const TripsCompanion({
     this.id = const Value.absent(),
@@ -651,6 +687,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.isArchived = const Value.absent(),
     this.currency = const Value.absent(),
     this.kittyModel = const Value.absent(),
+    this.treasurerMemberId = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   TripsCompanion.insert({
@@ -671,6 +708,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.isArchived = const Value.absent(),
     this.currency = const Value.absent(),
     this.kittyModel = const Value.absent(),
+    this.treasurerMemberId = const Value.absent(),
     this.createdAt = const Value.absent(),
   })  : name = Value(name),
         startDate = Value(startDate);
@@ -692,6 +730,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<bool>? isArchived,
     Expression<String>? currency,
     Expression<String>? kittyModel,
+    Expression<int>? treasurerMemberId,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -713,6 +752,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (isArchived != null) 'is_archived': isArchived,
       if (currency != null) 'currency': currency,
       if (kittyModel != null) 'kitty_model': kittyModel,
+      if (treasurerMemberId != null) 'treasurer_member_id': treasurerMemberId,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -735,6 +775,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       Value<bool>? isArchived,
       Value<String>? currency,
       Value<KittyModel>? kittyModel,
+      Value<int?>? treasurerMemberId,
       Value<DateTime>? createdAt}) {
     return TripsCompanion(
       id: id ?? this.id,
@@ -754,6 +795,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       isArchived: isArchived ?? this.isArchived,
       currency: currency ?? this.currency,
       kittyModel: kittyModel ?? this.kittyModel,
+      treasurerMemberId: treasurerMemberId ?? this.treasurerMemberId,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -816,6 +858,9 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       map['kitty_model'] = Variable<String>(
           $TripsTable.$converterkittyModel.toSql(kittyModel.value));
     }
+    if (treasurerMemberId.present) {
+      map['treasurer_member_id'] = Variable<int>(treasurerMemberId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -842,6 +887,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('isArchived: $isArchived, ')
           ..write('currency: $currency, ')
           ..write('kittyModel: $kittyModel, ')
+          ..write('treasurerMemberId: $treasurerMemberId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4359,6 +4405,7 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   Value<bool> isArchived,
   Value<String> currency,
   Value<KittyModel> kittyModel,
+  Value<int?> treasurerMemberId,
   Value<DateTime> createdAt,
 });
 typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
@@ -4379,6 +4426,7 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<bool> isArchived,
   Value<String> currency,
   Value<KittyModel> kittyModel,
+  Value<int?> treasurerMemberId,
   Value<DateTime> createdAt,
 });
 
@@ -4559,6 +4607,10 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
       get kittyModel => $composableBuilder(
           column: $table.kittyModel,
           builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<int> get treasurerMemberId => $composableBuilder(
+      column: $table.treasurerMemberId,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -4774,6 +4826,10 @@ class $$TripsTableOrderingComposer
   ColumnOrderings<String> get kittyModel => $composableBuilder(
       column: $table.kittyModel, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get treasurerMemberId => $composableBuilder(
+      column: $table.treasurerMemberId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -4839,6 +4895,9 @@ class $$TripsTableAnnotationComposer
   GeneratedColumnWithTypeConverter<KittyModel, String> get kittyModel =>
       $composableBuilder(
           column: $table.kittyModel, builder: (column) => column);
+
+  GeneratedColumn<int> get treasurerMemberId => $composableBuilder(
+      column: $table.treasurerMemberId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5040,6 +5099,7 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isArchived = const Value.absent(),
             Value<String> currency = const Value.absent(),
             Value<KittyModel> kittyModel = const Value.absent(),
+            Value<int?> treasurerMemberId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               TripsCompanion(
@@ -5060,6 +5120,7 @@ class $$TripsTableTableManager extends RootTableManager<
             isArchived: isArchived,
             currency: currency,
             kittyModel: kittyModel,
+            treasurerMemberId: treasurerMemberId,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -5080,6 +5141,7 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isArchived = const Value.absent(),
             Value<String> currency = const Value.absent(),
             Value<KittyModel> kittyModel = const Value.absent(),
+            Value<int?> treasurerMemberId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               TripsCompanion.insert(
@@ -5100,6 +5162,7 @@ class $$TripsTableTableManager extends RootTableManager<
             isArchived: isArchived,
             currency: currency,
             kittyModel: kittyModel,
+            treasurerMemberId: treasurerMemberId,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0

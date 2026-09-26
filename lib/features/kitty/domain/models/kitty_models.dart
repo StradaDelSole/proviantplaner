@@ -178,11 +178,15 @@ class MemberBalance {
   final KittyMember member;
   final int paidInCents;
   final int costShareInCents;
+  final bool isTreasurer;
+  final int? actualDepositsInCents;
 
   const MemberBalance({
     required this.member,
     required this.paidInCents,
     required this.costShareInCents,
+    this.isTreasurer = false,
+    this.actualDepositsInCents,
   });
 
   /// Netto-Saldo: Positiv = bekommt Geld zurück, Negativ = muss zahlen.

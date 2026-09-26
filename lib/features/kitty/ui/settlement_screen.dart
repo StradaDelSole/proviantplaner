@@ -207,6 +207,18 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     final isExpanded = _expandedIndices.contains(index);
     final isSettled = _settledIndices.contains(index);
 
+    // Formatierte Zeile laut FEEDBACK_R1 Punkt 9:
+    // "bekommt 18,00 € von Anna" oder "zahlt 42,10 € an Anna"
+    final String personName;
+    final String lineText;
+    if (data.treasurer != null && transfer.fromMember.id == data.treasurer!.id) {
+      personName = transfer.toMember.name;
+      lineText = 'bekommt ${transfer.formattedAmount} von ${transfer.fromMember.name}';
+    } else {
+      personName = transfer.fromMember.name;
+      lineText = 'zahlt ${transfer.formattedAmount} an ${transfer.toMember.name}';
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
@@ -226,9 +238,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                   ? theme.colorScheme.secondaryContainer
                   : theme.colorScheme.primaryContainer,
               child: Text(
-                transfer.fromMember.name.isNotEmpty
-                    ? transfer.fromMember.name[0].toUpperCase()
-                    : '?',
+                personName.isNotEmpty ? personName[0].toUpperCase() : '?',
                 style: TextStyle(
                   color: isSettled
                       ? theme.colorScheme.onSecondaryContainer
@@ -237,36 +247,30 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                 ),
               ),
             ),
-            title: Row(
-              children: [
-                Text(transfer.fromMember.name, style: theme.textTheme.titleSmall),
-                const SizedBox(width: 6),
-                const Icon(Icons.arrow_forward, size: 16),
-                const SizedBox(width: 6),
-                Text(
-                  transfer.toMember.name,
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+            title: Text(personName, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
             subtitle: Text(
-              isSettled ? l10n.kittySettled : 'Bereit zur Überweisung',
+              lineText,
               style: TextStyle(
-                color: isSettled ? theme.colorScheme.secondary : theme.colorScheme.onSurfaceVariant,
+                color: isSettled ? theme.colorScheme.secondary : theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  transfer.formattedAmount,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontFamily: 'JetBrains Mono',
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                FilledButton.tonal(
+                  onPressed: () {
+                    setState(() {
+                      _expandedIndices.add(index);
+                    });
+                  },
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
+                  child: const Text('Bezahlen'),
                 ),
+                const SizedBox(width: 4),
                 Icon(
                   isExpanded ? Icons.expand_less : Icons.expand_more,
                   size: 18,

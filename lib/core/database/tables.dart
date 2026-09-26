@@ -97,6 +97,7 @@ class Trips extends Table {
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   TextColumn get currency => text().withDefault(const Constant('EUR'))();
   TextColumn get kittyModel => text().map(const KittyModelConverter()).withDefault(const Constant('shared_kitty'))();
+  IntColumn get treasurerMemberId => integer().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

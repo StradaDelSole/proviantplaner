@@ -165,14 +165,11 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
               const SizedBox(height: 16),
               _buildAmountField(theme, l10n),
               const SizedBox(height: 16),
-              _buildTitleField(theme, l10n),
-              const SizedBox(height: 16),
               _buildCategorySelector(theme, l10n),
               const SizedBox(height: 16),
               _buildPayerSelector(theme, l10n),
-              const SizedBox(height: 16),
-              _buildCustomSplitToggle(theme),
-              if (_customSplitEnabled) _buildCustomSplitList(theme),
+              const SizedBox(height: 12),
+              _buildMoreOptions(theme, l10n),
               const SizedBox(height: 24),
               _buildSubmitButton(theme, l10n),
               const SizedBox(height: 24),
@@ -283,26 +280,29 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
         ),
         const SizedBox(height: 8),
         if (isShared) ...[
-          RadioListTile<bool>(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.kittyPaidFromKitty),
-            value: true,
-            groupValue: _isPaidFromKitty,
-            onChanged: (val) => setState(() => _isPaidFromKitty = val ?? true),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(
+                value: true,
+                label: Text('Kasse'),
+                icon: Icon(Icons.account_balance_wallet_outlined),
+              ),
+              ButtonSegment(
+                value: false,
+                label: Text('Person'),
+                icon: Icon(Icons.person_outline),
+              ),
+            ],
+            selected: {_isPaidFromKitty},
+            onSelectionChanged: (val) => setState(() => _isPaidFromKitty = val.first),
           ),
-          RadioListTile<bool>(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Von einem Crewmitglied ausgelegt'),
-            value: false,
-            groupValue: _isPaidFromKitty,
-            onChanged: (val) => setState(() => _isPaidFromKitty = val ?? false),
-          ),
+          const SizedBox(height: 8),
         ],
         if (!isShared || !_isPaidFromKitty)
           DropdownButtonFormField<int>(
             value: _paidByMemberId,
             decoration: const InputDecoration(
-              labelText: 'Person auswählen',
+              labelText: 'Wer hat bezahlt?',
               border: OutlineInputBorder(),
             ),
             items: widget.members.map((m) {
@@ -320,6 +320,32 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
             },
           ),
       ],
+    );
+  }
+
+  Widget _buildMoreOptions(ThemeData theme, AppLocalizations l10n) {
+    final hasCustomContent = _titleController.text.isNotEmpty || _customSplitEnabled;
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        initiallyExpanded: hasCustomContent,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        title: const Text('Mehr Optionen', style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: const Text('Titel / Notiz, abweichende Aufteilung'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          const SizedBox(height: 8),
+          _buildTitleField(theme, l10n),
+          const SizedBox(height: 12),
+          _buildCustomSplitToggle(theme),
+          if (_customSplitEnabled) ...[
+            const SizedBox(height: 8),
+            _buildCustomSplitList(theme),
+          ],
+        ],
+      ),
     );
   }
 

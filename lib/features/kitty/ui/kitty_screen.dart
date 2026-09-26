@@ -1,4 +1,4 @@
-/// Hauptbildschirm für die Bordkasse (SC-KAS-01).
+/// Hauptbildschirm für die Bordkasse (SC-KAS-01, FB1-D).
 library;
 
 import 'package:flutter/material.dart';
@@ -13,17 +13,38 @@ import 'widgets/expense_sheet.dart';
 import 'widgets/payment_sheet.dart';
 import 'widgets/participation_matrix_sheet.dart';
 
-/// Übersichtsbildschirm Bordkasse (SC-KAS-01).
-class KittyScreen extends ConsumerWidget {
+/// Übersichtsbildschirm Bordkasse (SC-KAS-01, FEEDBACK_R1 Punkt 9).
+class KittyScreen extends ConsumerStatefulWidget {
   final int tripId;
 
   const KittyScreen({super.key, required this.tripId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final asyncData = ref.watch(tripKittyDataProvider(tripId));
+  ConsumerState<KittyScreen> createState() => _KittyScreenState();
+}
+
+class _KittyScreenState extends ConsumerState<KittyScreen> {
+  bool _promptedTreasurer = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+
+    // Kassenwart beim ersten Öffnen abfragen (FEEDBACK_R1 Punkt 9)
+    final data = asyncData.valueOrNull;
+    if (data != null &&
+        data.trip.treasurerMemberId == null &&
+        !_promptedTreasurer &&
+        data.members.isNotEmpty) {
+      _promptedTreasurer = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showTreasurerDialog(context, ref, data);
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -34,11 +55,10 @@ class KittyScreen extends ConsumerWidget {
             tooltip: l10n.kittyParticipationTitle,
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             onPressed: () {
-              final data = asyncData.valueOrNull;
               if (data != null) {
                 ParticipationMatrixSheet.show(
                   context,
-                  tripId: tripId,
+                  tripId: widget.tripId,
                   members: data.members,
                 );
               }
@@ -47,13 +67,18 @@ class KittyScreen extends ConsumerWidget {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onSelected: (val) => _handleMenuAction(context, ref, val, asyncData.valueOrNull),
+            onSelected: (val) => _handleMenuAction(context, ref, val, data),
             itemBuilder: (ctx) => [
-              if (asyncData.valueOrNull?.model == KittyModel.sharedKitty)
+              if (data?.model == KittyModel.sharedKitty) ...[
                 PopupMenuItem(
                   value: 'deposit',
                   child: Text(l10n.kittyAddDeposit),
                 ),
+                const PopupMenuItem(
+                  value: 'treasurer',
+                  child: Text('Kassenwart festlegen'),
+                ),
+              ],
               PopupMenuItem(
                 value: 'settlement',
                 child: Text(l10n.kittySettleTrip),
@@ -65,15 +90,14 @@ class KittyScreen extends ConsumerWidget {
       body: asyncData.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Fehler: $err')),
-        data: (data) => _buildBody(context, ref, theme, l10n, data),
+        data: (d) => _buildBody(context, ref, theme, l10n, d),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          final data = asyncData.valueOrNull;
           if (data != null) {
             ExpenseSheet.show(
               context,
-              tripId: tripId,
+              tripId: widget.tripId,
               kittyModel: data.model,
               members: data.members,
             );
@@ -83,7 +107,7 @@ class KittyScreen extends ConsumerWidget {
         label: Text(l10n.kittyAddExpense),
       ),
       bottomNavigationBar: TripBottomBar(
-        tripId: tripId,
+        tripId: widget.tripId,
         currentIndex: 2,
       ),
     );
@@ -97,9 +121,11 @@ class KittyScreen extends ConsumerWidget {
   ) {
     if (data == null) return;
     if (action == 'deposit') {
-      PaymentSheet.show(context, tripId: tripId, members: data.members);
+      PaymentSheet.show(context, tripId: widget.tripId, members: data.members);
+    } else if (action == 'treasurer') {
+      _showTreasurerDialog(context, ref, data);
     } else if (action == 'settlement') {
-      context.push('/trips/$tripId/kitty/settlement');
+      context.push('/trips/${widget.tripId}/kitty/settlement');
     }
   }
 
@@ -118,7 +144,15 @@ class KittyScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _buildSubtitleRow(theme, data),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          if (data.model == KittyModel.sharedKitty) ...[
+            _buildTreasurerCard(context, ref, theme, l10n, data),
+            const SizedBox(height: 12),
+          ],
+          if (_shouldShowNachschussHint(data)) ...[
+            _buildNachschussBanner(context, theme, l10n, data),
+            const SizedBox(height: 12),
+          ],
           _buildBentoCard(context, ref, theme, l10n, data),
           const SizedBox(height: 12),
           if (_hasSkipperFree(data.members))
@@ -140,6 +174,154 @@ class KittyScreen extends ConsumerWidget {
       'Törn ${data.trip.name} · ${data.members.length} Personen · ${data.trip.daysCount} Tage',
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
+  bool _shouldShowNachschussHint(TripKittyData data) {
+    if (data.model != KittyModel.sharedKitty) return false;
+    // Zeigt Hinweis, wenn Kassenstand unter 50 € liegt
+    if (data.deposits.isEmpty) return false;
+    return data.cashBalanceCents < 5000;
+  }
+
+  Widget _buildNachschussBanner(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    TripKittyData data,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.tertiaryContainer.withOpacity(0.35),
+        border: Border.all(color: theme.colorScheme.tertiary),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.tertiary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Kasse fast leer – jeder legt 50 € nach?',
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonal(
+            onPressed: () {
+              PaymentSheet.show(
+                context,
+                tripId: widget.tripId,
+                members: data.members,
+                initialAmountInCents: 5000,
+              );
+            },
+            child: const Text('Übernehmen'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTreasurerCard(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    AppLocalizations l10n,
+    TripKittyData data,
+  ) {
+    final treasurerName = data.treasurer?.name ?? 'Nicht festgelegt';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _showTreasurerDialog(context, ref, data),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.account_balance_wallet_outlined, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Kassenwart: ',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            Expanded(
+              child: Text(
+                treasurerName,
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Icon(Icons.edit_outlined, size: 16, color: theme.colorScheme.outline),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTreasurerDialog(BuildContext context, WidgetRef ref, TripKittyData data) {
+    int? selectedId = data.treasurer?.id ?? data.members.firstOrNull?.id;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Wer verwaltet die Kasse?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Alle Einzahlungen und Auszahlungen laufen über den Kassenwart.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 12),
+              ...data.members.map((m) {
+                return RadioListTile<int>(
+                  value: m.id,
+                  groupValue: selectedId,
+                  contentPadding: EdgeInsets.zero,
+                  title: Row(
+                    children: [
+                      Text(m.name),
+                      if (m.isSkipperFree) ...[
+                        const SizedBox(width: 8),
+                        const Chip(
+                          label: Text('Skipper', style: TextStyle(fontSize: 10)),
+                          padding: EdgeInsets.zero,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ],
+                    ],
+                  ),
+                  onChanged: (val) => setDialogState(() => selectedId = val),
+                );
+              }),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: selectedId != null
+                  ? () async {
+                      Navigator.of(ctx).pop();
+                      final service = ref.read(kittyServiceProvider);
+                      await service.setTreasurer(widget.tripId, selectedId);
+                      ref.invalidate(tripKittyDataProvider(widget.tripId));
+                    }
+                  : null,
+              child: const Text('Als Kassenwart festlegen'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -430,8 +612,8 @@ class KittyScreen extends ConsumerWidget {
             onPressed: () async {
               Navigator.of(ctx).pop();
               final service = ref.read(kittyServiceProvider);
-              await service.switchKittyModel(tripId, newModel);
-              ref.invalidate(tripKittyDataProvider(tripId));
+              await service.switchKittyModel(widget.tripId, newModel);
+              ref.invalidate(tripKittyDataProvider(widget.tripId));
             },
             child: Text(l10n.takeOver),
           ),
@@ -517,7 +699,7 @@ class KittyScreen extends ConsumerWidget {
   ) async {
     final service = ref.read(kittyServiceProvider);
     await service.deleteExpense(exp.id);
-    ref.invalidate(tripKittyDataProvider(tripId));
+    ref.invalidate(tripKittyDataProvider(widget.tripId));
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -529,7 +711,7 @@ class KittyScreen extends ConsumerWidget {
           label: 'Rückgängig',
           onPressed: () async {
             await service.restoreExpense(exp);
-            ref.invalidate(tripKittyDataProvider(tripId));
+            ref.invalidate(tripKittyDataProvider(widget.tripId));
           },
         ),
       ),
@@ -564,7 +746,7 @@ class KittyScreen extends ConsumerWidget {
         onTap: () async {
           final res = await ExpenseSheet.show(
             context,
-            tripId: tripId,
+            tripId: widget.tripId,
             kittyModel: data.model,
             members: data.members,
             expenseToEdit: exp,
@@ -622,7 +804,7 @@ class KittyScreen extends ConsumerWidget {
           final b = balances[idx];
           return ListTile(
             onTap: () {
-              ParticipationMatrixSheet.show(context, tripId: tripId, members: data.members);
+              ParticipationMatrixSheet.show(context, tripId: widget.tripId, members: data.members);
             },
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.primaryContainer,
@@ -631,7 +813,19 @@ class KittyScreen extends ConsumerWidget {
                 style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
               ),
             ),
-            title: Text(b.member.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            title: Row(
+              children: [
+                Text(b.member.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                if (b.isTreasurer) ...[
+                  const SizedBox(width: 8),
+                  const Chip(
+                    label: Text('Kassenwart', style: TextStyle(fontSize: 10)),
+                    padding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ],
+              ],
+            ),
             subtitle: Text(
               b.member.isSkipperFree
                   ? 'Skipper frei'

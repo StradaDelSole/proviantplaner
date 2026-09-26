@@ -204,6 +204,17 @@ class BackupCoordinator {
             crewIdMap[oldCrewId] = newCrewId;
           }
 
+          // Falls treasurerMemberId vorhanden, jetzt über crewIdMap aktualisieren
+          if (tMap['treasurerMemberId'] != null) {
+            final oldTreasurerId = tMap['treasurerMemberId'] as int;
+            final newTreasurerId = crewIdMap[oldTreasurerId];
+            if (newTreasurerId != null) {
+              await (_db.update(_db.trips)..where((t) => t.id.equals(newTripId))).write(
+                TripsCompanion(treasurerMemberId: Value(newTreasurerId)),
+              );
+            }
+          }
+
           // 5. ListItems einfügen
           final items = tripData['items'] as List<dynamic>? ?? [];
           for (final i in items) {
@@ -319,6 +330,7 @@ class BackupCoordinator {
         'isArchived': t.isArchived,
         'currency': t.currency,
         'kittyModel': t.kittyModel.rawValue,
+        'treasurerMemberId': t.treasurerMemberId,
         'createdAt': t.createdAt.toIso8601String(),
       };
 

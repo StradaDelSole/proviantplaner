@@ -44,6 +44,7 @@ void main() {
         startDate: DateTime(2026, 9, 20),
         daysCount: const Value(7),
         kittyModel: const Value(KittyModel.sharedKitty),
+        treasurerMemberId: const Value(1),
       ),
     );
 
@@ -72,6 +73,7 @@ void main() {
     );
 
     // Einzahlungen
+    await db.tripDao.setTripTreasurer(tripId, member1Id);
     await kittyService.addDeposit(
       tripId: tripId,
       memberId: member2Id,
@@ -132,7 +134,9 @@ void main() {
     expect(find.text('320,00 €'), findsWidgets); // Kassenstand: 500 - 180 = 320,00 €
 
     // Umschalten auf "Personen & Anteile"
-    await tester.tap(find.text('Personen & Anteile'));
+    final segFinder = find.text('Personen & Anteile');
+    await tester.ensureVisible(segFinder);
+    await tester.tap(segFinder);
     await tester.pumpAndSettle();
 
     expect(find.text('Anna (Skipper)'), findsWidgets);
@@ -171,15 +175,20 @@ void main() {
 
     expect(find.text('Ausgabe erfassen'), findsOneWidget);
     expect(find.text('Proviant'), findsOneWidget);
-    expect(find.text('Getränke'), findsOneWidget);
     expect(find.text('Ausgabe speichern'), findsOneWidget);
 
-    // Betrag und Titel eingeben
+    // Betrag eingeben
     await tester.enterText(find.byType(TextFormField).first, '45.50');
-    await tester.enterText(find.byType(TextFormField).at(1), 'Hafengebühr Vis');
+
+    // Notiz unter Mehr Optionen eingeben
+    await tester.tap(find.text('Mehr Optionen'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Titel / Zweck'), 'Hafengebühr Vis');
 
     // Kategorie wählen
-    await tester.tap(find.text('Hafen und Liegeplatz'));
+    await tester.tap(find.text('Proviant'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hafen und Liegeplatz').last);
     await tester.pumpAndSettle();
 
     // Speichern
@@ -211,13 +220,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Einzahlung erfassen'), findsOneWidget);
-    expect(find.text('Gleicher Betrag für alle'), findsOneWidget);
+    expect(find.textContaining('Wie viel zahlt jeder ein?'), findsOneWidget);
     expect(find.text('Einzahlung speichern'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).first, '100.00');
-    final allBtnFinder = find.text('Gleicher Betrag für alle');
-    await tester.ensureVisible(allBtnFinder);
-    await tester.tap(allBtnFinder);
+    await tester.pumpAndSettle();
+
+    final saveBtnFinder = find.text('Einzahlungen speichern (200,00 €)');
+    await tester.ensureVisible(saveBtnFinder);
+    await tester.tap(saveBtnFinder);
     await tester.pumpAndSettle();
 
     final payments = await db.expenseDao.getKittyPaymentsForTrip(tripId);

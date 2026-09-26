@@ -108,14 +108,14 @@ void main() {
       // Kassenstand: 100.000 - 60.000 = 40.000 Cent (400,00 € Rest)
       expect(result.currentBalanceInCents, equals(40000));
 
-      // Summe aller Netto-Salden muss exakt dem verbleibenden Kassenstand entsprechen
+      // In FB1-D: Summe aller Netto-Salden ist mathematisch exakt 0 Cent (Kassenwart gleicht Kasse aus)
       final sumNetBalances = result.memberBalances.fold<int>(0, (sum, b) => sum + b.netBalanceInCents);
-      expect(sumNetBalances, equals(result.currentBalanceInCents));
+      expect(sumNetBalances, equals(0));
 
-      // Skipper Alex: zahlt Proviant (100 €) + Getränke (26,67 €) = 126,67 € Kostenanteil
-      // hat 250 € eingezahlt -> bekommt 123,33 € zurück
-      final alexBalance = result.memberBalances.firstWhere((b) => b.member.id == skipperAlex.id);
-      expect(alexBalance.costShareInCents, equals(10000 + 2667));
+      // Skipper Alex ist Kassenwart
+      expect(result.treasurer?.id, equals(skipperAlex.id));
+      expect(result.settlementTransfers.every((t) => t.fromMember.id == skipperAlex.id || t.toMember.id == skipperAlex.id), isTrue);
+      expect(result.settlementTransfers.any((t) => t.fromMember.name == 'Bordkasse' || t.toMember.name == 'Bordkasse'), isFalse);
 
       // Emil (NoAlk): zahlt Proviant (100 €) + Diesel (40 €) = 140,00 € Kostenanteil
       // Bei Getränken 0 €

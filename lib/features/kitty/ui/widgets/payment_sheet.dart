@@ -1,4 +1,4 @@
-/// Bottom Sheet zum Erfassen einer Einzahlung in die Bordkasse (SC-KAS-03).
+/// Bottom Sheet zum Erfassen einer Einzahlung in die Bordkasse (SC-KAS-03, FB1-D).
 library;
 
 import 'package:flutter/material.dart';
@@ -7,15 +7,17 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../data/kitty_providers.dart';
 import '../../domain/models/kitty_models.dart';
 
-/// Sheet zum Erfassen einer Einzahlung in die gemeinsame Kasse.
+/// Sheet zum Erfassen von Einzahlungen in einem Schritt (FEEDBACK_R1 Punkt 9).
 class PaymentSheet extends ConsumerStatefulWidget {
   final int tripId;
   final List<KittyMember> members;
+  final int? initialAmountInCents;
 
   const PaymentSheet({
     super.key,
     required this.tripId,
     required this.members,
+    this.initialAmountInCents,
   });
 
   /// Zeigt das Bottom Sheet an.
@@ -23,6 +25,7 @@ class PaymentSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required int tripId,
     required List<KittyMember> members,
+    int? initialAmountInCents,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -31,6 +34,7 @@ class PaymentSheet extends ConsumerStatefulWidget {
       builder: (ctx) => PaymentSheet(
         tripId: tripId,
         members: members,
+        initialAmountInCents: initialAmountInCents,
       ),
     );
   }
@@ -42,13 +46,17 @@ class PaymentSheet extends ConsumerStatefulWidget {
 class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountController;
-  int? _selectedMemberId;
+  late Set<int> _selectedMemberIds;
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
-    _selectedMemberId = widget.members.firstOrNull?.id;
+    final initCents = widget.initialAmountInCents;
+    _amountController = TextEditingController(
+      text: initCents != null ? (initCents / 100.0).toStringAsFixed(2) : '',
+    );
+    // Standardmäßig alle Crew-Mitglieder zum Einzahlen vorausgewählt
+    _selectedMemberIds = widget.members.map((m) => m.id).toSet();
   }
 
   @override
@@ -64,39 +72,20 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     return cents > 0 ? cents : null;
   }
 
-  Future<void> _saveSingleDeposit() async {
+  Future<void> _saveDeposits() async {
     if (!_formKey.currentState!.validate()) return;
     final cents = _parseAmountInCents();
-    if (cents == null || _selectedMemberId == null) return;
+    if (cents == null || _selectedMemberIds.isEmpty) return;
 
     final service = ref.read(kittyServiceProvider);
-    await service.addDeposit(
-      tripId: widget.tripId,
-      memberId: _selectedMemberId!,
-      amountInCents: cents,
-    );
-
-    _onComplete();
-  }
-
-  Future<void> _saveEqualDepositForAll() async {
-    if (!_formKey.currentState!.validate()) return;
-    final cents = _parseAmountInCents();
-    if (cents == null) return;
-
-    final service = ref.read(kittyServiceProvider);
-    for (final member in widget.members) {
+    for (final memberId in _selectedMemberIds) {
       await service.addDeposit(
         tripId: widget.tripId,
-        memberId: member.id,
+        memberId: memberId,
         amountInCents: cents,
       );
     }
 
-    _onComplete();
-  }
-
-  void _onComplete() {
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +100,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final cents = _parseAmountInCents();
+    final totalCents = (cents ?? 0) * _selectedMemberIds.length;
+    final totalEuros = (totalCents / 100.0).toStringAsFixed(2).replaceAll('.', ',');
 
     return Padding(
       padding: EdgeInsets.only(
@@ -130,11 +122,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               const SizedBox(height: 16),
               _buildAmountField(theme, l10n),
               const SizedBox(height: 16),
-              _buildMemberSelector(theme),
+              _buildMembersChecklist(theme),
               const SizedBox(height: 20),
-              _buildAllMembersButton(theme, l10n),
-              const SizedBox(height: 12),
-              _buildSubmitButton(theme, l10n),
+              _buildSubmitButton(theme, l10n, totalEuros),
               const SizedBox(height: 24),
             ],
           ),
@@ -147,7 +137,10 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(l10n.kittyAddDeposit, style: theme.textTheme.titleMedium),
+        Text(
+          l10n.kittyAddDeposit,
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
         IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -161,12 +154,14 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     return TextFormField(
       controller: _amountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      autofocus: widget.initialAmountInCents == null,
+      onChanged: (_) => setState(() {}),
       style: theme.textTheme.headlineMedium?.copyWith(
         fontFamily: 'JetBrains Mono',
         fontWeight: FontWeight.bold,
       ),
       decoration: InputDecoration(
-        labelText: '${l10n.kittyAmount} (€)',
+        labelText: 'Wie viel zahlt jeder ein? (€)',
         suffixText: '€',
         suffixStyle: theme.textTheme.headlineSmall?.copyWith(
           fontFamily: 'JetBrains Mono',
@@ -182,43 +177,89 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     );
   }
 
-  Widget _buildMemberSelector(ThemeData theme) {
-    return DropdownButtonFormField<int>(
-      value: _selectedMemberId,
-      decoration: const InputDecoration(
-        labelText: 'Person',
-        border: OutlineInputBorder(),
-      ),
-      items: widget.members.map((m) {
-        return DropdownMenuItem<int>(
-          value: m.id,
-          child: Text(m.name),
-        );
-      }).toList(),
-      onChanged: (val) => setState(() => _selectedMemberId = val),
+  Widget _buildMembersChecklist(ThemeData theme) {
+    final allSelected = _selectedMemberIds.length == widget.members.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Wer hat eingezahlt?',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  if (allSelected) {
+                    _selectedMemberIds.clear();
+                  } else {
+                    _selectedMemberIds = widget.members.map((m) => m.id).toSet();
+                  }
+                });
+              },
+              child: Text(allSelected ? 'Keine' : 'Alle'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ...widget.members.map((m) {
+          final isChecked = _selectedMemberIds.contains(m.id);
+          return CheckboxListTile(
+            value: isChecked,
+            contentPadding: EdgeInsets.zero,
+            title: Row(
+              children: [
+                Text(m.name, style: theme.textTheme.bodyLarge),
+                if (m.isSkipperFree) ...[
+                  const SizedBox(width: 8),
+                  const Chip(
+                    label: Text('Skipper', style: TextStyle(fontSize: 10)),
+                    padding: EdgeInsets.zero,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ],
+              ],
+            ),
+            onChanged: (val) {
+              setState(() {
+                if (val == true) {
+                  _selectedMemberIds.add(m.id);
+                } else {
+                  _selectedMemberIds.remove(m.id);
+                }
+              });
+            },
+          );
+        }),
+        if (_selectedMemberIds.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Mindestens eine Person muss ausgewählt sein',
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildAllMembersButton(ThemeData theme, AppLocalizations l10n) {
-    return OutlinedButton.icon(
-      icon: const Icon(Icons.groups_outlined),
-      label: Text(l10n.kittyEqualDepositForAll),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      onPressed: _saveEqualDepositForAll,
-    );
-  }
+  Widget _buildSubmitButton(ThemeData theme, AppLocalizations l10n, String totalEuros) {
+    final hasSelection = _selectedMemberIds.isNotEmpty;
+    final cents = _parseAmountInCents();
+    final buttonText = (cents != null && hasSelection)
+        ? 'Einzahlungen speichern ($totalEuros €)'
+        : l10n.kittySaveDeposit;
 
-  Widget _buildSubmitButton(ThemeData theme, AppLocalizations l10n) {
     return FilledButton(
-      onPressed: _saveSingleDeposit,
+      onPressed: hasSelection ? _saveDeposits : null,
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: Text(l10n.kittySaveDeposit),
+      child: Text(buttonText),
     );
   }
 }

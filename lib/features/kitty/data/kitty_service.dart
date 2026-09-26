@@ -39,6 +39,13 @@ class TripKittyData {
 
   /// Gibt das aktuelle Kassen-Guthaben in Cent zurück (Shared Kitty).
   int get cashBalanceCents => sharedResult?.currentBalanceInCents ?? 0;
+
+  /// Gibt den Kassenwart zurück.
+  KittyMember? get treasurer =>
+      sharedResult?.treasurer ??
+      (trip.treasurerMemberId != null
+          ? members.where((m) => m.id == trip.treasurerMemberId).firstOrNull
+          : members.where((m) => m.isSkipperFree).firstOrNull ?? members.firstOrNull);
 }
 
 /// Eingabe-Objekt zum Erfassen oder Bearbeiten einer Ausgabe (SC-KAS-02).
@@ -101,6 +108,7 @@ class KittyService {
         members: members,
         deposits: deposits,
         expenses: expenses,
+        treasurerMemberId: trip.treasurerMemberId,
       );
     } else {
       indRes = engine.calculateIndividualSettlement(
@@ -312,6 +320,11 @@ class KittyService {
       paypalLink: paypalLink,
       revolutLink: revolutLink,
     );
+  }
+
+  /// Aktualisiert den Kassenwart eines Törns (FB1-D).
+  Future<bool> setTreasurer(int tripId, int? memberId) {
+    return tripDao.setTripTreasurer(tripId, memberId);
   }
 
   /// Löscht eine Einzahlung.

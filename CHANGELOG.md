@@ -4,6 +4,26 @@
 
 - `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar
 
+## 2026-09-26 – FB1-D: Bordkasse neu
+
+- **Kassenwart-Prinzip (FEEDBACK_R1 Punkt 9):**
+  - "Die Kasse" ist kein eigenes Konto; alle Zahlungen an oder aus der Kasse laufen über den Kassenwart (`treasurerMemberId` in `Trips`, Drift-Schema v5 mit Migration).
+  - Beim ersten Öffnen der Kasse erscheint eine Abfrage: "Wer verwaltet die Kasse? (Standard: Skipper)".
+  - Kassenwart-Info-Card in der Kassenansicht mit Option zum Wechseln des Kassenwarts.
+- **Einzahlen in einem Schritt:**
+  - `PaymentSheet` mit einheitlichem Betragsfeld in JetBrains Mono ("Wie viel zahlt jeder ein?"), Checkliste aller Crew-Mitglieder (standardmäßig vorselektiert) und Sofortberechnung des Gesamtbetrags.
+- **Ausgabe mit 3 Pflichtfeldern:**
+  - `ExpenseSheet` mit 3 Kernfeldern im Fokus: Betrag, Wofür (Kategorie), Wer hat bezahlt (`SegmentedButton`: Kasse oder Person).
+  - Titel/Notiz und abweichende Beteiligung/Aufteilung eingeklappt unter "Mehr Optionen".
+- **Nachschuss-Hinweis:**
+  - Bei niedrigem Kassenstand (< 50 €) erscheint ein Hinweisbanner: "Kasse fast leer – jeder legt 50 € nach?" mit Button "Übernehmen", der das Einzahlungs-Sheet vorbefüllt mit 50 € öffnet.
+- **Abrechnung auf einem Bildschirm:**
+  - Klare Zeilen je Person: "bekommt X von Y" bzw. "zahlt X an Y" mit Button "Bezahlen". Keine Zeilen "→ Kasse" oder Pseudomitglied "Bordkasse".
+  - Mathematische Garantie: Die Summe aller Netto-Salden ist mathematisch immer exakt 0 Cent (`sum(netBalanceInCents) == 0`).
+  - "Bezahlen"-Aktion expandiert den EPC-QR-Code (GiroCode) und Zahlungslinks mit den Daten des jeweiligen Empfängers.
+  - Fehlen Zahlungsdaten für den Empfänger, erscheint ein Hinweiskasten: "Für [Name] sind keine Zahlungsdaten hinterlegt" mit Button "Jetzt eintragen".
+- Validierung: `flutter analyze` 0 Fehler, `flutter test` 153/153 Tests grün (28 Kitty-Tests inkl. dediziertem FB1-D Abnahmetest).
+
 ## 2026-09-26 – FB1-C: Törn-Setup
 
 - **Törnlänge bis 180 Tage (FEEDBACK_R1 Punkt 1):**

@@ -10,6 +10,7 @@ class SharedKittyCalculationResult {
   final int currentBalanceInCents;
   final List<MemberBalance> memberBalances;
   final List<PaymentTransfer> settlementTransfers;
+  final KittyMember? treasurer;
 
   const SharedKittyCalculationResult({
     required this.totalDepositsInCents,
@@ -17,6 +18,7 @@ class SharedKittyCalculationResult {
     required this.currentBalanceInCents,
     required this.memberBalances,
     required this.settlementTransfers,
+    this.treasurer,
   });
 }
 
@@ -37,11 +39,12 @@ class IndividualSettlementResult {
 class KittyEngine {
   const KittyEngine();
 
-  /// Berechnet Modell 1: Gemeinsame Bordkasse.
+  /// Berechnet Modell 1: Gemeinsame Bordkasse (FB1-D mit Kassenwart).
   SharedKittyCalculationResult calculateSharedKitty({
     required List<KittyMember> members,
     required List<KittyDeposit> deposits,
     required List<KittyExpense> expenses,
+    int? treasurerMemberId,
   }) {
     final kittyExpenses = expenses.where((e) => e.isPaidFromKitty).toList();
     final totalDeposits = deposits.fold<int>(0, (sum, d) => sum + d.amountInCents);
@@ -51,13 +54,55 @@ class KittyEngine {
     final memberPaidMap = _sumDepositsByMember(deposits);
     final memberCostShareMap = _calculateCostShares(kittyExpenses, members);
 
+    KittyMember? resolvedTreasurer;
+    if (members.isNotEmpty) {
+      resolvedTreasurer = members.firstWhere(
+        (m) => m.id == treasurerMemberId,
+        orElse: () => members.firstWhere(
+          (m) => m.isSkipperFree,
+          orElse: () => members.first,
+        ),
+      );
+    }
+
+    final treasurerId = resolvedTreasurer?.id;
+
+    // Summe der Netto-Salden aller Nicht-Kassenwarte
+    int otherNetSum = 0;
+    for (final m in members) {
+      if (m.id != treasurerId) {
+        final paid = memberPaidMap[m.id] ?? 0;
+        final cost = memberCostShareMap[m.id] ?? 0;
+        otherNetSum += (paid - cost);
+      }
+    }
+
     final balances = members.map((m) {
-      final paid = memberPaidMap[m.id] ?? 0;
       final cost = memberCostShareMap[m.id] ?? 0;
-      return MemberBalance(member: m, paidInCents: paid, costShareInCents: cost);
+      final rawPaid = memberPaidMap[m.id] ?? 0;
+      if (m.id == treasurerId) {
+        // Der Kassenwart gleicht die Kasse aus, so dass die Gesamtsumme aller Salden exakt 0 ist:
+        // netBalance = -otherNetSum
+        // paidInCents = cost - otherNetSum (damit paid - cost = -otherNetSum)
+        return MemberBalance(
+          member: m,
+          paidInCents: cost - otherNetSum,
+          costShareInCents: cost,
+          isTreasurer: true,
+          actualDepositsInCents: rawPaid,
+        );
+      } else {
+        return MemberBalance(
+          member: m,
+          paidInCents: rawPaid,
+          costShareInCents: cost,
+          isTreasurer: false,
+          actualDepositsInCents: rawPaid,
+        );
+      }
     }).toList();
 
-    final transfers = _generateSharedKittyTransfers(balances);
+    final transfers = _generateSharedKittyTransfers(balances, resolvedTreasurer);
 
     return SharedKittyCalculationResult(
       totalDepositsInCents: totalDeposits,
@@ -65,6 +110,7 @@ class KittyEngine {
       currentBalanceInCents: currentBalance,
       memberBalances: balances,
       settlementTransfers: transfers,
+      treasurer: resolvedTreasurer,
     );
   }
 
@@ -186,29 +232,30 @@ class KittyEngine {
     return transfers;
   }
 
-  List<PaymentTransfer> _generateSharedKittyTransfers(List<MemberBalance> balances) {
+  List<PaymentTransfer> _generateSharedKittyTransfers(
+    List<MemberBalance> balances,
+    KittyMember? treasurer,
+  ) {
+    if (treasurer == null) return const [];
     final transfers = <PaymentTransfer>[];
-    const kittyPseudoMember = KittyMember(
-      id: 0,
-      name: 'Bordkasse',
-      categoryParticipation: {},
-    );
 
     for (final b in balances) {
+      if (b.member.id == treasurer.id) continue;
+
       if (b.netBalanceInCents < 0) {
-        // Nachschuss in die Kasse
+        // Nachschuss in die Kasse: Mitglied zahlt an Kassenwart
         transfers.add(
           PaymentTransfer(
             fromMember: b.member,
-            toMember: kittyPseudoMember,
+            toMember: treasurer,
             amountInCents: -b.netBalanceInCents,
           ),
         );
       } else if (b.netBalanceInCents > 0) {
-        // Rückzahlung aus der Kasse
+        // Rückzahlung aus der Kasse: Kassenwart zahlt an Mitglied
         transfers.add(
           PaymentTransfer(
-            fromMember: kittyPseudoMember,
+            fromMember: treasurer,
             toMember: b.member,
             amountInCents: b.netBalanceInCents,
           ),

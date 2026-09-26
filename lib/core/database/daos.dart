@@ -68,6 +68,13 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<int> deleteTrip(int id) =>
       (delete(trips)..where((tbl) => tbl.id.equals(id))).go();
 
+  /// Aktualisiert den Kassenwart eines Törns (FB1-D).
+  Future<bool> setTripTreasurer(int tripId, int? memberId) async {
+    final trip = await getTripById(tripId);
+    if (trip == null) return false;
+    return updateTrip(trip.copyWith(treasurerMemberId: Value(memberId)));
+  }
+
   // TripDays
   Future<List<TripDay>> getDaysForTrip(int tripId) =>
       (select(tripDays)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).get();
