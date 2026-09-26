@@ -54,7 +54,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     if (context.mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.kittyArchiveNotice)),
+        SnackBar(content: Text(l10n.fundArchiveNotice)),
       );
       try {
         context.go('/');
@@ -72,7 +72,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.kittySettlementTitle),
+        title: Text(l10n.fundSettlementTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -180,7 +180,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          l10n.kittyWhoPaysWhom.toUpperCase(),
+          l10n.fundWhoPaysWhom.toUpperCase(),
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -538,13 +538,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       ),
       child: Column(
         children: [
-          _detailRow(l10n.kittyReceiver, recipient, theme),
+          _detailRow(l10n.fundReceiver, recipient, theme),
           const Divider(height: 12),
-          _detailRow(l10n.kittyIban, _formatIban(iban), theme, mono: true),
+          _detailRow(l10n.fundIban, _formatIban(iban), theme, mono: true),
           const Divider(height: 12),
-          _detailRow(l10n.kittyAmount, amount, theme, mono: true, bold: true),
+          _detailRow(l10n.fundAmount, amount, theme, mono: true, bold: true),
           const Divider(height: 12),
-          _detailRow(l10n.kittyRemittance, remittance, theme),
+          _detailRow(l10n.fundRemittance, remittance, theme),
         ],
       ),
     );
@@ -579,7 +579,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
   ) {
     return OutlinedButton.icon(
       icon: const Icon(Icons.content_copy, size: 18),
-      label: Text(l10n.kittyCopyIbanData),
+      label: Text(l10n.fundCopyIbanData),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -588,7 +588,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         final text = 'Empfänger: $recipient\nIBAN: $iban\nBetrag: $amount\nVerwendungszweck: $remittance';
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.kittyIbanCopied)),
+          SnackBar(content: Text(l10n.fundIbanCopied)),
         );
       },
     );
@@ -606,7 +606,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         Expanded(
           child: OutlinedButton.icon(
             icon: const Icon(Icons.link, size: 16),
-            label: Text(l10n.kittySharePaypal),
+            label: Text(l10n.fundSharePaypal),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -637,7 +637,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         Expanded(
           child: OutlinedButton.icon(
             icon: const Icon(Icons.share, size: 16),
-            label: Text(l10n.kittyShareRevolut),
+            label: Text(l10n.fundShareRevolut),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -670,7 +670,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
   Widget _buildMarkSettledRow(ThemeData theme, AppLocalizations l10n, int index, bool isSettled) {
     return CheckboxListTile(
       value: isSettled,
-      title: Text(isSettled ? l10n.kittySettled : l10n.kittyMarkDone),
+      title: Text(isSettled ? l10n.fundSettled : l10n.fundMarkDone),
       controlAffinity: ListTileControlAffinity.leading,
       contentPadding: EdgeInsets.zero,
       onChanged: (_) => _toggleSettled(index),
@@ -696,7 +696,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             children: [
               Icon(Icons.check_circle, size: 20, color: theme.colorScheme.secondary),
               const SizedBox(width: 8),
-              Text(l10n.kittyBalancesEqual, style: theme.textTheme.bodyMedium),
+              Text(l10n.fundBalancesEqual, style: theme.textTheme.bodyMedium),
             ],
           ),
           Text(
@@ -719,7 +719,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            l10n.kittySettlementNotice,
+            l10n.fundSettlementNotice,
             style: theme.textTheme.bodySmall?.copyWith(
               fontSize: 11,
               color: theme.colorScheme.outline,
@@ -772,7 +772,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         children: [
           const Icon(Icons.archive_outlined),
           const SizedBox(width: 8),
-          Text(l10n.kittyArchiveTrip),
+          Text(l10n.fundArchiveTrip),
         ],
       ),
     );

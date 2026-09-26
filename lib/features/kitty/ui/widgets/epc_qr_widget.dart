@@ -43,7 +43,7 @@ class EpcQrWidget extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  l10n.kittyNightwatchScanHint,
+                  l10n.fundNightwatchScanHint,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -83,14 +83,14 @@ class EpcQrWidget extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      l10n.kittyScanGiroCode,
+                      l10n.fundScanGiroCode,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     Text(
-                      l10n.kittyScanGiroCodeSubtitle,
+                      l10n.fundScanGiroCodeSubtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-26 – Slice UX-C: Begriffe und Aufräumen
+
+- **Begriffe nach UX-Konzept v0.6 Begriffstabelle:**
+  - ARB-Dateien (`app_de.arb`, `app_en.arb`): Sämtliche Vorkommen und Schlüssel von "Kitty" / "kitty" restlos entfernt und durch "fund" ersetzt (`fundTitle`, `fundAddExpense`, `fundAddContribution`, `fundSettleUp`, `navFund` usw.).
+  - Begriffe in Deutsch und Englisch vereinheitlicht: „Bordkasse“ / „Crew fund“, „Einzahlung erfassen“ / „Add contribution“, „Ausgabe erfassen“ / „Add expense“, „Abrechnung“ / „Settle up“, „Planen“ / „Plan“, „Einkaufen“ / „Shop“, „Vorratsliste“ / „Provision list“.
+- **Startbildschirm-Untertitel:**
+  - DE: „Proviant und Bordkasse – ganz einfach“
+  - EN: „Provisioning & crew fund made easy“
+  - Alte Platzhaltertexte wie „Trip Planning Made Easy“ und „Setup & Architektur“ restlos aus Codebase und Übersetzungen entfernt.
+- **Aufräumen veralteter Widgets & Screens:**
+  - `TripBottomBar` (`trip_bottom_bar.dart`) vollständig aus Navigation und Dateibaum gelöscht (durch die 5 Hauptbildschirme ohne Reiterleiste nach UX-A abgelöst).
+- **Prüfung:** `flutter analyze` 0 Fehler, `flutter test` 174/174 Tests grün (inklusive aller 6 dedizierten UX-C Such- und Abnahmetests).
+
 ## 2026-09-26 – Slice UX-B: Liste, Einkaufsmodus, Liefern lassen
 
 - **Vorratsliste (`ShoppingListScreen` & `PlanningView`):**

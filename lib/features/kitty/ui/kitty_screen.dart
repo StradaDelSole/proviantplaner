@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
 import '../domain/models/kitty_models.dart';
@@ -48,11 +47,11 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.kittyTitle),
+        title: Text(l10n.fundTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.tune),
-            tooltip: l10n.kittyParticipationTitle,
+            tooltip: l10n.fundParticipationTitle,
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             onPressed: () {
               if (data != null) {
@@ -72,7 +71,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               if (data?.model == KittyModel.sharedKitty) ...[
                 PopupMenuItem(
                   value: 'deposit',
-                  child: Text(l10n.kittyAddDeposit),
+                  child: Text(l10n.fundAddDeposit),
                 ),
                 const PopupMenuItem(
                   value: 'treasurer',
@@ -81,7 +80,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               ],
               PopupMenuItem(
                 value: 'settlement',
-                child: Text(l10n.kittySettleTrip),
+                child: Text(l10n.fundSettleTrip),
               ),
             ],
           ),
@@ -104,11 +103,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           }
         },
         icon: const Icon(Icons.add),
-        label: Text(l10n.kittyAddExpense),
-      ),
-      bottomNavigationBar: TripBottomBar(
-        tripId: widget.tripId,
-        currentIndex: 2,
+        label: Text(l10n.fundAddExpense),
       ),
     );
   }
@@ -436,7 +431,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  isShared ? l10n.kittyModelShared : l10n.kittyModelIndividual,
+                  isShared ? l10n.fundModelShared : l10n.fundModelIndividual,
                   style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(width: 4),
@@ -479,7 +474,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.kittyCurrentBalance.toUpperCase(),
+          l10n.fundCurrentBalance.toUpperCase(),
           style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 4),
@@ -516,7 +511,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.kittyTotalDeposits, style: theme.textTheme.bodySmall),
+                  Text(l10n.fundTotalDeposits, style: theme.textTheme.bodySmall),
                   Text(depositsFormatted, style: theme.textTheme.titleSmall?.copyWith(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -527,7 +522,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.kittyTotalExpenses, style: theme.textTheme.bodySmall),
+                  Text(l10n.fundTotalExpenses, style: theme.textTheme.bodySmall),
                   Text(expensesFormatted, style: theme.textTheme.titleSmall?.copyWith(fontFamily: 'JetBrains Mono', fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -552,7 +547,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.kittyTotalExpensesLabel.toUpperCase(),
+          l10n.fundTotalExpensesLabel.toUpperCase(),
           style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 4),
@@ -566,7 +561,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          l10n.kittyOpenTransfers(openCount),
+          l10n.fundOpenTransfers(openCount),
           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ],
@@ -579,8 +574,8 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(l10n.kittySwitchModel),
-          content: Text(l10n.kittySwitchModelBlocked),
+          title: Text(l10n.fundSwitchModel),
+          content: Text(l10n.fundSwitchModelBlocked),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -599,9 +594,9 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.kittySwitchModel),
+        title: Text(l10n.fundSwitchModel),
         content: Text(
-          'Möchtest du das Modell zu "${newModel == KittyModel.sharedKitty ? l10n.kittyModelShared : l10n.kittyModelIndividual}" wechseln?',
+          'Möchtest du das Modell zu "${newModel == KittyModel.sharedKitty ? l10n.fundModelShared : l10n.fundModelIndividual}" wechseln?',
         ),
         actions: [
           TextButton(
@@ -633,11 +628,11 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       segments: [
         ButtonSegment(
           value: KittyViewSegment.expenses,
-          label: Text('${l10n.kittyExpensesSegment} (${data.expenses.length})'),
+          label: Text('${l10n.fundExpensesSegment} (${data.expenses.length})'),
         ),
         ButtonSegment(
           value: KittyViewSegment.people,
-          label: Text(l10n.kittyPeopleSegment),
+          label: Text(l10n.fundPeopleSegment),
         ),
       ],
       selected: {activeSegment},
@@ -662,7 +657,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             children: [
               Icon(Icons.account_balance_wallet_outlined, size: 48, color: theme.colorScheme.outline),
               const SizedBox(height: 12),
-              Text(l10n.kittyNoExpenses, style: theme.textTheme.bodyMedium),
+              Text(l10n.fundNoExpenses, style: theme.textTheme.bodyMedium),
             ],
           ),
         ),
@@ -727,8 +722,8 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     KittyExpense exp,
   ) {
     final payerName = exp.isPaidFromKitty
-        ? l10n.kittyPaidFromKitty
-        : l10n.kittyPaidBy(data.members.firstWhere((m) => m.id == exp.paidByMemberId, orElse: () => const KittyMember(id: 0, name: 'Crew', categoryParticipation: {})).name);
+        ? l10n.fundPaidFromFund
+        : l10n.fundPaidBy(data.members.firstWhere((m) => m.id == exp.paidByMemberId, orElse: () => const KittyMember(id: 0, name: 'Crew', categoryParticipation: {})).name);
 
     return Dismissible(
       key: Key('expense_${exp.id}'),

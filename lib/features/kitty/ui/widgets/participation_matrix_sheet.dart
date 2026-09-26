@@ -128,7 +128,7 @@ class _ParticipationMatrixSheetState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.kittyParticipationTitle),
+        title: Text(l10n.fundParticipationTitle),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
@@ -213,22 +213,22 @@ class _ParticipationMatrixSheetState
       runSpacing: 8,
       children: [
         ActionChip(
-          label: Text(l10n.kittyProfileAll),
+          label: Text(l10n.fundProfileAll),
           onPressed: () => _applyProfile(memberId, ParticipationProfile.all),
         ),
         ActionChip(
           backgroundColor: isFullFree ? theme.colorScheme.secondaryContainer : null,
-          label: Text(l10n.kittyProfileSkipperFull),
+          label: Text(l10n.fundProfileSkipperFull),
           onPressed: () => _applyProfile(memberId, ParticipationProfile.skipperFreeFull),
         ),
         ActionChip(
           backgroundColor: isPartialFree ? theme.colorScheme.secondaryContainer : null,
-          label: Text(l10n.kittyProfileSkipperPartial),
+          label: Text(l10n.fundProfileSkipperPartial),
           onPressed: () => _applyProfile(memberId, ParticipationProfile.skipperFreePartial),
         ),
         ActionChip(
           backgroundColor: isNoAlc ? theme.colorScheme.secondaryContainer : null,
-          label: Text(l10n.kittyProfileNoAlcohol),
+          label: Text(l10n.fundProfileNoAlcohol),
           onPressed: () => _applyProfile(memberId, ParticipationProfile.noAlcohol),
         ),
       ],

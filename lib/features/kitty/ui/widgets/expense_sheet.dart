@@ -139,7 +139,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.kittyExpenseSaved)),
+        SnackBar(content: Text(l10n.fundExpenseSaved)),
       );
       Navigator.of(context).pop('saved');
       ref.invalidate(tripKittyDataProvider(widget.tripId));
@@ -190,7 +190,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          isEditing ? 'Ausgabe bearbeiten' : l10n.kittyAddExpense,
+          isEditing ? 'Ausgabe bearbeiten' : l10n.fundAddExpense,
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Row(
@@ -220,7 +220,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       autofocus: widget.expenseToEdit == null,
       decoration: InputDecoration(
-        labelText: '${l10n.kittyAmount} *',
+        labelText: '${l10n.fundAmount} *',
         suffixText: '€',
         border: const OutlineInputBorder(),
       ),
@@ -241,7 +241,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     return TextFormField(
       controller: _titleController,
       decoration: InputDecoration(
-        labelText: l10n.kittyTitleField,
+        labelText: l10n.fundTitleField,
         border: const OutlineInputBorder(),
       ),
     );
@@ -251,7 +251,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.kittyExpenseCategory, style: theme.textTheme.labelMedium),
+        Text(l10n.fundExpenseCategory, style: theme.textTheme.labelMedium),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -277,7 +277,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          l10n.kittyPaidByTitle,
+          l10n.fundPaidByTitle,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -397,7 +397,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: Text(l10n.kittySaveExpense),
+      child: Text(l10n.fundSaveExpense),
     );
   }
 }

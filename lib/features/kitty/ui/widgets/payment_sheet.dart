@@ -89,7 +89,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.kittyDepositSaved)),
+        SnackBar(content: Text(l10n.fundDepositSaved)),
       );
       Navigator.of(context).pop();
       ref.invalidate(tripKittyDataProvider(widget.tripId));
@@ -138,7 +138,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          l10n.kittyAddDeposit,
+          l10n.fundAddDeposit,
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         IconButton(
@@ -251,7 +251,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final cents = _parseAmountInCents();
     final buttonText = (cents != null && hasSelection)
         ? 'Einzahlungen speichern ($totalEuros €)'
-        : l10n.kittySaveDeposit;
+        : l10n.fundSaveDeposit;
 
     return FilledButton(
       onPressed: hasSelection ? _saveDeposits : null,
