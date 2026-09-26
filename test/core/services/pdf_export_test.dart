@@ -31,6 +31,7 @@ void main() {
       startDate: DateTime(2026, 8, 15),
       daysCount: 7,
       region: 'mediterranean',
+      climate: 'warm',
       isCharter: true,
       boatType: 'mono',
       fridgeCapacity: 120,

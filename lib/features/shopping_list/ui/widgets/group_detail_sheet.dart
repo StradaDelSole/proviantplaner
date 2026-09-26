@@ -138,6 +138,9 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
     final currentGroupView = _resolveCurrentGroupView(listDataAsync.valueOrNull);
     final group = currentGroupView.group;
     final variants = currentGroupView.variants;
+    final tripData = listDataAsync.valueOrNull;
+    final hasNoFridge = (tripData?.trip.fridgeCapacity ?? 100) <= 0;
+    final anyNeedsCooling = variants.any((v) => v.isCooled);
 
     return Column(
       children: [
@@ -191,6 +194,31 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
               ),
             ),
           ),
+        if (hasNoFridge && anyNeedsCooling)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.4)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.ac_unit, size: 20, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.coolingAlternativeHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         const Divider(),
         // Variantenliste
         Expanded(
@@ -203,7 +231,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
               if (group.mode == GroupMode.check) {
                 return _buildChecklistTile(context, v, theme, l10n);
               }
-              return _buildVariantTile(context, v, theme, l10n, currentGroupView);
+              return _buildVariantTile(context, v, theme, l10n, currentGroupView, hasNoFridge: hasNoFridge);
             },
           ),
         ),
@@ -266,8 +294,11 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
     ShoppingListItemView v,
     ThemeData theme,
     AppLocalizations l10n,
-    ShoppingListGroupView currentGroupView,
-  ) {
+    ShoppingListGroupView currentGroupView, {
+    bool hasNoFridge = false,
+  }) {
+    final needsCooling = v.isCooled;
+
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () => _toggleVariant(v, !v.isSelected),
@@ -294,9 +325,25 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                         v.name,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          decoration: v.isSelected ? null : TextDecoration.lineThrough,
                         ),
                       ),
+                      if (hasNoFridge && needsCooling) ...[
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            l10n.needsCoolingBadge,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onErrorContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                       if (v.isSelected)
                         InkWell(
                           borderRadius: BorderRadius.circular(4),

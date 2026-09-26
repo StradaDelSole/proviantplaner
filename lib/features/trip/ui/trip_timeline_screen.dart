@@ -296,28 +296,10 @@ class TripTimelineScreen extends ConsumerWidget {
                     // Tagesleiste Timeline
                     Text(l10n.timelineTitle, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 12),
-                    ...days.map((day) {
-                      final dayStops = stops.where((s) => s.dayNumber == day.dayNumber).toList();
-                      return DayCard(
-                        day: day,
-                        shoppingStops: dayStops,
-                        onToggleLunch: () async {
-                          final service = ref.read(tripServiceProvider);
-                          await service.toggleLunchRestaurant(day);
-                          ref.invalidate(activeTripDaysProvider);
-                        },
-                        onToggleEvening: () async {
-                          final service = ref.read(tripServiceProvider);
-                          await service.toggleEveningRestaurant(day);
-                          ref.invalidate(activeTripDaysProvider);
-                        },
-                        onUpdatePortName: (name) async {
-                          final service = ref.read(tripServiceProvider);
-                          await service.updateDayInfo(day, portName: name);
-                          ref.invalidate(activeTripDaysProvider);
-                        },
-                      );
-                    }),
+                    if (days.length < 28)
+                      ...days.map((day) => _buildDayCard(context, ref, day, stops))
+                    else
+                      ..._buildWeeklyGroupedDays(context, ref, days, stops, l10n, theme),
                   ],
                 ),
               ),
@@ -330,6 +312,82 @@ class TripTimelineScreen extends ConsumerWidget {
         currentIndex: 1,
       ),
     );
+  }
+
+  Widget _buildDayCard(
+    BuildContext context,
+    WidgetRef ref,
+    TripDay day,
+    List<ShoppingStop> stops,
+  ) {
+    final dayStops = stops.where((s) => s.dayNumber == day.dayNumber).toList();
+    return DayCard(
+      day: day,
+      shoppingStops: dayStops,
+      onToggleLunch: () async {
+        final service = ref.read(tripServiceProvider);
+        await service.toggleLunchRestaurant(day);
+        ref.invalidate(activeTripDaysProvider);
+      },
+      onToggleEvening: () async {
+        final service = ref.read(tripServiceProvider);
+        await service.toggleEveningRestaurant(day);
+        ref.invalidate(activeTripDaysProvider);
+      },
+      onUpdatePortName: (name) async {
+        final service = ref.read(tripServiceProvider);
+        await service.updateDayInfo(day, portName: name);
+        ref.invalidate(activeTripDaysProvider);
+      },
+    );
+  }
+
+  List<Widget> _buildWeeklyGroupedDays(
+    BuildContext context,
+    WidgetRef ref,
+    List<TripDay> days,
+    List<ShoppingStop> stops,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) {
+    final widgets = <Widget>[];
+    const daysPerWeek = 7;
+    final weekCount = (days.length / daysPerWeek).ceil();
+
+    for (int w = 0; w < weekCount; w++) {
+      final startIndex = w * daysPerWeek;
+      final endIndex = (startIndex + daysPerWeek < days.length)
+          ? startIndex + daysPerWeek
+          : days.length;
+      final weekDays = days.sublist(startIndex, endIndex);
+      final startDayNumber = weekDays.first.dayNumber;
+      final endDayNumber = weekDays.last.dayNumber;
+
+      widgets.add(
+        Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ExpansionTile(
+            initiallyExpanded: w == 0,
+            title: Text(
+              l10n.timelineWeek(w + 1, startDayNumber, endDayNumber),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${weekDays.length} ${l10n.day}',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            childrenPadding: const EdgeInsets.all(8),
+            children: weekDays.map((day) => _buildDayCard(context, ref, day, stops)).toList(),
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   Widget _buildMetricItem(

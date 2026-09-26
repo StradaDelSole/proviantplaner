@@ -8,20 +8,13 @@ import 'package:proviantplaner/features/entitlements/data/entitlements_providers
 import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
-/// Startbildschirm gemäß Slice S0 & S3.
+/// Startbildschirm gemäß Slice S0 & S3 sowie FEEDBACK_R1 Punkt 4.
 /// Zeigt den App-Namen sowie das dezente "powered by HullQ",
-/// Einstiegspunkte zum Törn anlegen und die vier Hauptnavigationsreiter.
-class StartScreen extends ConsumerStatefulWidget {
+/// Einstiegspunkte zum Törn anlegen (keine Reiterleiste ohne aktiven Törn).
+class StartScreen extends ConsumerWidget {
   const StartScreen({super.key});
 
-  @override
-  ConsumerState<StartScreen> createState() => _StartScreenState();
-}
-
-class _StartScreenState extends ConsumerState<StartScreen> {
-  int _currentTabIndex = 0;
-
-  Future<void> _onNewTripPressed(BuildContext context) async {
+  Future<void> _onNewTripPressed(BuildContext context, WidgetRef ref) async {
     final canCreate = await ref.read(entitlementsServiceProvider).canCreateNewTrip();
     if (!context.mounted) return;
     if (canCreate) {
@@ -35,7 +28,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final activeTripAsync = ref.watch(activeTripProvider);
@@ -158,7 +151,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                                 children: [
                                   Expanded(
                                     child: OutlinedButton(
-                                      onPressed: () => _onNewTripPressed(context),
+                                      onPressed: () => _onNewTripPressed(context, ref),
                                       child: Text(l10n?.newTripButton ?? '+ Neuer Törn'),
                                     ),
                                   ),
@@ -177,7 +170,7 @@ class _StartScreenState extends ConsumerState<StartScreen> {
                       );
                     }
                     return FilledButton.icon(
-                      onPressed: () => _onNewTripPressed(context),
+                      onPressed: () => _onNewTripPressed(context, ref),
                       icon: const Icon(Icons.add),
                       label: Text(l10n?.newTripButton ?? 'Neuen Törn anlegen'),
                     );
@@ -197,51 +190,6 @@ class _StartScreenState extends ConsumerState<StartScreen> {
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTabIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentTabIndex = index;
-          });
-          if (index == 1) {
-            final activeTrip = activeTripAsync.valueOrNull;
-            if (activeTrip != null) {
-              context.go('/trips/${activeTrip.id}/timeline');
-            } else {
-              context.go('/trips/new');
-            }
-          } else if (index == 3) {
-            final activeTrip = activeTripAsync.valueOrNull;
-            if (activeTrip != null) {
-              context.go('/trips/${activeTrip.id}/more');
-            } else {
-              context.go('/more');
-            }
-          }
-        },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.checklist_outlined),
-            selectedIcon: const Icon(Icons.checklist),
-            label: l10n?.navShoppingList ?? 'Liste',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_month_outlined),
-            selectedIcon: const Icon(Icons.calendar_month),
-            label: l10n?.navTrip ?? 'Törn',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: const Icon(Icons.account_balance_wallet),
-            label: l10n?.navKitty ?? 'Bordkasse',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.more_horiz),
-            selectedIcon: const Icon(Icons.more_horiz),
-            label: l10n?.navMore ?? 'Mehr',
-          ),
-        ],
       ),
     );
   }

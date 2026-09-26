@@ -46,6 +46,14 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('mediterranean'));
+  static const VerificationMeta _climateMeta =
+      const VerificationMeta('climate');
+  @override
+  late final GeneratedColumn<String> climate = GeneratedColumn<String>(
+      'climate', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('warm'));
   static const VerificationMeta _isCharterMeta =
       const VerificationMeta('isCharter');
   @override
@@ -159,6 +167,7 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         startDate,
         daysCount,
         region,
+        climate,
         isCharter,
         boatType,
         fridgeCapacity,
@@ -204,6 +213,10 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     if (data.containsKey('region')) {
       context.handle(_regionMeta,
           region.isAcceptableOrUnknown(data['region']!, _regionMeta));
+    }
+    if (data.containsKey('climate')) {
+      context.handle(_climateMeta,
+          climate.isAcceptableOrUnknown(data['climate']!, _climateMeta));
     }
     if (data.containsKey('is_charter')) {
       context.handle(_isCharterMeta,
@@ -268,6 +281,8 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           .read(DriftSqlType.int, data['${effectivePrefix}days_count'])!,
       region: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}region'])!,
+      climate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}climate'])!,
       isCharter: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_charter'])!,
       boatType: attachedDatabase.typeMapping
@@ -319,6 +334,7 @@ class Trip extends DataClass implements Insertable<Trip> {
   final DateTime startDate;
   final int daysCount;
   final String region;
+  final String climate;
   final bool isCharter;
   final String boatType;
   final int fridgeCapacity;
@@ -337,6 +353,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       required this.startDate,
       required this.daysCount,
       required this.region,
+      required this.climate,
       required this.isCharter,
       required this.boatType,
       required this.fridgeCapacity,
@@ -357,6 +374,7 @@ class Trip extends DataClass implements Insertable<Trip> {
     map['start_date'] = Variable<DateTime>(startDate);
     map['days_count'] = Variable<int>(daysCount);
     map['region'] = Variable<String>(region);
+    map['climate'] = Variable<String>(climate);
     map['is_charter'] = Variable<bool>(isCharter);
     map['boat_type'] = Variable<String>(boatType);
     map['fridge_capacity'] = Variable<int>(fridgeCapacity);
@@ -390,6 +408,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: Value(startDate),
       daysCount: Value(daysCount),
       region: Value(region),
+      climate: Value(climate),
       isCharter: Value(isCharter),
       boatType: Value(boatType),
       fridgeCapacity: Value(fridgeCapacity),
@@ -414,6 +433,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       daysCount: serializer.fromJson<int>(json['daysCount']),
       region: serializer.fromJson<String>(json['region']),
+      climate: serializer.fromJson<String>(json['climate']),
       isCharter: serializer.fromJson<bool>(json['isCharter']),
       boatType: serializer.fromJson<String>(json['boatType']),
       fridgeCapacity: serializer.fromJson<int>(json['fridgeCapacity']),
@@ -438,6 +458,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       'startDate': serializer.toJson<DateTime>(startDate),
       'daysCount': serializer.toJson<int>(daysCount),
       'region': serializer.toJson<String>(region),
+      'climate': serializer.toJson<String>(climate),
       'isCharter': serializer.toJson<bool>(isCharter),
       'boatType': serializer.toJson<String>(boatType),
       'fridgeCapacity': serializer.toJson<int>(fridgeCapacity),
@@ -459,6 +480,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           DateTime? startDate,
           int? daysCount,
           String? region,
+          String? climate,
           bool? isCharter,
           String? boatType,
           int? fridgeCapacity,
@@ -477,6 +499,7 @@ class Trip extends DataClass implements Insertable<Trip> {
         startDate: startDate ?? this.startDate,
         daysCount: daysCount ?? this.daysCount,
         region: region ?? this.region,
+        climate: climate ?? this.climate,
         isCharter: isCharter ?? this.isCharter,
         boatType: boatType ?? this.boatType,
         fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
@@ -497,6 +520,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       daysCount: data.daysCount.present ? data.daysCount.value : this.daysCount,
       region: data.region.present ? data.region.value : this.region,
+      climate: data.climate.present ? data.climate.value : this.climate,
       isCharter: data.isCharter.present ? data.isCharter.value : this.isCharter,
       boatType: data.boatType.present ? data.boatType.value : this.boatType,
       fridgeCapacity: data.fridgeCapacity.present
@@ -529,6 +553,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('startDate: $startDate, ')
           ..write('daysCount: $daysCount, ')
           ..write('region: $region, ')
+          ..write('climate: $climate, ')
           ..write('isCharter: $isCharter, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
@@ -552,6 +577,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate,
       daysCount,
       region,
+      climate,
       isCharter,
       boatType,
       fridgeCapacity,
@@ -573,6 +599,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.startDate == this.startDate &&
           other.daysCount == this.daysCount &&
           other.region == this.region &&
+          other.climate == this.climate &&
           other.isCharter == this.isCharter &&
           other.boatType == this.boatType &&
           other.fridgeCapacity == this.fridgeCapacity &&
@@ -593,6 +620,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<DateTime> startDate;
   final Value<int> daysCount;
   final Value<String> region;
+  final Value<String> climate;
   final Value<bool> isCharter;
   final Value<String> boatType;
   final Value<int> fridgeCapacity;
@@ -611,6 +639,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.startDate = const Value.absent(),
     this.daysCount = const Value.absent(),
     this.region = const Value.absent(),
+    this.climate = const Value.absent(),
     this.isCharter = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
@@ -630,6 +659,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     required DateTime startDate,
     this.daysCount = const Value.absent(),
     this.region = const Value.absent(),
+    this.climate = const Value.absent(),
     this.isCharter = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
@@ -650,6 +680,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<DateTime>? startDate,
     Expression<int>? daysCount,
     Expression<String>? region,
+    Expression<String>? climate,
     Expression<bool>? isCharter,
     Expression<String>? boatType,
     Expression<int>? fridgeCapacity,
@@ -669,6 +700,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (startDate != null) 'start_date': startDate,
       if (daysCount != null) 'days_count': daysCount,
       if (region != null) 'region': region,
+      if (climate != null) 'climate': climate,
       if (isCharter != null) 'is_charter': isCharter,
       if (boatType != null) 'boat_type': boatType,
       if (fridgeCapacity != null) 'fridge_capacity': fridgeCapacity,
@@ -691,6 +723,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       Value<DateTime>? startDate,
       Value<int>? daysCount,
       Value<String>? region,
+      Value<String>? climate,
       Value<bool>? isCharter,
       Value<String>? boatType,
       Value<int>? fridgeCapacity,
@@ -709,6 +742,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       startDate: startDate ?? this.startDate,
       daysCount: daysCount ?? this.daysCount,
       region: region ?? this.region,
+      climate: climate ?? this.climate,
       isCharter: isCharter ?? this.isCharter,
       boatType: boatType ?? this.boatType,
       fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
@@ -741,6 +775,9 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     }
     if (region.present) {
       map['region'] = Variable<String>(region.value);
+    }
+    if (climate.present) {
+      map['climate'] = Variable<String>(climate.value);
     }
     if (isCharter.present) {
       map['is_charter'] = Variable<bool>(isCharter.value);
@@ -793,6 +830,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('startDate: $startDate, ')
           ..write('daysCount: $daysCount, ')
           ..write('region: $region, ')
+          ..write('climate: $climate, ')
           ..write('isCharter: $isCharter, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
@@ -4309,6 +4347,7 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   required DateTime startDate,
   Value<int> daysCount,
   Value<String> region,
+  Value<String> climate,
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
@@ -4328,6 +4367,7 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<DateTime> startDate,
   Value<int> daysCount,
   Value<String> region,
+  Value<String> climate,
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
@@ -4473,6 +4513,9 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<String> get region => $composableBuilder(
       column: $table.region, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get climate => $composableBuilder(
+      column: $table.climate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isCharter => $composableBuilder(
       column: $table.isCharter, builder: (column) => ColumnFilters(column));
@@ -4692,6 +4735,9 @@ class $$TripsTableOrderingComposer
   ColumnOrderings<String> get region => $composableBuilder(
       column: $table.region, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get climate => $composableBuilder(
+      column: $table.climate, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isCharter => $composableBuilder(
       column: $table.isCharter, builder: (column) => ColumnOrderings(column));
 
@@ -4755,6 +4801,9 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<String> get region =>
       $composableBuilder(column: $table.region, builder: (column) => column);
+
+  GeneratedColumn<String> get climate =>
+      $composableBuilder(column: $table.climate, builder: (column) => column);
 
   GeneratedColumn<bool> get isCharter =>
       $composableBuilder(column: $table.isCharter, builder: (column) => column);
@@ -4979,6 +5028,7 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<DateTime> startDate = const Value.absent(),
             Value<int> daysCount = const Value.absent(),
             Value<String> region = const Value.absent(),
+            Value<String> climate = const Value.absent(),
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
@@ -4998,6 +5048,7 @@ class $$TripsTableTableManager extends RootTableManager<
             startDate: startDate,
             daysCount: daysCount,
             region: region,
+            climate: climate,
             isCharter: isCharter,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,
@@ -5017,6 +5068,7 @@ class $$TripsTableTableManager extends RootTableManager<
             required DateTime startDate,
             Value<int> daysCount = const Value.absent(),
             Value<String> region = const Value.absent(),
+            Value<String> climate = const Value.absent(),
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
@@ -5036,6 +5088,7 @@ class $$TripsTableTableManager extends RootTableManager<
             startDate: startDate,
             daysCount: daysCount,
             region: region,
+            climate: climate,
             isCharter: isCharter,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,

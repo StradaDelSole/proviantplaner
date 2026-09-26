@@ -110,7 +110,8 @@ class UserItemState {
 /// Zentrales Eingabeobjekt für die Mengenberechnung gemäß Programmierregel 6.
 class QuantityCalculationInput {
   final int daysCount;
-  final String region;
+  final String climate;
+  String get region => climate;
   final double fridgeCapacityLiters;
   final CrewAppetite crewAppetite;
   final bool crewReserve;
@@ -121,7 +122,8 @@ class QuantityCalculationInput {
 
   const QuantityCalculationInput({
     required this.daysCount,
-    required this.region,
+    String? climate,
+    String? region,
     required this.fridgeCapacityLiters,
     required this.crewAppetite,
     required this.crewReserve,
@@ -129,7 +131,7 @@ class QuantityCalculationInput {
     required this.tripDays,
     required this.crewMembers,
     this.userItemStates = const {},
-  });
+  }) : climate = climate ?? region ?? 'warm';
 }
 
 /// Interne Rechenstruktur für eine Variante während der Gruppenkalkulation.
@@ -364,7 +366,14 @@ class QuantityEngine {
         break;
 
       case CalculationBasis.perPersonDayRegion:
-        final waterConfig = quantities.waterLiters[input.region] ??
+        final climateKey = switch (input.climate) {
+          'cool' || 'temperate' => 'cool',
+          'hot' || 'hot_or_remote' => 'hot',
+          _ => 'warm',
+        };
+        final waterConfig = quantities.waterLiters[climateKey] ??
+            quantities.waterLiters[input.climate] ??
+            quantities.waterLiters['warm'] ??
             quantities.waterLiters['mediterranean_summer'];
         final dailyAmount = waterConfig?.defaultValue ?? need.amount;
         rawAmount = dailyAmount * input.daysCount * factorSum;

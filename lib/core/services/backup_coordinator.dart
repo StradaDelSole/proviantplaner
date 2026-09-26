@@ -116,8 +116,11 @@ class BackupCoordinator {
             TripsCompanion.insert(
               name: tMap['name'] as String,
               startDate: DateTime.parse(tMap['startDate'] as String),
-              daysCount: Value(tMap['daysCount'] as int? ?? 7),
-              region: Value(tMap['region'] as String? ?? 'mediterranean'),
+              region: Value(tMap['region'] as String? ?? 'warm'),
+              climate: Value(tMap['climate'] as String? ??
+                  (tMap['region'] == 'temperate'
+                      ? 'cool'
+                      : (tMap['region'] == 'hot_or_remote' ? 'hot' : 'warm'))),
               isCharter: Value(tMap['isCharter'] as bool? ?? true),
               boatType: Value(tMap['boatType'] as String? ?? 'mono'),
               fridgeCapacity: Value(tMap['fridgeCapacity'] as int? ?? 100),
@@ -304,6 +307,7 @@ class BackupCoordinator {
         'startDate': t.startDate.toIso8601String(),
         'daysCount': t.daysCount,
         'region': t.region,
+        'climate': t.climate,
         'isCharter': t.isCharter,
         'boatType': t.boatType,
         'fridgeCapacity': t.fridgeCapacity,

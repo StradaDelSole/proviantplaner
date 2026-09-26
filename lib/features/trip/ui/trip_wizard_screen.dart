@@ -22,14 +22,16 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
 
   // Step 1: Basisdaten
   final _nameController = TextEditingController(text: 'Törn Kroatien');
+  late final TextEditingController _daysController;
   DateTime _startDate = DateTime.now();
   int _daysCount = 7;
 
-  // Step 2: Boot & Revier
+  // Step 2: Boot & Bedingungen
   bool _isCharter = true;
   String _boatType = 'monohull';
-  String _region = 'mediterranean_summer';
+  String _climate = 'warm';
   double _fridgeCapacity = 100.0;
+  bool _hasNoFridge = false;
 
   // Step 3: Crew & Verpflegungs-Profil
   final List<CrewMemberInput> _crewMembers = [
@@ -47,8 +49,15 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   bool _isSaving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _daysController = TextEditingController(text: _daysCount.toString());
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
+    _daysController.dispose();
     super.dispose();
   }
 
@@ -88,8 +97,9 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         daysCount: _daysCount,
         isCharter: _isCharter,
         boatType: _boatType,
-        region: _region,
-        fridgeCapacityLiters: _fridgeCapacity,
+        climate: _climate,
+        region: _climate,
+        fridgeCapacityLiters: _hasNoFridge ? 0.0 : _fridgeCapacity,
         crewAppetite: _crewAppetite,
         crewReserve: _crewReserve,
         crewDrinking: _crewDrinking,
@@ -242,14 +252,86 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           },
         ),
         const SizedBox(height: 16),
-        Text('${l10n.daysCount}: $_daysCount', style: theme.textTheme.titleMedium),
+        TextField(
+          controller: _daysController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: l10n.daysCount,
+            border: const OutlineInputBorder(),
+            helperText: 'Törnlänge zwischen 1 und 180 Tagen',
+          ),
+          onChanged: (val) {
+            final parsed = int.tryParse(val.trim());
+            if (parsed != null && parsed >= 1 && parsed <= 180) {
+              setState(() => _daysCount = parsed);
+            }
+          },
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            ActionChip(
+              label: Text(l10n.durationOneWeek),
+              onPressed: () {
+                setState(() {
+                  _daysCount = 7;
+                  _daysController.text = '7';
+                });
+              },
+            ),
+            ActionChip(
+              label: Text(l10n.durationTwoWeeks),
+              onPressed: () {
+                setState(() {
+                  _daysCount = 14;
+                  _daysController.text = '14';
+                });
+              },
+            ),
+            ActionChip(
+              label: Text(l10n.durationOneMonth),
+              onPressed: () {
+                setState(() {
+                  _daysCount = 30;
+                  _daysController.text = '30';
+                });
+              },
+            ),
+            ActionChip(
+              label: Text(l10n.durationThreeMonths),
+              onPressed: () {
+                setState(() {
+                  _daysCount = 90;
+                  _daysController.text = '90';
+                });
+              },
+            ),
+            ActionChip(
+              label: Text(l10n.durationSixMonths),
+              onPressed: () {
+                setState(() {
+                  _daysCount = 180;
+                  _daysController.text = '180';
+                });
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Slider(
-          value: _daysCount.toDouble(),
+          value: _daysCount.clamp(1, 180).toDouble(),
           min: 1,
-          max: 30,
-          divisions: 29,
-          label: '$_daysCount',
-          onChanged: (val) => setState(() => _daysCount = val.round()),
+          max: 180,
+          divisions: 179,
+          label: '$_daysCount Tage',
+          onChanged: (val) {
+            setState(() {
+              _daysCount = val.round();
+              _daysController.text = '$_daysCount';
+            });
+          },
         ),
       ],
     );
@@ -281,33 +363,59 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           onSelectionChanged: (val) {
             setState(() {
               _boatType = val.first;
-              _fridgeCapacity = _boatType == 'catamaran' ? 150.0 : 100.0;
+              if (!_hasNoFridge) {
+                _fridgeCapacity = _boatType == 'catamaran' ? 150.0 : 100.0;
+              }
             });
           },
         ),
         const SizedBox(height: 16),
-        Text(l10n.region, style: theme.textTheme.titleMedium),
+        Text(l10n.climateQuestion, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _region,
+          value: _climate,
           decoration: const InputDecoration(border: OutlineInputBorder()),
           items: [
-            DropdownMenuItem(value: 'mediterranean_summer', child: Text(l10n.regionMediterranean)),
-            DropdownMenuItem(value: 'temperate', child: Text(l10n.regionTemperate)),
-            DropdownMenuItem(value: 'hot_or_remote', child: Text(l10n.regionTropics)),
+            DropdownMenuItem(value: 'cool', child: Text(l10n.climateCool)),
+            DropdownMenuItem(value: 'warm', child: Text(l10n.climateWarm)),
+            DropdownMenuItem(value: 'hot', child: Text(l10n.climateHot)),
           ],
-          onChanged: (val) => setState(() => _region = val ?? 'mediterranean_summer'),
+          onChanged: (val) => setState(() => _climate = val ?? 'warm'),
         ),
         const SizedBox(height: 16),
-        Text('${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l', style: theme.textTheme.titleMedium),
-        Slider(
-          value: _fridgeCapacity,
-          min: 40,
-          max: 300,
-          divisions: 26,
-          label: '${_fridgeCapacity.round()} l',
-          onChanged: (val) => setState(() => _fridgeCapacity = val),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.noFridgeSwitch),
+          value: _hasNoFridge,
+          onChanged: (val) {
+            setState(() {
+              _hasNoFridge = val;
+              if (val) {
+                _fridgeCapacity = 0.0;
+              } else if (_fridgeCapacity == 0) {
+                _fridgeCapacity = _boatType == 'catamaran' ? 150.0 : 100.0;
+              }
+            });
+          },
         ),
+        if (!_hasNoFridge) ...[
+          Text('${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l', style: theme.textTheme.titleMedium),
+          Slider(
+            value: _fridgeCapacity.clamp(0, 300),
+            min: 0,
+            max: 300,
+            divisions: 60,
+            label: '${_fridgeCapacity.round()} l',
+            onChanged: (val) {
+              setState(() {
+                _fridgeCapacity = val;
+                if (val == 0) {
+                  _hasNoFridge = true;
+                }
+              });
+            },
+          ),
+        ],
       ],
     );
   }

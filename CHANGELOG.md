@@ -4,6 +4,25 @@
 
 - `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar
 
+## 2026-09-26 – FB1-C: Törn-Setup
+
+- **Törnlänge bis 180 Tage (FEEDBACK_R1 Punkt 1):**
+  - Törndauer im Setup-Wizard (`TripWizardScreen`) als Zahlenfeld (1–180 Tage) mit Slider und Schnellauswahl-Chips ("1 Woche", "2 Wochen", "1 Monat", "3 Monate", "6 Monate").
+  - Tagesleiste (`TripTimelineScreen`): Ab 28 Tagen automatische Gruppierung nach Wochen (`ExpansionTile` mit "Woche X (Tag A–B)"), innerhalb derer die Tage aufklappbar sind; unter 28 Tagen weiterhin flache Tageskarten-Liste.
+  - Neutraler Hinweis bei Törns >= 15 Tagen zur Anlage von Einkaufsstopps.
+- **Kühlkapazität ab 0 Litern (FEEDBACK_R1 Punkt 2):**
+  - Schieberegler beginnt bei 0 Litern; zusätzlicher Schalter "Kein Kühlschrank an Bord" setzt Kapazität sofort auf 0 Liter.
+  - Bei 0 Litern erhalten kühlbedürftige Artikel (`isCooled` bzw. `cool_first`) den Badge "braucht Kühlung" (anstelle automatischer Abwahl).
+  - Im Varianten-Detail-Sheet erscheint ein Hinweistext mit ungekühlt haltbaren Alternativen aus dem Katalog (H-Milch, gesalzene Butter, Hartkäse, Salami/Chorizo, Konserven).
+- **"Wie warm wird es?" statt Revier (FEEDBACK_R1 Punkt 3):**
+  - Revierabfrage durch Frage nach Temperatur ersetzt mit 3 Stufen: `kühl` (meist unter 20 °C), `warm` (20–28 °C), `heiß` (über 28 °C).
+  - Dynamischer Trinkwasserbedarf je Stufe nach `data/quantities_v0.5.json`: kühl 2,0 l, warm 2,5 l, heiß 3,5 l pro Person und Tag.
+  - Einlagerungs-Checkliste standardmäßig aktiviert bei "heiß".
+  - Schema v4 mit SQLite-Migration: Konvertiert bestehende Revierwerte (`temperate` -> `cool`, `mediterranean`/`mediterranean_summer` -> `warm`, `hot_or_remote` -> `hot`).
+- **Reiterleiste ohne Törn entfernt (FEEDBACK_R1 Punkt 4):**
+  - `bottomNavigationBar` auf dem Startbildschirm ("Meine Törns") entfernt; Navigation Tabs existieren nur innerhalb eines aktiven Törns.
+- Validierung: `flutter analyze` 0 Probleme, `flutter test` 144/144 Tests bestanden.
+
 ## 2026-09-26 – FB1-B: Neues Listenkonzept
 
 - **Vorratsliste & Vorschlagssystem (FEEDBACK_R1 Punkt 3, 4, 5):**

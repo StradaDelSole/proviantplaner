@@ -112,6 +112,23 @@ class ShoppingListItemRow extends ConsumerWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (data.trip.fridgeCapacity <= 0 && item.isCooled) ...[
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'braucht Kühlung',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 2),
                   if (!isOnList) ...[
                     Text(

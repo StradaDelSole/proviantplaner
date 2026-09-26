@@ -82,6 +82,7 @@ class Trips extends Table {
   DateTimeColumn get startDate => dateTime()();
   IntColumn get daysCount => integer().withDefault(const Constant(7))();
   TextColumn get region => text().withDefault(const Constant('mediterranean'))();
+  TextColumn get climate => text().withDefault(const Constant('warm'))();
   BoolColumn get isCharter => boolean().withDefault(const Constant(true))();
   TextColumn get boatType => text().withDefault(const Constant('mono'))();
   IntColumn get fridgeCapacity => integer().withDefault(const Constant(100))();

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/main.dart';
 
 void main() {
-  testWidgets('StartScreen zeigt App-Name und powered by HullQ auf Deutsch', (WidgetTester tester) async {
+  testWidgets('StartScreen zeigt App-Name, powered by HullQ und keine Reiterleiste (FEEDBACK_R1 Punkt 4)', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: ProviantplanerApp(locale: Locale('de')),
@@ -18,14 +18,11 @@ void main() {
     // "powered by HullQ" prüfen
     expect(find.text('powered by HullQ'), findsWidgets);
 
-    // Reiternamen auf Deutsch prüfen
-    expect(find.text('Liste'), findsOneWidget);
-    expect(find.text('Törn'), findsOneWidget);
-    expect(find.text('Bordkasse'), findsOneWidget);
-    expect(find.text('Mehr'), findsOneWidget);
+    // Keine Reiterleiste auf Startbildschirm gemäß FEEDBACK_R1 Punkt 4
+    expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('StartScreen zeigt Navigation auf Englisch', (WidgetTester tester) async {
+  testWidgets('StartScreen auf Englisch zeigt keinen Tab-Bar', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: ProviantplanerApp(locale: Locale('en')),
@@ -33,9 +30,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('List'), findsOneWidget);
-    expect(find.text('Trip'), findsOneWidget);
-    expect(find.text('Kitty'), findsOneWidget);
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('Proviantplaner'), findsWidgets);
+    expect(find.byType(NavigationBar), findsNothing);
   });
 }

@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -49,6 +49,18 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.addColumn(listItems, listItems.isAdopted);
+        }
+        if (from < 4) {
+          await m.addColumn(trips, trips.climate);
+          // Migration alter Revierwerte auf Klimastufen (FB1-C Punkt 3)
+          await customStatement('''
+            UPDATE trips SET climate = CASE 
+              WHEN region = 'temperate' THEN 'cool'
+              WHEN region = 'hot_or_remote' THEN 'hot'
+              WHEN region IN ('mediterranean', 'mediterranean_summer') THEN 'warm'
+              ELSE 'warm'
+            END
+          ''');
         }
       },
       beforeOpen: (details) async {

@@ -257,5 +257,26 @@
   "accountRestoreSuccess": "Trips successfully restored from backup.",
   "exportPdf": "Export as PDF",
   "exportShoppingListPdf": "Print shopping list / as PDF",
-  "exportSettlementPdf": "Print settlement / as PDF"
+  "exportSettlementPdf": "Print settlement / as PDF",
+  "climateQuestion": "How warm will it be?",
+  "climateCool": "Cool (mostly below 20 °C)",
+  "climateWarm": "Warm (20–28 °C)",
+  "climateHot": "Hot (above 28 °C)",
+  "noFridgeSwitch": "No fridge on board",
+  "needsCoolingBadge": "needs cooling",
+  "coolingAlternativeHint": "Shelf-stable alternatives: UHT milk, salted butter, hard cheese, salami/chorizo, canned goods.",
+  "durationOneWeek": "1 week",
+  "durationTwoWeeks": "2 weeks",
+  "durationOneMonth": "1 month",
+  "durationThreeMonths": "3 months",
+  "durationSixMonths": "6 months",
+  "longTripHint": "For longer trips, it's worth planning shopping stops.",
+  "timelineWeek": "Week {week} (Day {startDay}–{endDay})",
+  "@timelineWeek": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "startDay": { "type": "int" },
+      "endDay": { "type": "int" }
+    }
+  }
 }

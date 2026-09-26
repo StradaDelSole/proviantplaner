@@ -257,5 +257,26 @@
   "accountRestoreSuccess": "Törns erfolgreich aus Sicherung wiederhergestellt.",
   "exportPdf": "Als PDF exportieren",
   "exportShoppingListPdf": "Einkaufsliste drucken / als PDF",
-  "exportSettlementPdf": "Abrechnung drucken / als PDF"
+  "exportSettlementPdf": "Abrechnung drucken / als PDF",
+  "climateQuestion": "Wie warm wird es?",
+  "climateCool": "Kühl (meist unter 20 °C)",
+  "climateWarm": "Warm (20–28 °C)",
+  "climateHot": "Heiß (über 28 °C)",
+  "noFridgeSwitch": "Kein Kühlschrank an Bord",
+  "needsCoolingBadge": "braucht Kühlung",
+  "coolingAlternativeHint": "Ungekühlt haltbare Alternativen: H-Milch, gesalzene Butter, Hartkäse, Salami/Chorizo, Konserven.",
+  "durationOneWeek": "1 Woche",
+  "durationTwoWeeks": "2 Wochen",
+  "durationOneMonth": "1 Monat",
+  "durationThreeMonths": "3 Monate",
+  "durationSixMonths": "6 Monate",
+  "longTripHint": "Bei längeren Törns lohnt es sich, Einkaufsstopps anzulegen.",
+  "timelineWeek": "Woche {week} (Tag {startDay}–{endDay})",
+  "@timelineWeek": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "startDay": { "type": "int" },
+      "endDay": { "type": "int" }
+    }
+  }
 }

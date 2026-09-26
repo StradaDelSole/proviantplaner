@@ -27,22 +27,34 @@ class TripService {
     required int daysCount,
     required bool isCharter,
     required String boatType,
-    required String region,
+    String? climate,
+    String? region,
     required double fridgeCapacityLiters,
     required CrewAppetite crewAppetite,
     required bool crewReserve,
     required CrewDrinking crewDrinking,
     required List<CrewMemberInput> crewMembers,
   }) async {
+    final effectiveClimate = climate ??
+        (region != null
+            ? (region == 'temperate'
+                ? 'cool'
+                : (region == 'hot_or_remote'
+                    ? 'hot'
+                    : (region == 'mediterranean' || region == 'mediterranean_summer' ? 'warm' : region)))
+            : 'warm');
+
     // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
     final tripCompanion = TripsCompanion.insert(
       name: name,
       startDate: startDate,
       daysCount: Value(daysCount),
-      region: Value(region),
+      region: Value(effectiveClimate),
+      climate: Value(effectiveClimate),
       isCharter: Value(isCharter),
       boatType: Value(boatType),
       fridgeCapacity: Value(fridgeCapacityLiters.round()),
+      hasStorageChecklist: Value(effectiveClimate == 'hot'),
       appetite: Value(crewAppetite),
       reserveDays: Value(crewReserve ? 'all_anchoring_days' : 'none'),
       drinkingHabit: Value(crewDrinking),
@@ -130,7 +142,8 @@ class TripService {
     final calculationResult = engine.calculateTrip(
       QuantityCalculationInput(
         daysCount: trip.daysCount,
-        region: trip.region,
+        climate: trip.climate,
+        region: trip.climate,
         fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
         crewAppetite: trip.appetite,
         crewReserve: trip.reserveDays == 'all_anchoring_days',
