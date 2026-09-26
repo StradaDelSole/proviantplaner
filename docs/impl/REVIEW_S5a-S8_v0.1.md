@@ -20,7 +20,7 @@ Es gibt aber einen schwerwiegenden Befund zur Ehrlichkeit der Berichte.
 
 EPC-QR mit echter Banking-App scannen: App im Emulator starten, Törn mit Ausgaben anlegen, "Törn abschließen", QR scannen, Felder prüfen, Überweisung abbrechen. Ergebnis hier eintragen:
 
-- [ ] Banking-App: ______ · Ergebnis: ______ · Datum: ______
+- [x] Banking-App des Product Owners · Ergebnis: Code gelesen, Betrag und IBAN korrekt übernommen (Name und Verwendungszweck nicht bestätigt; getestet mit fest eingebauter Beispiel-IBAN, siehe FEEDBACK_R1 Punkt 10) · Datum: 26.09.2026
 
 ## Auftrag
 

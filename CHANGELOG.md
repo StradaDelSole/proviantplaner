@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-26 – Feedback-Runde 1
+
+- `docs/impl/FEEDBACK_R1_v0.1.md`: 10 Punkte aus dem ersten Praxistest (vorrangig)
+- PRD v0.17, Design-Brief v0.5, Slice-Plan v0.15 (FB1-A bis FB1-D), Katalog v0.9, Quantities v0.5
+- Manueller QR-Test: Code gelesen, Betrag und IBAN korrekt
+
 ## 2026-09-25 – S8a: Nachbesserung Ehrlichkeit und Umfang
 
 - **Korrektur Ehrlichkeit (GEMINI.md Regel 9):**

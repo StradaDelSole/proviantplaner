@@ -1,0 +1,191 @@
+{
+  "version": "0.5",
+  "source": "docs/impl/FEEDBACK_R1_v0.1.md, Punkt 3",
+  "note": "Startwerte pro erwachsener Person, vom Nutzer anpassbar. Keine Ernaehrungsempfehlung.",
+  "water_liters_per_person_day": {
+    "cool": {
+      "min": 1.5,
+      "max": 2.0,
+      "default": 2.0
+    },
+    "warm": {
+      "min": 2.0,
+      "max": 3.0,
+      "default": 2.5
+    },
+    "hot": {
+      "min": 3.0,
+      "max": 4.0,
+      "default": 3.5
+    }
+  },
+  "main_meal_grams_per_person": {
+    "meat_boneless_raw": {
+      "min": 150,
+      "max": 200,
+      "default": 175
+    },
+    "meat_bone_in_raw": {
+      "min": 200,
+      "max": 250,
+      "default": 225
+    },
+    "minced_or_stew_meat_raw": {
+      "min": 100,
+      "max": 120,
+      "default": 110
+    },
+    "fish_fillet": {
+      "min": 150,
+      "max": 180,
+      "default": 165
+    },
+    "whole_fish": {
+      "min": 300,
+      "max": 300,
+      "default": 300
+    },
+    "pasta_main_dry": {
+      "min": 120,
+      "max": 150,
+      "default": 130
+    },
+    "pasta_side_dry": {
+      "min": 50,
+      "max": 80,
+      "default": 70
+    },
+    "rice_dry": {
+      "min": 60,
+      "max": 80,
+      "default": 70
+    },
+    "potatoes": {
+      "min": 200,
+      "max": 250,
+      "default": 225
+    },
+    "vegetables_side": {
+      "min": 150,
+      "max": 200,
+      "default": 175
+    },
+    "vegetables_main": {
+      "min": 400,
+      "max": 400,
+      "default": 400
+    }
+  },
+  "breakfast_and_staples_per_person_week": {
+    "eggs_pieces": 12,
+    "cheese_mixed_g": 250,
+    "cold_cuts_g": 200,
+    "butter_g": 125,
+    "milk_l": 0.5,
+    "bread_loaf": 0.5,
+    "fruit_mixed_kg": 1.5,
+    "vegetables_salad_lunch_kg": 1.0
+  },
+  "per_crew_per_week": {
+    "olive_oil_l": 1.0
+  },
+  "factors": {
+    "fresh_first_days": 3,
+    "fridge_liters_hint": {
+      "monohull": [
+        60,
+        120
+      ],
+      "catamaran": [
+        100,
+        200
+      ]
+    },
+    "holiday_snack_drink_uplift": {
+      "default": 1.2,
+      "applies_to_groups": [
+        "sweets",
+        "savory_snacks",
+        "soft",
+        "juice",
+        "beer",
+        "wine"
+      ],
+      "note": "Startwert, nicht aus Quellen; nicht auf Wasser, Kaffee, Tee, Milch"
+    },
+    "child": 0.6
+  },
+  "drinks_alcohol": "berechnet ueber catalog_v0.2.json (per_adult_evening) und Trinkprofil; Gesamtzahl jederzeit ueberschreibbar",
+  "profiles": {
+    "eat": {
+      "small": 0.8,
+      "normal": 1.0,
+      "big": 1.25,
+      "default": "normal",
+      "applies_to_catalog_profile": "eat"
+    },
+    "drink": {
+      "none": 0.0,
+      "little": 0.5,
+      "normal": 1.0,
+      "a_lot": 1.75,
+      "default": "normal",
+      "applies_to_catalog_profile": "drink"
+    },
+    "note": "Einstufung pro Person optional unter Details; wenn gesetzt, ersetzt sie für diese Person die Crew-Einstellung"
+  },
+  "overrides": "Jede berechnete Menge ist ueberschreibbar; ueberschriebene Werte bleiben bei Aenderungen von Crew/Tagen bestehen, 'zuruecksetzen' stellt den berechneten Wert wieder her",
+  "crew_questions": {
+    "appetite": {
+      "options": {
+        "light": -0.1,
+        "normal": 0.0,
+        "hearty": 0.15,
+        "hungry_sailors": 0.25
+      },
+      "default": "normal",
+      "applies_to_catalog_profile": "eat",
+      "label_de": "Wie isst eure Crew?"
+    },
+    "reserve": {
+      "enabled_default": false,
+      "uplift": 0.1,
+      "applies_to": "Varianten mit shelf_life_days >= 14",
+      "label_de": "Reserve für Ankertage und schlechtes Wetter"
+    },
+    "drinking": {
+      "options": {
+        "relaxed": 0.5,
+        "normal": 1.0,
+        "festive": 1.5
+      },
+      "default": "normal",
+      "applies_to_catalog_profile": "drink",
+      "label_de": "Wie viel wird an Bord getrunken?"
+    },
+    "non_drinkers": "Liste von Crewmitgliedern, die bei drink-Profil mit 0 zählen"
+  },
+  "rounding": {
+    "durable_min_shelf_life_days": 14,
+    "durable": "immer auf ganze Packungen aufrunden",
+    "fresh": "aufrunden, wenn der Überschuss <= 25 % einer Packung ist, sonst abrunden; der Rest wird nur als Hinweis angezeigt ('Rest ca. X – bei einem Einkaufsstopp einplanen'), keine automatische Verteilung",
+    "fresh_max_overshoot_pack_fraction": 0.25,
+    "group_balancing": "nur bei split=equal: Summe aller gewählten Varianten in gemeinsamer Einheit (Portionen über variant.portion umgerechnet) muss >= Gruppenbedarf sein; ist sie darunter, bei der Variante mit dem kleinsten Überschuss pro zusätzlicher Packung eine Packung ergänzen, bis gedeckt; übersteigt die Summe den Bedarf um mehr als eine volle Packung einer Variante, bei der Variante mit dem größten Überschuss eine Packung abziehen, solange der Bedarf gedeckt bleibt",
+    "user_pack_sizes": "vom Nutzer geänderte Packungsgrößen je Variante lokal speichern und für künftige Törns verwenden"
+  },
+  "evenings_alcohol": "per_adult_evening zählt alle Abende des Törns (auch Restaurantabende: Sundowner an Bord)",
+  "climate_question": {
+    "label_de": "Wie warm wird es?",
+    "options": {
+      "cool": "kühl (meist unter 20 °C)",
+      "warm": "warm (20–28 °C)",
+      "hot": "heiß (über 28 °C)"
+    },
+    "default": "warm",
+    "migration": {
+      "temperate": "cool",
+      "mediterranean_summer": "warm",
+      "hot_or_remote": "hot"
+    }
+  }
+}

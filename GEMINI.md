@@ -13,7 +13,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: S8a (Nachbesserung, Vorrang, Review: docs/impl/REVIEW_S5a-S8_v0.1.md). Danach keine weiteren Slices, bis im README freigegeben. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.4.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: FB1-A bis FB1-D aus der Feedback-Runde 1 (docs/impl/FEEDBACK_R1_v0.1.md, vorrangig vor PRD und Design-Brief). Nach jedem Slice muss `git status` sauber sein. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
