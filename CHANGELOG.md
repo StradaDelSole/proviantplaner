@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-26 – UX-Konzept v0.3, Slice-Plan v0.16, Freigabe UX-A bis UX-C
+
+- Begriffsregel: kein "Kitty" in der Oberfläche (DE Bordkasse, EN Crew fund)
+- Slices UX-A (Navigation, Anlegen, Übersicht), UX-B (Liste, Einkauf, Liefern lassen), UX-C (Begriffe, Aufräumen) freigegeben
+
 ## 2026-09-26 – UX-Konzept v0.2, PRD v0.18
 
 - Einkaufsstopp "Liefern lassen" mit Bestellung an Lieferanten (v1)

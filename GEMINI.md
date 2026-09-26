@@ -13,7 +13,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: nichts freigegeben (UX-Überarbeitung in Abstimmung). Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
+Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: UX-A, UX-B, UX-C nach docs/design/UX_KONZEPT_v0.3.md. Das UX-Konzept hat Vorrang vor dem Design-Brief bei Informationsarchitektur, Bildschirmen, Bedienmustern und Begriffen; Tokens, Farben, Schriften, Nachtwache und Barrierefreiheit aus dem Design-Brief bleiben gültig. Rechenlogik, Datenmodell (außer ausdrücklich genannt) und Bordkassen-Logik nicht verändern. Nach jedem Slice muss `git status` sauber sein. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
 Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
