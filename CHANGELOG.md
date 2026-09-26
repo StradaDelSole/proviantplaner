@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-26 – UX-Konzept v0.2, PRD v0.18
+
+- Einkaufsstopp "Liefern lassen" mit Bestellung an Lieferanten (v1)
+- Charterfirmen-Paket mit Törn-Code-Voreinstellungen und voreingestelltem Proviantservice (v1.1)
+
 ## 2026-09-26 – UX-Konzept v0.1
 
 - `docs/design/UX_KONZEPT_v0.1.md`: Ablauf als Rückgrat, fünf Hauptbildschirme, verbindliche Bedienmuster, Bewegung, Platzhalter für v1.1; FEEDBACK_R2 eingearbeitet
