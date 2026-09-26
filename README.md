@@ -27,6 +27,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.19). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D.
+Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B.
 
 **Freigegeben für Gemini: UX-A, UX-B, UX-C (in dieser Reihenfolge; Grundlage docs/design/UX_KONZEPT_v0.6.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A bis FB1-D. S9 und S10 erst nach der UX-Überarbeitung.

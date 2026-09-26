@@ -22,13 +22,21 @@ import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
 import 'package:proviantplaner/features/trip/ui/widgets/crew_member_dialog.dart';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  FlutterSecureStorage.setMockInitialValues({});
+
   late AppDatabase db;
   late CatalogRepository catalogRepo;
   late TripService tripService;
   late KittyService kittyService;
+  late DeliveryOrderService deliveryOrderService;
 
   setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
     final catalogFile = File('data/catalog_v0.9.json');
@@ -48,6 +56,8 @@ void main() {
       tripDao: db.tripDao,
       expenseDao: db.expenseDao,
     );
+
+    deliveryOrderService = DeliveryOrderService();
   });
 
   tearDown(() async {
@@ -61,6 +71,7 @@ void main() {
         catalogRepositoryProvider.overrideWithValue(catalogRepo),
         tripServiceProvider.overrideWithValue(tripService),
         kittyServiceProvider.overrideWithValue(kittyService),
+        deliveryOrderServiceProvider.overrideWithValue(deliveryOrderService),
         ...overrides,
       ],
       child: MaterialApp(

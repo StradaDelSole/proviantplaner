@@ -13,7 +13,6 @@ import 'widgets/catalog_search_delegate.dart';
 import 'widgets/custom_item_sheet.dart';
 import 'widgets/planning_view.dart';
 import 'widgets/shopping_view.dart';
-import 'widgets/trip_bottom_bar.dart';
 
 class ShoppingListScreen extends ConsumerWidget {
   final int tripId;
@@ -207,60 +206,6 @@ class ShoppingListScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              // Aktionsleiste: "Alle Vorschläge übernehmen" & "Einkauf starten"
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.tonal(
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                        ),
-                        onPressed: () async {
-                          await ref
-                              .read(shoppingListServiceProvider)
-                              .adoptAllSuggestions(tripId);
-                          ref.invalidate(tripShoppingListProvider(tripId));
-                        },
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.playlist_add_check, size: 20),
-                            SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                'Alle Vorschläge übernehmen',
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(130, 48),
-                      ),
-                      onPressed: () {
-                        final targetStop = selectedStopId ?? data.stops.firstOrNull?.id;
-                        if (targetStop != null) {
-                          context.push('/trips/$tripId/shop/$targetStop');
-                        }
-                      },
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.shopping_basket_outlined, size: 20),
-                          SizedBox(width: 6),
-                          Text('Einkauf starten'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const Divider(height: 1),
               // Einheitliche Liste je nach Sortierung
               Expanded(
@@ -272,9 +217,102 @@ class ShoppingListScreen extends ConsumerWidget {
           );
         },
       ),
-      bottomNavigationBar: TripBottomBar(
-        tripId: tripId,
-        currentIndex: 0,
+      floatingActionButton: listDataAsync.maybeWhen(
+        data: (data) => FloatingActionButton.extended(
+          heroTag: 'fab_add_position',
+          icon: const Icon(Icons.add),
+          label: const Text('Position'),
+          onPressed: () {
+            showSearch(
+              context: context,
+              delegate: CatalogSearchDelegate(data: data),
+            );
+          },
+        ),
+        orElse: () => null,
+      ),
+      bottomNavigationBar: listDataAsync.maybeWhen(
+        data: (data) {
+          final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull ?? data.stops.firstOrNull;
+          final stopLabel = activeStop != null
+              ? 'Tag ${activeStop.dayNumber} · ${activeStop.name}'
+              : 'Basis';
+
+          return SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                      ),
+                      icon: const Icon(Icons.shopping_basket_outlined, size: 20),
+                      label: Text('Einkauf starten · $stopLabel'),
+                      onPressed: () {
+                        final targetStop = activeStop?.id ?? data.stops.firstOrNull?.id;
+                        if (targetStop != null) {
+                          context.push('/trips/$tripId/shop/$targetStop');
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.outlined(
+                    tooltip: 'Stopp wechseln',
+                    icon: const Icon(Icons.swap_horiz),
+                    onPressed: () => _openStopSelection(context, ref, data, selectedStopId, l10n),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        orElse: () => const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  void _openStopSelection(
+    BuildContext context,
+    WidgetRef ref,
+    TripShoppingListData data,
+    int? selectedStopId,
+    AppLocalizations l10n,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.all_inclusive),
+              title: Text(l10n.allStops),
+              selected: selectedStopId == null,
+              onTap: () {
+                ref.read(selectedStopFilterProvider.notifier).state = null;
+                Navigator.of(ctx).pop();
+              },
+            ),
+            const Divider(height: 1),
+            ...data.stops.map((stop) => ListTile(
+                  leading: const Icon(Icons.storefront_outlined),
+                  title: Text('Tag ${stop.dayNumber} · ${stop.name}'),
+                  subtitle: stop.isInitial ? const Text('Basis-Ersteinkauf') : null,
+                  selected: selectedStopId == stop.id,
+                  onTap: () {
+                    ref.read(selectedStopFilterProvider.notifier).state = stop.id;
+                    Navigator.of(ctx).pop();
+                  },
+                )),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-09-26 – Slice UX-B: Liste, Einkaufsmodus, Liefern lassen
+
+- **Vorratsliste (`ShoppingListScreen` & `PlanningView`):**
+  - In-Place Accordion: Gruppen klappen inline auf und zu, kein modales Bottom Sheet mehr.
+  - Positionen und Varianten direkt inline anpassen und übernehmen.
+  - Zahl antippen öffnet ein Inline-Textfeld für schnelle Mengenanpassung.
+  - Wasser-Schnellwahl-Chips (`+25% warm`, `+50% heiß`) zur dynamischen Erhöhung des Wasservorrats.
+  - Wischgeste (Swipe nach links) öffnet die Zuweisung zu Einkaufsstopps als Chips.
+  - Floating Action Button `+ Position` zur flexiblen Artikelsuche mit Eigene-Position-Möglichkeit.
+  - Feste untere Aktionsleiste `Einkauf starten · Tag X <Stopp>` mit Stopp-Auswahl.
+- **Liefern lassen & Bestellwesen:**
+  - Einkaufsstopp-Art wählbar zwischen "Selbst einkaufen" und "Liefern lassen".
+  - Konfigurations-Sheet `DeliveryConfigSheet` (Marina, Liegeplatz, Bootsname, Liefertermin, Ansprechpartner, Notizen, Lieferantenauswahl mit Speicheroption).
+  - Lieferantenverwaltung über alle Törns hinweg (`SupplierService`, `SupplierProfile`), einseh- und pflegbar in `MoreScreen`.
+  - Bestellvorschau `OrderPreviewSheet` mit Gruppierung nach Abteilungen, Stückzahlen und Packungsgrößen.
+  - Teilen über Text (WhatsApp / E-Mail) und PDF-Dokument (`PdfExportService.generateDeliveryOrderPdf`).
+  - Statusverfolgung ("Bestellung als gesendet markieren", Erfassung des Sendedatums und Erkennung von Nachträgen).
+  - Wareneingang `DeliveryReceivedSheet` zum Abhaken gelieferter Artikel, Verschieben fehlender Artikel auf andere Stopps und Übergang zum Einlagern.
+- **Einkaufsmodus:**
+  - Abteilungsweise Sortierung: offene Positionen oben, erledigte Positionen durchgestrichen und transparent unten.
+  - AppBar-Direktabsprung „Ausgabe erfassen“.
+  - „Fertig eingekauft“-Dialog mit Angebot zur direkten Einlagerung.
+- **Prüfung:** `flutter analyze` 0 Fehler, `flutter test` 168/168 Tests grün (inklusive 6 dedizierter UX-B Abnahmetests).
+
 ## 2026-09-26 – UX-Konzept v0.6
 
 - Crew-Link optional (Hauptweg: Skipper in der App); Cloudflare als Grundlage, keine Gesundheitsdaten

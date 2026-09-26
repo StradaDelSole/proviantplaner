@@ -1,10 +1,14 @@
-/// Bildschirm für den Einkaufsmodus je Stopp (SC-SHOP-01 / FEEDBACK_R1 Punkt 7).
+/// Bildschirm für den Einkaufsmodus je Stopp (SC-SHOP-01 / UX-B / UX-Konzept 3.2).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
+import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 
@@ -23,6 +27,18 @@ class ShoppingModeScreen extends ConsumerStatefulWidget {
 }
 
 class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
+  Future<void> _openExpenseSheet(ShoppingStop stop) async {
+    final kittyData = await ref.read(tripKittyDataProvider(widget.tripId).future);
+    if (!mounted) return;
+    await ExpenseSheet.show(
+      context,
+      tripId: widget.tripId,
+      kittyModel: kittyData.model,
+      members: kittyData.members,
+      initialTitle: 'Einkauf ${stop.name}',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -71,6 +87,13 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
                 ),
               ],
             ),
+            actions: [
+              TextButton.icon(
+                onPressed: () => _openExpenseSheet(stop),
+                icon: const Icon(Icons.receipt_long_outlined),
+                label: const Text('Ausgabe erfassen'),
+              ),
+            ],
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(4),
               child: LinearProgressIndicator(
@@ -82,22 +105,76 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
           ),
           body: stopItems.isEmpty
               ? const Center(child: Text('Keine Posten für diesen Stopp zugeordnet.'))
-              : ListView.builder(
+              : ListView(
                   padding: const EdgeInsets.only(bottom: 96),
-                  itemCount: stopItems.length,
-                  itemBuilder: (ctx, i) {
-                    final it = stopItems[i];
-                    final isBought = it.isBoughtAtStop(stop.id);
-                    final totalOtherAlloc = it.allocationsByStop.entries
-                        .where((e) => e.key != stop.id)
-                        .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
-                    final count = it.packagesAtStop(
-                      stop.id,
-                      isFirstStop: isFirstStop,
-                      totalOtherAllocated: totalOtherAlloc,
+                  children: data.departments.map((deptView) {
+                    final deptItems = deptView.items.where((it) {
+                      if (!it.isOnList) return false;
+                      final totalOtherAlloc = it.allocationsByStop.entries
+                          .where((e) => e.key != stop.id)
+                          .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+                      final count = it.packagesAtStop(
+                        stop.id,
+                        isFirstStop: isFirstStop,
+                        totalOtherAllocated: totalOtherAlloc,
+                      );
+                      return count > 0;
+                    }).toList();
+
+                    if (deptItems.isEmpty) return const SizedBox.shrink();
+
+                    // Sortierung innerhalb der Abteilung: ungekaufte zuerst, gekaufte ans Ende
+                    deptItems.sort((a, b) {
+                      final aBought = a.isBoughtAtStop(stop.id);
+                      final bBought = b.isBoughtAtStop(stop.id);
+                      if (aBought == bBought) return 0;
+                      return aBought ? 1 : -1;
+                    });
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Abteilungskopf
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                          child: Row(
+                            children: [
+                              Icon(deptView.icon, size: 18, color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  deptView.displayName.toUpperCase(),
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${deptItems.where((it) => it.isBoughtAtStop(stop.id)).length}/${deptItems.length}',
+                                style: theme.proviantTypography.numberSmall.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ...deptItems.map((it) {
+                          final isBought = it.isBoughtAtStop(stop.id);
+                          final totalOtherAlloc = it.allocationsByStop.entries
+                              .where((e) => e.key != stop.id)
+                              .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+                          final count = it.packagesAtStop(
+                            stop.id,
+                            isFirstStop: isFirstStop,
+                            totalOtherAllocated: totalOtherAlloc,
+                          );
+                          return _buildShoppingRow(context, it, count, isBought, stop.id, theme);
+                        }),
+                      ],
                     );
-                    return _buildShoppingRow(context, it, count, isBought, stop.id, theme);
-                  },
+                  }).toList(),
                 ),
           bottomSheet: Container(
             padding: const EdgeInsets.all(16),
@@ -192,14 +269,14 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
+                _promptStorage(context);
               },
               child: Text(l10n.dismiss),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
+                _promptStorage(context);
               },
               child: Text(l10n.postpone),
             ),
@@ -207,7 +284,37 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         ),
       );
     } else {
-      Navigator.of(context).pop();
+      _promptStorage(context);
     }
+  }
+
+  void _promptStorage(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Fertig eingekauft!'),
+        content: const Text(
+          'Der Einkauf ist abgeschlossen. Möchtest du die Vorräte jetzt einlagern?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+            },
+            child: const Text('Später'),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.inventory_2_outlined),
+            label: const Text('Jetzt einlagern'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+              context.push('/trips/${widget.tripId}/storage');
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

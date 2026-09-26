@@ -1,4 +1,4 @@
-/// Sortierte Vorratsliste "Nach Kategorie" (Kategorie → Bedarfsgruppe → Variante) (FEEDBACK_R1 Punkt 5 & 7).
+/// Sortierte Vorratsliste "Nach Kategorie" (Kategorie → Bedarfsgruppe → Variante) (Slice UX-B / UX-Konzept 2.4).
 library;
 
 import 'package:flutter/material.dart';
@@ -9,7 +9,6 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_service
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'item_row_widget.dart';
-import 'group_detail_sheet.dart';
 
 class PlanningView extends ConsumerStatefulWidget {
   final TripShoppingListData data;
@@ -27,6 +26,7 @@ class PlanningView extends ConsumerStatefulWidget {
 
 class _PlanningViewState extends ConsumerState<PlanningView> {
   final Set<String> _collapsedCategories = {};
+  final Set<String> _expandedGroupIds = {};
 
   void _toggleCategory(String catId) {
     setState(() {
@@ -38,17 +38,87 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
     });
   }
 
+  void _toggleGroup(String groupId) {
+    setState(() {
+      if (_expandedGroupIds.contains(groupId)) {
+        _expandedGroupIds.remove(groupId);
+      } else {
+        _expandedGroupIds.add(groupId);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final categories = widget.data.categories;
+    final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);
 
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 32),
-      itemCount: categories.length,
-      itemBuilder: (ctx, i) {
-        final catView = categories[i];
+      padding: const EdgeInsets.only(bottom: 96),
+      itemCount: categories.length + (hasAdoptedItems ? 0 : 1),
+      itemBuilder: (ctx, index) {
+        // Leere Liste beim ersten Öffnen (UX-Konzept 2.4)
+        if (!hasAdoptedItems && index == 0) {
+          return Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  'Eure Vorratsliste ist noch leer.',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Ihr könnt alle empfohlenen Grundvorräte mit einem Klick übernehmen oder einzelne Gruppen aufklappen.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    FilledButton.icon(
+                      icon: const Icon(Icons.playlist_add_check),
+                      label: const Text('Alle Vorschläge übernehmen'),
+                      onPressed: () async {
+                        await ref
+                            .read(shoppingListServiceProvider)
+                            .adoptAllSuggestions(widget.data.trip.id);
+                        ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
+                      },
+                    ),
+                    OutlinedButton(
+                      onPressed: () {
+                        // Alle Gruppen aufklappen
+                        setState(() {
+                          for (final cat in categories) {
+                            for (final g in cat.groups) {
+                              _expandedGroupIds.add(g.group.id);
+                            }
+                          }
+                        });
+                      },
+                      child: const Text('oder einzeln auswählen'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }
+
+        final catIndex = hasAdoptedItems ? index : index - 1;
+        final catView = categories[catIndex];
         final isCollapsed = _collapsedCategories.contains(catView.category.id);
         return _buildCategorySection(context, catView, isCollapsed, theme, l10n);
       },
@@ -110,7 +180,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                   children: [
                     Icon(Icons.playlist_add_check, size: 16),
                     SizedBox(width: 4),
-                    Text('Vorschläge'),
+                    Text('Vorschläge dieser Kategorie'),
                   ],
                 ),
               ),
@@ -141,6 +211,10 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
       return const SizedBox.shrink();
     }
 
+    final hasAdopted = groupView.variants.any((v) => v.isOnList);
+    // Standardmäßig aufgeklappt wenn Posten übernommen sind oder explizit expandiert
+    final isExpanded = _expandedGroupIds.contains(groupView.group.id) || hasAdopted;
+
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -151,18 +225,12 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gruppenkopf (Klickbar für GroupDetailSheet)
+          // Gruppenkopf (Klick klappt Varianten direkt darunter auf – kein Sheet, UX-Konzept 2.4)
           InkWell(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-            onTap: () => GroupDetailSheet.show(
-              context,
-              tripId: widget.data.trip.id,
-              groupView: groupView,
-              stops: widget.data.stops,
-              isCharter: widget.data.trip.isCharter,
-            ),
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => _toggleGroup(groupView.group.id),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               child: Row(
                 children: [
                   Expanded(
@@ -190,17 +258,23 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                       ],
                     ),
                   ),
-                  Icon(Icons.tune, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 22,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ),
           ),
-          const Divider(height: 1),
-          // Varianten-Zeilen
-          ...variants.map((v) => ShoppingListItemRow(
-                data: widget.data,
-                item: v,
-              )),
+          if (isExpanded) ...[
+            const Divider(height: 1),
+            // Varianten-Zeilen direkt unter der Gruppe
+            ...variants.map((v) => ShoppingListItemRow(
+                  data: widget.data,
+                  item: v,
+                )),
+          ],
         ],
       ),
     );

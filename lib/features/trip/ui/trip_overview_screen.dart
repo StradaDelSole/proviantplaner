@@ -11,6 +11,11 @@ import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/payment_sheet.dart';
+import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_config_sheet.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/order_preview_sheet.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_received_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
 class TripOverviewScreen extends ConsumerStatefulWidget {
@@ -28,6 +33,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
   List<TripDay> _days = [];
   List<ShoppingStop> _stops = [];
   List<ListItem> _items = [];
+  Map<int, DeliveryOrder> _deliveryOrders = {};
   bool _isLoading = true;
 
   @override
@@ -43,6 +49,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     final days = await db.tripDao.getDaysForTrip(widget.tripId);
     final stops = await db.tripDao.getShoppingStopsForTrip(widget.tripId);
     final items = await db.listItemDao.getListItemsForTrip(widget.tripId);
+    final deliveryService = ref.read(deliveryOrderServiceProvider);
+    final deliveryOrders = await deliveryService.getOrdersForTrip(widget.tripId);
 
     if (mounted) {
       setState(() {
@@ -51,6 +59,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
         _days = days;
         _stops = stops;
         _items = items;
+        _deliveryOrders = deliveryOrders;
         _isLoading = false;
       });
     }
@@ -350,25 +359,184 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            ..._stops.map((s) => Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.storefront_outlined, size: 16, color: theme.colorScheme.secondary),
-                      const SizedBox(width: 8),
-                      Text('Tag ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => context.go('/trips/${widget.tripId}/shop/${s.id}'),
-                        child: const Text('Starten'),
+            ..._stops.map((s) {
+                  final order = _deliveryOrders[s.id];
+                  final isDelivery = order?.isDelivery ?? false;
+
+                  if (isDelivery && order != null) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6, bottom: 6),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.local_shipping_outlined, size: 18, color: theme.colorScheme.primary),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Tag ${s.dayNumber} · ${s.name} (Lieferung)',
+                                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, size: 18),
+                                  tooltip: 'Lieferdetails anpassen',
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  onPressed: () => _configureDelivery(s, order),
+                                ),
+                              ],
+                            ),
+                            if (order.isDelivered) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                                  const SizedBox(width: 4),
+                                  const Text('Lieferung erhalten', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                  const Spacer(),
+                                  TextButton(
+                                    onPressed: () => _openOrderPreview(s, order),
+                                    child: const Text('Bestellung ansehen'),
+                                  ),
+                                ],
+                              ),
+                            ] else if (order.isOrdered) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                order.formattedOrderedAt,
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  FilledButton.tonal(
+                                    onPressed: () => _openDeliveryReceived(s, order),
+                                    child: const Text('Lieferung erhalten'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TextButton(
+                                    onPressed: () => _openOrderPreview(s, order),
+                                    child: const Text('Bestellung ansehen'),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 8),
+                              FilledButton.tonal(
+                                onPressed: () => _openOrderPreview(s, order),
+                                child: const Text('Bestellung senden'),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                )),
+                    );
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4, bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.storefront_outlined, size: 16, color: theme.colorScheme.secondary),
+                        const SizedBox(width: 8),
+                        Text('Tag ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                          tooltip: 'Als Lieferung anlegen',
+                          onPressed: () => _configureDelivery(s, null),
+                        ),
+                        TextButton(
+                          onPressed: () => context.go('/trips/${widget.tripId}/shop/${s.id}'),
+                          child: const Text('Starten'),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _configureDelivery(ShoppingStop s, DeliveryOrder? existing) async {
+    final defaultDate = s.dayNumber == 1
+        ? _trip!.startDate
+        : _trip!.startDate.add(Duration(days: s.dayNumber - 1));
+    await DeliveryConfigSheet.show(
+      context,
+      tripId: widget.tripId,
+      stopId: s.id,
+      stopName: s.name,
+      initialOrder: existing,
+      defaultDate: defaultDate,
+    );
+    await _loadTripDetails();
+  }
+
+  Future<void> _openOrderPreview(ShoppingStop s, DeliveryOrder order) async {
+    final listData = await ref.read(tripShoppingListProvider(widget.tripId).future);
+    final isFirstStop = listData.stops.firstOrNull?.id == s.id;
+    final stopItems = listData.allItems.where((it) {
+      if (!it.isOnList) return false;
+      final totalOtherAlloc = it.allocationsByStop.entries
+          .where((e) => e.key != s.id)
+          .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+      final count = it.packagesAtStop(
+        s.id,
+        isFirstStop: isFirstStop,
+        totalOtherAllocated: totalOtherAlloc,
+      );
+      return count > 0;
+    }).toList();
+
+    if (!mounted) return;
+    await OrderPreviewSheet.show(
+      context,
+      trip: _trip!,
+      stop: s,
+      order: order,
+      items: stopItems,
+      onOrderSent: () => _loadTripDetails(),
+    );
+    await _loadTripDetails();
+  }
+
+  Future<void> _openDeliveryReceived(ShoppingStop s, DeliveryOrder order) async {
+    final listData = await ref.read(tripShoppingListProvider(widget.tripId).future);
+    final isFirstStop = listData.stops.firstOrNull?.id == s.id;
+    final stopItems = listData.allItems.where((it) {
+      if (!it.isOnList) return false;
+      final totalOtherAlloc = it.allocationsByStop.entries
+          .where((e) => e.key != s.id)
+          .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+      final count = it.packagesAtStop(
+        s.id,
+        isFirstStop: isFirstStop,
+        totalOtherAllocated: totalOtherAlloc,
+      );
+      return count > 0;
+    }).toList();
+
+    if (!mounted) return;
+    await DeliveryReceivedSheet.show(
+      context,
+      trip: _trip!,
+      stop: s,
+      items: stopItems,
+      allStops: listData.stops,
+      onReceived: () => _loadTripDetails(),
+    );
+    await _loadTripDetails();
   }
 
   Widget _buildKittyStepCard({

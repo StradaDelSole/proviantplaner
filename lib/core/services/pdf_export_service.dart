@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
+import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 
 /// Dienst zur Generierung und zum Drucken/Teilen von PDF-Dokumenten.
@@ -295,6 +296,145 @@ class PdfExportService {
               ],
             ),
           );
+
+          return widgets;
+        },
+      ),
+    );
+
+    return doc.save();
+  }
+
+  /// Generiert ein mehrseitiges PDF für eine Proviant-Bestellung an einen Lieferanten (Slice UX-B).
+  Future<Uint8List> generateDeliveryOrderPdf({
+    required Trip trip,
+    required DeliveryOrder order,
+    required List<ShoppingListItemView> items,
+    bool isSupplement = false,
+  }) async {
+    final title = isSupplement ? 'Bestellung (Nachtrag)' : 'Proviantbestellung';
+    final doc = pw.Document(
+      title: '$title - ${trip.name}',
+      author: 'Proviantplaner - powered by HullQ',
+    );
+
+    final fontRegular = pw.Font.helvetica();
+    final fontBold = pw.Font.helveticaBold();
+    final fontMono = pw.Font.courier();
+
+    final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
+    final deliveryTimeStr = order.deliveryDateTime != null
+        ? 'Liefertermin: ${dateFormat.format(order.deliveryDateTime!)} Uhr'
+        : 'Liefertermin: Nicht angegeben';
+
+    // Gruppierung nach Abteilungen
+    final departmentMap = <String, List<ShoppingListItemView>>{};
+    for (final item in items) {
+      final deptName = item.department.displayName;
+      departmentMap.putIfAbsent(deptName, () => []).add(item);
+    }
+
+    final subtitleParts = <String>[];
+    if (order.supplier != null) subtitleParts.add('Lieferant: ${order.supplier!.name}');
+    if (order.marina != null && order.marina!.isNotEmpty) subtitleParts.add('Marina: ${order.marina}');
+    if (order.berth != null && order.berth!.isNotEmpty) subtitleParts.add('Liegeplatz: ${order.berth}');
+    if (order.boatName != null && order.boatName!.isNotEmpty) subtitleParts.add('Boot: ${order.boatName}');
+    final subtitleText = '$deliveryTimeStr | ${subtitleParts.join(' | ')}';
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (context) => _buildHeader(
+          title: title,
+          tripName: trip.name,
+          subtitle: subtitleText,
+          fontBold: fontBold,
+          fontRegular: fontRegular,
+        ),
+        footer: (context) => _buildFooter(context, fontRegular),
+        build: (context) {
+          final widgets = <pw.Widget>[];
+
+          if (order.contactName != null && order.contactName!.isNotEmpty) {
+            widgets.add(
+              pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Text(
+                  'Ansprechpartner: ${order.contactName}${order.contactPhone != null ? " (${order.contactPhone})" : ""}',
+                  style: pw.TextStyle(font: fontBold, fontSize: 10),
+                ),
+              ),
+            );
+          }
+
+          if (order.notes != null && order.notes!.isNotEmpty) {
+            widgets.add(
+              pw.Container(
+                margin: const pw.EdgeInsets.only(bottom: 12),
+                padding: const pw.EdgeInsets.all(8),
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.amber50,
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Text(
+                  'Hinweis für den Lieferanten: ${order.notes}',
+                  style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.brown900),
+                ),
+              ),
+            );
+          }
+
+          for (final entry in departmentMap.entries) {
+            widgets.add(
+              pw.Container(
+                margin: const pw.EdgeInsets.only(top: 10, bottom: 4),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: const pw.BoxDecoration(
+                  color: PdfColors.blueGrey50,
+                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                ),
+                child: pw.Text(
+                  entry.key.toUpperCase(),
+                  style: pw.TextStyle(font: fontBold, fontSize: 10, color: PdfColors.blueGrey800),
+                ),
+              ),
+            );
+
+            for (final item in entry.value) {
+              final size = item.effectivePackSize;
+              final sizeFormatted = (size % 1 == 0) ? size.toInt().toString() : size.toStringAsFixed(1);
+              final packUnit = item.variant?.pack.unit ?? item.unit;
+
+              widgets.add(
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                  child: pw.Row(
+                    children: [
+                      pw.SizedBox(
+                        width: 90,
+                        child: pw.Text(
+                          '${item.effectivePackages} × $sizeFormatted $packUnit',
+                          style: pw.TextStyle(font: fontMono, fontSize: 9),
+                        ),
+                      ),
+                      pw.Expanded(
+                        child: pw.Text(
+                          item.name,
+                          style: pw.TextStyle(font: fontRegular, fontSize: 9),
+                        ),
+                      ),
+                      if (item.isCustom)
+                        pw.Text(
+                          '(eigene Position)',
+                          style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey600),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
 
           return widgets;
         },

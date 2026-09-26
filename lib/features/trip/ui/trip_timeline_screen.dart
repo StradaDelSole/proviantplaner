@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
 import '../data/trip_provider.dart';
 import 'widgets/day_card.dart';
@@ -20,6 +21,7 @@ class TripTimelineScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController();
     int selectedDay = 1;
+    bool isDelivery = false;
 
     final result = await showDialog<bool>(
       context: context,
@@ -50,6 +52,15 @@ class TripTimelineScreen extends ConsumerWidget {
                 ),
                 onChanged: (val) => setState(() => selectedDay = val ?? 1),
               ),
+              const SizedBox(height: 16),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Selbst einkaufen')),
+                  ButtonSegment(value: true, label: Text('Liefern lassen')),
+                ],
+                selected: {isDelivery},
+                onSelectionChanged: (val) => setState(() => isDelivery = val.first),
+              ),
             ],
           ),
           actions: [
@@ -65,11 +76,16 @@ class TripTimelineScreen extends ConsumerWidget {
 
     if (result == true && nameCtrl.text.trim().isNotEmpty) {
       final service = ref.read(tripServiceProvider);
-      await service.addShoppingStop(
+      final newStopId = await service.addShoppingStop(
         tripId: tripId,
         name: nameCtrl.text.trim(),
         dayNumber: selectedDay,
       );
+      if (isDelivery) {
+        await ref.read(deliveryOrderServiceProvider).saveOrder(
+              DeliveryOrder(stopId: newStopId, tripId: tripId, isDelivery: true),
+            );
+      }
       ref.invalidate(activeTripStopsProvider);
     }
   }

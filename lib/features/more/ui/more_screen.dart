@@ -9,7 +9,7 @@ import 'package:proviantplaner/core/theme/theme_controller.dart';
 import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
 import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
-import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
+import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
 
 /// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
 class MoreScreen extends ConsumerWidget {
@@ -178,6 +178,24 @@ class MoreScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showUserPaymentProfileDialog(context, ref),
           ),
+          Consumer(
+            builder: (ctx, ref, _) {
+              final suppliersAsync = ref.watch(savedSuppliersProvider);
+              final subtitle = suppliersAsync.maybeWhen(
+                data: (list) => list.isEmpty
+                    ? 'Keine Lieferanten hinterlegt'
+                    : '${list.length} Lieferant${list.length == 1 ? "" : "en"} hinterlegt',
+                orElse: () => 'Lieferanten verwalten',
+              );
+              return ListTile(
+                leading: const Icon(Icons.local_shipping_outlined),
+                title: const Text('Gespeicherte Lieferanten'),
+                subtitle: Text(subtitle),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showSuppliersDialog(context, ref),
+              );
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.straighten_outlined),
             title: const Text('Gemerkte Packungsgrößen'),
@@ -234,9 +252,6 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 32),
         ],
       ),
-      bottomNavigationBar: tripId != null
-          ? TripBottomBar(tripId: tripId!, currentIndex: 3)
-          : null,
     );
   }
 
@@ -528,6 +543,192 @@ class MoreScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showSuppliersDialog(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => Consumer(
+        builder: (ctx, ref, _) {
+          final theme = Theme.of(ctx);
+          final suppliersAsync = ref.watch(savedSuppliersProvider);
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Gespeicherte Lieferanten'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  tooltip: 'Lieferant hinzufügen',
+                  onPressed: () => _showAddEditSupplierDialog(context, ref),
+                ),
+              ],
+            ),
+            body: suppliersAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text('Fehler: $err')),
+              data: (suppliers) {
+                if (suppliers.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.local_shipping_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Noch keine Lieferanten hinterlegt.\nLieferanten können hier oder beim Anfordern einer Lieferung angelegt werden.',
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: const Text('Lieferant hinzufügen'),
+                            onPressed: () => _showAddEditSupplierDialog(context, ref),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  itemCount: suppliers.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (ctx, i) {
+                    final s = suppliers[i];
+                    final subtitleParts = <String>[];
+                    if (s.marina != null && s.marina!.isNotEmpty) subtitleParts.add(s.marina!);
+                    if (s.phone != null && s.phone!.isNotEmpty) subtitleParts.add(s.phone!);
+                    if (s.email != null && s.email!.isNotEmpty) subtitleParts.add(s.email!);
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Icon(Icons.local_shipping_outlined, color: theme.colorScheme.onPrimaryContainer, size: 20),
+                      ),
+                      title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: subtitleParts.isNotEmpty ? Text(subtitleParts.join(' · ')) : null,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            tooltip: 'Bearbeiten',
+                            onPressed: () => _showAddEditSupplierDialog(context, ref, supplierToEdit: s),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                            tooltip: 'Löschen',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (dCtx) => AlertDialog(
+                                  title: const Text('Lieferant löschen'),
+                                  content: Text('Möchtest du "${s.name}" wirklich löschen?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Abbrechen')),
+                                    FilledButton(onPressed: () => Navigator.pop(dCtx, true), child: const Text('Löschen')),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await ref.read(supplierServiceProvider).deleteSupplier(s.id);
+                                ref.invalidate(savedSuppliersProvider);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+            bottomNavigationBar: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Lieferant hinzufügen'),
+                  onPressed: () => _showAddEditSupplierDialog(context, ref),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showAddEditSupplierDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    SupplierProfile? supplierToEdit,
+  }) async {
+    final nameCtrl = TextEditingController(text: supplierToEdit?.name ?? '');
+    final marinaCtrl = TextEditingController(text: supplierToEdit?.marina ?? '');
+    final phoneCtrl = TextEditingController(text: supplierToEdit?.phone ?? '');
+    final emailCtrl = TextEditingController(text: supplierToEdit?.email ?? '');
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(supplierToEdit != null ? 'Lieferant bearbeiten' : 'Lieferant hinzufügen'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Name des Lieferanten / Marktes', border: OutlineInputBorder()),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: marinaCtrl,
+                decoration: const InputDecoration(labelText: 'Marina / Ort', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Telefonnummer', border: OutlineInputBorder()),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(labelText: 'E-Mail', border: OutlineInputBorder()),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          FilledButton(
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              if (name.isEmpty) return;
+              final newSupplier = SupplierProfile(
+                id: supplierToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                name: name,
+                marina: marinaCtrl.text.trim().isNotEmpty ? marinaCtrl.text.trim() : null,
+                phone: phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
+                email: emailCtrl.text.trim().isNotEmpty ? emailCtrl.text.trim() : null,
+              );
+              await ref.read(supplierServiceProvider).saveSupplier(newSupplier);
+              ref.invalidate(savedSuppliersProvider);
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Speichern'),
+          ),
+        ],
       ),
     );
   }

@@ -14,6 +14,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
   final KittyModel kittyModel;
   final List<KittyMember> members;
   final KittyExpense? expenseToEdit;
+  final String? initialTitle;
 
   const ExpenseSheet({
     super.key,
@@ -21,6 +22,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
     required this.kittyModel,
     required this.members,
     this.expenseToEdit,
+    this.initialTitle,
   });
 
   /// Zeigt das Bottom Sheet an und liefert 'delete' zurück, falls Löschen gewählt wurde.
@@ -30,6 +32,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
     required KittyModel kittyModel,
     required List<KittyMember> members,
     KittyExpense? expenseToEdit,
+    String? initialTitle,
   }) {
     return showModalBottomSheet<String>(
       context: context,
@@ -40,6 +43,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
         kittyModel: kittyModel,
         members: members,
         expenseToEdit: expenseToEdit,
+        initialTitle: initialTitle,
       ),
     );
   }
@@ -65,7 +69,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     _amountController = TextEditingController(
       text: edit != null ? (edit.amountInCents / 100.0).toStringAsFixed(2) : '',
     );
-    _titleController = TextEditingController(text: edit?.title ?? '');
+    _titleController = TextEditingController(text: edit?.title ?? widget.initialTitle ?? '');
     _selectedCategory = edit?.category ?? ExpenseCategory.provisions;
     _isPaidFromKitty = edit != null
         ? edit.isPaidFromKitty

@@ -53,11 +53,29 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
 
     if (q.isEmpty) {
       return Center(
-        child: Text(
-          l10n.searchHint,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              l10n.searchHint,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addCustomItem),
+              onPressed: () {
+                close(context, null);
+                CustomItemSheet.show(
+                  context,
+                  tripId: data.trip.id,
+                  stops: data.stops,
+                );
+              },
+            ),
+          ],
         ),
       );
     }
@@ -86,7 +104,7 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 icon: const Icon(Icons.add),
-                label: Text(l10n.addCustomItem),
+                label: Text('Als eigene Position anlegen: "${query.trim()}"'),
                 onPressed: () {
                   close(context, null);
                   CustomItemSheet.show(
@@ -104,9 +122,27 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
     }
 
     return ListView.separated(
-      itemCount: matches.length,
+      itemCount: matches.length + 1,
       separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (ctx, i) {
+        if (i == matches.length) {
+          return ListTile(
+            leading: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),
+            title: Text(
+              'Als eigene Position anlegen: "${query.trim()}"',
+              style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500),
+            ),
+            onTap: () {
+              close(context, null);
+              CustomItemSheet.show(
+                context,
+                tripId: data.trip.id,
+                stops: data.stops,
+                initialName: query.trim(),
+              );
+            },
+          );
+        }
         final it = matches[i];
         return ListTile(
           title: Text(it.name, style: theme.textTheme.bodyLarge),

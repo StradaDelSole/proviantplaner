@@ -399,6 +399,32 @@ class ShoppingListService {
     );
   }
 
+  /// Verschiebt Packungen von einem Stopp zu einem anderen Stopp.
+  Future<void> movePackagesBetweenStops({
+    required ShoppingListItemView it,
+    required int fromStopId,
+    required int toStopId,
+    required int packagesCount,
+  }) async {
+    final currentFromAlloc = it.allocationsByStop[fromStopId]?.allocatedPackages ?? 0;
+    final newFrom = (currentFromAlloc - packagesCount).clamp(0, it.effectivePackages);
+    final currentToAlloc = it.allocationsByStop[toStopId]?.allocatedPackages ?? 0;
+    final newTo = currentToAlloc + packagesCount;
+
+    await listItemDao.setAllocation(
+      tripId: it.item.tripId,
+      listItemId: it.item.id,
+      shoppingStopId: fromStopId,
+      packages: newFrom,
+    );
+    await listItemDao.setAllocation(
+      tripId: it.item.tripId,
+      listItemId: it.item.id,
+      shoppingStopId: toStopId,
+      packages: newTo,
+    );
+  }
+
   /// Legt eine eigene Position an.
   Future<int> addCustomItem(CustomItemInput input) {
     return listItemDao.addCustomItem(
