@@ -1,6 +1,6 @@
 # Proviantplaner – Umsetzungsplan in Slices v0.16
 
-Stand: 23.09.2026 · Grundlage: `docs/PRD_v0.18.md`, `docs/KATALOG_v0.7.md`
+Stand: 23.09.2026 · Grundlage: `docs/PRD_v0.19.md`, `docs/KATALOG_v0.7.md`
 
 Jeder Slice ist eine abgeschlossene Arbeitseinheit für eine Gemini-Sitzung: klein genug für eine Standzeit, mit klaren Abnahmekriterien. Ein Slice gilt erst als fertig, wenn alle Kriterien erfüllt sind und die Tests grün laufen.
 
@@ -252,7 +252,7 @@ Grundlage: Punkt 9. Kassenwart, Einzahlen in einem Schritt, Ausgabe mit drei Fel
 
 ### UX-A – Navigation, Törn anlegen, Törn-Übersicht
 
-Grundlage: `docs/design/UX_KONZEPT_v0.4.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
+Grundlage: `docs/design/UX_KONZEPT_v0.5.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
 
 - Reiterleiste entfernen; fünf Hauptbildschirme; keine Ebene tiefer als zwei unter "Meine Törns"
 - Meine Törns (2.1) mit "Nächster Schritt" je Karte; Einstellungen über Symbol oben rechts

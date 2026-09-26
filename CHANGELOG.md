@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – PRD v0.19, UX-Konzept v0.5
+
+- v1.1 vorgemerkt: Crew-Wünsche per Link (aus Wettbewerbsanalyse Victuo)
+
 ## 2026-09-26 – Wettbewerbsanalyse v0.4
 
 - Victuo getestet; Übernahmen: Bordtank beim Wasser, Gesamtgewicht/-volumen, WhatsApp-Bestellung; Kartendienste vorgemerkt
