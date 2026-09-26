@@ -509,6 +509,33 @@ class KittyScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _deleteExpenseWithUndo(
+    BuildContext context,
+    WidgetRef ref,
+    TripKittyData data,
+    KittyExpense exp,
+  ) async {
+    final service = ref.read(kittyServiceProvider);
+    await service.deleteExpense(exp.id);
+    ref.invalidate(tripKittyDataProvider(tripId));
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text('Ausgabe "${exp.title}" gelöscht'),
+        action: SnackBarAction(
+          label: 'Rückgängig',
+          onPressed: () async {
+            await service.restoreExpense(exp);
+            ref.invalidate(tripKittyDataProvider(tripId));
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildExpenseTile(
     BuildContext context,
     WidgetRef ref,
@@ -531,11 +558,21 @@ class KittyScreen extends ConsumerWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) async {
-        final service = ref.read(kittyServiceProvider);
-        await service.deleteExpense(exp.id);
-        ref.invalidate(tripKittyDataProvider(tripId));
+        await _deleteExpenseWithUndo(context, ref, data, exp);
       },
       child: ListTile(
+        onTap: () async {
+          final res = await ExpenseSheet.show(
+            context,
+            tripId: tripId,
+            kittyModel: data.model,
+            members: data.members,
+            expenseToEdit: exp,
+          );
+          if (res == 'delete' && context.mounted) {
+            await _deleteExpenseWithUndo(context, ref, data, exp);
+          }
+        },
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 40,

@@ -172,12 +172,16 @@ class ShoppingView extends ConsumerWidget {
                       ref.invalidate(tripShoppingListProvider(data.trip.id));
                     },
                   ),
-                  Container(
-                    constraints: const BoxConstraints(minWidth: 28),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${it.effectivePackages}',
-                      style: theme.proviantTypography.numberMedium.copyWith(fontWeight: FontWeight.bold),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => _showDirectQuantityDialog(context, ref, it),
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 48),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${it.effectivePackages}',
+                        style: theme.proviantTypography.numberMedium.copyWith(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   IconButton(
@@ -264,6 +268,46 @@ class ShoppingView extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showDirectQuantityDialog(
+    BuildContext context,
+    WidgetRef ref,
+    ShoppingListItemView it,
+  ) async {
+    final controller = TextEditingController(text: it.effectivePackages.toString());
+    final count = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${it.name}: Menge anpassen'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Anzahl Packungen',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(controller.text.trim());
+              Navigator.of(ctx).pop(parsed);
+            },
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    if (count != null) {
+      await ref.read(shoppingListServiceProvider).setPackages(it, count);
+      ref.invalidate(tripShoppingListProvider(data.trip.id));
+    }
   }
 
   void _openGroupDetail(BuildContext context, ShoppingListItemView it) {

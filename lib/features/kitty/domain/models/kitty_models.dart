@@ -99,6 +99,9 @@ class KittyMember {
   final bool isSkipperFree;
   final String? skipperFreeScope;
   final Map<ExpenseCategory, bool> categoryParticipation;
+  final String? iban;
+  final String? paypalLink;
+  final String? revolutLink;
 
   const KittyMember({
     required this.id,
@@ -106,6 +109,9 @@ class KittyMember {
     this.isSkipperFree = false,
     this.skipperFreeScope,
     required this.categoryParticipation,
+    this.iban,
+    this.paypalLink,
+    this.revolutLink,
   });
 
   /// Prüft, ob die Person an einer Kategorie beteiligt ist.

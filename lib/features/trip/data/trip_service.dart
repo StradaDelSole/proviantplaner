@@ -62,6 +62,9 @@ class TripService {
           isNonDrinker: Value(member.noAlcohol),
           customEatLevel: Value(member.customEatLevel?.rawValue),
           customDrinkLevel: Value(member.customDrinkLevel?.rawValue),
+          iban: Value(member.iban),
+          paypalLink: Value(member.paypalLink),
+          revolutLink: Value(member.revolutLink),
         ),
       );
     }
@@ -106,6 +109,9 @@ class TripService {
       noAlcohol: c.isNonDrinker,
       customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
       customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
+      iban: c.iban,
+      paypalLink: c.paypalLink,
+      revolutLink: c.revolutLink,
     )).toList();
 
     // Map der Nutzertätigkeiten (Überschreibungen, Abwahlen etc.)

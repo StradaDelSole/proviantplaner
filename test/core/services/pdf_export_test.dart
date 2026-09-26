@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/core/services/pdf_export_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/calculation/kitty_engine.dart';
@@ -58,6 +59,7 @@ void main() {
         share: 1.0,
         calculatedQuantity: 2000,
         calculatedPackages: 4,
+        checkState: CheckItemState.available,
       );
 
       const dummyItem2 = ListItem(
@@ -69,6 +71,7 @@ void main() {
         share: 1.0,
         calculatedQuantity: 6.0,
         calculatedPackages: 6,
+        checkState: CheckItemState.available,
       );
 
       const items = [

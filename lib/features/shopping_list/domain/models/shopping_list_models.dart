@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/tables.dart';
 import 'catalog_models.dart';
 
 /// Deckungsstatus einer Bedarfsgruppe in der Planungsansicht.
@@ -31,6 +32,7 @@ class ShoppingListItemView {
   final bool isCustom;
   final int shelfLifeDays;
   final List<String> storageHints;
+  final CheckItemState checkState;
   final Map<int, ListItemAllocation> allocationsByStop;
 
   const ShoppingListItemView({
@@ -50,6 +52,7 @@ class ShoppingListItemView {
     required this.isCustom,
     required this.shelfLifeDays,
     required this.storageHints,
+    this.checkState = CheckItemState.available,
     required this.allocationsByStop,
   });
 

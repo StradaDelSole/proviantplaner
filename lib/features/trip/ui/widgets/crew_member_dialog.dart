@@ -1,8 +1,9 @@
-/// Dialog zum Anlegen und Bearbeiten eines Crew-Mitglieds (Slice S3).
+/// Dialog zum Anlegen und Bearbeiten eines Crew-Mitglieds (Slice S3, FB1-A).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
@@ -17,17 +18,24 @@ class CrewMemberDialog extends StatefulWidget {
 
 class _CrewMemberDialogState extends State<CrewMemberDialog> {
   late final TextEditingController _nameController;
+  late final TextEditingController _ibanController;
+  late final TextEditingController _paypalController;
+  late final TextEditingController _revolutController;
   late bool _isAdult;
   late bool _isVegetarian;
   late bool _noAlcohol;
   EatProfileLevel? _customEatLevel;
   DrinkProfileLevel? _customDrinkLevel;
+  String? _ibanError;
 
   @override
   void initState() {
     super.initState();
     final init = widget.initialMember;
     _nameController = TextEditingController(text: init?.name ?? '');
+    _ibanController = TextEditingController(text: init?.iban ?? '');
+    _paypalController = TextEditingController(text: init?.paypalLink ?? '');
+    _revolutController = TextEditingController(text: init?.revolutLink ?? '');
     _isAdult = init?.isAdult ?? true;
     _isVegetarian = init?.isVegetarian ?? false;
     _noAlcohol = init?.noAlcohol ?? false;
@@ -38,6 +46,9 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
   @override
   void dispose() {
     _nameController.dispose();
+    _ibanController.dispose();
+    _paypalController.dispose();
+    _revolutController.dispose();
     super.dispose();
   }
 
@@ -137,6 +148,42 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
                 onChanged: (val) => setState(() => _customDrinkLevel = val),
               ),
             ],
+            const Divider(),
+            Text(
+              'Zahlungsdaten (optional)',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.secondary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _ibanController,
+              decoration: InputDecoration(
+                labelText: 'IBAN',
+                errorText: _ibanError,
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _paypalController,
+              decoration: const InputDecoration(
+                labelText: 'PayPal.Me Link',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _revolutController,
+              decoration: const InputDecoration(
+                labelText: 'Revolut.Me Link',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
           ],
         ),
       ),
@@ -150,6 +197,15 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
             final name = _nameController.text.trim();
             if (name.isEmpty) return;
 
+            final rawIban = _ibanController.text.trim();
+            final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+            if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
+              setState(() {
+                _ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+              });
+              return;
+            }
+
             final member = CrewMemberInput(
               id: widget.initialMember?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
               name: name,
@@ -158,6 +214,9 @@ class _CrewMemberDialogState extends State<CrewMemberDialog> {
               noAlcohol: _noAlcohol,
               customEatLevel: _customEatLevel,
               customDrinkLevel: _customDrinkLevel,
+              iban: cleanIban.isNotEmpty ? cleanIban : null,
+              paypalLink: _paypalController.text.trim().isNotEmpty ? _paypalController.text.trim() : null,
+              revolutLink: _revolutController.text.trim().isNotEmpty ? _revolutController.text.trim() : null,
             );
             Navigator.of(context).pop(member);
           },

@@ -3,6 +3,7 @@ library;
 
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -162,6 +163,7 @@ class ShoppingListService {
       isCustom: true,
       shelfLifeDays: 30,
       storageHints: const [],
+      checkState: raw.checkState,
       allocationsByStop: allocations,
     );
   }
@@ -188,6 +190,7 @@ class ShoppingListService {
       isCustom: false,
       shelfLifeDays: variant.shelfLifeDays,
       storageHints: variant.storage,
+      checkState: raw.checkState,
       allocationsByStop: allocations,
     );
   }
@@ -265,6 +268,22 @@ class ShoppingListService {
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
   Future<void> resetOverride(ShoppingListItemView itemView) async {
     await listItemDao.setOverriddenPackages(itemView.item.id, null);
+  }
+
+  /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 6).
+  Future<void> setPackages(ShoppingListItemView itemView, int packages) async {
+    final clamped = packages < 0 ? 0 : packages;
+    await listItemDao.setOverriddenPackages(itemView.item.id, clamped);
+  }
+
+  /// Aktualisiert den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
+  Future<void> updateCheckState({
+    required int tripId,
+    required int listItemId,
+    required CheckItemState state,
+  }) async {
+    await listItemDao.setCheckState(listItemId, state);
+    await tripService.recalculateTrip(tripId);
   }
 
   /// Ändert die Packungsgröße und berechnet die Packungszahl neu.

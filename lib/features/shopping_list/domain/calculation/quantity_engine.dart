@@ -61,6 +61,9 @@ class CrewMemberInput {
   final bool noAlcohol;
   final EatProfileLevel? customEatLevel;
   final DrinkProfileLevel? customDrinkLevel;
+  final String? iban;
+  final String? paypalLink;
+  final String? revolutLink;
 
   const CrewMemberInput({
     required this.id,
@@ -70,6 +73,9 @@ class CrewMemberInput {
     required this.noAlcohol,
     this.customEatLevel,
     this.customDrinkLevel,
+    this.iban,
+    this.paypalLink,
+    this.revolutLink,
   });
 }
 

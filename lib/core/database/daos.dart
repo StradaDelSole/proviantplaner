@@ -84,6 +84,22 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<bool> updateCrewMember(CrewMember member) =>
       update(crewMembers).replace(member);
 
+  /// Aktualisiert die Zahlungsdaten eines Crew-Mitglieds.
+  Future<bool> updateCrewMemberPaymentDetails({
+    required int memberId,
+    String? iban,
+    String? paypalLink,
+    String? revolutLink,
+  }) async {
+    final member = await (select(crewMembers)..where((m) => m.id.equals(memberId))).getSingleOrNull();
+    if (member == null) return false;
+    return updateCrewMember(member.copyWith(
+      iban: Value(iban),
+      paypalLink: Value(paypalLink),
+      revolutLink: Value(revolutLink),
+    ));
+  }
+
   Future<int> deleteCrewMember(int id) =>
       (delete(crewMembers)..where((tbl) => tbl.id.equals(id))).go();
 
@@ -235,6 +251,18 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
     final item = await getListItemById(listItemId);
     if (item == null) return false;
     return updateListItem(item.copyWith(selected: isSelected));
+  }
+
+  /// Setzt den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
+  Future<bool> setCheckState(int listItemId, CheckItemState state) async {
+    final item = await getListItemById(listItemId);
+    if (item == null) return false;
+    final isSelected = (state == CheckItemState.restock);
+    return updateListItem(item.copyWith(
+      checkState: state,
+      selected: isSelected,
+      overriddenPackages: isSelected ? const Value(1) : Value(item.overriddenPackages),
+    ));
   }
 
   /// Setzt den Prozent-Anteil einer Variante innerhalb ihrer Bedarfsgruppe (0.0 bis 1.0).

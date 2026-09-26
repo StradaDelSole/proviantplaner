@@ -48,6 +48,33 @@ class ExpenseCategoryConverter extends TypeConverter<ExpenseCategory, String> {
   String toSql(ExpenseCategory value) => value.rawValue;
 }
 
+/// Zustand einer Prüflisten-Position (FEEDBACK_R1 Punkt 6).
+enum CheckItemState {
+  available('vorhanden'),
+  missing('fehlt'),
+  restock('nachkaufen');
+
+  final String rawValue;
+  const CheckItemState(this.rawValue);
+
+  static CheckItemState fromString(String? val) {
+    if (val == null) return CheckItemState.available;
+    for (final s in values) {
+      if (s.rawValue == val) return s;
+    }
+    throw FormatException('Unbekannter CheckItemState: "$val"');
+  }
+}
+
+/// Drift TypeConverter für CheckItemState
+class CheckItemStateConverter extends TypeConverter<CheckItemState, String> {
+  const CheckItemStateConverter();
+  @override
+  CheckItemState fromSql(String fromDb) => CheckItemState.fromString(fromDb);
+  @override
+  String toSql(CheckItemState value) => value.rawValue;
+}
+
 /// 1. Trip: Törn-Stammdaten, Phasen, Crew-Fragen, Einstellungen
 class Trips extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -96,6 +123,9 @@ class CrewMembers extends Table {
   TextColumn get categoryParticipation => text().withDefault(const Constant('{"all": true}'))(); // JSON
   BoolColumn get isSkipperFree => boolean().withDefault(const Constant(false))();
   TextColumn get skipperFreeScope => text().nullable()(); // all, exclude_food
+  TextColumn get iban => text().nullable()(); // Zahlungsdaten (FB1-A)
+  TextColumn get paypalLink => text().nullable()();
+  TextColumn get revolutLink => text().nullable()();
 }
 
 /// 4. ShoppingStop: Einkaufsstopps (erster Stopp automatisch)
@@ -122,6 +152,7 @@ class ListItems extends Table {
   IntColumn get calculatedPackages => integer().withDefault(const Constant(1))();
   IntColumn get overriddenPackages => integer().nullable()(); // überschriebene Packungszahl oder null
   RealColumn get customPackageSize => real().nullable()(); // gemerkte Packungsgröße
+  TextColumn get checkState => text().map(const CheckItemStateConverter()).withDefault(const Constant('vorhanden'))();
 }
 
 /// 6. ListItemAllocation: Zuordnung von Teilmengen eines ListItem zu einem ShoppingStop

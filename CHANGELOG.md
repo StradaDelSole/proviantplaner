@@ -4,6 +4,23 @@
 
 - `docs/impl/FEEDBACK_R2_v0.1.md` (Entwurf, nicht freigegeben): Navigation entlang des Törn-Ablaufs, Hauptaktionen sichtbar
 
+## 2026-09-26 – FB1-A: Fehler und Technik
+
+- **Varianten-Sheet & Mengenänderung (Punkt 6):**
+  - Reaktivität in `GroupDetailSheet` durch kontinuierliches Beobachten von `tripShoppingListProvider(tripId)` und Awaiting der asynchronen DAOs sichergestellt.
+  - Direkte Mengeneingabe über Zahlenfeld-Dialog (`setPackages`) im Sheet sowie in der Vorratsliste.
+  - Prüflisten (`mode = check`) auf 3 Zustände (`vorhanden`, `fehlt`, `nachkaufen`) per `SegmentedButton` umgestellt; Schema-Version 2 mit Migration.
+- **Ausgaben bearbeiten & löschen (Punkt 8):**
+  - `ExpenseSheet` unterstützt Bearbeitungsmodus und Löschen mit 5-Sekunden-Undo-SnackBar; Salden und Kassenstand berechnen sich sofort neu.
+- **Zahlungsdaten & Beseitigung von IBAN-Literalen (Punkt 10):**
+  - Crewmitglieder um `iban` (Modulo-97 validiert), `paypalLink` und `revolutLink` erweitert.
+  - "Meine Zahlungsdaten" unter "Mehr" über `UserPaymentProfileService` verschlüsselt in `FlutterSecureStorage` abgelegt.
+  - Feste Dummy-IBAN aus `settlement_screen.dart` entfernt; QR-Codes und Links speisen sich dynamisch aus Empfängerdaten.
+  - Automatisierter Suchtest `test/core/no_iban_literal_test.dart` garantiert Freiheit von IBAN-Literalen in `lib/`.
+- **Build-Einstellungen:**
+  - `android/app/build.gradle`: `compileSdk = 35`, `ndkVersion = "26.1.10909125"`.
+- Validierung: `flutter analyze` 0 Fehler, `flutter test` 133/133 Tests grün.
+
 ## 2026-09-26 – Feedback-Runde 1
 
 - `docs/impl/FEEDBACK_R1_v0.1.md`: 10 Punkte aus dem ersten Praxistest (vorrangig)

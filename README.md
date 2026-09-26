@@ -25,6 +25,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.17). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a.
+Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A.
 
-**Freigegeben für Gemini: FB1-A, FB1-B, FB1-C, FB1-D (in dieser Reihenfolge; Grundlage docs/impl/FEEDBACK_R1_v0.1.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI. S9 und S10 noch nicht freigegeben.
+**Freigegeben für Gemini: FB1-A, FB1-B, FB1-C, FB1-D (in dieser Reihenfolge; Grundlage docs/impl/FEEDBACK_R1_v0.1.md).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A. S9 und S10 noch nicht freigegeben.

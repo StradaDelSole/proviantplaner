@@ -56,6 +56,7 @@ void main() {
         isSkipperFree: const Value(true),
         skipperFreeScope: const Value('all'),
         categoryParticipation: const Value('{"all":true}'),
+        iban: const Value('DE89370400440532013000'),
       ),
     );
 
@@ -66,6 +67,7 @@ void main() {
         isChild: const Value(false),
         isSkipperFree: const Value(false),
         categoryParticipation: const Value('{"all":true}'),
+        iban: const Value('DE89370400440532013000'),
       ),
     );
 

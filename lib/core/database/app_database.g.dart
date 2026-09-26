@@ -1301,6 +1301,23 @@ class $CrewMembersTable extends CrewMembers
   late final GeneratedColumn<String> skipperFreeScope = GeneratedColumn<String>(
       'skipper_free_scope', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _ibanMeta = const VerificationMeta('iban');
+  @override
+  late final GeneratedColumn<String> iban = GeneratedColumn<String>(
+      'iban', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _paypalLinkMeta =
+      const VerificationMeta('paypalLink');
+  @override
+  late final GeneratedColumn<String> paypalLink = GeneratedColumn<String>(
+      'paypal_link', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _revolutLinkMeta =
+      const VerificationMeta('revolutLink');
+  @override
+  late final GeneratedColumn<String> revolutLink = GeneratedColumn<String>(
+      'revolut_link', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1313,7 +1330,10 @@ class $CrewMembersTable extends CrewMembers
         customDrinkLevel,
         categoryParticipation,
         isSkipperFree,
-        skipperFreeScope
+        skipperFreeScope,
+        iban,
+        paypalLink,
+        revolutLink
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1386,6 +1406,22 @@ class $CrewMembersTable extends CrewMembers
           skipperFreeScope.isAcceptableOrUnknown(
               data['skipper_free_scope']!, _skipperFreeScopeMeta));
     }
+    if (data.containsKey('iban')) {
+      context.handle(
+          _ibanMeta, iban.isAcceptableOrUnknown(data['iban']!, _ibanMeta));
+    }
+    if (data.containsKey('paypal_link')) {
+      context.handle(
+          _paypalLinkMeta,
+          paypalLink.isAcceptableOrUnknown(
+              data['paypal_link']!, _paypalLinkMeta));
+    }
+    if (data.containsKey('revolut_link')) {
+      context.handle(
+          _revolutLinkMeta,
+          revolutLink.isAcceptableOrUnknown(
+              data['revolut_link']!, _revolutLinkMeta));
+    }
     return context;
   }
 
@@ -1418,6 +1454,12 @@ class $CrewMembersTable extends CrewMembers
           .read(DriftSqlType.bool, data['${effectivePrefix}is_skipper_free'])!,
       skipperFreeScope: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}skipper_free_scope']),
+      iban: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}iban']),
+      paypalLink: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}paypal_link']),
+      revolutLink: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}revolut_link']),
     );
   }
 
@@ -1439,6 +1481,9 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
   final String categoryParticipation;
   final bool isSkipperFree;
   final String? skipperFreeScope;
+  final String? iban;
+  final String? paypalLink;
+  final String? revolutLink;
   const CrewMember(
       {required this.id,
       required this.tripId,
@@ -1450,7 +1495,10 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
       this.customDrinkLevel,
       required this.categoryParticipation,
       required this.isSkipperFree,
-      this.skipperFreeScope});
+      this.skipperFreeScope,
+      this.iban,
+      this.paypalLink,
+      this.revolutLink});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1470,6 +1518,15 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
     map['is_skipper_free'] = Variable<bool>(isSkipperFree);
     if (!nullToAbsent || skipperFreeScope != null) {
       map['skipper_free_scope'] = Variable<String>(skipperFreeScope);
+    }
+    if (!nullToAbsent || iban != null) {
+      map['iban'] = Variable<String>(iban);
+    }
+    if (!nullToAbsent || paypalLink != null) {
+      map['paypal_link'] = Variable<String>(paypalLink);
+    }
+    if (!nullToAbsent || revolutLink != null) {
+      map['revolut_link'] = Variable<String>(revolutLink);
     }
     return map;
   }
@@ -1493,6 +1550,13 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
       skipperFreeScope: skipperFreeScope == null && nullToAbsent
           ? const Value.absent()
           : Value(skipperFreeScope),
+      iban: iban == null && nullToAbsent ? const Value.absent() : Value(iban),
+      paypalLink: paypalLink == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paypalLink),
+      revolutLink: revolutLink == null && nullToAbsent
+          ? const Value.absent()
+          : Value(revolutLink),
     );
   }
 
@@ -1512,6 +1576,9 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
           serializer.fromJson<String>(json['categoryParticipation']),
       isSkipperFree: serializer.fromJson<bool>(json['isSkipperFree']),
       skipperFreeScope: serializer.fromJson<String?>(json['skipperFreeScope']),
+      iban: serializer.fromJson<String?>(json['iban']),
+      paypalLink: serializer.fromJson<String?>(json['paypalLink']),
+      revolutLink: serializer.fromJson<String?>(json['revolutLink']),
     );
   }
   @override
@@ -1529,6 +1596,9 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
       'categoryParticipation': serializer.toJson<String>(categoryParticipation),
       'isSkipperFree': serializer.toJson<bool>(isSkipperFree),
       'skipperFreeScope': serializer.toJson<String?>(skipperFreeScope),
+      'iban': serializer.toJson<String?>(iban),
+      'paypalLink': serializer.toJson<String?>(paypalLink),
+      'revolutLink': serializer.toJson<String?>(revolutLink),
     };
   }
 
@@ -1543,7 +1613,10 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
           Value<String?> customDrinkLevel = const Value.absent(),
           String? categoryParticipation,
           bool? isSkipperFree,
-          Value<String?> skipperFreeScope = const Value.absent()}) =>
+          Value<String?> skipperFreeScope = const Value.absent(),
+          Value<String?> iban = const Value.absent(),
+          Value<String?> paypalLink = const Value.absent(),
+          Value<String?> revolutLink = const Value.absent()}) =>
       CrewMember(
         id: id ?? this.id,
         tripId: tripId ?? this.tripId,
@@ -1562,6 +1635,9 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
         skipperFreeScope: skipperFreeScope.present
             ? skipperFreeScope.value
             : this.skipperFreeScope,
+        iban: iban.present ? iban.value : this.iban,
+        paypalLink: paypalLink.present ? paypalLink.value : this.paypalLink,
+        revolutLink: revolutLink.present ? revolutLink.value : this.revolutLink,
       );
   CrewMember copyWithCompanion(CrewMembersCompanion data) {
     return CrewMember(
@@ -1590,6 +1666,11 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
       skipperFreeScope: data.skipperFreeScope.present
           ? data.skipperFreeScope.value
           : this.skipperFreeScope,
+      iban: data.iban.present ? data.iban.value : this.iban,
+      paypalLink:
+          data.paypalLink.present ? data.paypalLink.value : this.paypalLink,
+      revolutLink:
+          data.revolutLink.present ? data.revolutLink.value : this.revolutLink,
     );
   }
 
@@ -1606,7 +1687,10 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
           ..write('customDrinkLevel: $customDrinkLevel, ')
           ..write('categoryParticipation: $categoryParticipation, ')
           ..write('isSkipperFree: $isSkipperFree, ')
-          ..write('skipperFreeScope: $skipperFreeScope')
+          ..write('skipperFreeScope: $skipperFreeScope, ')
+          ..write('iban: $iban, ')
+          ..write('paypalLink: $paypalLink, ')
+          ..write('revolutLink: $revolutLink')
           ..write(')'))
         .toString();
   }
@@ -1623,7 +1707,10 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
       customDrinkLevel,
       categoryParticipation,
       isSkipperFree,
-      skipperFreeScope);
+      skipperFreeScope,
+      iban,
+      paypalLink,
+      revolutLink);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1638,7 +1725,10 @@ class CrewMember extends DataClass implements Insertable<CrewMember> {
           other.customDrinkLevel == this.customDrinkLevel &&
           other.categoryParticipation == this.categoryParticipation &&
           other.isSkipperFree == this.isSkipperFree &&
-          other.skipperFreeScope == this.skipperFreeScope);
+          other.skipperFreeScope == this.skipperFreeScope &&
+          other.iban == this.iban &&
+          other.paypalLink == this.paypalLink &&
+          other.revolutLink == this.revolutLink);
 }
 
 class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
@@ -1653,6 +1743,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
   final Value<String> categoryParticipation;
   final Value<bool> isSkipperFree;
   final Value<String?> skipperFreeScope;
+  final Value<String?> iban;
+  final Value<String?> paypalLink;
+  final Value<String?> revolutLink;
   const CrewMembersCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -1665,6 +1758,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
     this.categoryParticipation = const Value.absent(),
     this.isSkipperFree = const Value.absent(),
     this.skipperFreeScope = const Value.absent(),
+    this.iban = const Value.absent(),
+    this.paypalLink = const Value.absent(),
+    this.revolutLink = const Value.absent(),
   });
   CrewMembersCompanion.insert({
     this.id = const Value.absent(),
@@ -1678,6 +1774,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
     this.categoryParticipation = const Value.absent(),
     this.isSkipperFree = const Value.absent(),
     this.skipperFreeScope = const Value.absent(),
+    this.iban = const Value.absent(),
+    this.paypalLink = const Value.absent(),
+    this.revolutLink = const Value.absent(),
   })  : tripId = Value(tripId),
         name = Value(name);
   static Insertable<CrewMember> custom({
@@ -1692,6 +1791,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
     Expression<String>? categoryParticipation,
     Expression<bool>? isSkipperFree,
     Expression<String>? skipperFreeScope,
+    Expression<String>? iban,
+    Expression<String>? paypalLink,
+    Expression<String>? revolutLink,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1706,6 +1808,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
         'category_participation': categoryParticipation,
       if (isSkipperFree != null) 'is_skipper_free': isSkipperFree,
       if (skipperFreeScope != null) 'skipper_free_scope': skipperFreeScope,
+      if (iban != null) 'iban': iban,
+      if (paypalLink != null) 'paypal_link': paypalLink,
+      if (revolutLink != null) 'revolut_link': revolutLink,
     });
   }
 
@@ -1720,7 +1825,10 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
       Value<String?>? customDrinkLevel,
       Value<String>? categoryParticipation,
       Value<bool>? isSkipperFree,
-      Value<String?>? skipperFreeScope}) {
+      Value<String?>? skipperFreeScope,
+      Value<String?>? iban,
+      Value<String?>? paypalLink,
+      Value<String?>? revolutLink}) {
     return CrewMembersCompanion(
       id: id ?? this.id,
       tripId: tripId ?? this.tripId,
@@ -1734,6 +1842,9 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
           categoryParticipation ?? this.categoryParticipation,
       isSkipperFree: isSkipperFree ?? this.isSkipperFree,
       skipperFreeScope: skipperFreeScope ?? this.skipperFreeScope,
+      iban: iban ?? this.iban,
+      paypalLink: paypalLink ?? this.paypalLink,
+      revolutLink: revolutLink ?? this.revolutLink,
     );
   }
 
@@ -1774,6 +1885,15 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
     if (skipperFreeScope.present) {
       map['skipper_free_scope'] = Variable<String>(skipperFreeScope.value);
     }
+    if (iban.present) {
+      map['iban'] = Variable<String>(iban.value);
+    }
+    if (paypalLink.present) {
+      map['paypal_link'] = Variable<String>(paypalLink.value);
+    }
+    if (revolutLink.present) {
+      map['revolut_link'] = Variable<String>(revolutLink.value);
+    }
     return map;
   }
 
@@ -1790,7 +1910,10 @@ class CrewMembersCompanion extends UpdateCompanion<CrewMember> {
           ..write('customDrinkLevel: $customDrinkLevel, ')
           ..write('categoryParticipation: $categoryParticipation, ')
           ..write('isSkipperFree: $isSkipperFree, ')
-          ..write('skipperFreeScope: $skipperFreeScope')
+          ..write('skipperFreeScope: $skipperFreeScope, ')
+          ..write('iban: $iban, ')
+          ..write('paypalLink: $paypalLink, ')
+          ..write('revolutLink: $revolutLink')
           ..write(')'))
         .toString();
   }
@@ -2201,6 +2324,15 @@ class $ListItemsTable extends ListItems
   late final GeneratedColumn<double> customPackageSize =
       GeneratedColumn<double>('custom_package_size', aliasedName, true,
           type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _checkStateMeta =
+      const VerificationMeta('checkState');
+  @override
+  late final GeneratedColumnWithTypeConverter<CheckItemState, String>
+      checkState = GeneratedColumn<String>('check_state', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('vorhanden'))
+          .withConverter<CheckItemState>($ListItemsTable.$convertercheckState);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2215,7 +2347,8 @@ class $ListItemsTable extends ListItems
         calculatedQuantity,
         calculatedPackages,
         overriddenPackages,
-        customPackageSize
+        customPackageSize,
+        checkState
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2296,6 +2429,7 @@ class $ListItemsTable extends ListItems
           customPackageSize.isAcceptableOrUnknown(
               data['custom_package_size']!, _customPackageSizeMeta));
     }
+    context.handle(_checkStateMeta, const VerificationResult.success());
     return context;
   }
 
@@ -2331,6 +2465,9 @@ class $ListItemsTable extends ListItems
           DriftSqlType.int, data['${effectivePrefix}overridden_packages']),
       customPackageSize: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}custom_package_size']),
+      checkState: $ListItemsTable.$convertercheckState.fromSql(attachedDatabase
+          .typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}check_state'])!),
     );
   }
 
@@ -2338,6 +2475,9 @@ class $ListItemsTable extends ListItems
   $ListItemsTable createAlias(String alias) {
     return $ListItemsTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<CheckItemState, String> $convertercheckState =
+      const CheckItemStateConverter();
 }
 
 class ListItem extends DataClass implements Insertable<ListItem> {
@@ -2354,6 +2494,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
   final int calculatedPackages;
   final int? overriddenPackages;
   final double? customPackageSize;
+  final CheckItemState checkState;
   const ListItem(
       {required this.id,
       required this.tripId,
@@ -2367,7 +2508,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       required this.calculatedQuantity,
       required this.calculatedPackages,
       this.overriddenPackages,
-      this.customPackageSize});
+      this.customPackageSize,
+      required this.checkState});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2393,6 +2535,10 @@ class ListItem extends DataClass implements Insertable<ListItem> {
     }
     if (!nullToAbsent || customPackageSize != null) {
       map['custom_package_size'] = Variable<double>(customPackageSize);
+    }
+    {
+      map['check_state'] = Variable<String>(
+          $ListItemsTable.$convertercheckState.toSql(checkState));
     }
     return map;
   }
@@ -2422,6 +2568,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       customPackageSize: customPackageSize == null && nullToAbsent
           ? const Value.absent()
           : Value(customPackageSize),
+      checkState: Value(checkState),
     );
   }
 
@@ -2444,6 +2591,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       overriddenPackages: serializer.fromJson<int?>(json['overriddenPackages']),
       customPackageSize:
           serializer.fromJson<double?>(json['customPackageSize']),
+      checkState: serializer.fromJson<CheckItemState>(json['checkState']),
     );
   }
   @override
@@ -2463,6 +2611,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       'calculatedPackages': serializer.toJson<int>(calculatedPackages),
       'overriddenPackages': serializer.toJson<int?>(overriddenPackages),
       'customPackageSize': serializer.toJson<double?>(customPackageSize),
+      'checkState': serializer.toJson<CheckItemState>(checkState),
     };
   }
 
@@ -2479,7 +2628,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           double? calculatedQuantity,
           int? calculatedPackages,
           Value<int?> overriddenPackages = const Value.absent(),
-          Value<double?> customPackageSize = const Value.absent()}) =>
+          Value<double?> customPackageSize = const Value.absent(),
+          CheckItemState? checkState}) =>
       ListItem(
         id: id ?? this.id,
         tripId: tripId ?? this.tripId,
@@ -2500,6 +2650,7 @@ class ListItem extends DataClass implements Insertable<ListItem> {
         customPackageSize: customPackageSize.present
             ? customPackageSize.value
             : this.customPackageSize,
+        checkState: checkState ?? this.checkState,
       );
   ListItem copyWithCompanion(ListItemsCompanion data) {
     return ListItem(
@@ -2528,6 +2679,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       customPackageSize: data.customPackageSize.present
           ? data.customPackageSize.value
           : this.customPackageSize,
+      checkState:
+          data.checkState.present ? data.checkState.value : this.checkState,
     );
   }
 
@@ -2546,7 +2699,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           ..write('calculatedQuantity: $calculatedQuantity, ')
           ..write('calculatedPackages: $calculatedPackages, ')
           ..write('overriddenPackages: $overriddenPackages, ')
-          ..write('customPackageSize: $customPackageSize')
+          ..write('customPackageSize: $customPackageSize, ')
+          ..write('checkState: $checkState')
           ..write(')'))
         .toString();
   }
@@ -2565,7 +2719,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
       calculatedQuantity,
       calculatedPackages,
       overriddenPackages,
-      customPackageSize);
+      customPackageSize,
+      checkState);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2582,7 +2737,8 @@ class ListItem extends DataClass implements Insertable<ListItem> {
           other.calculatedQuantity == this.calculatedQuantity &&
           other.calculatedPackages == this.calculatedPackages &&
           other.overriddenPackages == this.overriddenPackages &&
-          other.customPackageSize == this.customPackageSize);
+          other.customPackageSize == this.customPackageSize &&
+          other.checkState == this.checkState);
 }
 
 class ListItemsCompanion extends UpdateCompanion<ListItem> {
@@ -2599,6 +2755,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
   final Value<int> calculatedPackages;
   final Value<int?> overriddenPackages;
   final Value<double?> customPackageSize;
+  final Value<CheckItemState> checkState;
   const ListItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -2613,6 +2770,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     this.calculatedPackages = const Value.absent(),
     this.overriddenPackages = const Value.absent(),
     this.customPackageSize = const Value.absent(),
+    this.checkState = const Value.absent(),
   });
   ListItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -2628,6 +2786,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     this.calculatedPackages = const Value.absent(),
     this.overriddenPackages = const Value.absent(),
     this.customPackageSize = const Value.absent(),
+    this.checkState = const Value.absent(),
   })  : tripId = Value(tripId),
         catalogId = Value(catalogId);
   static Insertable<ListItem> custom({
@@ -2644,6 +2803,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     Expression<int>? calculatedPackages,
     Expression<int>? overriddenPackages,
     Expression<double>? customPackageSize,
+    Expression<String>? checkState,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2659,6 +2819,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       if (calculatedPackages != null) 'calculated_packages': calculatedPackages,
       if (overriddenPackages != null) 'overridden_packages': overriddenPackages,
       if (customPackageSize != null) 'custom_package_size': customPackageSize,
+      if (checkState != null) 'check_state': checkState,
     });
   }
 
@@ -2675,7 +2836,8 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       Value<double>? calculatedQuantity,
       Value<int>? calculatedPackages,
       Value<int?>? overriddenPackages,
-      Value<double?>? customPackageSize}) {
+      Value<double?>? customPackageSize,
+      Value<CheckItemState>? checkState}) {
     return ListItemsCompanion(
       id: id ?? this.id,
       tripId: tripId ?? this.tripId,
@@ -2690,6 +2852,7 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
       calculatedPackages: calculatedPackages ?? this.calculatedPackages,
       overriddenPackages: overriddenPackages ?? this.overriddenPackages,
       customPackageSize: customPackageSize ?? this.customPackageSize,
+      checkState: checkState ?? this.checkState,
     );
   }
 
@@ -2735,6 +2898,10 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
     if (customPackageSize.present) {
       map['custom_package_size'] = Variable<double>(customPackageSize.value);
     }
+    if (checkState.present) {
+      map['check_state'] = Variable<String>(
+          $ListItemsTable.$convertercheckState.toSql(checkState.value));
+    }
     return map;
   }
 
@@ -2753,7 +2920,8 @@ class ListItemsCompanion extends UpdateCompanion<ListItem> {
           ..write('calculatedQuantity: $calculatedQuantity, ')
           ..write('calculatedPackages: $calculatedPackages, ')
           ..write('overriddenPackages: $overriddenPackages, ')
-          ..write('customPackageSize: $customPackageSize')
+          ..write('customPackageSize: $customPackageSize, ')
+          ..write('checkState: $checkState')
           ..write(')'))
         .toString();
   }
@@ -5282,6 +5450,9 @@ typedef $$CrewMembersTableCreateCompanionBuilder = CrewMembersCompanion
   Value<String> categoryParticipation,
   Value<bool> isSkipperFree,
   Value<String?> skipperFreeScope,
+  Value<String?> iban,
+  Value<String?> paypalLink,
+  Value<String?> revolutLink,
 });
 typedef $$CrewMembersTableUpdateCompanionBuilder = CrewMembersCompanion
     Function({
@@ -5296,6 +5467,9 @@ typedef $$CrewMembersTableUpdateCompanionBuilder = CrewMembersCompanion
   Value<String> categoryParticipation,
   Value<bool> isSkipperFree,
   Value<String?> skipperFreeScope,
+  Value<String?> iban,
+  Value<String?> paypalLink,
+  Value<String?> revolutLink,
 });
 
 final class $$CrewMembersTableReferences
@@ -5387,6 +5561,15 @@ class $$CrewMembersTableFilterComposer
   ColumnFilters<String> get skipperFreeScope => $composableBuilder(
       column: $table.skipperFreeScope,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get iban => $composableBuilder(
+      column: $table.iban, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get paypalLink => $composableBuilder(
+      column: $table.paypalLink, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get revolutLink => $composableBuilder(
+      column: $table.revolutLink, builder: (column) => ColumnFilters(column));
 
   $$TripsTableFilterComposer get tripId {
     final $$TripsTableFilterComposer composer = $composerBuilder(
@@ -5497,6 +5680,15 @@ class $$CrewMembersTableOrderingComposer
       column: $table.skipperFreeScope,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get iban => $composableBuilder(
+      column: $table.iban, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get paypalLink => $composableBuilder(
+      column: $table.paypalLink, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get revolutLink => $composableBuilder(
+      column: $table.revolutLink, builder: (column) => ColumnOrderings(column));
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -5556,6 +5748,15 @@ class $$CrewMembersTableAnnotationComposer
 
   GeneratedColumn<String> get skipperFreeScope => $composableBuilder(
       column: $table.skipperFreeScope, builder: (column) => column);
+
+  GeneratedColumn<String> get iban =>
+      $composableBuilder(column: $table.iban, builder: (column) => column);
+
+  GeneratedColumn<String> get paypalLink => $composableBuilder(
+      column: $table.paypalLink, builder: (column) => column);
+
+  GeneratedColumn<String> get revolutLink => $composableBuilder(
+      column: $table.revolutLink, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -5655,6 +5856,9 @@ class $$CrewMembersTableTableManager extends RootTableManager<
             Value<String> categoryParticipation = const Value.absent(),
             Value<bool> isSkipperFree = const Value.absent(),
             Value<String?> skipperFreeScope = const Value.absent(),
+            Value<String?> iban = const Value.absent(),
+            Value<String?> paypalLink = const Value.absent(),
+            Value<String?> revolutLink = const Value.absent(),
           }) =>
               CrewMembersCompanion(
             id: id,
@@ -5668,6 +5872,9 @@ class $$CrewMembersTableTableManager extends RootTableManager<
             categoryParticipation: categoryParticipation,
             isSkipperFree: isSkipperFree,
             skipperFreeScope: skipperFreeScope,
+            iban: iban,
+            paypalLink: paypalLink,
+            revolutLink: revolutLink,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5681,6 +5888,9 @@ class $$CrewMembersTableTableManager extends RootTableManager<
             Value<String> categoryParticipation = const Value.absent(),
             Value<bool> isSkipperFree = const Value.absent(),
             Value<String?> skipperFreeScope = const Value.absent(),
+            Value<String?> iban = const Value.absent(),
+            Value<String?> paypalLink = const Value.absent(),
+            Value<String?> revolutLink = const Value.absent(),
           }) =>
               CrewMembersCompanion.insert(
             id: id,
@@ -5694,6 +5904,9 @@ class $$CrewMembersTableTableManager extends RootTableManager<
             categoryParticipation: categoryParticipation,
             isSkipperFree: isSkipperFree,
             skipperFreeScope: skipperFreeScope,
+            iban: iban,
+            paypalLink: paypalLink,
+            revolutLink: revolutLink,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (
@@ -6142,6 +6355,7 @@ typedef $$ListItemsTableCreateCompanionBuilder = ListItemsCompanion Function({
   Value<int> calculatedPackages,
   Value<int?> overriddenPackages,
   Value<double?> customPackageSize,
+  Value<CheckItemState> checkState,
 });
 typedef $$ListItemsTableUpdateCompanionBuilder = ListItemsCompanion Function({
   Value<int> id,
@@ -6157,6 +6371,7 @@ typedef $$ListItemsTableUpdateCompanionBuilder = ListItemsCompanion Function({
   Value<int> calculatedPackages,
   Value<int?> overriddenPackages,
   Value<double?> customPackageSize,
+  Value<CheckItemState> checkState,
 });
 
 final class $$ListItemsTableReferences
@@ -6243,6 +6458,11 @@ class $$ListItemsTableFilterComposer
   ColumnFilters<double> get customPackageSize => $composableBuilder(
       column: $table.customPackageSize,
       builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<CheckItemState, CheckItemState, String>
+      get checkState => $composableBuilder(
+          column: $table.checkState,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   $$TripsTableFilterComposer get tripId {
     final $$TripsTableFilterComposer composer = $composerBuilder(
@@ -6336,6 +6556,9 @@ class $$ListItemsTableOrderingComposer
       column: $table.customPackageSize,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get checkState => $composableBuilder(
+      column: $table.checkState, builder: (column) => ColumnOrderings(column));
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -6401,6 +6624,10 @@ class $$ListItemsTableAnnotationComposer
 
   GeneratedColumn<double> get customPackageSize => $composableBuilder(
       column: $table.customPackageSize, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<CheckItemState, String> get checkState =>
+      $composableBuilder(
+          column: $table.checkState, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -6482,6 +6709,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             Value<int> calculatedPackages = const Value.absent(),
             Value<int?> overriddenPackages = const Value.absent(),
             Value<double?> customPackageSize = const Value.absent(),
+            Value<CheckItemState> checkState = const Value.absent(),
           }) =>
               ListItemsCompanion(
             id: id,
@@ -6497,6 +6725,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             calculatedPackages: calculatedPackages,
             overriddenPackages: overriddenPackages,
             customPackageSize: customPackageSize,
+            checkState: checkState,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6512,6 +6741,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             Value<int> calculatedPackages = const Value.absent(),
             Value<int?> overriddenPackages = const Value.absent(),
             Value<double?> customPackageSize = const Value.absent(),
+            Value<CheckItemState> checkState = const Value.absent(),
           }) =>
               ListItemsCompanion.insert(
             id: id,
@@ -6527,6 +6757,7 @@ class $$ListItemsTableTableManager extends RootTableManager<
             calculatedPackages: calculatedPackages,
             overriddenPackages: overriddenPackages,
             customPackageSize: customPackageSize,
+            checkState: checkState,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

@@ -290,11 +290,30 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     PaymentTransfer transfer,
     bool isSettled,
   ) {
-    const iban = 'DE89370400440532013000';
+    final memberIban = transfer.toMember.iban;
+    final hasValidIban = memberIban != null &&
+        memberIban.isNotEmpty &&
+        IbanValidator.isValid(memberIban);
+
+    if (!hasValidIban) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          children: [
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildMissingPaymentDataBox(theme, l10n, transfer.toMember),
+            const SizedBox(height: 8),
+            _buildMarkSettledRow(theme, l10n, index, isSettled),
+          ],
+        ),
+      );
+    }
+
     final remittance = 'Törn ${data.trip.name} Bordkasse ${transfer.fromMember.name}';
     final payload = EpcQrPayload(
       beneficiaryName: transfer.toMember.name,
-      iban: iban,
+      iban: memberIban,
       amountInCents: transfer.amountInCents,
       remittanceInformation: remittance,
     );
@@ -307,16 +326,143 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(height: 8),
           EpcQrWidget(payload: payload),
           const SizedBox(height: 16),
-          _buildTransferDetailsBox(theme, l10n, transfer.toMember.name, iban, transfer.formattedAmount, remittance),
-          const SizedBox(height: 12),
-          _buildCopyButton(theme, l10n, transfer.toMember.name, iban, transfer.formattedAmount, remittance),
+          _buildTransferDetailsBox(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
           const SizedBox(height: 8),
-          _buildShareRow(theme, l10n, transfer, iban, remittance),
+          TextButton.icon(
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            label: const Text('Zahlungsdaten anpassen'),
+            onPressed: () => _editMemberPaymentDetails(context, transfer.toMember),
+          ),
+          const SizedBox(height: 8),
+          _buildCopyButton(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
+          const SizedBox(height: 8),
+          _buildShareRow(theme, l10n, transfer, memberIban, remittance),
           const SizedBox(height: 12),
           _buildMarkSettledRow(theme, l10n, index, isSettled),
         ],
       ),
     );
+  }
+
+  Widget _buildMissingPaymentDataBox(ThemeData theme, AppLocalizations l10n, KittyMember member) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        border: Border.all(color: theme.colorScheme.errorContainer),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, color: theme.colorScheme.error),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Für ${member.name} sind keine Zahlungsdaten hinterlegt',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          FilledButton.tonalIcon(
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Jetzt eintragen'),
+            onPressed: () => _editMemberPaymentDetails(context, member),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editMemberPaymentDetails(BuildContext context, KittyMember member) async {
+    final ibanController = TextEditingController(text: member.iban ?? '');
+    final paypalController = TextEditingController(text: member.paypalLink ?? '');
+    final revolutController = TextEditingController(text: member.revolutLink ?? '');
+    String? ibanError;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Zahlungsdaten für ${member.name}'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: ibanController,
+                  decoration: InputDecoration(
+                    labelText: 'IBAN *',
+                    errorText: ibanError,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: paypalController,
+                  decoration: const InputDecoration(
+                    labelText: 'PayPal.Me Link (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: revolutController,
+                  decoration: const InputDecoration(
+                    labelText: 'Revolut.Me Link (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final rawIban = ibanController.text.trim();
+                final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+                if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
+                  setDialogState(() {
+                    ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+                  });
+                  return;
+                }
+                Navigator.of(ctx).pop();
+                final service = ref.read(kittyServiceProvider);
+                await service.updateMemberPaymentDetails(
+                  memberId: member.id,
+                  iban: cleanIban.isNotEmpty ? cleanIban : null,
+                  paypalLink: paypalController.text.trim().isNotEmpty ? paypalController.text.trim() : null,
+                  revolutLink: revolutController.text.trim().isNotEmpty ? revolutController.text.trim() : null,
+                );
+                ref.invalidate(tripKittyDataProvider(widget.tripId));
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatIban(String iban) {
+    final clean = iban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+    final buffer = StringBuffer();
+    for (int i = 0; i < clean.length; i++) {
+      if (i > 0 && i % 4 == 0) buffer.write(' ');
+      buffer.write(clean[i]);
+    }
+    return buffer.toString();
   }
 
   Widget _buildTransferDetailsBox(
@@ -338,7 +484,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         children: [
           _detailRow(l10n.kittyReceiver, recipient, theme),
           const Divider(height: 12),
-          _detailRow(l10n.kittyIban, 'DE89 5001 •••• •••• 42', theme, mono: true),
+          _detailRow(l10n.kittyIban, _formatIban(iban), theme, mono: true),
           const Divider(height: 12),
           _detailRow(l10n.kittyAmount, amount, theme, mono: true, bold: true),
           const Divider(height: 12),
@@ -410,7 +556,9 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
-              final link = 'https://paypal.me/${transfer.toMember.name}/${(transfer.amountInCents / 100).toStringAsFixed(2)}';
+              final link = transfer.toMember.paypalLink?.trim().isNotEmpty == true
+                  ? transfer.toMember.paypalLink!.trim()
+                  : 'https://paypal.me/${transfer.toMember.name}/${(transfer.amountInCents / 100).toStringAsFixed(2)}';
               final uri = Uri.parse(link);
               try {
                 if (await canLaunchUrl(uri)) {
@@ -439,10 +587,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
+              final revolutUrl = transfer.toMember.revolutLink?.trim().isNotEmpty == true
+                  ? transfer.toMember.revolutLink!.trim()
+                  : 'https://revolut.me/${transfer.toMember.name}';
               final text = 'Bordkasse: ${transfer.fromMember.name} zahlt ${transfer.formattedAmount} an ${transfer.toMember.name}.\n'
                   'IBAN: $iban\n'
                   'Verwendungszweck: $remittance\n'
-                  'Revolut: https://revolut.me/${transfer.toMember.name}';
+                  'Revolut: $revolutUrl';
               try {
                 await Share.share(text, subject: 'Bordkassen-Ausgleich ${transfer.toMember.name}');
               } catch (_) {

@@ -1,4 +1,4 @@
-/// Bottom Sheet zum Erfassen einer Ausgabe (SC-KAS-02).
+/// Bottom Sheet zum Erfassen und Bearbeiten einer Ausgabe (SC-KAS-02, FEEDBACK_R1 Punkt 8).
 library;
 
 import 'package:flutter/material.dart';
@@ -8,27 +8,30 @@ import '../../data/kitty_providers.dart';
 import '../../data/kitty_service.dart';
 import '../../domain/models/kitty_models.dart';
 
-/// Sheet zum Erfassen einer neuen Ausgabe.
+/// Sheet zum Erfassen oder Bearbeiten einer Ausgabe.
 class ExpenseSheet extends ConsumerStatefulWidget {
   final int tripId;
   final KittyModel kittyModel;
   final List<KittyMember> members;
+  final KittyExpense? expenseToEdit;
 
   const ExpenseSheet({
     super.key,
     required this.tripId,
     required this.kittyModel,
     required this.members,
+    this.expenseToEdit,
   });
 
-  /// Zeigt das Bottom Sheet an.
-  static Future<void> show(
+  /// Zeigt das Bottom Sheet an und liefert 'delete' zurück, falls Löschen gewählt wurde.
+  static Future<String?> show(
     BuildContext context, {
     required int tripId,
     required KittyModel kittyModel,
     required List<KittyMember> members,
+    KittyExpense? expenseToEdit,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -36,6 +39,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
         tripId: tripId,
         kittyModel: kittyModel,
         members: members,
+        expenseToEdit: expenseToEdit,
       ),
     );
   }
@@ -57,12 +61,24 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
-    _titleController = TextEditingController();
-    _isPaidFromKitty = widget.kittyModel == KittyModel.sharedKitty;
-    _paidByMemberId = widget.members.firstOrNull?.id;
+    final edit = widget.expenseToEdit;
+    _amountController = TextEditingController(
+      text: edit != null ? (edit.amountInCents / 100.0).toStringAsFixed(2) : '',
+    );
+    _titleController = TextEditingController(text: edit?.title ?? '');
+    _selectedCategory = edit?.category ?? ExpenseCategory.provisions;
+    _isPaidFromKitty = edit != null
+        ? edit.isPaidFromKitty
+        : (widget.kittyModel == KittyModel.sharedKitty);
+    _paidByMemberId = edit != null
+        ? edit.paidByMemberId
+        : widget.members.firstOrNull?.id;
+    _customSplitEnabled = edit?.customSplitInCents != null;
     for (final m in widget.members) {
-      _splitControllers[m.id] = TextEditingController();
+      final customMemberCents = edit?.customSplitInCents?[m.id];
+      _splitControllers[m.id] = TextEditingController(
+        text: customMemberCents != null ? (customMemberCents / 100.0).toStringAsFixed(2) : '',
+      );
     }
   }
 
@@ -95,24 +111,33 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     }
 
     final service = ref.read(kittyServiceProvider);
-    await service.addExpense(
-      ExpenseInput(
-        tripId: widget.tripId,
-        title: _titleController.text.trim(),
-        amountInCents: amountInCents,
-        category: _selectedCategory,
-        paidByMemberId: _isPaidFromKitty ? null : _paidByMemberId,
-        isPaidFromKitty: _isPaidFromKitty,
-        customSplitInCents: customSplit,
-      ),
+    final titleText = _titleController.text.trim().isEmpty
+        ? _selectedCategory.displayName
+        : _titleController.text.trim();
+
+    final input = ExpenseInput(
+      tripId: widget.tripId,
+      title: titleText,
+      amountInCents: amountInCents,
+      category: _selectedCategory,
+      paidByMemberId: _isPaidFromKitty ? null : _paidByMemberId,
+      isPaidFromKitty: _isPaidFromKitty,
+      customSplitInCents: customSplit,
+      createdAt: widget.expenseToEdit?.createdAt,
     );
+
+    if (widget.expenseToEdit != null) {
+      await service.updateExpense(id: widget.expenseToEdit!.id, input: input);
+    } else {
+      await service.addExpense(input);
+    }
 
     if (mounted) {
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.kittyExpenseSaved)),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop('saved');
       ref.invalidate(tripKittyDataProvider(widget.tripId));
     }
   }
@@ -159,17 +184,30 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   }
 
   Widget _buildHeader(ThemeData theme, AppLocalizations l10n) {
+    final isEditing = widget.expenseToEdit != null;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          l10n.kittyAddExpense,
-          style: theme.textTheme.titleMedium,
+          isEditing ? 'Ausgabe bearbeiten' : l10n.kittyAddExpense,
+          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isEditing)
+              IconButton(
+                icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                tooltip: l10n.delete,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                onPressed: () => Navigator.of(context).pop('delete'),
+              ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            ),
+          ],
         ),
       ],
     );
@@ -179,22 +217,20 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     return TextFormField(
       controller: _amountController,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: theme.textTheme.headlineMedium?.copyWith(
-        fontFamily: 'JetBrains Mono',
-        fontWeight: FontWeight.bold,
-      ),
+      autofocus: widget.expenseToEdit == null,
       decoration: InputDecoration(
-        labelText: '${l10n.kittyAmount} (€)',
+        labelText: '${l10n.kittyAmount} *',
         suffixText: '€',
-        suffixStyle: theme.textTheme.headlineSmall?.copyWith(
-          fontFamily: 'JetBrains Mono',
-        ),
         border: const OutlineInputBorder(),
       ),
       validator: (val) {
-        if (val == null || val.trim().isEmpty) return 'Betrag erforderlich';
-        final parsed = double.tryParse(val.replaceAll(',', '.'));
-        if (parsed == null || parsed <= 0) return 'Gültigen Betrag eingeben';
+        if (val == null || val.trim().isEmpty) {
+          return 'Bitte einen Betrag eingeben';
+        }
+        final parsed = double.tryParse(val.trim().replaceAll(',', '.'));
+        if (parsed == null || parsed <= 0) {
+          return 'Ungültiger Betrag';
+        }
         return null;
       },
     );
@@ -203,13 +239,10 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   Widget _buildTitleField(ThemeData theme, AppLocalizations l10n) {
     return TextFormField(
       controller: _titleController,
-      textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
         labelText: l10n.kittyTitleField,
         border: const OutlineInputBorder(),
       ),
-      validator: (val) =>
-          (val == null || val.trim().isEmpty) ? 'Titel erforderlich' : null,
     );
   }
 
@@ -237,47 +270,66 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   }
 
   Widget _buildPayerSelector(ThemeData theme, AppLocalizations l10n) {
+    final isShared = widget.kittyModel == KittyModel.sharedKitty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.kittyPaidByTitle, style: theme.textTheme.labelMedium),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (widget.kittyModel == KittyModel.sharedKitty)
-              ChoiceChip(
-                avatar: const Icon(Icons.account_balance_outlined, size: 18),
-                label: Text(l10n.kittyPaidFromKitty),
-                selected: _isPaidFromKitty,
-                onSelected: (_) => setState(() => _isPaidFromKitty = true),
-              ),
-            ...widget.members.map((m) {
-              final isSelected = !_isPaidFromKitty && _paidByMemberId == m.id;
-              return ChoiceChip(
-                avatar: const Icon(Icons.person_outline, size: 18),
-                label: Text(m.name),
-                selected: isSelected,
-                onSelected: (_) => setState(() {
-                  _isPaidFromKitty = false;
-                  _paidByMemberId = m.id;
-                }),
-              );
-            }),
-          ],
+        Text(
+          l10n.kittyPaidByTitle,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
+        const SizedBox(height: 8),
+        if (isShared) ...[
+          RadioListTile<bool>(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.kittyPaidFromKitty),
+            value: true,
+            groupValue: _isPaidFromKitty,
+            onChanged: (val) => setState(() => _isPaidFromKitty = val ?? true),
+          ),
+          RadioListTile<bool>(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Von einem Crewmitglied ausgelegt'),
+            value: false,
+            groupValue: _isPaidFromKitty,
+            onChanged: (val) => setState(() => _isPaidFromKitty = val ?? false),
+          ),
+        ],
+        if (!isShared || !_isPaidFromKitty)
+          DropdownButtonFormField<int>(
+            value: _paidByMemberId,
+            decoration: const InputDecoration(
+              labelText: 'Person auswählen',
+              border: OutlineInputBorder(),
+            ),
+            items: widget.members.map((m) {
+              return DropdownMenuItem(
+                value: m.id,
+                child: Text(m.name),
+              );
+            }).toList(),
+            onChanged: (val) => setState(() => _paidByMemberId = val),
+            validator: (val) {
+              if ((!isShared || !_isPaidFromKitty) && val == null) {
+                return 'Bitte die zahlende Person auswählen';
+              }
+              return null;
+            },
+          ),
       ],
     );
   }
 
   Widget _buildCustomSplitToggle(ThemeData theme) {
-    return SwitchListTile(
-      title: const Text('Anders aufteilen'),
-      subtitle: const Text('Beträge je Person manuell festlegen'),
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Individuelle Betragsaufteilung'),
+      subtitle: const Text('Weicht von der regulären Beteiligung ab'),
       value: _customSplitEnabled,
       onChanged: (val) => setState(() => _customSplitEnabled = val),
-      contentPadding: EdgeInsets.zero,
     );
   }
 

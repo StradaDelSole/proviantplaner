@@ -138,6 +138,9 @@ class KittyService {
       isSkipperFree: c.isSkipperFree,
       skipperFreeScope: c.skipperFreeScope,
       categoryParticipation: partMap,
+      iban: c.iban,
+      paypalLink: c.paypalLink,
+      revolutLink: c.revolutLink,
     );
   }
 
@@ -243,6 +246,70 @@ class KittyService {
 
   /// Löscht eine Ausgabe.
   Future<int> deleteExpense(int id) => expenseDao.deleteExpense(id);
+
+  /// Aktualisiert eine bestehende Ausgabe (FEEDBACK_R1 Punkt 8).
+  Future<bool> updateExpense({
+    required int id,
+    required ExpenseInput input,
+  }) {
+    final euros = input.amountInCents / 100.0;
+    String? splitJson;
+    if (input.customSplitInCents != null) {
+      final strMap = input.customSplitInCents!.map((k, v) => MapEntry(k.toString(), v));
+      splitJson = json.encode(strMap);
+    }
+
+    return expenseDao.updateExpense(
+      Expense(
+        id: id,
+        tripId: input.tripId,
+        amount: euros,
+        currency: 'EUR',
+        category: input.category,
+        paidByCrewMemberId: input.paidByMemberId,
+        isPaidFromKitty: input.isPaidFromKitty,
+        customSplit: splitJson,
+        note: input.title,
+        createdAt: input.createdAt ?? DateTime.now(),
+      ),
+    );
+  }
+
+  /// Stellt eine gelöschte Ausgabe wieder her (Rückgängig-Funktion).
+  Future<int> restoreExpense(KittyExpense exp) {
+    return expenseDao.addExpense(
+      ExpensesCompanion.insert(
+        id: Value(exp.id),
+        tripId: exp.tripId,
+        amount: exp.amountInCents / 100.0,
+        category: exp.category,
+        note: Value(exp.title),
+        isPaidFromKitty: Value(exp.isPaidFromKitty),
+        paidByCrewMemberId: Value(exp.paidByMemberId),
+        customSplit: Value(
+          exp.customSplitInCents != null
+              ? json.encode(exp.customSplitInCents!.map((k, v) => MapEntry(k.toString(), v)))
+              : null,
+        ),
+        createdAt: Value(exp.createdAt),
+      ),
+    );
+  }
+
+  /// Aktualisiert die Zahlungsdaten eines Crew-Mitglieds (FEEDBACK_R1 Punkt 10).
+  Future<bool> updateMemberPaymentDetails({
+    required int memberId,
+    String? iban,
+    String? paypalLink,
+    String? revolutLink,
+  }) {
+    return tripDao.updateCrewMemberPaymentDetails(
+      memberId: memberId,
+      iban: iban,
+      paypalLink: paypalLink,
+      revolutLink: revolutLink,
+    );
+  }
 
   /// Löscht eine Einzahlung.
   Future<int> deleteDeposit(int id) => expenseDao.deleteKittyPayment(id);

@@ -1,12 +1,14 @@
-/// Gruppen-Detail-Sheet zur Auswahl von Varianten und Anteilen (SC-LST-02).
+/// Gruppen-Detail-Sheet zur Auswahl von Varianten und Anteilen (SC-LST-02, FEEDBACK_R1 Punkt 6).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/package_size_dialog.dart';
@@ -62,12 +64,80 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
     _showCharterAnyway = !widget.isCharter || widget.groupView.group.visibility == GroupVisibility.all;
   }
 
+  ShoppingListGroupView _resolveCurrentGroupView(TripShoppingListData? listData) {
+    if (listData == null) return widget.groupView;
+    for (final cat in listData.categories) {
+      for (final g in cat.groups) {
+        if (g.group.id == widget.groupView.group.id) {
+          return g;
+        }
+      }
+    }
+    return widget.groupView;
+  }
+
+  Future<void> _toggleVariant(ShoppingListItemView v, bool isSelected) async {
+    await ref.read(shoppingListServiceProvider).toggleVariantSelected(
+          tripId: widget.tripId,
+          listItemId: v.item.id,
+          isSelected: isSelected,
+        );
+    ref.invalidate(tripShoppingListProvider(widget.tripId));
+  }
+
+  Future<void> _updateCheckState(ShoppingListItemView v, CheckItemState state) async {
+    await ref.read(shoppingListServiceProvider).updateCheckState(
+          tripId: widget.tripId,
+          listItemId: v.item.id,
+          state: state,
+        );
+    ref.invalidate(tripShoppingListProvider(widget.tripId));
+  }
+
+  Future<void> _showQuantityDialog(BuildContext context, ShoppingListItemView v) async {
+    final controller = TextEditingController(text: v.effectivePackages.toString());
+    final count = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${v.name}: Menge anpassen'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Anzahl Packungen',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(controller.text.trim());
+              Navigator.of(ctx).pop(parsed);
+            },
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    if (count != null) {
+      await ref.read(shoppingListServiceProvider).setPackages(v, count);
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final group = widget.groupView.group;
-    final variants = widget.groupView.variants;
+    final listDataAsync = ref.watch(tripShoppingListProvider(widget.tripId));
+    final currentGroupView = _resolveCurrentGroupView(listDataAsync.valueOrNull);
+    final group = currentGroupView.group;
+    final variants = currentGroupView.variants;
 
     return Column(
       children: [
@@ -109,7 +179,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             ),
           ),
         ),
-        if (widget.isCharter && widget.groupView.isOwnerOnly)
+        if (widget.isCharter && currentGroupView.isOwnerOnly)
           Padding(
             padding: const EdgeInsets.all(12),
             child: Card(
@@ -130,17 +200,20 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (ctx, i) {
               final v = variants[i];
-              return _buildVariantTile(context, v, theme, l10n);
+              if (group.mode == GroupMode.check) {
+                return _buildChecklistTile(context, v, theme, l10n);
+              }
+              return _buildVariantTile(context, v, theme, l10n, currentGroupView);
             },
           ),
         ),
         // Sticky Summenleiste unten
-        _buildBottomBar(theme, l10n),
+        _buildBottomBar(theme, l10n, currentGroupView),
       ],
     );
   }
 
-  Widget _buildVariantTile(
+  Widget _buildChecklistTile(
     BuildContext context,
     ShoppingListItemView v,
     ThemeData theme,
@@ -151,99 +224,179 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Checkbox(
-                value: v.isSelected,
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(shoppingListServiceProvider).toggleVariantSelected(
-                          tripId: widget.tripId,
-                          listItemId: v.item.id,
-                          isSelected: val,
-                        );
-                    ref.invalidate(tripShoppingListProvider(widget.tripId));
-                  }
-                },
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      v.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        decoration: v.isSelected ? null : TextDecoration.lineThrough,
-                      ),
-                    ),
-                    Text(
-                      v.packDisplay,
-                      style: theme.proviantTypography.numberSmall.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (v.isSelected)
-                TextButton(
-                  onPressed: () async {
-                    final newSize = await PackageSizeDialog.show(context, v);
-                    if (newSize != null) {
-                      await ref.read(shoppingListServiceProvider).updateCustomPackageSize(
-                            tripId: widget.tripId,
-                            listItemId: v.item.id,
-                            packSize: newSize,
-                          );
-                      ref.invalidate(tripShoppingListProvider(widget.tripId));
-                    }
-                  },
-                  child: Text(
-                    l10n.changePackSize,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          if (v.isSelected && widget.groupView.group.split == GroupSplit.equal)
-            Padding(
-              padding: const EdgeInsets.only(left: 48, right: 8),
-              child: Row(
-                children: [
-                  Text(
-                    'Anteil: ${(v.share * 100).round()} %',
-                    style: theme.proviantTypography.numberSmall,
-                  ),
-                  Expanded(
-                    child: Slider(
-                      value: v.share,
-                      min: 0.0,
-                      max: 1.0,
-                      divisions: 20,
-                      onChanged: (val) {
-                        ref.read(shoppingListServiceProvider).updateVariantShare(
-                              tripId: widget.tripId,
-                              listItemId: v.item.id,
-                              share: val,
-                            );
-                        ref.invalidate(tripShoppingListProvider(widget.tripId));
-                      },
-                    ),
-                  ),
-                ],
-              ),
+          Text(
+            v.name,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          const SizedBox(height: 6),
+          SegmentedButton<CheckItemState>(
+            segments: const [
+              ButtonSegment(
+                value: CheckItemState.available,
+                label: Text('vorhanden'),
+                icon: Icon(Icons.check, size: 16),
+              ),
+              ButtonSegment(
+                value: CheckItemState.missing,
+                label: Text('fehlt'),
+                icon: Icon(Icons.remove, size: 16),
+              ),
+              ButtonSegment(
+                value: CheckItemState.restock,
+                label: Text('nachkaufen'),
+                icon: Icon(Icons.shopping_cart_outlined, size: 16),
+              ),
+            ],
+            selected: {v.checkState},
+            onSelectionChanged: (set) {
+              if (set.isNotEmpty) {
+                _updateCheckState(v, set.first);
+              }
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomBar(ThemeData theme, AppLocalizations l10n) {
-    final status = widget.groupView.coverageStatus;
-    final total = widget.groupView.totalPackages;
+  Widget _buildVariantTile(
+    BuildContext context,
+    ShoppingListItemView v,
+    ThemeData theme,
+    AppLocalizations l10n,
+    ShoppingListGroupView currentGroupView,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _toggleVariant(v, !v.isSelected),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Checkbox(
+                  value: v.isSelected,
+                  onChanged: (val) {
+                    if (val != null) {
+                      _toggleVariant(v, val);
+                    }
+                  },
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        v.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          decoration: v.isSelected ? null : TextDecoration.lineThrough,
+                        ),
+                      ),
+                      if (v.isSelected)
+                        InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          onTap: () => _showQuantityDialog(context, v),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  v.packDisplay,
+                                  style: theme.proviantTypography.numberSmall.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(Icons.edit_outlined, size: 14, color: theme.colorScheme.primary),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          v.packDisplay,
+                          style: theme.proviantTypography.numberSmall.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (v.isSelected) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_note, size: 20),
+                    tooltip: 'Menge eingeben',
+                    onPressed: () => _showQuantityDialog(context, v),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final newSize = await PackageSizeDialog.show(context, v);
+                      if (newSize != null) {
+                        await ref.read(shoppingListServiceProvider).updateCustomPackageSize(
+                              tripId: widget.tripId,
+                              listItemId: v.item.id,
+                              packSize: newSize,
+                            );
+                        ref.invalidate(tripShoppingListProvider(widget.tripId));
+                      }
+                    },
+                    child: Text(
+                      l10n.changePackSize,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (v.isSelected && currentGroupView.group.split == GroupSplit.equal)
+              Padding(
+                padding: const EdgeInsets.only(left: 48, right: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Anteil: ${(v.share * 100).round()} %',
+                      style: theme.proviantTypography.numberSmall,
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: v.share,
+                        min: 0.0,
+                        max: 1.0,
+                        divisions: 20,
+                        onChanged: (val) async {
+                          await ref.read(shoppingListServiceProvider).updateVariantShare(
+                                tripId: widget.tripId,
+                                listItemId: v.item.id,
+                                share: val,
+                              );
+                          ref.invalidate(tripShoppingListProvider(widget.tripId));
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ShoppingListGroupView currentGroupView,
+  ) {
+    final status = currentGroupView.coverageStatus;
+    final total = currentGroupView.totalPackages;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -261,7 +414,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 'Gesamt: $total Packungen',
                 style: theme.proviantTypography.numberMedium.copyWith(fontWeight: FontWeight.bold),
               ),
-              _buildCoverageBadge(status, theme, l10n),
+              _buildCoverageBadge(status, theme, l10n, currentGroupView),
             ],
           ),
           const SizedBox(height: 12),
@@ -271,7 +424,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      final firstSelected = widget.groupView.variants.where((v) => v.isSelected).firstOrNull;
+                      final firstSelected = currentGroupView.variants.where((v) => v.isSelected).firstOrNull;
                       if (firstSelected != null) {
                         StopAllocationSheet.show(
                           context,
@@ -299,12 +452,17 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
     );
   }
 
-  Widget _buildCoverageBadge(GroupCoverageStatus status, ThemeData theme, AppLocalizations l10n) {
+  Widget _buildCoverageBadge(
+    GroupCoverageStatus status,
+    ThemeData theme,
+    AppLocalizations l10n,
+    ShoppingListGroupView currentGroupView,
+  ) {
     final (text, color, icon) = switch (status) {
       GroupCoverageStatus.covered => (l10n.covered, theme.colorScheme.secondary, Icons.check_circle_outline),
       GroupCoverageStatus.scarce => (l10n.scarce, Colors.amber, Icons.warning_amber_outlined),
       GroupCoverageStatus.noneSelected => (l10n.noneSelected, theme.colorScheme.onSurfaceVariant, Icons.remove_circle_outline),
-      GroupCoverageStatus.checklist => ('${widget.groupView.checkedCount} geprüft', theme.colorScheme.primary, Icons.checklist),
+      GroupCoverageStatus.checklist => ('${currentGroupView.checkedCount} geprüft', theme.colorScheme.primary, Icons.checklist),
     };
 
     return Row(

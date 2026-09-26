@@ -4,9 +4,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
+import 'package:proviantplaner/core/services/user_payment_profile_service.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
 import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
 import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/trip_bottom_bar.dart';
 
 /// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
@@ -174,11 +176,7 @@ class MoreScreen extends ConsumerWidget {
             title: const Text('Meine Zahlungsdaten'),
             subtitle: const Text('Nur auf diesem Gerät gespeichert'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Zahlungsdaten werden im Törn verwaltet.')),
-              );
-            },
+            onTap: () => _showUserPaymentProfileDialog(context, ref),
           ),
           ListTile(
             leading: const Icon(Icons.straighten_outlined),
@@ -423,6 +421,111 @@ class MoreScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showUserPaymentProfileDialog(BuildContext context, WidgetRef ref) async {
+    final service = ref.read(userPaymentProfileServiceProvider);
+    final currentProfile = await service.loadProfile();
+
+    if (!context.mounted) return;
+
+    final nameController = TextEditingController(text: currentProfile.name);
+    final ibanController = TextEditingController(text: currentProfile.iban ?? '');
+    final paypalController = TextEditingController(text: currentProfile.paypalLink ?? '');
+    final revolutController = TextEditingController(text: currentProfile.revolutLink ?? '');
+    String? ibanError;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Meine Zahlungsdaten'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Nur auf diesem Gerät gespeichert. Werden bei Abrechnungen als Empfängerdaten genutzt.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: ibanController,
+                  decoration: InputDecoration(
+                    labelText: 'IBAN',
+                    errorText: ibanError,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: paypalController,
+                  decoration: const InputDecoration(
+                    labelText: 'PayPal.Me Link',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: revolutController,
+                  decoration: const InputDecoration(
+                    labelText: 'Revolut.Me Link',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final rawIban = ibanController.text.trim();
+                final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+                if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
+                  setDialogState(() {
+                    ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+                  });
+                  return;
+                }
+
+                await service.saveProfile(
+                  UserPaymentProfile(
+                    name: nameController.text.trim(),
+                    iban: cleanIban.isNotEmpty ? cleanIban : null,
+                    paypalLink: paypalController.text.trim().isNotEmpty ? paypalController.text.trim() : null,
+                    revolutLink: revolutController.text.trim().isNotEmpty ? revolutController.text.trim() : null,
+                  ),
+                );
+                ref.invalidate(userPaymentProfileProvider);
+
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Zahlungsdaten gespeichert.')),
+                  );
+                }
+              },
+              child: const Text('Speichern'),
+            ),
           ],
         ),
       ),
