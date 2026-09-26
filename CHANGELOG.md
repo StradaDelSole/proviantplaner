@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – UX-Konzept v0.4
+
+- Zahlungsdaten nur vom Kassenwart; Auszahlungen an andere bei Bedarf in der Abrechnungszeile (in UX-A aufgenommen)
+
 ## 2026-09-26 – UX-Konzept v0.3, Slice-Plan v0.16, Freigabe UX-A bis UX-C
 
 - Begriffsregel: kein "Kitty" in der Oberfläche (DE Bordkasse, EN Crew fund)

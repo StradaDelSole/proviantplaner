@@ -23,7 +23,7 @@ Jeder Slice ist eine abgeschlossene Arbeitseinheit für eine Gemini-Sitzung: kle
 | v0.13 | 25.09.2026 | Neuer Korrektur-Slice S5a nach Review S2a–S5; freigegebene Zusatzpakete; Katalog v0.8 |
 | v0.14 | 25.09.2026 | Korrektur-Slice S8a nach Review S5a–S8 (erfundener Nachweis, sichtbare v1.1-Funktion) |
 | v0.15 | 26.09.2026 | Feedback-Runde 1: Slices FB1-A bis FB1-D (vorrangig vor S9) |
-| v0.16 | 26.09.2026 | UX-Überarbeitung nach UX-Konzept v0.3: Slices UX-A bis UX-C (vorrangig vor S9/S10) |
+| v0.16 | 26.09.2026 | UX-Überarbeitung nach UX-Konzept v0.4: Slices UX-A bis UX-C (vorrangig vor S9/S10) |
 | v0.4.1 | 23.09.2026 | Verweis auf PRD v0.11; Hinweis: Törn-Code und Bestellung an die Basis sind v1.1 und nicht Teil dieser Slices. Vorbereitung in S6: Freischaltung so bauen, dass später eine zeitlich begrenzte Freischaltung per Code ergänzt werden kann |
 
 ## Technische Leitplanken (für alle Slices)
@@ -252,19 +252,20 @@ Grundlage: Punkt 9. Kassenwart, Einzahlen in einem Schritt, Ausgabe mit drei Fel
 
 ### UX-A – Navigation, Törn anlegen, Törn-Übersicht
 
-Grundlage: `docs/design/UX_KONZEPT_v0.3.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
+Grundlage: `docs/design/UX_KONZEPT_v0.4.md` Abschnitte 1, 2.1–2.3, 3, 4. Vorrang vor Design-Brief v0.5 bei Informationsarchitektur und Bildschirmliste.
 
 - Reiterleiste entfernen; fünf Hauptbildschirme; keine Ebene tiefer als zwei unter "Meine Törns"
 - Meine Törns (2.1) mit "Nächster Schritt" je Karte; Einstellungen über Symbol oben rechts
 - Törn anlegen als ein Bildschirm mit drei aufklappenden Abschnitten (2.2); entfernen: Revier/Klimazone, Einrumpf/Katamaran, Trinkfrage im Setup, Tagesleiste als Pflicht; Restaurantbesuche über "Esst ihr auch auswärts?" mit zwei Zählern; Kühlschrank Zahlenfeld oder "kein Kühlschrank"
 - Törn-Übersicht als Ablauf mit vier Schritten (2.3), nächster Schritt hervorgehoben, Bordkasse und Abrechnen integriert, schwebender Button "Ausgabe erfassen" ab Törnbeginn, "Tage im Detail" eingeklappt
+- Zahlungsdaten nur vom Kassenwart (UX-Konzept 2.3, Abschnitt "Zahlungsdaten"); Zahlungsdaten-Felder bei übrigen Crewmitgliedern entfernen; Auszahlung per "bar ausgezahlt" oder "Überweisen" mit IBAN-Abfrage erst bei Bedarf
 - Datenmodell: Revier-/Bootstyp-Felder nicht mehr verwenden (Migration einmalig an einer Stelle; keine freien Texte in der Engine)
 
-**Abnahme:** Widget-Tests: Meine Törns hat keine Reiterleiste; Anlegen ohne Revier/Bootstyp möglich und führt direkt zur Übersicht; Zähler "Restaurant" ändern Bord-Mahlzeiten; Übersicht zeigt vier Schritte und hebt den nächsten hervor; "Abrechnen" und "Ausgabe erfassen" sind ohne Drei-Punkte-Menü erreichbar; kein Bildschirm tiefer als zwei Ebenen.
+**Abnahme:** Widget-Tests: Meine Törns hat keine Reiterleiste; Anlegen ohne Revier/Bootstyp möglich und führt direkt zur Übersicht; Zähler "Restaurant" ändern Bord-Mahlzeiten; Übersicht zeigt vier Schritte und hebt den nächsten hervor; "Abrechnen" und "Ausgabe erfassen" sind ohne Drei-Punkte-Menü erreichbar; kein Bildschirm tiefer als zwei Ebenen; Crew-Verwaltung enthält keine Zahlungsdaten-Felder; Zahlung an die Kasse nutzt die Daten des Kassenwarts; IBAN eines anderen Mitglieds wird erst bei "Überweisen" in dessen Abrechnungszeile abgefragt.
 
 ### UX-B – Liste, Einkaufsmodus, Liefern lassen
 
-Grundlage: UX-Konzept v0.3 Abschnitte 2.4, 2.4a, 2.5.
+Grundlage: UX-Konzept v0.4 Abschnitte 2.4, 2.4a, 2.5.
 
 - Liste: Varianten klappen unter der Gruppe auf (kein Sheet), Menge inline eingeben, Vorschläge je Position/Kategorie/gesamt übernehmen, Wasser-Schnellwahl (+25 %/+50 %), Stopp-Zuordnung per Wischgeste, "+ Position" als schwebender Button, "Einkauf starten" fest unten
 - Einkaufsstopp-Art "Selbst einkaufen" / "Liefern lassen"; Bestellung mit Vorschau, Versand über Teilen-Menü (E-Mail mit PDF, WhatsApp-Text, PDF), Status "bestellt am", Nachtrag, "Lieferung erhalten" mit Abhaken; gespeicherte Lieferanten in den Einstellungen
@@ -274,7 +275,7 @@ Grundlage: UX-Konzept v0.3 Abschnitte 2.4, 2.4a, 2.5.
 
 ### UX-C – Begriffe und Aufräumen
 
-Grundlage: UX-Konzept v0.3 Abschnitt 2.6.
+Grundlage: UX-Konzept v0.4 Abschnitt 2.6.
 
 - Alle sichtbaren Texte nach der Begriffstabelle (DE "Bordkasse", EN "Crew fund" usw.); kein "Kitty" in ARB-Dateien
 - Startbildschirmtext: DE "Proviant und Bordkasse – ganz einfach", EN "Provisioning & crew fund made easy"; keine alten Platzhaltertexte
