@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-26 – MVP-Abschluss freigegeben
+
+- Feedback-Runde 2 v0.3 (Bedienregel Zahleneingaben, Bordtank nur trinkbar); Katalog v0.10 (Lagerung, TK-Haltbarkeit, 20 Langfahrt-/TK-Varianten); Quantities v0.6
+- Slice-Plan v0.17: FB2-A, FB2-B, S9 (Katalogübersetzung durch Gemini als Ausnahme), S10-T freigegeben
+
 ## 2026-09-26 – Feedback-Runde 2 v0.2 (Entwurf)
 
 - Haltbarkeitsgrenze für Vorschläge, haltbare Varianten bei langen Strecken, Tiefkühlfach, Katalogergänzungen, Layout-Überlauf, Übernahmen aus Wettbewerbsanalyse
