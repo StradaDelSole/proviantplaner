@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – Wettbewerbsanalyse v0.1
+
+- CrewMate, Armator.PRO, Victuo und allgemeine Alternativen; Differenzierung und Empfehlung
+
 ## 2026-09-26 – UX-Konzept v0.4
 
 - Zahlungsdaten nur vom Kassenwart; Auszahlungen an andere bei Bedarf in der Abrechnungszeile (in UX-A aufgenommen)
