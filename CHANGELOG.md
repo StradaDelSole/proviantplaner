@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – Wettbewerbsanalyse v0.4
+
+- Victuo getestet; Übernahmen: Bordtank beim Wasser, Gesamtgewicht/-volumen, WhatsApp-Bestellung; Kartendienste vorgemerkt
+
 ## 2026-09-26 – Slice UX-A: Navigation, Törn anlegen, Törn-Übersicht
 
 - **Startbildschirm („Meine Törns“):**

@@ -15,7 +15,7 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
 | `docs/design/UX_KONZEPT_v0.4.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
-| `docs/research/WETTBEWERB_v0.3.md` | Wettbewerbsanalyse |
+| `docs/research/WETTBEWERB_v0.4.md` | Wettbewerbsanalyse |
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
 | `CHANGELOG.md` | Fortschritt pro Slice |
