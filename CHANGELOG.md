@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-09-26 – Feedback-Runde 2 v0.2 (Entwurf)
+
+- Haltbarkeitsgrenze für Vorschläge, haltbare Varianten bei langen Strecken, Tiefkühlfach, Katalogergänzungen, Layout-Überlauf, Übernahmen aus Wettbewerbsanalyse
+
 ## 2026-09-26 – Slice UX-C: Begriffe und Aufräumen
 
 - **Begriffe nach UX-Konzept v0.6 Begriffstabelle:**
