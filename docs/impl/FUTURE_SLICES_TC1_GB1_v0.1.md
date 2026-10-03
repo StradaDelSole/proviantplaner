@@ -37,6 +37,15 @@ Die bereits vorhandenen Cost-Share-Fähigkeiten für Diesel und Hafen/Liegeplatz
 8. Ausgabe löschen räumt zugehörige lokale Belegdatei auf.
 9. Offline-Test.
 10. vollständige Regression der bestehenden Bordkassen-Tests.
+11. Eine Ausgabe kann mehrere Zahler enthalten; Summe der Zahlungsteile = Ausgabenbetrag.
+12. Minimierte finale Transfers liefern dasselbe Netto-Ergebnis wie die zugrunde liegenden Salden.
+13. Jeder offene Transfer erzeugt QR/Payment-Aktion für den tatsächlichen Empfänger und exakten Restbetrag.
+14. Bezahlt-Status ist persistent; optionaler Teilzahlungsstatus darf keine Doppelzahlung ermöglichen.
+15. Einkauf/Lieferung kann nach Bestätigung als vorausgefüllte Bordkassen-Ausgabe übernommen werden; nie automatisch.
+16. Optionales Budget vs. Ist beeinflusst Settlement nicht.
+17. Smarter Nachschuss ist nur Vorschlag und benötigt Nutzerbestätigung.
+18. Törnabschluss erzeugt einen stabilen Abschluss-Snapshot; Änderungen danach nur über explizites Wiederöffnen.
+19. Export enthält Kategorie-Summen, persönliche Kostenanteile und finalen Transferstatus.
 
 ## GB1 – Grab Bag / Departure Readiness
 
@@ -107,3 +116,19 @@ Vor Start von TC1/GB1:
 
 Empfehlung:
 **TC1 vor GB1**.
+
+
+## TC2 – Crewwechsel / zeitabhängige Beteiligung (später)
+
+Nicht Teil von TC1.
+
+Ziel:
+Bei langen Törns mit wechselnder Crew können Ausgaben automatisch nur auf die zum Ausgaben-/Leistungszeitraum beteiligten Personen verteilt werden.
+
+Vor Umsetzung separat entscheiden:
+- Teilnahmeintervalle pro Crewmitglied;
+- Zuordnung einer Ausgabe zu Tag/Zeitraum;
+- Verhalten bei pauschalen Törnkosten;
+- Migration bestehender Crew-Daten.
+
+TC2 darf TC1 und die erste reale Testphase nicht verzögern.
