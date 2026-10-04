@@ -1,0 +1,24 @@
+name = "proviantplaner-backend"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# D1-Datenbank (Metadaten, accounts, charter, codes)
+[[d1_databases]]
+binding = "DB"
+database_name = "proviantplaner-db"
+database_id = "placeholder-d1-database-id"
+migrations_dir = "migrations"
+
+# R2-Bucket für Cloud-Sicherungen (Jurisdiktion EU)
+[[r2_buckets]]
+binding = "BACKUPS_BUCKET"
+bucket_name = "proviantplaner-backups"
+jurisdiction = "eu"
+
+# Konfiguration und Platzhalter (Keine Geheimnisse!)
+[vars]
+ENVIRONMENT = "development"
+AUTH0_ISSUER_BASE_URL = "https://auth.hullq.com/"
+AUTH0_AUDIENCE = "https://api.planer.hullq.com"
+ALLOWED_ORIGINS = "http://localhost:3000,http://localhost:4321,https://portal.hullq.com"

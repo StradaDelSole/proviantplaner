@@ -1,0 +1,70 @@
+---
+// Seite zur Kontolöschung gemäß Google Play Richtlinien
+---
+
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Konto löschen – Proviantplaner</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        margin: 0;
+        padding: 2rem;
+        display: flex;
+        justify-content: center;
+      }
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 540px;
+        width: 100%;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      }
+      h1 {
+        color: #b91c1c;
+        margin-top: 0;
+      }
+      .info-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+      }
+      .btn-delete {
+        background: #dc2626;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Konto & Daten löschen</h1>
+      <p>Gemäß den Datenschutz- und App-Store-Richtlinien können Sie Ihr HullQ-Konto und alle zugehörigen Daten des Proviantplaners unwiderruflich löschen.</p>
+      
+      <div class="info-box">
+        <strong>Was wird gelöscht?</strong>
+        <ul>
+          <li>Ihr Account-Eintrag und Authentifizierungszuordnungen</li>
+          <li>Alle in R2 gespeicherten Cloud-Sicherungen</li>
+          <li>Erteilte Einwilligungen und Fragebogen-Zuordnungen</li>
+        </ul>
+      </div>
+
+      <p>Um die Löschung durchzuführen, melden Sie sich bitte mit Ihrem Konto an:</p>
+      <button class="btn-delete" id="delete-btn" disabled>Mit Auth0 anmelden & Löschung bestätigen</button>
+      <p><small>(Funktion wird in Slice B1 mit der Auth0-Anbindung aktiviert)</small></p>
+      <p><a href="/">← Zurück zur Startseite</a></p>
+    </div>
+  </body>
+</html>

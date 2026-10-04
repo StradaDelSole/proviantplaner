@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-26 – Slice B0: Planer-Backend Grundgerüst
+
+- **Cloudflare Worker Backend (`backend/`):**
+  - Worker mit Hono v4, Zod v3, Jose v5 und TypeScript im `strict`-Modus ohne `any`.
+  - Standardisierte Fehlerantworten `{ error: { code, message } }` über `AppError` und Exception-Handler.
+  - Endpunkte `/health` und `/v1/info` mit CORS-Unterstützung implementiert.
+- **D1-Datenbank & R2-Storage:**
+  - Initiale Migration `migrations/0001_initial_schema.sql` mit allen 11 Tabellen aus Backend-Konzept v0.2 Abschnitt 4 angelegt.
+  - Deklarative Bindings in `wrangler.toml` für D1 (`DB`) und R2 (`BACKUPS_BUCKET`) mit EU-Jurisdiktion.
+- **Tests & Qualitätssicherung:**
+  - Vitest-Testsuite mit `@cloudflare/vitest-pool-workers` aufgesetzt (`singleWorker: true`, `fileParallelism: false` für Windows Miniflare-Stabilität).
+  - Schema- und CRUD-Tests verifizieren alle 11 Tabellen, Foreign Keys und R2-Operationen (6/6 Tests grün).
+  - Sicherheitsprüfung: 0 Geheimnisse im gesamten Repository.
+- **Portal & Web (`portal/`):**
+  - Cloudflare Pages Projekt mit Astro v4 und TypeScript eingerichtet (`web/` blieb unberührt).
+  - Startseite und Account-Löschseite (`konto-loeschen.astro`) angelegt.
+- **GitHub Actions CI:**
+  - `.github/workflows/ci.yml` für automatische Builds und Tests: Flutter (`analyze`, `test`) und Backend (`typecheck`, `test`).
+
 ## 2026-09-26 – Slice FB2-B: Oberfläche – Setup, Hinweise, Bedienung, Überlauf
 
 - **Törn-Setup UI (Tiefkühlfach & Wassertank):**

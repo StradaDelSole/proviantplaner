@@ -26,3 +26,10 @@ key.properties
 # Secrets
 .env
 *.env
+
+# Node & Cloudflare
+node_modules/
+.wrangler/
+dist/
+.astro/
+coverage/
