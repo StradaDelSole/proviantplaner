@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/app_router.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
@@ -44,7 +45,7 @@ class ProviantplanerApp extends ConsumerWidget {
     }
 
     return MaterialApp.router(
-      title: 'Proviantplaner',
+      title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: currentTheme,
       darkTheme: appThemeMode == AppThemeMode.nightwatch

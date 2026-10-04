@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-04 – Slice S10-T: Technische Store-Bereitschaft (ohne Veröffentlichung)
+
+- **Zentraler App-Name (`lib/core/config/app_config.dart`):**
+  - Konstante `AppConfig.appName = 'Provy'` (Arbeitstitel) als einzige Definitionsstelle im Dart-Code.
+  - Einbindung in `MaterialApp.router` in `lib/main.dart`.
+  - Android-seitige Referenz über `strings.xml` (`app_name`) und `AndroidManifest.xml` (`@string/app_name`).
+- **Release-Signatur & CI-Kompatibilität (`android/app/build.gradle`, `.gitignore`):**
+  - Signaturkonfiguration in `android/app/build.gradle` nutzt `key.properties`, falls vorhanden; fällt für lokale Tests und CI ohne Secrets im Repo sauber auf Debug-Signatur zurück.
+  - Ausschluss aller Keystores (`*.jks`, `*.keystore`) und `key.properties` in `.gitignore`.
+- **Adaptive Icons & Splash Screen nach Design-System:**
+  - Android Adaptive Icon mit Hintergrund in Deep Navy (`#0A2540`) und Vektorgrafik im Vordergrund (`ic_launcher_foreground.xml`) ohne maritime Klischees (kein Anker, kein Steuerrad, kein Segel).
+  - Splash Screen (`launch_background.xml`) auf Deep Navy `@color/splash_background` umgestellt.
+- **Zentrale Rechts- und Kontolinks:**
+  - Konstanten für Datenschutz, Impressum, AGB und Web-Kontolöschung in `AppConfig`.
+  - Anbindung in `MoreScreen` und `UnlockSheet` über `url_launcher`.
+- **Release-Build & Tests:**
+  - Erfolgreicher lokaler Release-Build `flutter build appbundle --release` (28.5 MB Bundle).
+  - 5 automatisierte Tests in `test/core/config/s10_t_store_readiness_test.dart` belegen alle Kriterien.
+  - 229/229 Tests grün, `flutter analyze` 0 Warnungen/Fehler.
+
 ## 2026-10-04 – Slice S9: Sechs Sprachen und Formate (DE, EN, FR, ES, PT, HR)
 
 - **Vollständige Lokalisierung der App in sechs Sprachen:**

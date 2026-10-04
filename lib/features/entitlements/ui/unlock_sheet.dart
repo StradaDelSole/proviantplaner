@@ -7,7 +7,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../data/entitlements_providers.dart';
 
 /// Sheet zur Kontoaktivierung / Freischaltung (SC-ACC-01).
@@ -357,17 +359,50 @@ class _UnlockSheetState extends ConsumerState<UnlockSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(l10n.privacyPolicy, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline)),
+        GestureDetector(
+          onTap: () => launchUrl(
+            Uri.parse(AppConfig.privacyPolicyUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Text(
+            l10n.privacyPolicy,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8),
           child: Text('·'),
         ),
-        Text(l10n.termsOfUse, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline)),
+        GestureDetector(
+          onTap: () => launchUrl(
+            Uri.parse(AppConfig.termsOfServiceUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Text(
+            l10n.termsOfUse,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 8),
           child: Text('·'),
         ),
-        Text(l10n.imprint, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline)),
+        GestureDetector(
+          onTap: () => launchUrl(
+            Uri.parse(AppConfig.imprintUrl),
+            mode: LaunchMode.externalApplication,
+          ),
+          child: Text(
+            l10n.imprint,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ),
       ],
     );
   }

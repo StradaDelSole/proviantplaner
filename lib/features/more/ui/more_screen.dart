@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
@@ -12,6 +13,7 @@ import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
 class MoreScreen extends ConsumerWidget {
@@ -141,6 +143,13 @@ class MoreScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _launchExternalUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (tripId != null) {
@@ -225,26 +234,26 @@ class MoreScreen extends ConsumerWidget {
             leading: const Icon(Icons.privacy_tip_outlined),
             title: Text(l10n.privacyPolicy),
             trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () {},
+            onTap: () => _launchExternalUrl(AppConfig.privacyPolicyUrl),
           ),
           ListTile(
             leading: const Icon(Icons.description_outlined),
             title: Text(l10n.termsOfUse),
             trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () {},
+            onTap: () => _launchExternalUrl(AppConfig.termsOfServiceUrl),
           ),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: Text(l10n.imprint),
             trailing: const Icon(Icons.open_in_new, size: 18),
-            onTap: () {},
+            onTap: () => _launchExternalUrl(AppConfig.imprintUrl),
           ),
           const SizedBox(height: 24),
           Center(
             child: Column(
               children: [
                 Text(
-                  'Version 1.0.0',
+                  'Version ${AppConfig.appVersion} (${AppConfig.buildNumber})',
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                 ),
                 const SizedBox(height: 4),
