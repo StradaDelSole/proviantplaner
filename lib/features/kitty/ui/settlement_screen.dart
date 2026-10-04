@@ -8,6 +8,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/services/pdf_providers.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
@@ -67,6 +68,11 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
   @override
   Widget build(BuildContext context) {
     final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
+
+    if (asyncData.hasError) {
+      return const NotFoundScreen(message: 'Törn nicht gefunden');
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 

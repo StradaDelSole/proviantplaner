@@ -1,6 +1,3 @@
-/// Domänen- und UI-Modelle für die Vorrats- und Einkaufsliste (Slice S4).
-library;
-
 import 'package:flutter/material.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/tables.dart';
@@ -31,6 +28,8 @@ class ShoppingListItemView {
   final bool isCustom;
   final int shelfLifeDays;
   final List<String> storageHints;
+  final String? storageNotice;
+  final String? remainderNotice;
   final CheckItemState checkState;
   final bool isAdopted;
   final Map<int, ListItemAllocation> allocationsByStop;
@@ -52,10 +51,60 @@ class ShoppingListItemView {
     required this.isCustom,
     required this.shelfLifeDays,
     required this.storageHints,
+    this.storageNotice,
+    this.remainderNotice,
     this.checkState = CheckItemState.available,
     this.isAdopted = false,
     required this.allocationsByStop,
   });
+
+  ShoppingListItemView copyWith({
+    ListItem? item,
+    CatalogVariant? variant,
+    String? id,
+    String? name,
+    String? unit,
+    CatalogDepartment? department,
+    String? categoryId,
+    int? calculatedPackages,
+    int? overriddenPackages,
+    double? calculatedQuantity,
+    double? customPackageSize,
+    bool? isSelected,
+    double? share,
+    bool? isCustom,
+    int? shelfLifeDays,
+    List<String>? storageHints,
+    String? storageNotice,
+    String? remainderNotice,
+    CheckItemState? checkState,
+    bool? isAdopted,
+    Map<int, ListItemAllocation>? allocationsByStop,
+  }) {
+    return ShoppingListItemView(
+      item: item ?? this.item,
+      variant: variant ?? this.variant,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      unit: unit ?? this.unit,
+      department: department ?? this.department,
+      categoryId: categoryId ?? this.categoryId,
+      calculatedPackages: calculatedPackages ?? this.calculatedPackages,
+      overriddenPackages: overriddenPackages ?? this.overriddenPackages,
+      calculatedQuantity: calculatedQuantity ?? this.calculatedQuantity,
+      customPackageSize: customPackageSize ?? this.customPackageSize,
+      isSelected: isSelected ?? this.isSelected,
+      share: share ?? this.share,
+      isCustom: isCustom ?? this.isCustom,
+      shelfLifeDays: shelfLifeDays ?? this.shelfLifeDays,
+      storageHints: storageHints ?? this.storageHints,
+      storageNotice: storageNotice ?? this.storageNotice,
+      remainderNotice: remainderNotice ?? this.remainderNotice,
+      checkState: checkState ?? this.checkState,
+      isAdopted: isAdopted ?? this.isAdopted,
+      allocationsByStop: allocationsByStop ?? this.allocationsByStop,
+    );
+  }
 
   /// Gibt an, ob dieser Artikel auf der Einkaufsliste steht (übernommen mit Menge > 0 oder eigene Position).
   bool get isOnList => isCustom || (isAdopted && effectivePackages > 0);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/user_payment_profile_service.dart';
@@ -10,6 +11,7 @@ import 'package:proviantplaner/features/entitlements/data/entitlements_providers
 import 'package:proviantplaner/features/entitlements/ui/unlock_sheet.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
 /// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
 class MoreScreen extends ConsumerWidget {
@@ -141,6 +143,13 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (tripId != null) {
+      final tripAsync = ref.watch(tripByIdProvider(tripId!));
+      if (tripAsync.hasValue && tripAsync.value == null) {
+        return const NotFoundScreen(message: 'Törn nicht gefunden');
+      }
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);

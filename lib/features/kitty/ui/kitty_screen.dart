@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
 import '../domain/models/kitty_models.dart';
@@ -28,6 +29,11 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
   @override
   Widget build(BuildContext context) {
     final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
+
+    if (asyncData.hasError) {
+      return const NotFoundScreen(message: 'Törn nicht gefunden');
+    }
+
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 

@@ -29,6 +29,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.21). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C.
+Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C, FB2-A, FB2-B.
 
-**Freigegeben für Gemini: FB2-A, FB2-B, B0, B1, B2, S9, S10-T (in dieser Reihenfolge). B3, B4, B5 sind NICHT freigegeben (erst nach der internen Testphase).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A–D, UX-A–C. S10 (Store-Einträge, Screenshots, Texte) erst nach Namensentscheidung und Testphase.
+**Freigegeben für Gemini: FB2-A, FB2-B, B0, B1, B2, S9, S10-T (in dieser Reihenfolge). B3, B4, B5 sind NICHT freigegeben (erst nach der internen Testphase).** Umgesetzt: S0–S8, S2a, S5a, S8a, S-UI, FB1-A–D, UX-A–C, FB2-A, FB2-B. S10 (Store-Einträge, Screenshots, Texte) erst nach Namensentscheidung und Testphase.

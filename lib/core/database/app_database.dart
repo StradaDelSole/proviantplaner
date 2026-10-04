@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -64,6 +64,12 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 5) {
           await m.addColumn(trips, trips.treasurerMemberId);
+        }
+        if (from < 6) {
+          await m.addColumn(trips, trips.hasFreezer);
+          await m.addColumn(trips, trips.freezerCapacity);
+          await m.addColumn(trips, trips.waterTankLiters);
+          await m.addColumn(trips, trips.isWaterTankDrinkable);
         }
       },
       beforeOpen: (details) async {

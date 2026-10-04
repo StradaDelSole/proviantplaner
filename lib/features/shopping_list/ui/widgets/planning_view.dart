@@ -54,11 +54,35 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
     final theme = Theme.of(context);
     final categories = widget.data.categories;
     final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);
+    final wv = widget.data.weightAndVolume;
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 96),
-      itemCount: categories.length + (hasAdoptedItems ? 0 : 1),
-      itemBuilder: (ctx, index) {
+    return Column(
+      children: [
+        // Gesamtgewicht und -volumen über der Liste (FEEDBACK_R2 v0.3 Punkt 6)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+          child: Row(
+            children: [
+              Icon(Icons.scale_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Gesamt: ${wv.totalWeightKg.toStringAsFixed(1)} kg · ${wv.totalVolumeLiters.toStringAsFixed(1)} l${wv.hasItemsWithoutWeight ? ' (+ Stückwaren)' : ''}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 96),
+            itemCount: categories.length + (hasAdoptedItems ? 0 : 1),
+            itemBuilder: (ctx, index) {
         // Leere Liste beim ersten Öffnen (UX-Konzept 2.4)
         if (!hasAdoptedItems && index == 0) {
           return Container(
@@ -122,7 +146,10 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
         final isCollapsed = _collapsedCategories.contains(catView.category.id);
         return _buildCategorySection(context, catView, isCollapsed, theme, l10n);
       },
-    );
+    ),
+  ),
+],
+);
   }
 
   Widget _buildCategorySection(

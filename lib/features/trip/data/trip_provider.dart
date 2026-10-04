@@ -66,3 +66,21 @@ final activeTripCrewProvider = FutureProvider<List<CrewMember>>((ref) async {
   final dao = ref.watch(tripDaoProvider);
   return dao.getCrewForTrip(activeTrip.id);
 });
+
+/// Provider für einen Törn nach ID (FB2-B).
+final tripByIdProvider = FutureProvider.family<Trip?, int>((ref, tripId) async {
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getTripById(tripId);
+});
+
+/// Provider für die Tage eines Törns nach ID (FB2-B).
+final tripDaysByIdProvider = FutureProvider.family<List<TripDay>, int>((ref, tripId) async {
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getDaysForTrip(tripId);
+});
+
+/// Provider für die Einkaufsstopps eines Törns nach ID (FB2-B).
+final tripStopsByIdProvider = FutureProvider.family<List<ShoppingStop>, int>((ref, tripId) async {
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getShoppingStopsForTrip(tripId);
+});

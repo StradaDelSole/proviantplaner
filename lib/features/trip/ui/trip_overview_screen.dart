@@ -17,6 +17,7 @@ import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_config
 import 'package:proviantplaner/features/shopping_list/ui/widgets/order_preview_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_received_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 
 class TripOverviewScreen extends ConsumerStatefulWidget {
   final int tripId;
@@ -83,11 +84,15 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     final theme = Theme.of(context);
     final kittyAsync = ref.watch(tripKittyDataProvider(widget.tripId));
 
-    if (_isLoading || _trip == null) {
+    if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text(l10n.tripOverviewTitle)),
         body: const Center(child: CircularProgressIndicator()),
       );
+    }
+
+    if (_trip == null) {
+      return const NotFoundScreen(message: 'Törn nicht gefunden');
     }
 
     return kittyAsync.when(

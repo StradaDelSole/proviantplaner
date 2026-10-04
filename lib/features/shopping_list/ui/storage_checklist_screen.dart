@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 
@@ -17,6 +18,10 @@ class StorageChecklistScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final checklistAsync = ref.watch(storageChecklistProvider(tripId));
+
+    if (checklistAsync.hasError) {
+      return const NotFoundScreen(message: 'Törn nicht gefunden');
+    }
 
     return Scaffold(
       appBar: AppBar(

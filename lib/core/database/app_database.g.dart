@@ -80,6 +80,42 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(100));
+  static const VerificationMeta _hasFreezerMeta =
+      const VerificationMeta('hasFreezer');
+  @override
+  late final GeneratedColumn<bool> hasFreezer = GeneratedColumn<bool>(
+      'has_freezer', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("has_freezer" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _freezerCapacityMeta =
+      const VerificationMeta('freezerCapacity');
+  @override
+  late final GeneratedColumn<int> freezerCapacity = GeneratedColumn<int>(
+      'freezer_capacity', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _waterTankLitersMeta =
+      const VerificationMeta('waterTankLiters');
+  @override
+  late final GeneratedColumn<int> waterTankLiters = GeneratedColumn<int>(
+      'water_tank_liters', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _isWaterTankDrinkableMeta =
+      const VerificationMeta('isWaterTankDrinkable');
+  @override
+  late final GeneratedColumn<bool> isWaterTankDrinkable = GeneratedColumn<bool>(
+      'is_water_tank_drinkable', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_water_tank_drinkable" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _appetiteMeta =
       const VerificationMeta('appetite');
   @override
@@ -177,6 +213,10 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         isCharter,
         boatType,
         fridgeCapacity,
+        hasFreezer,
+        freezerCapacity,
+        waterTankLiters,
+        isWaterTankDrinkable,
         appetite,
         reserveDays,
         drinkingHabit,
@@ -238,6 +278,30 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           _fridgeCapacityMeta,
           fridgeCapacity.isAcceptableOrUnknown(
               data['fridge_capacity']!, _fridgeCapacityMeta));
+    }
+    if (data.containsKey('has_freezer')) {
+      context.handle(
+          _hasFreezerMeta,
+          hasFreezer.isAcceptableOrUnknown(
+              data['has_freezer']!, _hasFreezerMeta));
+    }
+    if (data.containsKey('freezer_capacity')) {
+      context.handle(
+          _freezerCapacityMeta,
+          freezerCapacity.isAcceptableOrUnknown(
+              data['freezer_capacity']!, _freezerCapacityMeta));
+    }
+    if (data.containsKey('water_tank_liters')) {
+      context.handle(
+          _waterTankLitersMeta,
+          waterTankLiters.isAcceptableOrUnknown(
+              data['water_tank_liters']!, _waterTankLitersMeta));
+    }
+    if (data.containsKey('is_water_tank_drinkable')) {
+      context.handle(
+          _isWaterTankDrinkableMeta,
+          isWaterTankDrinkable.isAcceptableOrUnknown(
+              data['is_water_tank_drinkable']!, _isWaterTankDrinkableMeta));
     }
     context.handle(_appetiteMeta, const VerificationResult.success());
     if (data.containsKey('reserve_days')) {
@@ -302,6 +366,14 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           .read(DriftSqlType.string, data['${effectivePrefix}boat_type'])!,
       fridgeCapacity: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}fridge_capacity'])!,
+      hasFreezer: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_freezer'])!,
+      freezerCapacity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}freezer_capacity'])!,
+      waterTankLiters: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}water_tank_liters'])!,
+      isWaterTankDrinkable: attachedDatabase.typeMapping.read(DriftSqlType.bool,
+          data['${effectivePrefix}is_water_tank_drinkable'])!,
       appetite: $TripsTable.$converterappetite.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}appetite'])!),
@@ -353,6 +425,10 @@ class Trip extends DataClass implements Insertable<Trip> {
   final bool isCharter;
   final String boatType;
   final int fridgeCapacity;
+  final bool hasFreezer;
+  final int freezerCapacity;
+  final int waterTankLiters;
+  final bool isWaterTankDrinkable;
   final CrewAppetite appetite;
   final String reserveDays;
   final CrewDrinking drinkingHabit;
@@ -373,6 +449,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       required this.isCharter,
       required this.boatType,
       required this.fridgeCapacity,
+      required this.hasFreezer,
+      required this.freezerCapacity,
+      required this.waterTankLiters,
+      required this.isWaterTankDrinkable,
       required this.appetite,
       required this.reserveDays,
       required this.drinkingHabit,
@@ -395,6 +475,10 @@ class Trip extends DataClass implements Insertable<Trip> {
     map['is_charter'] = Variable<bool>(isCharter);
     map['boat_type'] = Variable<String>(boatType);
     map['fridge_capacity'] = Variable<int>(fridgeCapacity);
+    map['has_freezer'] = Variable<bool>(hasFreezer);
+    map['freezer_capacity'] = Variable<int>(freezerCapacity);
+    map['water_tank_liters'] = Variable<int>(waterTankLiters);
+    map['is_water_tank_drinkable'] = Variable<bool>(isWaterTankDrinkable);
     {
       map['appetite'] =
           Variable<String>($TripsTable.$converterappetite.toSql(appetite));
@@ -432,6 +516,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       isCharter: Value(isCharter),
       boatType: Value(boatType),
       fridgeCapacity: Value(fridgeCapacity),
+      hasFreezer: Value(hasFreezer),
+      freezerCapacity: Value(freezerCapacity),
+      waterTankLiters: Value(waterTankLiters),
+      isWaterTankDrinkable: Value(isWaterTankDrinkable),
       appetite: Value(appetite),
       reserveDays: Value(reserveDays),
       drinkingHabit: Value(drinkingHabit),
@@ -460,6 +548,11 @@ class Trip extends DataClass implements Insertable<Trip> {
       isCharter: serializer.fromJson<bool>(json['isCharter']),
       boatType: serializer.fromJson<String>(json['boatType']),
       fridgeCapacity: serializer.fromJson<int>(json['fridgeCapacity']),
+      hasFreezer: serializer.fromJson<bool>(json['hasFreezer']),
+      freezerCapacity: serializer.fromJson<int>(json['freezerCapacity']),
+      waterTankLiters: serializer.fromJson<int>(json['waterTankLiters']),
+      isWaterTankDrinkable:
+          serializer.fromJson<bool>(json['isWaterTankDrinkable']),
       appetite: serializer.fromJson<CrewAppetite>(json['appetite']),
       reserveDays: serializer.fromJson<String>(json['reserveDays']),
       drinkingHabit: serializer.fromJson<CrewDrinking>(json['drinkingHabit']),
@@ -486,6 +579,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       'isCharter': serializer.toJson<bool>(isCharter),
       'boatType': serializer.toJson<String>(boatType),
       'fridgeCapacity': serializer.toJson<int>(fridgeCapacity),
+      'hasFreezer': serializer.toJson<bool>(hasFreezer),
+      'freezerCapacity': serializer.toJson<int>(freezerCapacity),
+      'waterTankLiters': serializer.toJson<int>(waterTankLiters),
+      'isWaterTankDrinkable': serializer.toJson<bool>(isWaterTankDrinkable),
       'appetite': serializer.toJson<CrewAppetite>(appetite),
       'reserveDays': serializer.toJson<String>(reserveDays),
       'drinkingHabit': serializer.toJson<CrewDrinking>(drinkingHabit),
@@ -509,6 +606,10 @@ class Trip extends DataClass implements Insertable<Trip> {
           bool? isCharter,
           String? boatType,
           int? fridgeCapacity,
+          bool? hasFreezer,
+          int? freezerCapacity,
+          int? waterTankLiters,
+          bool? isWaterTankDrinkable,
           CrewAppetite? appetite,
           String? reserveDays,
           CrewDrinking? drinkingHabit,
@@ -529,6 +630,10 @@ class Trip extends DataClass implements Insertable<Trip> {
         isCharter: isCharter ?? this.isCharter,
         boatType: boatType ?? this.boatType,
         fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
+        hasFreezer: hasFreezer ?? this.hasFreezer,
+        freezerCapacity: freezerCapacity ?? this.freezerCapacity,
+        waterTankLiters: waterTankLiters ?? this.waterTankLiters,
+        isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
         appetite: appetite ?? this.appetite,
         reserveDays: reserveDays ?? this.reserveDays,
         drinkingHabit: drinkingHabit ?? this.drinkingHabit,
@@ -555,6 +660,17 @@ class Trip extends DataClass implements Insertable<Trip> {
       fridgeCapacity: data.fridgeCapacity.present
           ? data.fridgeCapacity.value
           : this.fridgeCapacity,
+      hasFreezer:
+          data.hasFreezer.present ? data.hasFreezer.value : this.hasFreezer,
+      freezerCapacity: data.freezerCapacity.present
+          ? data.freezerCapacity.value
+          : this.freezerCapacity,
+      waterTankLiters: data.waterTankLiters.present
+          ? data.waterTankLiters.value
+          : this.waterTankLiters,
+      isWaterTankDrinkable: data.isWaterTankDrinkable.present
+          ? data.isWaterTankDrinkable.value
+          : this.isWaterTankDrinkable,
       appetite: data.appetite.present ? data.appetite.value : this.appetite,
       reserveDays:
           data.reserveDays.present ? data.reserveDays.value : this.reserveDays,
@@ -589,6 +705,10 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('isCharter: $isCharter, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
+          ..write('hasFreezer: $hasFreezer, ')
+          ..write('freezerCapacity: $freezerCapacity, ')
+          ..write('waterTankLiters: $waterTankLiters, ')
+          ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
           ..write('appetite: $appetite, ')
           ..write('reserveDays: $reserveDays, ')
           ..write('drinkingHabit: $drinkingHabit, ')
@@ -604,26 +724,31 @@ class Trip extends DataClass implements Insertable<Trip> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      name,
-      startDate,
-      daysCount,
-      region,
-      climate,
-      isCharter,
-      boatType,
-      fridgeCapacity,
-      appetite,
-      reserveDays,
-      drinkingHabit,
-      hasStorageChecklist,
-      phase,
-      isArchived,
-      currency,
-      kittyModel,
-      treasurerMemberId,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        id,
+        name,
+        startDate,
+        daysCount,
+        region,
+        climate,
+        isCharter,
+        boatType,
+        fridgeCapacity,
+        hasFreezer,
+        freezerCapacity,
+        waterTankLiters,
+        isWaterTankDrinkable,
+        appetite,
+        reserveDays,
+        drinkingHabit,
+        hasStorageChecklist,
+        phase,
+        isArchived,
+        currency,
+        kittyModel,
+        treasurerMemberId,
+        createdAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -637,6 +762,10 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.isCharter == this.isCharter &&
           other.boatType == this.boatType &&
           other.fridgeCapacity == this.fridgeCapacity &&
+          other.hasFreezer == this.hasFreezer &&
+          other.freezerCapacity == this.freezerCapacity &&
+          other.waterTankLiters == this.waterTankLiters &&
+          other.isWaterTankDrinkable == this.isWaterTankDrinkable &&
           other.appetite == this.appetite &&
           other.reserveDays == this.reserveDays &&
           other.drinkingHabit == this.drinkingHabit &&
@@ -659,6 +788,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<bool> isCharter;
   final Value<String> boatType;
   final Value<int> fridgeCapacity;
+  final Value<bool> hasFreezer;
+  final Value<int> freezerCapacity;
+  final Value<int> waterTankLiters;
+  final Value<bool> isWaterTankDrinkable;
   final Value<CrewAppetite> appetite;
   final Value<String> reserveDays;
   final Value<CrewDrinking> drinkingHabit;
@@ -679,6 +812,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.isCharter = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
+    this.hasFreezer = const Value.absent(),
+    this.freezerCapacity = const Value.absent(),
+    this.waterTankLiters = const Value.absent(),
+    this.isWaterTankDrinkable = const Value.absent(),
     this.appetite = const Value.absent(),
     this.reserveDays = const Value.absent(),
     this.drinkingHabit = const Value.absent(),
@@ -700,6 +837,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.isCharter = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
+    this.hasFreezer = const Value.absent(),
+    this.freezerCapacity = const Value.absent(),
+    this.waterTankLiters = const Value.absent(),
+    this.isWaterTankDrinkable = const Value.absent(),
     this.appetite = const Value.absent(),
     this.reserveDays = const Value.absent(),
     this.drinkingHabit = const Value.absent(),
@@ -722,6 +863,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<bool>? isCharter,
     Expression<String>? boatType,
     Expression<int>? fridgeCapacity,
+    Expression<bool>? hasFreezer,
+    Expression<int>? freezerCapacity,
+    Expression<int>? waterTankLiters,
+    Expression<bool>? isWaterTankDrinkable,
     Expression<String>? appetite,
     Expression<String>? reserveDays,
     Expression<String>? drinkingHabit,
@@ -743,6 +888,11 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (isCharter != null) 'is_charter': isCharter,
       if (boatType != null) 'boat_type': boatType,
       if (fridgeCapacity != null) 'fridge_capacity': fridgeCapacity,
+      if (hasFreezer != null) 'has_freezer': hasFreezer,
+      if (freezerCapacity != null) 'freezer_capacity': freezerCapacity,
+      if (waterTankLiters != null) 'water_tank_liters': waterTankLiters,
+      if (isWaterTankDrinkable != null)
+        'is_water_tank_drinkable': isWaterTankDrinkable,
       if (appetite != null) 'appetite': appetite,
       if (reserveDays != null) 'reserve_days': reserveDays,
       if (drinkingHabit != null) 'drinking_habit': drinkingHabit,
@@ -767,6 +917,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       Value<bool>? isCharter,
       Value<String>? boatType,
       Value<int>? fridgeCapacity,
+      Value<bool>? hasFreezer,
+      Value<int>? freezerCapacity,
+      Value<int>? waterTankLiters,
+      Value<bool>? isWaterTankDrinkable,
       Value<CrewAppetite>? appetite,
       Value<String>? reserveDays,
       Value<CrewDrinking>? drinkingHabit,
@@ -787,6 +941,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       isCharter: isCharter ?? this.isCharter,
       boatType: boatType ?? this.boatType,
       fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
+      hasFreezer: hasFreezer ?? this.hasFreezer,
+      freezerCapacity: freezerCapacity ?? this.freezerCapacity,
+      waterTankLiters: waterTankLiters ?? this.waterTankLiters,
+      isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
       appetite: appetite ?? this.appetite,
       reserveDays: reserveDays ?? this.reserveDays,
       drinkingHabit: drinkingHabit ?? this.drinkingHabit,
@@ -829,6 +987,19 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     }
     if (fridgeCapacity.present) {
       map['fridge_capacity'] = Variable<int>(fridgeCapacity.value);
+    }
+    if (hasFreezer.present) {
+      map['has_freezer'] = Variable<bool>(hasFreezer.value);
+    }
+    if (freezerCapacity.present) {
+      map['freezer_capacity'] = Variable<int>(freezerCapacity.value);
+    }
+    if (waterTankLiters.present) {
+      map['water_tank_liters'] = Variable<int>(waterTankLiters.value);
+    }
+    if (isWaterTankDrinkable.present) {
+      map['is_water_tank_drinkable'] =
+          Variable<bool>(isWaterTankDrinkable.value);
     }
     if (appetite.present) {
       map['appetite'] = Variable<String>(
@@ -879,6 +1050,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('isCharter: $isCharter, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
+          ..write('hasFreezer: $hasFreezer, ')
+          ..write('freezerCapacity: $freezerCapacity, ')
+          ..write('waterTankLiters: $waterTankLiters, ')
+          ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
           ..write('appetite: $appetite, ')
           ..write('reserveDays: $reserveDays, ')
           ..write('drinkingHabit: $drinkingHabit, ')
@@ -4397,6 +4572,10 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
+  Value<bool> hasFreezer,
+  Value<int> freezerCapacity,
+  Value<int> waterTankLiters,
+  Value<bool> isWaterTankDrinkable,
   Value<CrewAppetite> appetite,
   Value<String> reserveDays,
   Value<CrewDrinking> drinkingHabit,
@@ -4418,6 +4597,10 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<bool> isCharter,
   Value<String> boatType,
   Value<int> fridgeCapacity,
+  Value<bool> hasFreezer,
+  Value<int> freezerCapacity,
+  Value<int> waterTankLiters,
+  Value<bool> isWaterTankDrinkable,
   Value<CrewAppetite> appetite,
   Value<String> reserveDays,
   Value<CrewDrinking> drinkingHabit,
@@ -4573,6 +4756,21 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<int> get fridgeCapacity => $composableBuilder(
       column: $table.fridgeCapacity,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable,
       builder: (column) => ColumnFilters(column));
 
   ColumnWithTypeConverterFilters<CrewAppetite, CrewAppetite, String>
@@ -4800,6 +4998,21 @@ class $$TripsTableOrderingComposer
       column: $table.fridgeCapacity,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get appetite => $composableBuilder(
       column: $table.appetite, builder: (column) => ColumnOrderings(column));
 
@@ -4869,6 +5082,18 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<int> get fridgeCapacity => $composableBuilder(
       column: $table.fridgeCapacity, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => column);
+
+  GeneratedColumn<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity, builder: (column) => column);
+
+  GeneratedColumn<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters, builder: (column) => column);
+
+  GeneratedColumn<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<CrewAppetite, String> get appetite =>
       $composableBuilder(column: $table.appetite, builder: (column) => column);
@@ -5091,6 +5316,10 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
+            Value<bool> hasFreezer = const Value.absent(),
+            Value<int> freezerCapacity = const Value.absent(),
+            Value<int> waterTankLiters = const Value.absent(),
+            Value<bool> isWaterTankDrinkable = const Value.absent(),
             Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
             Value<CrewDrinking> drinkingHabit = const Value.absent(),
@@ -5112,6 +5341,10 @@ class $$TripsTableTableManager extends RootTableManager<
             isCharter: isCharter,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,
+            hasFreezer: hasFreezer,
+            freezerCapacity: freezerCapacity,
+            waterTankLiters: waterTankLiters,
+            isWaterTankDrinkable: isWaterTankDrinkable,
             appetite: appetite,
             reserveDays: reserveDays,
             drinkingHabit: drinkingHabit,
@@ -5133,6 +5366,10 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<bool> isCharter = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
+            Value<bool> hasFreezer = const Value.absent(),
+            Value<int> freezerCapacity = const Value.absent(),
+            Value<int> waterTankLiters = const Value.absent(),
+            Value<bool> isWaterTankDrinkable = const Value.absent(),
             Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
             Value<CrewDrinking> drinkingHabit = const Value.absent(),
@@ -5154,6 +5391,10 @@ class $$TripsTableTableManager extends RootTableManager<
             isCharter: isCharter,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,
+            hasFreezer: hasFreezer,
+            freezerCapacity: freezerCapacity,
+            waterTankLiters: waterTankLiters,
+            isWaterTankDrinkable: isWaterTankDrinkable,
             appetite: appetite,
             reserveDays: reserveDays,
             drinkingHabit: drinkingHabit,

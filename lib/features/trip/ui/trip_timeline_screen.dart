@@ -3,9 +3,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import '../data/trip_provider.dart';
@@ -85,6 +85,7 @@ class TripTimelineScreen extends ConsumerWidget {
               DeliveryOrder(stopId: newStopId, tripId: tripId, isDelivery: true),
             );
       }
+      ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
     }
   }
@@ -118,6 +119,7 @@ class TripTimelineScreen extends ConsumerWidget {
     if (result != null && result.isNotEmpty) {
       final service = ref.read(tripServiceProvider);
       await service.updateShoppingStop(stop.copyWith(name: result));
+      ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
     }
   }
@@ -134,6 +136,7 @@ class TripTimelineScreen extends ConsumerWidget {
     final service = ref.read(tripServiceProvider);
     final success = await service.deleteShoppingStop(stop.id);
     if (success) {
+      ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
     }
   }
@@ -143,57 +146,43 @@ class TripTimelineScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
-    final tripAsync = ref.watch(activeTripProvider);
-    final daysAsync = ref.watch(activeTripDaysProvider);
-    final stopsAsync = ref.watch(activeTripStopsProvider);
+    final tripAsync = ref.watch(tripByIdProvider(tripId));
+    final daysAsync = ref.watch(tripDaysByIdProvider(tripId));
+    final stopsAsync = ref.watch(tripStopsByIdProvider(tripId));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: tripAsync.when(
-          data: (trip) => Text(trip?.name ?? l10n.timelineTitle),
-          loading: () => Text(l10n.timelineTitle),
-          error: (_, __) => Text(l10n.timelineTitle),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_basket_outlined),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            tooltip: l10n.addShoppingStop,
-            onPressed: () {
-              final days = daysAsync.valueOrNull ?? [];
-              _showAddStopDialog(context, ref, days.isNotEmpty ? days.length : 7);
-            },
-          ),
-        ],
+    return tripAsync.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: Text(l10n.timelineTitle)),
+        body: const Center(child: CircularProgressIndicator()),
       ),
-      body: tripAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Fehler: $err')),
-        data: (trip) {
-          if (trip == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(l10n.noTripsYet),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () => context.go('/trips/new'),
-                    child: Text(l10n.newTripButton),
-                  ),
-                ],
+      error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
+      data: (trip) {
+        if (trip == null) {
+          return const NotFoundScreen(message: 'Törn nicht gefunden');
+        }
+
+        final days = daysAsync.valueOrNull ?? [];
+        final stops = stopsAsync.valueOrNull ?? [];
+
+        final boardDinners = days.where((d) => !d.dinnerRestaurant).length;
+        final boardLunches = days.where((d) => !d.lunchRestaurant).length;
+        final restaurantVisits = days.where((d) => d.lunchRestaurant || d.dinnerRestaurant).length;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(trip.name),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.shopping_basket_outlined),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                tooltip: l10n.addShoppingStop,
+                onPressed: () {
+                  _showAddStopDialog(context, ref, days.isNotEmpty ? days.length : 7);
+                },
               ),
-            );
-          }
-
-          final days = daysAsync.valueOrNull ?? [];
-          final stops = stopsAsync.valueOrNull ?? [];
-
-          final boardDinners = days.where((d) => !d.dinnerRestaurant).length;
-          final boardLunches = days.where((d) => !d.lunchRestaurant).length;
-          final restaurantVisits = days.where((d) => d.lunchRestaurant || d.dinnerRestaurant).length;
-
-          return SingleChildScrollView(
+            ],
+          ),
+          body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Center(
               child: ConstrainedBox(
@@ -319,9 +308,9 @@ class TripTimelineScreen extends ConsumerWidget {
                 ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -338,16 +327,19 @@ class TripTimelineScreen extends ConsumerWidget {
       onToggleLunch: () async {
         final service = ref.read(tripServiceProvider);
         await service.toggleLunchRestaurant(day);
+        ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
       },
       onToggleEvening: () async {
         final service = ref.read(tripServiceProvider);
         await service.toggleEveningRestaurant(day);
+        ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
       },
       onUpdatePortName: (name) async {
         final service = ref.read(tripServiceProvider);
         await service.updateDayInfo(day, portName: name);
+        ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
       },
     );

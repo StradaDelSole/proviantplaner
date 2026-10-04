@@ -181,18 +181,22 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (widget.data.trip.fridgeCapacity <= 0 && item.isCooled) ...[
+                      if (item.storageNotice != null || (widget.data.trip.fridgeCapacity <= 0 && item.isCooled)) ...[
                         const SizedBox(height: 2),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.errorContainer,
+                            color: (item.storageNotice?.contains('einfrieren') == true)
+                                ? theme.colorScheme.primaryContainer
+                                : theme.colorScheme.errorContainer,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'braucht Kühlung',
+                            item.storageNotice ?? 'braucht Kühlung',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onErrorContainer,
+                              color: (item.storageNotice?.contains('einfrieren') == true)
+                                  ? theme.colorScheme.onPrimaryContainer
+                                  : theme.colorScheme.onErrorContainer,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -207,7 +211,10 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                           ),
                         ),
                       ] else ...[
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
                               item.demandDisplay,
@@ -215,7 +222,6 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            const SizedBox(width: 8),
                             Text(
                               '(${item.shortSuggestionDisplay})',
                               style: theme.proviantTypography.numberSmall.copyWith(
@@ -326,6 +332,38 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                 ],
               ],
             ),
+            if (item.remainderNotice != null) ...[
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        item.remainderNotice!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             // Wasser-Schnellwahl (UX-Konzept 2.4: "+25 % warm" und "+50 % heiß/Tropen")
             if (isOnList && isWater) ...[
               const SizedBox(height: 6),

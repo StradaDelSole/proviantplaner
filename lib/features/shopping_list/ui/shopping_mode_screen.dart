@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
@@ -47,9 +48,12 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
 
     return dataAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, _) => Scaffold(body: Center(child: Text('Fehler: $err'))),
+      error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
       data: (data) {
-        final stop = data.stops.where((s) => s.id == widget.stopId).firstOrNull ?? data.stops.first;
+        final stop = data.stops.where((s) => s.id == widget.stopId).firstOrNull;
+        if (stop == null) {
+          return const NotFoundScreen(message: 'Einkaufsstopp nicht gefunden');
+        }
         final isFirstStop = data.stops.firstOrNull?.id == stop.id;
 
         // Artikel für diesen Stopp filtern: Genau die Positionen der Liste mit Menge > 0 für diesen Stopp

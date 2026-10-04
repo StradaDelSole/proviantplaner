@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-09-26 – Slice FB2-B: Oberfläche – Setup, Hinweise, Bedienung, Überlauf
+
+- **Törn-Setup UI (Tiefkühlfach & Wassertank):**
+  - Schema v6: DB-Spalten `hasFreezer`, `freezerCapacity`, `waterTankLiters`, `isWaterTankDrinkable` in Trips-Tabelle und Schema-Migration.
+  - `TripWizardScreen` um Stepper und Direkteingabe für Tiefkühlfach (Liter) und Wassertank (Liter) erweitert.
+  - Schalter für Tiefkühlfach vorhanden und Trinkbarkeit des Tankwassers.
+  - Werte werden in der Datenbank persistiert und an die `QuantityEngine` weitergegeben.
+- **Hinweise in der Vorratsliste:**
+  - Lagerhinweise ("braucht Kühlung", "gleich einfrieren") als farbige Badges an den Positionen.
+  - Resthinweise ("Rest ca. X – bei einem späteren Einkauf einplanen") und alternative Vorschläge werden angezeigt.
+- **Gesamtgewicht & -volumen:**
+  - Aggregierte Anzeige von Gesamtgewicht (kg) und Gesamtvolumen (l) oberhalb der Planungsliste in `PlanningView`.
+- **Bedienkonzept Zahlen:**
+  - Schnellchips und Cupertino-Wählrad (Modal Bottom Sheet) ausschließlich für die Törndauer.
+  - Stepper (+/-) mit Direkteingabe für Kühlkapazitäten, Tank und Crew.
+- **Lieferbestellungen teilen:**
+  - WhatsApp als primäre/oberste Option im Share-Sheet (`OrderPreviewSheet`).
+- **Überlaufschutz:**
+  - Zeilenlayout der Vorratsliste überläuft nicht bei langen Produktnamen, großen Mengen und Textskalierung 2.0 (geprüft in Hell-, Dunkel- und Nachtwache-Modus).
+- **Router & Fehlerbehandlung:**
+  - Unsicherer Fallback `?? 1` vollständig entfernt.
+  - `NotFoundScreen` für syntaktisch fehlerhafte Routen (`/trips/abc`) und unbekannte numerische Trip- und Stopp-IDs implementiert.
+- **Prüfung:** `flutter analyze` 0 Fehler, `flutter test` 191/191 Tests grün (10 dedizierte FB2-B-Tests).
+
 ## 2026-09-26 – GEMINI.md: Wiederaufnahme nach Unterbrechung
 
 - Regeln, wie Gemini nach Kontingentpause oder neuer Sitzung am richtigen Slice weitermacht

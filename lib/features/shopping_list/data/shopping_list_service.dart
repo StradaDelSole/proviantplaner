@@ -5,7 +5,10 @@ import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/calculation_result.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
@@ -24,6 +27,33 @@ class TripShoppingListData {
     required this.categories,
     required this.departments,
   });
+
+  /// Berechnet das Gesamtgewicht und -volumen aller übernommenen Positionen auf der Vorratsliste.
+  ProvisionWeightVolume get weightAndVolume {
+    final adoptedVariants = allItems
+        .where((it) => it.isOnList)
+        .map((it) => VariantCalculationResult(
+              variantId: it.id,
+              groupId: it.variant?.group ?? it.categoryId,
+              nameDe: it.name,
+              department: it.department,
+              isSelected: it.isSelected,
+              share: it.share,
+              calculatedNeedAmount: it.calculatedQuantity,
+              unit: it.unit,
+              packSize: it.effectivePackSize,
+              packUnit: it.variant?.pack.unit ?? it.unit,
+              calculatedPackages: it.calculatedPackages,
+              effectivePackages: it.effectivePackages,
+              shelfLifeDays: it.shelfLifeDays,
+              effectiveShelfLifeDays: it.shelfLifeDays,
+              buyFreshUnderway: false,
+              storage: it.storageHints,
+              tags: it.variant?.tags ?? [],
+            ))
+        .toList();
+    return QuantityEngine.calculateWeightAndVolume(adoptedVariants);
+  }
 }
 
 /// Parameter-Objekt zum Erstellen einer eigenen Position (SC-LST-05).
@@ -102,7 +132,58 @@ class ShoppingListService {
       allocationsByItem.putIfAbsent(alloc.listItemId, () => {})[alloc.shoppingStopId] = alloc;
     }
 
-    final itemViews = _buildItemViews(rawItems, catalog, allocationsByItem);
+    final days = await tripDao.getDaysForTrip(tripId);
+    final crew = await tripDao.getCrewForTrip(tripId);
+
+    TripCalculationResult? calcResult;
+    if (catalogRepository.quantities != null) {
+      final engine = QuantityEngine(
+        catalog: catalog,
+        quantities: catalogRepository.quantities!,
+      );
+      final tripDayInputs = days.map((d) => TripDayInput(
+        dayNumber: d.dayNumber,
+        isLunchRestaurant: d.lunchRestaurant,
+        isEveningRestaurant: d.dinnerRestaurant,
+      )).toList();
+      final crewInputs = crew.map((c) => CrewMemberInput(
+        id: c.id.toString(),
+        name: c.name,
+        isAdult: !c.isChild,
+        isVegetarian: c.isVegetarian,
+        noAlcohol: c.isNonDrinker,
+        customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
+        customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
+      )).toList();
+      final userItemStates = <String, UserItemState>{};
+      for (final it in rawItems) {
+        userItemStates[it.catalogId] = UserItemState(
+          isSelected: it.selected,
+          share: it.share,
+          customPackSize: it.customPackageSize,
+        );
+      }
+      calcResult = engine.calculateTrip(
+        QuantityCalculationInput(
+          daysCount: trip.daysCount,
+          climate: trip.climate,
+          region: trip.climate,
+          fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
+          hasFreezer: trip.hasFreezer,
+          freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
+          waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
+          isWaterTankDrinkable: trip.isWaterTankDrinkable,
+          crewAppetite: trip.appetite,
+          crewReserve: trip.reserveDays == 'all_anchoring_days',
+          crewDrinking: trip.drinkingHabit,
+          tripDays: tripDayInputs,
+          crewMembers: crewInputs,
+          userItemStates: userItemStates,
+        ),
+      );
+    }
+
+    final itemViews = _buildItemViews(rawItems, catalog, allocationsByItem, calcResult);
     final categories = _buildCategoryViews(catalog, itemViews);
     final departments = _buildDepartmentViews(itemViews);
 
@@ -120,6 +201,7 @@ class ShoppingListService {
     List<ListItem> rawItems,
     CatalogData catalog,
     Map<int, Map<int, ListItemAllocation>> allocationsByItem,
+    TripCalculationResult? calcResult,
   ) {
     final result = <ShoppingListItemView>[];
 
@@ -129,7 +211,7 @@ class ShoppingListService {
       } else {
         final variant = catalog.getVariant(raw.catalogId);
         if (variant != null) {
-          result.add(_buildCatalogItemView(catalog, raw, variant, allocationsByItem[raw.id] ?? {}));
+          result.add(_buildCatalogItemView(catalog, raw, variant, allocationsByItem[raw.id] ?? {}, calcResult));
         }
       }
     }
@@ -174,8 +256,10 @@ class ShoppingListService {
     ListItem raw,
     CatalogVariant variant,
     Map<int, ListItemAllocation> allocations,
+    TripCalculationResult? calcResult,
   ) {
     final group = catalog.getGroup(variant.group);
+    final vr = calcResult?.getVariantResult(variant.id);
     return ShoppingListItemView(
       item: raw,
       variant: variant,
@@ -191,8 +275,10 @@ class ShoppingListService {
       isSelected: raw.selected,
       share: raw.share,
       isCustom: false,
-      shelfLifeDays: variant.shelfLifeDays,
+      shelfLifeDays: vr?.effectiveShelfLifeDays ?? variant.shelfLifeDays,
       storageHints: variant.storage,
+      storageNotice: vr?.storageNotice,
+      remainderNotice: vr?.remainderNotice,
       checkState: raw.checkState,
       isAdopted: raw.isAdopted,
       allocationsByStop: allocations,

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/features/home/ui/start_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
@@ -16,6 +17,9 @@ import 'package:proviantplaner/features/more/ui/more_screen.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    errorBuilder: (context, state) => NotFoundScreen(
+      message: 'Die aufgerufene Seite "${state.uri.toString()}" wurde nicht gefunden.',
+    ),
     routes: [
       GoRoute(
         path: '/',
@@ -32,7 +36,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_overview',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return TripOverviewScreen(tripId: tripId);
         },
       ),
@@ -41,7 +48,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_timeline',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return TripTimelineScreen(tripId: tripId);
         },
       ),
@@ -50,7 +60,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_shopping_list',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return ShoppingListScreen(tripId: tripId);
         },
       ),
@@ -60,8 +73,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
           final stopStr = state.pathParameters['stopId'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
-          final stopId = int.tryParse(stopStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          final stopId = int.tryParse(stopStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
+          if (stopId == null) {
+            return const NotFoundScreen(message: 'Einkaufsstopp nicht gefunden');
+          }
           return ShoppingModeScreen(tripId: tripId, stopId: stopId);
         },
       ),
@@ -70,7 +89,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_storage',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return StorageChecklistScreen(tripId: tripId);
         },
       ),
@@ -79,7 +101,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_kitty',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return KittyScreen(tripId: tripId);
         },
       ),
@@ -88,7 +113,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_kitty_settlement',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return SettlementScreen(tripId: tripId);
         },
       ),
@@ -102,7 +130,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'trip_more',
         builder: (context, state) {
           final idStr = state.pathParameters['id'];
-          final tripId = int.tryParse(idStr ?? '') ?? 1;
+          final tripId = int.tryParse(idStr ?? '');
+          if (tripId == null) {
+            return const NotFoundScreen(message: 'Törn nicht gefunden');
+          }
           return MoreScreen(tripId: tripId);
         },
       ),

@@ -86,6 +86,10 @@ class Trips extends Table {
   BoolColumn get isCharter => boolean().withDefault(const Constant(true))();
   TextColumn get boatType => text().withDefault(const Constant('mono'))();
   IntColumn get fridgeCapacity => integer().withDefault(const Constant(100))();
+  BoolColumn get hasFreezer => boolean().withDefault(const Constant(false))();
+  IntColumn get freezerCapacity => integer().withDefault(const Constant(0))();
+  IntColumn get waterTankLiters => integer().withDefault(const Constant(0))();
+  BoolColumn get isWaterTankDrinkable => boolean().withDefault(const Constant(false))();
 
   // Crew-Fragen (Appetit, Reserve, Trinken)
   TextColumn get appetite => text().map(const CrewAppetiteConverter()).withDefault(const Constant('normal'))();

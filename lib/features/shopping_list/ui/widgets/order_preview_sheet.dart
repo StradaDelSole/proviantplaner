@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/pdf_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
@@ -74,6 +75,24 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
     );
     if (updated != null && mounted) {
       setState(() => _currentOrder = updated);
+    }
+  }
+
+  Future<void> _shareWhatsApp() async {
+    final text = _currentOrder.formatOrderText(
+      tripName: widget.trip.name,
+      items: widget.items,
+      isSupplement: _currentOrder.orderedAt != null,
+    );
+    final phone = _currentOrder.supplier?.phone?.replaceAll(RegExp(r'[^0-9+]'), '') ?? '';
+    final urlStr = phone.isNotEmpty
+        ? 'https://wa.me/$phone?text=${Uri.encodeComponent(text)}'
+        : 'https://wa.me/?text=${Uri.encodeComponent(text)}';
+    final uri = Uri.parse(urlStr);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await Share.share(text, subject: 'Bestellung: ${widget.trip.name}');
     }
   }
 
@@ -239,7 +258,20 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
               ),
             ),
 
-          // Teilen Aktionen
+          // Teilen Aktionen (WhatsApp als 1. Option laut FEEDBACK_R2 v0.3)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.chat),
+              label: const Text('Per WhatsApp senden'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: _shareWhatsApp,
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(

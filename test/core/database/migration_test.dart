@@ -7,8 +7,8 @@ void main() {
   test('S1/FB1-C Abnahmekriterium: Schema- und Migrationstest', () async {
     final db = AppDatabase(NativeDatabase.memory());
 
-    // SchemaVersion prüfen (jetzt 5 nach FB1-D)
-    expect(db.schemaVersion, 5);
+    // SchemaVersion prüfen (jetzt 6 nach FB2-B)
+    expect(db.schemaVersion, 6);
 
     // Prüfen, ob alle Tabellen angelegt wurden
     expect(await db.select(db.trips).get(), isEmpty);
@@ -24,16 +24,24 @@ void main() {
     final strategy = db.migration;
     expect(strategy, isNotNull);
 
-    // Trip mit treasurerMemberId einfügen
+    // Trip mit treasurerMemberId, Tiefkühlfach und Wassertank einfügen
     final tripId = await db.into(db.trips).insert(
       TripsCompanion.insert(
         name: 'Törn mit Kassenwart',
         startDate: DateTime.now(),
         treasurerMemberId: const Value(42),
+        hasFreezer: const Value(true),
+        freezerCapacity: const Value(25),
+        waterTankLiters: const Value(200),
+        isWaterTankDrinkable: const Value(true),
       ),
     );
     final inserted = await (db.select(db.trips)..where((t) => t.id.equals(tripId))).getSingle();
     expect(inserted.treasurerMemberId, 42);
+    expect(inserted.hasFreezer, isTrue);
+    expect(inserted.freezerCapacity, 25);
+    expect(inserted.waterTankLiters, 200);
+    expect(inserted.isWaterTankDrinkable, isTrue);
 
     await db.close();
   });

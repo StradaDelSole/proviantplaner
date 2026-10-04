@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/services/pdf_providers.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
@@ -27,6 +28,10 @@ class ShoppingListScreen extends ConsumerWidget {
     final listDataAsync = ref.watch(tripShoppingListProvider(tripId));
     final sortMode = ref.watch(shoppingListViewModeProvider);
     final selectedStopId = ref.watch(selectedStopFilterProvider);
+
+    if (listDataAsync.hasError) {
+      return const NotFoundScreen(message: 'Törn nicht gefunden');
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -130,7 +135,7 @@ class ShoppingListScreen extends ConsumerWidget {
       ),
       body: listDataAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Fehler: $err')),
+        error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
         data: (data) {
           return Column(
             children: [

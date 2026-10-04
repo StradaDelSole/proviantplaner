@@ -1,6 +1,7 @@
 /// Einzelschirm mit drei aufklappenden Abschnitten zum Anlegen eines Törns (UX-A, UX-Konzept 2.2).
 library;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,7 +42,15 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   int _restaurantLunches = 1;
   double _fridgeCapacity = 100.0;
   bool _hasNoFridge = false;
+  bool _hasFreezer = false;
+  double _freezerCapacity = 20.0;
+  double _waterTankLiters = 0.0;
+  bool _isWaterTankDrinkable = false;
   bool _crewReserve = false;
+
+  late final TextEditingController _fridgeCapacityController;
+  late final TextEditingController _freezerCapacityController;
+  late final TextEditingController _waterTankController;
 
   bool _isSaving = false;
 
@@ -49,12 +58,18 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   void initState() {
     super.initState();
     _daysController = TextEditingController(text: _daysCount.toString());
+    _fridgeCapacityController = TextEditingController(text: _fridgeCapacity.round().toString());
+    _freezerCapacityController = TextEditingController(text: _freezerCapacity.round().toString());
+    _waterTankController = TextEditingController(text: _waterTankLiters.round().toString());
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _daysController.dispose();
+    _fridgeCapacityController.dispose();
+    _freezerCapacityController.dispose();
+    _waterTankController.dispose();
     super.dispose();
   }
 
@@ -82,6 +97,65 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     setState(() => _crewMembers.removeAt(index));
   }
 
+  void _showDurationWheelPicker() {
+    int selected = _daysCount;
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Container(
+            height: 280,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Törndauer wählen',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _daysCount = selected;
+                          _daysController.text = selected.toString();
+                          _restaurantDinners = _restaurantDinners.clamp(0, _daysCount);
+                          _restaurantLunches = _restaurantLunches.clamp(0, _daysCount);
+                        });
+                        Navigator.of(ctx).pop();
+                      },
+                      child: const Text('Fertig'),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                Expanded(
+                  child: CupertinoPicker(
+                    scrollController: FixedExtentScrollController(initialItem: (_daysCount - 1).clamp(0, 179)),
+                    itemExtent: 40.0,
+                    onSelectedItemChanged: (index) {
+                      selected = index + 1;
+                    },
+                    children: List.generate(
+                      180,
+                      (i) => Center(
+                        child: Text(
+                          '${i + 1} Tage',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _submitTrip() async {
     if (_nameController.text.trim().isEmpty) return;
 
@@ -97,6 +171,10 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         climate: 'warm',
         region: 'warm',
         fridgeCapacityLiters: _hasNoFridge ? 0.0 : _fridgeCapacity,
+        hasFreezer: _hasFreezer,
+        freezerCapacityLiters: _hasFreezer ? _freezerCapacity : null,
+        waterTankLiters: _waterTankLiters > 0 ? _waterTankLiters : null,
+        isWaterTankDrinkable: _isWaterTankDrinkable,
         crewAppetite: _crewAppetite,
         crewReserve: _crewReserve,
         crewDrinking: CrewDrinking.normal,
@@ -314,23 +392,12 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                     });
                   },
                 ),
+                ActionChip(
+                  avatar: const Icon(Icons.tune, size: 16),
+                  label: const Text('Wählrad...'),
+                  onPressed: _showDurationWheelPicker,
+                ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Slider(
-              value: _daysCount.clamp(1, 180).toDouble(),
-              min: 1,
-              max: 180,
-              divisions: 179,
-              label: '$_daysCount Tage',
-              onChanged: (val) {
-                setState(() {
-                  _daysCount = val.round();
-                  _daysController.text = '$_daysCount';
-                  _restaurantDinners = _restaurantDinners.clamp(0, _daysCount);
-                  _restaurantLunches = _restaurantLunches.clamp(0, _daysCount);
-                });
-              },
             ),
             const SizedBox(height: 16),
             SegmentedButton<bool>(
@@ -599,30 +666,209 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                   _hasNoFridge = val;
                   if (val) {
                     _fridgeCapacity = 0.0;
+                    _fridgeCapacityController.text = '0';
                   } else if (_fridgeCapacity == 0) {
                     _fridgeCapacity = 100.0;
+                    _fridgeCapacityController.text = '100';
                   }
                 });
               },
             ),
             if (!_hasNoFridge) ...[
-              Text('${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l', style: theme.textTheme.titleMedium),
-              Slider(
-                value: _fridgeCapacity.clamp(0, 300),
-                min: 0,
-                max: 300,
-                divisions: 60,
-                label: '${_fridgeCapacity.round()} l',
-                onChanged: (val) {
-                  setState(() {
-                    _fridgeCapacity = val;
-                    if (val == 0) {
-                      _hasNoFridge = true;
-                    }
-                  });
-                },
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerLowest,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: _fridgeCapacity >= 10
+                                ? () => setState(() {
+                                      _fridgeCapacity -= 10;
+                                      _fridgeCapacityController.text = _fridgeCapacity.round().toString();
+                                    })
+                                : null,
+                          ),
+                          SizedBox(
+                            width: 60,
+                            child: TextField(
+                              controller: _fridgeCapacityController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final parsed = double.tryParse(val.trim());
+                                if (parsed != null && parsed >= 0) {
+                                  setState(() => _fridgeCapacity = parsed);
+                                }
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => setState(() {
+                              _fridgeCapacity += 10;
+                              _fridgeCapacityController.text = _fridgeCapacity.round().toString();
+                            }),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
+            const SizedBox(height: 12),
+            // Tiefkühlfach
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Tiefkühlfach vorhanden'),
+              value: _hasFreezer,
+              onChanged: (val) => setState(() => _hasFreezer = val),
+            ),
+            if (_hasFreezer) ...[
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerLowest,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Tiefkühlfach-Volumen (l)',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: _freezerCapacity >= 5
+                                ? () => setState(() {
+                                      _freezerCapacity -= 5;
+                                      _freezerCapacityController.text = _freezerCapacity.round().toString();
+                                    })
+                                : null,
+                          ),
+                          SizedBox(
+                            width: 60,
+                            child: TextField(
+                              controller: _freezerCapacityController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final parsed = double.tryParse(val.trim());
+                                if (parsed != null && parsed >= 0) {
+                                  setState(() => _freezerCapacity = parsed);
+                                }
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => setState(() {
+                              _freezerCapacity += 5;
+                              _freezerCapacityController.text = _freezerCapacity.round().toString();
+                            }),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            // Wassertank an Bord
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerLowest,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Wassertank an Bord (l)',
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: _waterTankLiters >= 50
+                              ? () => setState(() {
+                                    _waterTankLiters -= 50;
+                                    _waterTankController.text = _waterTankLiters.round().toString();
+                                  })
+                              : null,
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: TextField(
+                            controller: _waterTankController,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final parsed = double.tryParse(val.trim());
+                              if (parsed != null && parsed >= 0) {
+                                setState(() => _waterTankLiters = parsed);
+                              }
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => setState(() {
+                            _waterTankLiters += 50;
+                            _waterTankController.text = _waterTankLiters.round().toString();
+                          }),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Tankwasser ist trinkbar'),
+              subtitle: const Text('Flaschenwasserbedarf wird reduziert (min. 1,5 l/Person Mindestreserve)'),
+              value: _isWaterTankDrinkable,
+              onChanged: (val) => setState(() => _isWaterTankDrinkable = val),
+            ),
             const SizedBox(height: 16),
             // Reserve Ankertage
             Card(
