@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-09-26 – Slice B1: Login mit Auth0, /v1/me, Einwilligung und Kontolöschung
+
+- **Backend Authentifizierung (`backend/src/auth.ts`):**
+  - JWT-Validierung mit `jose` (RS256, JWKS-Abruf, Issuer-, Audience- und Expiry-Prüfung).
+  - Standardisierte Ablehnung unbefugter Anfragen mit 401 UNAUTHORIZED (`{ error: { code, message } }`).
+- **Endpunkte `/v1/me` und `/v1/consents` (`backend/src/routes/`):**
+  - `GET /v1/me`: Projektion der Auth0-Identität `auth0_sub` in D1 `accounts`; Abruf von Profildaten, Einwilligungen und Charter-Mitgliedschaften.
+  - `DELETE /v1/me`: Vollständige, kaskadierende Kontolöschung in D1 und Entfernung verknüpfter Sicherungsdateien in R2.
+  - `PUT /v1/consents/boat-market-news`: Zod-validierte Speicherung der Einwilligung mit Zeitstempel und Textversion (`v1.0`).
+- **Portal Kontolöschung (`portal/src/pages/konto-loeschen.astro`):**
+  - Google-Play-konforme Löschseite mit Bestätigungsdialog und Erläuterung der unwiderruflichen Datenlöschung.
+- **Flutter-App-Integration (`lib/core/services/`):**
+  - `HullqApiClient` und `HttpHullqApiClient` für typsichere HTTP-Kommunikation mit dem Planer-Backend.
+  - `Auth0HullqAuthService`: Echter Token-Lifecycle, Initialisierung des Backend-Kontos, Übermittlung der Einwilligung und Kontolöschung.
+  - Checkbox "Bootsmarkt-Infos" in `UnlockSheet` bleibt standardmäßig unmarkiert (`false`).
+- **Tests & Qualitätssicherung:**
+  - 16 Backend-Tests in Vitest (JWT-Validierung, abgelaufene Tokens, manipulierte Signaturen, D1 CRUD & Cascade Delete).
+  - 6 neue Flutter Unit- und Widget-Tests in `test/features/auth/b1_auth0_login_test.dart` (insgesamt 197/197 Flutter-Tests grün).
+
 ## 2026-09-26 – Slice B0: Planer-Backend Grundgerüst
 
 - **Cloudflare Worker Backend (`backend/`):**

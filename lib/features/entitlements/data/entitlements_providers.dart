@@ -8,16 +8,24 @@ import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import '../domain/entitlements.dart';
 import 'entitlements_service.dart';
 
-/// Provider für das Feature-Flag zur Törn-Code-Einlöseoberfläche (v1.1).
+import 'package:proviantplaner/core/services/hullq_api_client.dart';
+
+/// Provider für den Feature-Flag zur Törn-Code-Einlöseoberfläche (v1.1).
 ///
 /// In Version 1.0 standardmäßig deaktiviert (false).
 final tripCodeFeatureFlagProvider = Provider<bool>((ref) {
   return FeatureFlags.enableTripCodePasses;
 });
 
-/// Provider für den HullQ-Authentifizierungsdienst (Mock bis zur echten API).
+/// Provider für den API-Client des Planer-Backends.
+final hullqApiClientProvider = Provider<HullqApiClient>((ref) {
+  return HttpHullqApiClient();
+});
+
+/// Provider für den HullQ-Authentifizierungsdienst (Slice B1: Auth0HullqAuthService).
 final hullqAuthServiceProvider = Provider<HullqAuthService>((ref) {
-  return MockHullqAuthService();
+  final apiClient = ref.watch(hullqApiClientProvider);
+  return Auth0HullqAuthService(apiClient: apiClient);
 });
 
 /// Provider für den EntitlementsService.

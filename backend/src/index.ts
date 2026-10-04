@@ -3,6 +3,9 @@ import { cors } from 'hono/cors';
 import { AppError, jsonError } from './errors';
 import type { Env, AppVariables } from './types';
 
+import { meRouter } from './routes/me';
+import { consentsRouter } from './routes/consents';
+
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
 // CORS-Middleware
@@ -42,6 +45,10 @@ app.get('/v1/info', (c) => {
     environment: c.env.ENVIRONMENT || 'development',
   });
 });
+
+// Routen für B1: Nutzerkonto, Freischaltstatus und Einwilligungen
+app.route('/v1/me', meRouter);
+app.route('/v1/consents', consentsRouter);
 
 // 404 Handler
 app.notFound((c) => {

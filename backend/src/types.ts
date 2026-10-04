@@ -6,10 +6,17 @@ export interface Env {
   ENVIRONMENT: string;
   AUTH0_ISSUER_BASE_URL: string;
   AUTH0_AUDIENCE: string;
+  AUTH0_JWKS_URL?: string;
   ALLOWED_ORIGINS?: string;
 }
 
+export interface AuthUser {
+  sub: string;
+  email?: string;
+}
+
 export interface AppVariables {
+  user?: AuthUser;
   accountId?: string;
   auth0Sub?: string;
 }

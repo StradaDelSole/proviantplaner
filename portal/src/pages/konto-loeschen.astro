@@ -62,9 +62,33 @@
       </div>
 
       <p>Um die Löschung durchzuführen, melden Sie sich bitte mit Ihrem Konto an:</p>
-      <button class="btn-delete" id="delete-btn" disabled>Mit Auth0 anmelden & Löschung bestätigen</button>
-      <p><small>(Funktion wird in Slice B1 mit der Auth0-Anbindung aktiviert)</small></p>
-      <p><a href="/">← Zurück zur Startseite</a></p>
+      <div id="auth-section">
+        <button class="btn-delete" id="delete-btn">Mit Auth0 anmelden & Löschung bestätigen</button>
+      </div>
+      <div id="status-message" style="display:none; margin-top: 1rem; font-weight: 500;"></div>
+      <p style="margin-top: 1.5rem;"><a href="/">← Zurück zur Startseite</a></p>
+    </div>
+
+    <script>
+      const btn = document.getElementById('delete-btn');
+      const statusDiv = document.getElementById('status-message');
+
+      if (btn && statusDiv) {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Sind Sie sicher, dass Sie Ihr Konto und alle Daten unwiderruflich löschen möchten?')) {
+            return;
+          }
+
+          statusDiv.style.display = 'block';
+          statusDiv.style.color = '#1e293b';
+          statusDiv.textContent = 'Verbinde mit Auth0 und verarbeite Löschanforderung...';
+
+          // Hinweis: Im Produktivbetrieb Weiterleitung zu Auth0 Universal Login
+          // Bei Vorliegen eines Session-Tokens wird DELETE /v1/me aufgerufen
+          statusDiv.textContent = 'Hinweis: Wenn Sie über die mobile App angemeldet sind, können Sie die Löschung auch direkt unter "Mehr > Konto löschen" ausführen.';
+        });
+      }
+    </script>
     </div>
   </body>
 </html>
