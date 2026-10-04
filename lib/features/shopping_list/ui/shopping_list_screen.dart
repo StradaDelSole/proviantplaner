@@ -30,7 +30,7 @@ class ShoppingListScreen extends ConsumerWidget {
     final selectedStopId = ref.watch(selectedStopFilterProvider);
 
     if (listDataAsync.hasError) {
-      return const NotFoundScreen(message: 'Törn nicht gefunden');
+      return NotFoundScreen(message: l10n.tripNotFound);
     }
 
     return Scaffold(
@@ -46,7 +46,7 @@ class ShoppingListScreen extends ConsumerWidget {
                 style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               Text(
-                '${data.trip.daysCount} Tage · ${data.stops.length} Stopps',
+                l10n.tripDaysStopsSubtitle(data.trip.daysCount, data.stops.length),
                 style: theme.proviantTypography.numberSmall.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -63,7 +63,10 @@ class ShoppingListScreen extends ConsumerWidget {
               onPressed: () {
                 showSearch(
                   context: context,
-                  delegate: CatalogSearchDelegate(data: data),
+                  delegate: CatalogSearchDelegate(
+                    data: data,
+                    searchFieldLabel: l10n.searchCatalogPlaceholder,
+                  ),
                 );
               },
             ),
@@ -95,7 +98,7 @@ class ShoppingListScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.shopping_basket_outlined, color: theme.colorScheme.primary),
                     const SizedBox(width: 8),
-                    const Text('Einkauf starten'),
+                    Text(l10n.startShopping),
                   ],
                 ),
               ),
@@ -135,7 +138,7 @@ class ShoppingListScreen extends ConsumerWidget {
       ),
       body: listDataAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
+        error: (err, _) => NotFoundScreen(message: l10n.tripNotFound),
         data: (data) {
           return Column(
             children: [
@@ -171,7 +174,7 @@ class ShoppingListScreen extends ConsumerWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Bei längeren Törns lohnt es sich, Einkaufsstopps anzulegen.',
+                          l10n.longTripStopsNotice,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onTertiaryContainer,
                           ),
@@ -187,16 +190,16 @@ class ShoppingListScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: SegmentedButton<ShoppingListSortMode>(
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                             value: ShoppingListSortMode.category,
-                            label: Text('Nach Kategorie'),
-                            icon: Icon(Icons.category_outlined),
+                            label: Text(l10n.byCategory),
+                            icon: const Icon(Icons.category_outlined),
                           ),
                           ButtonSegment(
                             value: ShoppingListSortMode.department,
-                            label: Text('Nach Abteilung'),
-                            icon: Icon(Icons.storefront_outlined),
+                            label: Text(l10n.byDepartment),
+                            icon: const Icon(Icons.storefront_outlined),
                           ),
                         ],
                         selected: {sortMode},
@@ -226,11 +229,14 @@ class ShoppingListScreen extends ConsumerWidget {
         data: (data) => FloatingActionButton.extended(
           heroTag: 'fab_add_position',
           icon: const Icon(Icons.add),
-          label: const Text('Position'),
+          label: Text(l10n.item),
           onPressed: () {
             showSearch(
               context: context,
-              delegate: CatalogSearchDelegate(data: data),
+              delegate: CatalogSearchDelegate(
+                data: data,
+                searchFieldLabel: l10n.searchCatalogPlaceholder,
+              ),
             );
           },
         ),
@@ -240,8 +246,8 @@ class ShoppingListScreen extends ConsumerWidget {
         data: (data) {
           final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull ?? data.stops.firstOrNull;
           final stopLabel = activeStop != null
-              ? 'Tag ${activeStop.dayNumber} · ${activeStop.name}'
-              : 'Basis';
+              ? '${l10n.day} ${activeStop.dayNumber} · ${activeStop.name}'
+              : l10n.initialShopping;
 
           return SafeArea(
             child: Container(
@@ -258,7 +264,7 @@ class ShoppingListScreen extends ConsumerWidget {
                         minimumSize: const Size.fromHeight(48),
                       ),
                       icon: const Icon(Icons.shopping_basket_outlined, size: 20),
-                      label: Text('Einkauf starten · $stopLabel'),
+                      label: Text('${l10n.startShopping} · $stopLabel'),
                       onPressed: () {
                         final targetStop = activeStop?.id ?? data.stops.firstOrNull?.id;
                         if (targetStop != null) {
@@ -269,7 +275,7 @@ class ShoppingListScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   IconButton.outlined(
-                    tooltip: 'Stopp wechseln',
+                    tooltip: l10n.switchStop,
                     icon: const Icon(Icons.swap_horiz),
                     onPressed: () => _openStopSelection(context, ref, data, selectedStopId, l10n),
                   ),
@@ -308,8 +314,8 @@ class ShoppingListScreen extends ConsumerWidget {
             const Divider(height: 1),
             ...data.stops.map((stop) => ListTile(
                   leading: const Icon(Icons.storefront_outlined),
-                  title: Text('Tag ${stop.dayNumber} · ${stop.name}'),
-                  subtitle: stop.isInitial ? const Text('Basis-Ersteinkauf') : null,
+                  title: Text('${l10n.day} ${stop.dayNumber} · ${stop.name}'),
+                  subtitle: stop.isInitial ? Text(l10n.initialShopping) : null,
                   selected: selectedStopId == stop.id,
                   onTap: () {
                     ref.read(selectedStopFilterProvider.notifier).state = stop.id;
@@ -331,7 +337,7 @@ class ShoppingListScreen extends ConsumerWidget {
     AppLocalizations l10n,
   ) {
     final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull;
-    final label = activeStop != null ? 'Tag ${activeStop.dayNumber}' : l10n.allStops;
+    final label = activeStop != null ? '${l10n.day} ${activeStop.dayNumber}' : l10n.allStops;
 
     return ActionChip(
       avatar: const Icon(Icons.storefront_outlined, size: 16),
@@ -355,8 +361,8 @@ class ShoppingListScreen extends ConsumerWidget {
                 const Divider(height: 1),
                 ...data.stops.map((stop) => ListTile(
                       leading: const Icon(Icons.storefront_outlined),
-                      title: Text('Tag ${stop.dayNumber} · ${stop.name}'),
-                      subtitle: stop.isInitial ? const Text('Basis-Ersteinkauf') : null,
+                      title: Text('${l10n.day} ${stop.dayNumber} · ${stop.name}'),
+                      subtitle: stop.isInitial ? Text(l10n.initialShopping) : null,
                       selected: selectedStopId == stop.id,
                       onTap: () {
                         ref.read(selectedStopFilterProvider.notifier).state = stop.id;

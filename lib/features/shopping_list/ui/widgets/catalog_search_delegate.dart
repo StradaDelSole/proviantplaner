@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -11,11 +12,13 @@ import 'group_detail_sheet.dart';
 
 class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
   final TripShoppingListData data;
+  final String? _customSearchFieldLabel;
 
-  CatalogSearchDelegate({required this.data});
+  CatalogSearchDelegate({required this.data, String? searchFieldLabel})
+      : _customSearchFieldLabel = searchFieldLabel;
 
   @override
-  String? get searchFieldLabel => 'Im Vorratskatalog suchen';
+  String? get searchFieldLabel => _customSearchFieldLabel;
 
   @override
   List<Widget>? buildActions(BuildContext context) {
@@ -81,8 +84,10 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
     }
 
     final matches = data.allItems.where((it) {
-      final nameMatches = it.name.toLowerCase().contains(q);
-      final deptMatches = it.department.rawValue.toLowerCase().contains(q);
+      final locName = it.localizedName(context).toLowerCase();
+      final nameMatches = it.name.toLowerCase().contains(q) || locName.contains(q);
+      final deptMatches = it.department.rawValue.toLowerCase().contains(q) ||
+          it.department.localizedName(context).toLowerCase().contains(q);
       final catMatches = it.categoryId.toLowerCase().contains(q);
       return nameMatches || deptMatches || catMatches;
     }).toList();
@@ -104,7 +109,7 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 icon: const Icon(Icons.add),
-                label: Text('Als eigene Position anlegen: "${query.trim()}"'),
+                label: Text(l10n.addAsCustomItemNamed(query.trim())),
                 onPressed: () {
                   close(context, null);
                   CustomItemSheet.show(
@@ -129,7 +134,7 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
           return ListTile(
             leading: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary),
             title: Text(
-              'Als eigene Position anlegen: "${query.trim()}"',
+              l10n.addAsCustomItemNamed(query.trim()),
               style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500),
             ),
             onTap: () {
@@ -145,7 +150,7 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
         }
         final it = matches[i];
         return ListTile(
-          title: Text(it.name, style: theme.textTheme.bodyLarge),
+          title: Text(it.localizedName(context), style: theme.textTheme.bodyLarge),
           subtitle: Text(it.demandDisplay, style: theme.textTheme.bodySmall),
           trailing: Text(
             it.packDisplay,

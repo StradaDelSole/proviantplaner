@@ -112,7 +112,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Törndauer wählen',
+                      AppLocalizations.of(context)!.selectTripDurationTitle,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     TextButton(
@@ -125,7 +125,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                         });
                         Navigator.of(ctx).pop();
                       },
-                      child: const Text('Fertig'),
+                      child: Text(AppLocalizations.of(context)!.done),
                     ),
                   ],
                 ),
@@ -141,7 +141,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                       180,
                       (i) => Center(
                         child: Text(
-                          '${i + 1} Tage',
+                          '${i + 1} ${AppLocalizations.of(context)!.daysCount}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
@@ -394,7 +394,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                 ),
                 ActionChip(
                   avatar: const Icon(Icons.tune, size: 16),
-                  label: const Text('Wählrad...'),
+                  label: Text(l10n.wheelPickerButton),
                   onPressed: _showDurationWheelPicker,
                 ),
               ],
@@ -738,7 +738,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
             // Tiefkühlfach
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Tiefkühlfach vorhanden'),
+              title: Text(l10n.freezerAvailable),
               value: _hasFreezer,
               onChanged: (val) => setState(() => _hasFreezer = val),
             ),
@@ -757,7 +757,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Tiefkühlfach-Volumen (l)',
+                          l10n.freezerCapacityLiters,
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -818,7 +818,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Wassertank an Bord (l)',
+                        l10n.waterTankLiters,
                         style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -864,8 +864,8 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Tankwasser ist trinkbar'),
-              subtitle: const Text('Flaschenwasserbedarf wird reduziert (min. 1,5 l/Person Mindestreserve)'),
+              title: Text(l10n.waterTankDrinkable),
+              subtitle: Text(l10n.waterTankDrinkableSubtitle),
               value: _isWaterTankDrinkable,
               onChanged: (val) => setState(() => _isWaterTankDrinkable = val),
             ),

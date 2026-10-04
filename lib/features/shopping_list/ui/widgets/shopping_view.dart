@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -79,7 +80,7 @@ class ShoppingView extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  deptView.displayName.toUpperCase(),
+                  deptView.department.localizedName(context).toUpperCase(),
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.1,
@@ -87,7 +88,7 @@ class ShoppingView extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${items.length} Posten',
+                l10n.itemCountLabel(items.length),
                 style: theme.proviantTypography.numberSmall.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

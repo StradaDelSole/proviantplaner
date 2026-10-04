@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-04 – Slice S9: Sechs Sprachen und Formate (DE, EN, FR, ES, PT, HR)
+
+- **Vollständige Lokalisierung der App in sechs Sprachen:**
+  - Deutsch (de), Englisch (en), Französisch (fr), Spanisch (es), Portugiesisch (pt), Kroatisch (hr).
+  - Konsolidierung aller 6 ARB-Dateien (`app_de.arb`, `app_en.arb`, `app_fr.arb`, `app_es.arb`, `app_pt.arb`, `app_hr.arb`) mit 100 % identischem Schlüsselsatz.
+- **Katalogübersetzungen (`data/i18n/`):**
+  - Maschinelle Übersetzungen für EN, FR, ES, PT, HR als `catalog_<lang>.json` mit je 288 Einträgen (Varianten und Gruppen) und Kennzeichnung `"review": "maschinell, Prüfung ausstehend"`.
+  - Bereitstellung und dynamische Übersetzung über `CatalogLocalizationService` (`lib/core/services/catalog_localization_service.dart`).
+- **Standardisierte Formatierung (`lib/core/util/formatters.dart`):**
+  - `AppFormatters` für sprachabhängige Formatierung von Währungsbeträgen, Dezimalzahlen und Datumsangaben über `intl`.
+- **UI-Bereinigung:**
+  - Beseitigung sämtlicher hartcodierter deutscher Texte in allen Screens und Sheets (`ShoppingListScreen`, `ShoppingModeScreen`, `StorageChecklistScreen`, `TripWizardScreen`, `KittyScreen`, `SettlementScreen`, `ItemRowWidget`, `PlanningView`, `ShoppingView`, etc.).
+  - Einhaltung der UX-C-Regel (kein "kitty" in ARB-Dateien, stattdessen "Crew fund").
+- **Tests & Qualitätssicherung:**
+  - 23 neue Tests in `test/features/i18n/s9_i18n_test.dart` belegen alle 5 Abnahmekriterien (ARB-Vollständigkeit, Katalogübersetzungen, Formatierer, Kategorien/Abteilungen, deutsche Textfreiheit).
+  - 224/224 Flutter-Tests grün, `flutter analyze` fehlerfrei.
+
 ## 2026-09-26 – Slice B2: Cloud-Sicherung (R2), Mandantentrennung, 5er-Limit und IBAN-Schutz
 
 - **Backend Endpunkte `/v1/backups` (`backend/src/routes/backups.ts`, `backend/src/db/backups.ts`):**

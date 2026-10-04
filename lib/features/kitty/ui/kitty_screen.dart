@@ -29,13 +29,12 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
   @override
   Widget build(BuildContext context) {
     final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
-
-    if (asyncData.hasError) {
-      return const NotFoundScreen(message: 'Törn nicht gefunden');
-    }
-
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+
+    if (asyncData.hasError) {
+      return NotFoundScreen(message: l10n.tripNotFound);
+    }
 
     // Kassenwart beim ersten Öffnen abfragen (FEEDBACK_R1 Punkt 9)
     final data = asyncData.valueOrNull;
@@ -79,9 +78,9 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                   value: 'deposit',
                   child: Text(l10n.fundAddDeposit),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'treasurer',
-                  child: Text('Kassenwart festlegen'),
+                  child: Text(l10n.setTreasurer),
                 ),
               ],
               PopupMenuItem(
@@ -219,7 +218,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                 initialAmountInCents: 5000,
               );
             },
-            child: const Text('Übernehmen'),
+            child: Text(l10n.takeOver),
           ),
         ],
       ),
@@ -233,7 +232,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     AppLocalizations l10n,
     TripKittyData data,
   ) {
-    final treasurerName = data.treasurer?.name ?? 'Nicht festgelegt';
+    final treasurerName = data.treasurer?.name ?? l10n.noneSelected;
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -250,7 +249,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             Icon(Icons.account_balance_wallet_outlined, size: 18, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              'Kassenwart: ',
+              '${l10n.treasurer}: ',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             Expanded(
@@ -267,12 +266,13 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
   }
 
   void _showTreasurerDialog(BuildContext context, WidgetRef ref, TripKittyData data) {
+    final l10n = AppLocalizations.of(context)!;
     int? selectedId = data.treasurer?.id ?? data.members.firstOrNull?.id;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Wer verwaltet die Kasse?'),
+          title: Text(l10n.whoManagesFund),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,8 +292,8 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                       Text(m.name),
                       if (m.isSkipperFree) ...[
                         const SizedBox(width: 8),
-                        const Chip(
-                          label: Text('Skipper', style: TextStyle(fontSize: 10)),
+                        Chip(
+                          label: Text(l10n.skipper, style: const TextStyle(fontSize: 10)),
                           padding: EdgeInsets.zero,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -308,7 +308,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: selectedId != null
@@ -319,7 +319,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                       ref.invalidate(tripKittyDataProvider(widget.tripId));
                     }
                   : null,
-              child: const Text('Als Kassenwart festlegen'),
+              child: Text(l10n.setAsTreasurer),
             ),
           ],
         ),
@@ -474,7 +474,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     final ratio = depositsCents > 0
         ? (expensesCents / depositsCents).clamp(0.0, 1.0)
         : 0.0;
-    final percent = (ratio * 100).toStringAsFixed(1);
+    final percent = (ratio * 100).round();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,8 +496,8 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Auslastung: $percent% verbraucht', style: theme.textTheme.bodySmall),
-            Text('Rest: $balanceFormatted', style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'JetBrains Mono')),
+            Text(l10n.fundUsagePercent(percent), style: theme.textTheme.bodySmall),
+            Text(l10n.fundRemaining(balanceFormatted), style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'JetBrains Mono')),
           ],
         ),
         const SizedBox(height: 6),
@@ -607,7 +607,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -703,13 +703,14 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     ref.invalidate(tripKittyDataProvider(widget.tripId));
 
     if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 5),
-        content: Text('Ausgabe "${exp.title}" gelöscht'),
+        content: Text(l10n.fundExpenseDeletedTitle(exp.title)),
         action: SnackBarAction(
-          label: 'Rückgängig',
+          label: l10n.undo,
           onPressed: () async {
             await service.restoreExpense(exp);
             ref.invalidate(tripKittyDataProvider(widget.tripId));
@@ -819,8 +820,8 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                 Text(b.member.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                 if (b.isTreasurer) ...[
                   const SizedBox(width: 8),
-                  const Chip(
-                    label: Text('Kassenwart', style: TextStyle(fontSize: 10)),
+                  Chip(
+                    label: Text(l10n.treasurer, style: const TextStyle(fontSize: 10)),
                     padding: EdgeInsets.zero,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -829,7 +830,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             ),
             subtitle: Text(
               b.member.isSkipperFree
-                  ? 'Skipper frei'
+                  ? l10n.skipperFree
                   : 'beteiligt an ${b.member.categoryParticipation.values.where((v) => v).length} von 7 Kategorien',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),

@@ -98,7 +98,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       ),
       body: asyncData.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Fehler: $err')),
+        error: (err, _) => Center(child: Text(l10n.tripNotFound)),
         data: (data) => _buildContent(context, theme, l10n, data),
       ),
     );
@@ -275,7 +275,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
-                  child: const Text('Bezahlen'),
+                  child: Text(l10n.pay),
                 ),
                 const SizedBox(width: 4),
                 Icon(
@@ -345,7 +345,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.payments_outlined),
-                  label: const Text('Bar ausgezahlt'),
+                  label: Text(l10n.paidCash),
                   onPressed: () {
                     setState(() {
                       _settledIndices.add(index);
@@ -357,7 +357,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: const Text('IBAN anpassen'),
+                  label: Text(l10n.adjustIban),
                   onPressed: () => _editMemberPaymentDetails(context, transfer.toMember),
                 ),
               ),
@@ -413,7 +413,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.payments_outlined),
-                    label: const Text('Bar ausgezahlt'),
+                    label: Text(l10n.paidCash),
                     onPressed: () {
                       setState(() {
                         _settledIndices.add(index);
@@ -425,7 +425,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                 Expanded(
                   child: FilledButton.icon(
                     icon: const Icon(Icons.account_balance_outlined),
-                    label: const Text('Überweisen'),
+                    label: Text(l10n.transferMoney),
                     onPressed: () => _editMemberPaymentDetails(context, member),
                   ),
                 ),
@@ -434,7 +434,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           else
             FilledButton.tonalIcon(
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Jetzt eintragen'),
+              label: Text(l10n.enterNow),
               onPressed: () => _editMemberPaymentDetails(context, member),
             ),
         ],
@@ -451,68 +451,71 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Zahlungsdaten für ${member.name}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: ibanController,
-                  decoration: InputDecoration(
-                    labelText: 'IBAN *',
-                    errorText: ibanError,
-                    border: const OutlineInputBorder(),
+        builder: (ctx, setDialogState) {
+          final l10n = AppLocalizations.of(context)!;
+          return AlertDialog(
+            title: Text(l10n.paymentDataForMember(member.name)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: ibanController,
+                    decoration: InputDecoration(
+                      labelText: 'IBAN *',
+                      errorText: ibanError,
+                      border: const OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: paypalController,
-                  decoration: const InputDecoration(
-                    labelText: 'PayPal.Me Link (optional)',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: paypalController,
+                    decoration: const InputDecoration(
+                      labelText: 'PayPal.Me Link (optional)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: revolutController,
-                  decoration: const InputDecoration(
-                    labelText: 'Revolut.Me Link (optional)',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: revolutController,
+                    decoration: const InputDecoration(
+                      labelText: 'Revolut.Me Link (optional)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final rawIban = ibanController.text.trim();
-                final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
-                if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
-                  setDialogState(() {
-                    ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
-                  });
-                  return;
-                }
-                Navigator.of(ctx).pop();
-                final service = ref.read(kittyServiceProvider);
-                await service.updateMemberPaymentDetails(
-                  memberId: member.id,
-                  iban: cleanIban.isNotEmpty ? cleanIban : null,
-                  paypalLink: paypalController.text.trim().isNotEmpty ? paypalController.text.trim() : null,
-                  revolutLink: revolutController.text.trim().isNotEmpty ? revolutController.text.trim() : null,
-                );
-                ref.invalidate(tripKittyDataProvider(widget.tripId));
-              },
-              child: const Text('Speichern'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final rawIban = ibanController.text.trim();
+                  final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
+                  if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
+                    setDialogState(() {
+                      ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+                    });
+                    return;
+                  }
+                  Navigator.of(ctx).pop();
+                  final service = ref.read(kittyServiceProvider);
+                  await service.updateMemberPaymentDetails(
+                    memberId: member.id,
+                    iban: cleanIban.isNotEmpty ? cleanIban : null,
+                    paypalLink: paypalController.text.trim().isNotEmpty ? paypalController.text.trim() : null,
+                    revolutLink: revolutController.text.trim().isNotEmpty ? revolutController.text.trim() : null,
+                  );
+                  ref.invalidate(tripKittyDataProvider(widget.tripId));
+                },
+                child: Text(l10n.save),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -629,7 +632,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                   await Clipboard.setData(ClipboardData(text: link));
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('PayPal-Link in Zwischenablage kopiert')),
+                      SnackBar(content: Text(l10n.paypalCopied)),
                     );
                   }
                 }
@@ -662,7 +665,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                 await Clipboard.setData(ClipboardData(text: text));
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Zahlungsdetails in Zwischenablage kopiert')),
+                    SnackBar(content: Text(l10n.paymentDetailsCopied)),
                   );
                 }
               }

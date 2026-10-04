@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 
@@ -20,7 +21,7 @@ class StorageChecklistScreen extends ConsumerWidget {
     final checklistAsync = ref.watch(storageChecklistProvider(tripId));
 
     if (checklistAsync.hasError) {
-      return const NotFoundScreen(message: 'Törn nicht gefunden');
+      return NotFoundScreen(message: l10n.tripNotFound);
     }
 
     return Scaffold(
@@ -29,7 +30,7 @@ class StorageChecklistScreen extends ConsumerWidget {
       ),
       body: checklistAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Fehler: $err')),
+        error: (err, _) => Center(child: Text(l10n.tripNotFound)),
         data: (entries) {
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -97,8 +98,9 @@ class StorageChecklistScreen extends ConsumerWidget {
     StorageChecklistEntry entry,
     ThemeData theme,
   ) {
-    final names = entry.affectedItems.map((it) => it.name).take(6).join(', ');
-    final suffix = entry.affectedItems.length > 6 ? ' u. a.' : '';
+    final l10n = AppLocalizations.of(context)!;
+    final names = entry.affectedItems.map((it) => it.localizedName(context)).take(6).join(', ');
+    final suffix = entry.affectedItems.length > 6 ? ' ...' : '';
 
     return Card(
       elevation: 0,
@@ -146,7 +148,7 @@ class StorageChecklistScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Betrifft: $names$suffix',
+                    l10n.storageAffectsItems('$names$suffix'),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.primary,
                       fontStyle: FontStyle.italic,

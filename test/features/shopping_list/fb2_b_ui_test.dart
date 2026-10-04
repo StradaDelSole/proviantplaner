@@ -270,7 +270,7 @@ void main() {
       expect(find.text('14'), findsWidgets);
 
       // Schnellchip "Wählrad..." öffnen
-      final wheelChip = find.text('Wählrad...');
+      final wheelChip = find.textContaining('Wählrad');
       expect(wheelChip, findsOneWidget);
       await tester.tap(wheelChip);
       await tester.pumpAndSettle();

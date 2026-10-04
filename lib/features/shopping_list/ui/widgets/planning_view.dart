@@ -4,6 +4,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
+import 'package:proviantplaner/core/util/formatters.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
@@ -69,7 +71,11 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Gesamt: ${wv.totalWeightKg.toStringAsFixed(1)} kg · ${wv.totalVolumeLiters.toStringAsFixed(1)} l${wv.hasItemsWithoutWeight ? ' (+ Stückwaren)' : ''}',
+                  l10n.totalWeightVolumeSummary(
+                    AppFormatters.formatDecimal(context, wv.totalWeightKg),
+                    AppFormatters.formatDecimal(context, wv.totalVolumeLiters),
+                    wv.hasItemsWithoutWeight ? ' (+ ${l10n.unitPiece})' : '',
+                  ),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -96,12 +102,12 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
             child: Column(
               children: [
                 Text(
-                  'Eure Vorratsliste ist noch leer.',
+                  l10n.planningListEmptyTitle,
                   style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Ihr könnt alle empfohlenen Grundvorräte mit einem Klick übernehmen oder einzelne Gruppen aufklappen.',
+                  l10n.planningListEmptySubtitle,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
@@ -113,7 +119,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                   children: [
                     FilledButton.icon(
                       icon: const Icon(Icons.playlist_add_check),
-                      label: const Text('Alle Vorschläge übernehmen'),
+                      label: Text(l10n.adoptAllSuggestions),
                       onPressed: () async {
                         await ref
                             .read(shoppingListServiceProvider)
@@ -132,7 +138,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                           }
                         });
                       },
-                      child: const Text('oder einzeln auswählen'),
+                      child: Text(l10n.orSelectIndividually),
                     ),
                   ],
                 ),
@@ -182,7 +188,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        catView.category.nameDe,
+                        catView.category.localizedName(context),
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -202,12 +208,12 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                       );
                   ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                 },
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.playlist_add_check, size: 16),
-                    SizedBox(width: 4),
-                    Text('Vorschläge dieser Kategorie'),
+                    const Icon(Icons.playlist_add_check, size: 16),
+                    const SizedBox(width: 4),
+                    Text(l10n.categorySuggestions),
                   ],
                 ),
               ),
@@ -265,19 +271,19 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          groupView.group.nameDe,
+                          groupView.group.localizedName(context),
                           style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         if (groupView.group.mode == GroupMode.check)
                           Text(
-                            '${groupView.checkedCount} von ${groupView.variants.length} geprüft',
+                            l10n.groupCheckedStatus(groupView.checkedCount, groupView.variants.length),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.primary,
                             ),
                           )
                         else if (groupView.group.need != null)
                           Text(
-                            'Vorschlag gesamt: ca. ${groupView.group.need!.amount} ${groupView.group.need!.unit}',
+                            l10n.suggestionTotal(AppFormatters.formatDecimal(context, groupView.group.need!.amount), groupView.group.need!.unit),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

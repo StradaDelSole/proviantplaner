@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
@@ -62,9 +64,10 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
     await ref.read(shoppingListServiceProvider).setPackages(widget.item, newCount);
     ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Wassermenge auf $newCount Packungen erhöht (+${(factor * 100).toInt()} %)'),
+          content: Text(l10n.waterIncreasedNotice(newCount, (factor * 100).toInt())),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -74,6 +77,8 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
   Future<void> _showStopSelection(BuildContext context) async {
     final stops = widget.data.stops;
     if (stops.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    final itemName = widget.item.localizedName(context);
 
     await showModalBottomSheet(
       context: context,
@@ -85,7 +90,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Stopp wählen: ${widget.item.name}',
+                l10n.selectStopTitle(itemName),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -95,7 +100,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                 children: stops.map((stop) {
                   return ActionChip(
                     avatar: const Icon(Icons.storefront_outlined, size: 16),
-                    label: Text('Tag ${stop.dayNumber} · ${stop.name}'),
+                    label: Text(l10n.stopDayPort(stop.dayNumber, stop.name)),
                     onPressed: () async {
                       Navigator.of(ctx).pop();
                       await ref.read(shoppingListServiceProvider).allocateToStop(
@@ -107,7 +112,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                       ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${widget.item.name} zu "${stop.name}" zugeordnet.')),
+                          SnackBar(content: Text(l10n.itemAssignedToStop(itemName, stop.name))),
                         );
                       }
                     },
@@ -124,6 +129,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final item = widget.item;
     final isOnList = item.isOnList;
@@ -146,7 +152,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Stopp wählen',
+              l10n.selectStop,
               style: TextStyle(
                 color: theme.colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.bold,
@@ -176,7 +182,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        item.name,
+                        item.localizedName(context),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -192,7 +198,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            item.storageNotice ?? 'braucht Kühlung',
+                            item.storageNotice ?? l10n.needsCooling,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: (item.storageNotice?.contains('einfrieren') == true)
                                   ? theme.colorScheme.onPrimaryContainer
@@ -205,7 +211,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                       const SizedBox(height: 2),
                       if (!isOnList) ...[
                         Text(
-                          item.suggestionDisplay,
+                          item.suggestionDisplayLocalized(l10n),
                           style: theme.proviantTypography.numberSmall.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -217,13 +223,13 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text(
-                              item.demandDisplay,
+                              item.demandDisplayLocalized(l10n),
                               style: theme.proviantTypography.numberSmall.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             Text(
-                              '(${item.shortSuggestionDisplay})',
+                              '(${item.shortSuggestionDisplayLocalized(l10n)})',
                               style: theme.proviantTypography.numberSmall.copyWith(
                                 color: theme.colorScheme.outline,
                               ),
@@ -249,12 +255,12 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                       minimumSize: const Size(90, 48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add, size: 18),
-                        SizedBox(width: 4),
-                        Text('übernehmen'),
+                        const Icon(Icons.add, size: 18),
+                        const SizedBox(width: 4),
+                        Text(l10n.takeOver),
                       ],
                     ),
                   ),
@@ -269,7 +275,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                           IconButton(
                             icon: const Icon(Icons.remove),
                             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                            tooltip: 'Menge verringern',
+                            tooltip: l10n.decreaseQuantity,
                             onPressed: () async {
                               await ref.read(shoppingListServiceProvider).decrementPackages(item);
                               ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
@@ -319,7 +325,7 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                           IconButton(
                             icon: const Icon(Icons.add),
                             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                            tooltip: 'Menge erhöhen',
+                            tooltip: l10n.increaseQuantity,
                             onPressed: () async {
                               await ref.read(shoppingListServiceProvider).incrementPackages(item);
                               ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
@@ -371,13 +377,13 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                 children: [
                   ActionChip(
                     avatar: const Icon(Icons.wb_sunny_outlined, size: 14),
-                    label: const Text('+25 % warm', style: TextStyle(fontSize: 12)),
+                    label: Text(l10n.waterBoostWarm, style: const TextStyle(fontSize: 12)),
                     onPressed: () => _applyWaterBonus(0.25),
                   ),
                   const SizedBox(width: 8),
                   ActionChip(
                     avatar: const Icon(Icons.local_fire_department_outlined, size: 14),
-                    label: const Text('+50 % heiß/Tropen', style: TextStyle(fontSize: 12)),
+                    label: Text(l10n.waterBoostHot, style: const TextStyle(fontSize: 12)),
                     onPressed: () => _applyWaterBonus(0.50),
                   ),
                 ],

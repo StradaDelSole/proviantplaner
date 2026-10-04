@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/tables.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
+import 'package:proviantplaner/core/util/formatters.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
@@ -153,7 +155,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  group.nameDe,
+                  group.localizedName(context),
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -172,10 +174,14 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             alignment: Alignment.centerLeft,
             child: Text(
               group.mode == GroupMode.check
-                  ? 'Prüfliste (vorhanden / fehlt / nachkaufen)'
+                  ? l10n.checklistHint
                   : group.split == GroupSplit.each
-                      ? 'Jede Sorte wird einzeln berechnet'
-                      : 'Bedarf: ${group.need?.amount ?? 0} ${group.need?.unit ?? ""} · split=${group.split.rawValue}',
+                      ? l10n.eachSplitHint
+                      : l10n.needSplitHint(
+                          AppFormatters.formatDecimal(context, (group.need?.amount ?? 0).toDouble()),
+                          group.need?.unit ?? '',
+                          group.split.rawValue,
+                        ),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -253,28 +259,28 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            v.name,
+            v.localizedName(context),
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
           SegmentedButton<CheckItemState>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: CheckItemState.available,
-                label: Text('vorhanden'),
-                icon: Icon(Icons.check, size: 16),
+                label: Text(l10n.checkStatePresent),
+                icon: const Icon(Icons.check, size: 16),
               ),
               ButtonSegment(
                 value: CheckItemState.missing,
-                label: Text('fehlt'),
-                icon: Icon(Icons.remove, size: 16),
+                label: Text(l10n.checkStateMissing),
+                icon: const Icon(Icons.remove, size: 16),
               ),
               ButtonSegment(
                 value: CheckItemState.restock,
-                label: Text('nachkaufen'),
-                icon: Icon(Icons.shopping_cart_outlined, size: 16),
+                label: Text(l10n.checkStateRestock),
+                icon: const Icon(Icons.shopping_cart_outlined, size: 16),
               ),
             ],
             selected: {v.checkState},
@@ -322,7 +328,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        v.name,
+                        v.localizedName(context),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -378,7 +384,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 if (v.isSelected) ...[
                   IconButton(
                     icon: const Icon(Icons.edit_note, size: 20),
-                    tooltip: 'Menge eingeben',
+                    tooltip: l10n.enterQuantityTooltip,
                     onPressed: () => _showQuantityDialog(context, v),
                   ),
                   TextButton(
@@ -409,7 +415,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 child: Row(
                   children: [
                     Text(
-                      'Anteil: ${(v.share * 100).round()} %',
+                      l10n.sharePercent((v.share * 100).round()),
                       style: theme.proviantTypography.numberSmall,
                     ),
                     Expanded(

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
@@ -28,7 +29,7 @@ class ShoppingModeScreen extends ConsumerStatefulWidget {
 }
 
 class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
-  Future<void> _openExpenseSheet(ShoppingStop stop) async {
+  Future<void> _openExpenseSheet(ShoppingStop stop, AppLocalizations l10n) async {
     final kittyData = await ref.read(tripKittyDataProvider(widget.tripId).future);
     if (!mounted) return;
     await ExpenseSheet.show(
@@ -36,7 +37,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       tripId: widget.tripId,
       kittyModel: kittyData.model,
       members: kittyData.members,
-      initialTitle: 'Einkauf ${stop.name}',
+      initialTitle: '${l10n.shoppingModeTitle} ${stop.name}',
     );
   }
 
@@ -48,11 +49,11 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
 
     return dataAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
+      error: (err, _) => NotFoundScreen(message: l10n.tripNotFound),
       data: (data) {
         final stop = data.stops.where((s) => s.id == widget.stopId).firstOrNull;
         if (stop == null) {
-          return const NotFoundScreen(message: 'Einkaufsstopp nicht gefunden');
+          return NotFoundScreen(message: l10n.shoppingStopNotFound);
         }
         final isFirstStop = data.stops.firstOrNull?.id == stop.id;
 
@@ -80,11 +81,11 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Einkauf Tag ${stop.dayNumber} · ${stop.name}',
+                  l10n.shoppingDayTitle(stop.dayNumber, stop.name),
                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '$boughtCount von $totalCount erledigt',
+                  l10n.shoppingProgress(boughtCount, totalCount),
                   style: theme.proviantTypography.numberSmall.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -93,9 +94,9 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
             ),
             actions: [
               TextButton.icon(
-                onPressed: () => _openExpenseSheet(stop),
+                onPressed: () => _openExpenseSheet(stop, l10n),
                 icon: const Icon(Icons.receipt_long_outlined),
-                label: const Text('Ausgabe erfassen'),
+                label: Text(l10n.fundAddExpense),
               ),
             ],
             bottom: PreferredSize(
@@ -108,7 +109,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
             ),
           ),
           body: stopItems.isEmpty
-              ? const Center(child: Text('Keine Posten für diesen Stopp zugeordnet.'))
+              ? Center(child: Text(l10n.noItemsForStop))
               : ListView(
                   padding: const EdgeInsets.only(bottom: 96),
                   children: data.departments.map((deptView) {
@@ -148,7 +149,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  deptView.displayName.toUpperCase(),
+                                  deptView.department.localizedName(context).toUpperCase(),
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.1,
@@ -237,7 +238,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
           ),
         ),
         title: Text(
-          it.name,
+          it.localizedName(context),
           style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w500,
             decoration: isBought ? TextDecoration.lineThrough : null,
@@ -267,20 +268,20 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         builder: (ctx) => AlertDialog(
           title: Text(l10n.unboughtItemsDialogTitle),
           content: Text(
-            '$unbought Posten nicht gekauft – für einen späteren Stopp merken oder streichen?',
+            l10n.unboughtNoticeLaterOrDrop(unbought),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _promptStorage(context);
+                _promptStorage(context, l10n);
               },
               child: Text(l10n.dismiss),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                _promptStorage(context);
+                _promptStorage(context, l10n);
               },
               child: Text(l10n.postpone),
             ),
@@ -288,29 +289,27 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         ),
       );
     } else {
-      _promptStorage(context);
+      _promptStorage(context, l10n);
     }
   }
 
-  void _promptStorage(BuildContext context) {
+  void _promptStorage(BuildContext context, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Fertig eingekauft!'),
-        content: const Text(
-          'Der Einkauf ist abgeschlossen. Möchtest du die Vorräte jetzt einlagern?',
-        ),
+        title: Text(l10n.shoppingFinishedTitle),
+        content: Text(l10n.shoppingFinishedContent),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('Später'),
+            child: Text(l10n.later),
           ),
           FilledButton.icon(
             icon: const Icon(Icons.inventory_2_outlined),
-            label: const Text('Jetzt einlagern'),
+            label: Text(l10n.storeNow),
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();

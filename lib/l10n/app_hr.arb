@@ -1,0 +1,769 @@
+{
+  "@@locale": "hr",
+  "appTitle": "Proviantplaner",
+  "poweredBy": "powered by HullQ",
+  "navShoppingList": "Popis",
+  "navTrip": "Plovidba",
+  "navFund": "Blagajna",
+  "navMore": "Više",
+  "welcomeHeadline": "Opskrba i brodska blagajna – jednostavno i pregledno",
+  "welcomeSubline": "Izračunaj zalihe, upravljaj namirnicama i pravedno podijeli troškove plovidbe.",
+  "tripWizardTitle": "Nova plovidba",
+  "stepBasic": "Osnovni podaci",
+  "stepBoat": "Brod i područje",
+  "stepCrew": "Posada i prehrana",
+  "tripName": "Naziv plovidbe",
+  "startDate": "Datum početka",
+  "daysCount": "Broj dana",
+  "isCharter": "Čarter brod",
+  "isOwnBoat": "Vlastiti brod",
+  "boatType": "Vrsta broda",
+  "boatMonohull": "Jednotrupac",
+  "boatCatamaran": "Katamaran",
+  "region": "Područje plovidbe",
+  "regionTemperate": "Umjereno (npr. Sjeverno/Baltičko more)",
+  "regionMediterranean": "Jadran i Sredozemlje ljeti",
+  "regionTropics": "Tropsko / Vruće ili zabačeno",
+  "fridgeCapacity": "Kapacitet hladnjaka (litara)",
+  "crewSectionTitle": "Posada",
+  "addCrewMember": "+ Dodaj člana posade",
+  "crewCount": "Zabilježeno",
+  "person": "Osoba",
+  "persons": "Osoba",
+  "edit": "Uredi",
+  "delete": "Obriši",
+  "isAdult": "Odrasla osoba",
+  "isChild": "Dijete",
+  "isVegetarian": "vegetarijanac",
+  "noAlcohol": "ne pije alkohol",
+  "profilTitle": "Profil prehrane",
+  "crewAppetiteQuestion": "Kakav je apetit posade?",
+  "appetiteLight": "Manji apetit",
+  "appetiteNormal": "Uobičajen",
+  "appetiteHearty": "Dobar apetit",
+  "appetiteHungrySailors": "Gladni jedriličari",
+  "crewDrinkingQuestion": "Koliko se pije na brodu?",
+  "drinkingRelaxed": "Umjereno",
+  "drinkingNormal": "Normalno",
+  "drinkingFestive": "Veselo / Svečano",
+  "weatherReserve": "Pričuva za sidrenje i loše vrijeme (+10 %)",
+  "weatherReserveDescription": "Automatski računa 1 dodatni suhi obrok za nuždu od trajnih namirnica.",
+  "adjustIndividualDetails": "Prilagodi pojedinačno po osobi",
+  "nextStep": "Dalje",
+  "previousStep": "Natrag",
+  "createTrip": "Kreiraj plovidbu",
+  "name": "Naziv",
+  "save": "Spremi",
+  "cancel": "Odustani",
+  "timelineTitle": "Plan plovidbe i obroci",
+  "day": "Dan",
+  "lunchRestaurant": "Ručak u restoranu",
+  "lunchBoard": "Ručak na brodu",
+  "eveningRestaurant": "Večera u restoranu",
+  "eveningBoard": "Večera na brodu",
+  "portName": "Luka / Uvala (neobavezno)",
+  "dayType": "Vrsta dana",
+  "shoppingStopsTitle": "Stanice za kupovinu",
+  "addShoppingStop": "+ Dodaj stanicu za kupovinu",
+  "firstStopProtected": "Prva stanica za kupovinu se ne može obrisati.",
+  "newTripButton": "Kreiraj novu plovidbu",
+  "noTripsYet": "Još nema kreiranih plovidbi.",
+  "metricBoardDinner": "Večere na brodu",
+  "metricBoardLunch": "Ručkovi na brodu",
+  "metricRestaurant": "Odlazaka u restoran",
+  "customEatLevel": "Poseban apetit",
+  "customDrinkLevel": "Posebna potrošnja alkohola",
+  "planView": "Planiranje",
+  "shopView": "Kupovina",
+  "allStops": "Sve stanice",
+  "searchHint": "Pretraži katalog namirnica",
+  "allergenNotice": "Oznake prehrane ne jamče zaštitu od alergena",
+  "charterNotice": "Kod čartera baza osigurava motor i tehničku opremu. Prikazati svejedno?",
+  "covered": "pokriveno",
+  "scarce": "tijesno",
+  "noneSelected": "nije odabrano",
+  "demand": "Potreba",
+  "reserve": "Pričuva",
+  "holdsOneDay": "traje 1 dan",
+  "cooled": "u hladnjaku",
+  "overridden": "ručno promijenjeno",
+  "resetOverride": "poništi",
+  "changePackSize": "Promijeni veličinu pakiranja",
+  "packSizeValue": "Veličina",
+  "packSizeUnit": "Jedinica",
+  "rememberForFutureTrips": "Zapamti za buduće plovidbe",
+  "packSizeRecalcNotice": "Broj pakiranja bit će ponovno izračunat.",
+  "allocateToStop": "Dodijeli količinu stanici kupovine",
+  "allocateDialogTitle": "Dodijeli stanici",
+  "unallocatedNotice": "Nedodijeljene količine automatski pripadaju prvoj stanici kupovine.",
+  "customItemTitle": "Vlastita stavka",
+  "addCustomItem": "+ Dodaj vlastitu stavku",
+  "category": "Kategorija",
+  "department": "Odjel",
+  "unit": "Jedinica",
+  "quantity": "Količina",
+  "noSearchResults": "Nema u katalogu – dodati kao vlastitu stavku?",
+  "shoppingModeTitle": "Način rada za kupovinu",
+  "shoppingDone": "Kupovina završena",
+  "unboughtItemsDialogTitle": "Preostale stavke",
+  "postpone": "Odgodi",
+  "dismiss": "Ukloni",
+  "storageTitle": "Spremanje na brod",
+  "storageNotice": "Karton raspakiraj na kopnu – insekti putuju u valovitom kartonu.",
+  "storageFinish": "Završi spremanje",
+  "storageCompleted": "Spremanje završeno",
+  "customItemBadge": "vlastita stavka",
+  "takeOver": "Preuzmi",
+  "fundTitle": "Brodska blagajna",
+  "fundModelShared": "Zajednička blagajna",
+  "fundModelIndividual": "Pojedinačni obračun",
+  "fundCurrentBalance": "Trenutno stanje blagajne",
+  "fundTotalDeposits": "Ukupno uplaćeno",
+  "fundTotalExpenses": "Ukupno potrošeno",
+  "fundTotalExpensesLabel": "Ukupni troškovi",
+  "fundOpenTransfers": "Otvoreno: {count} plaćanja za poravnanje",
+  "fundExpensesSegment": "Troškovi",
+  "fundPeopleSegment": "Posada i udjeli",
+  "fundAddExpense": "Zabilježi trošak",
+  "fundAddDeposit": "Zabilježi uplatu",
+  "fundSettleTrip": "Obračun plovidbe",
+  "fundSwitchModel": "Promijeni model blagajne",
+  "fundSwitchModelExplain": "Želite li promijeniti model blagajne?",
+  "fundSwitchModelBlocked": "Model se može promijeniti samo dok još nema zabilježenih troškova.",
+  "fundPaidFromFund": "plaćeno iz blagajne",
+  "fundPaidBy": "platio {name}",
+  "fundPaidByTitle": "Platio",
+  "fundExpenseCategory": "Kategorija",
+  "fundAmount": "Iznos",
+  "fundTitleField": "Svrha / Opis",
+  "fundSaveExpense": "Spremi trošak",
+  "fundExpenseSaved": "Trošak spremljen",
+  "fundExpenseDeleted": "Trošak obrisan",
+  "fundSaveDeposit": "Spremi uplatu",
+  "fundDepositSaved": "Uplata spremljena",
+  "fundDepositDeleted": "Uplata obrisana",
+  "fundEqualDepositForAll": "Jednak iznos za sve",
+  "fundParticipationTitle": "Udio po osobi",
+  "fundProfileAll": "Sudjeluje u svemu",
+  "fundProfileSkipperFull": "Skiper oslobođen (u potpunosti)",
+  "fundProfileSkipperPartial": "Skiper oslobođen (čarter, marina, gorivo)",
+  "fundProfileNoAlcohol": "Bez alkohola",
+  "fundSettlementTitle": "Završni obračun",
+  "fundWhoPaysWhom": "Tko kome plaća",
+  "fundSettlementNotice": "Napomena: Aplikacija ne provodi novčana plaćanja. Sve uplate obavljaju se preko vaše banke ili servisa.",
+  "fundCopyIbanData": "Kopiraj podatke za uplatu",
+  "fundIbanCopied": "Podaci kopirani u međuspremnik",
+  "fundSharePaypal": "Podijeli PayPal poveznicu",
+  "fundShareRevolut": "Podijeli Revolut poveznicu",
+  "fundMarkDone": "Označi kao plaćeno",
+  "fundMarkOpen": "Vrati u otvoreno",
+  "fundSettled": "Riješeno",
+  "fundOpen": "Otvoreno",
+  "fundArchiveTrip": "Arhiviraj plovidbu",
+  "fundArchiveNotice": "Plovidba uspješno arhivirana.",
+  "fundScanGiroCode": "Skeniraj EPC QR kod",
+  "fundScanGiroCodeSubtitle": "Bankovnom aplikacijom za izravnu uplatu",
+  "fundNightwatchScanHint": "Kratko svjetlo za skeniranje",
+  "fundReceiver": "Primatelj",
+  "fundIban": "IBAN",
+  "fundRemittance": "Svrha plaćanja",
+  "fundBalancesEqual": "Računi blagajne su izravnati",
+  "fundDebtor": "plaća {amount}",
+  "fundCreditor": "prima {amount}",
+  "fundBalanced": "izravnato",
+  "fundNoExpenses": "Još nema unesenih troškova.",
+  "fundNoCrew": "Nema unesenih članova posade.",
+  "unlockTitle": "Planiraj više plovidbi",
+  "unlockSubtitle": "Uz besplatni HullQ račun planiraj neograničeno plovidbi i osiguraj podatke u oblaku.",
+  "benefitUnlimitedTrips": "Neograničene plovidbe",
+  "benefitBackup": "Sigurnosna kopija i vraćanje",
+  "benefitDevices": "Korištenje na više uređaja",
+  "loginGoogle": "Nastavi s Googleom",
+  "loginApple": "Nastavi s Appleom",
+  "loginEmail": "Nastavi s e-poštom",
+  "consentNewsletter": "Da, želim primati novosti o tržištu plovila.",
+  "redeemTripCode": "Unesi kod plovidbe",
+  "tripCodeField": "Kod plovidbe (npr. PRO-2026)",
+  "tripCodeSuccess": "Kod plovidbe uspješno aktiviran!",
+  "tripCodeInvalid": "Nevažeći kod plovidbe",
+  "privacyPolicy": "Zaštita podataka",
+  "termsOfUse": "Uvjeti korištenja",
+  "imprint": "Impressum",
+  "accountTitle": "HullQ račun",
+  "accountNotLoggedIn": "Niste prijavljeni",
+  "accountUnlockFree": "Besplatno aktiviraj HullQ računom",
+  "accountStatusMember": "HullQ član",
+  "accountStatusPro": "Pro član",
+  "accountBackupStatus": "Sigurnosna kopija: zadnja kopija",
+  "accountBackupNever": "Još nema sigurnosne kopije",
+  "accountBackupNow": "Napravi kopiju odmah",
+  "accountLogout": "Odjavi se",
+  "accountDelete": "Obriši račun",
+  "accountDeleteConfirmTitle": "Stvarno obrisati račun?",
+  "accountDeleteConfirmContent": "Želite li doista trajno obrisati svoj HullQ račun i sve povezane podatke? Spremljene plovidbe bit će izbrisane.",
+  "accountDeleteConfirmButton": "Trajno obriši račun",
+  "accountDeletedNotice": "Vaš račun i svi lokalni podaci uspješno su obrisani.",
+  "accountLogoutNotice": "Uspješno ste odjavljeni.",
+  "offlineLoginNotice": "Prijava zahtijeva internetsku vezu.",
+  "enterEmailTitle": "Unesite e-mail adresu",
+  "emailHint": "ime@primjer.hr",
+  "emailInvalid": "Molimo unesite valjanu e-mail adresu.",
+  "accountBackupSuccess": "Kopija uspješno napravljena.",
+  "accountBackupRestore": "Vrati podatke iz kopije",
+  "accountRestoreSuccess": "Plovidbe uspješno vraćene iz kopije.",
+  "exportPdf": "Izvezi kao PDF",
+  "exportShoppingListPdf": "Ispiši / Spremi popis kupovine kao PDF",
+  "exportSettlementPdf": "Ispiši / Spremi obračun kao PDF",
+  "climateQuestion": "Kakvo se vrijeme očekuje?",
+  "climateCool": "Hladno (većinom ispod 20 °C)",
+  "climateWarm": "Toplo (20–28 °C)",
+  "climateHot": "Vruće (preko 28 °C)",
+  "noFridgeSwitch": "Nema hladnjaka na brodu",
+  "needsCoolingBadge": "potrebno hlađenje",
+  "coolingAlternativeHint": "Trajne alternative bez hladnjaka: trajno mlijeko, slani maslac, tvrdi sir, suha kobasica, konzerve.",
+  "durationOneWeek": "1 tjedan",
+  "durationTwoWeeks": "2 tjedna",
+  "durationOneMonth": "1 mjesec",
+  "durationThreeMonths": "3 mjeseca",
+  "durationSixMonths": "6 mjeseci",
+  "longTripHint": "Za dulje plovidbe vrijedi isplanirati stanice za kupovinu.",
+  "timelineWeek": "Tjedan {week} (dan {startDay}–{endDay})",
+  "eatOutQuestion": "Jedete li i u restoranu?",
+  "dinnerInRestaurant": "Večera u restoranu",
+  "lunchInRestaurant": "Ručak u restoranu",
+  "nextStepLabel": "Sljedeći korak",
+  "daysInDetail": "Dani u detalje",
+  "tripOverviewTitle": "Pregled plovidbe",
+  "recordExpense": "Unesi trošak",
+  "deposit": "Uplati",
+  "settle": "Obračunaj",
+  "editList": "Uredi popis",
+  "startShopping": "Kreni u kupovinu",
+  "settledCash": "Plaćeno u gotovini",
+  "transferBank": "Bankovna doznaka",
+  "noFridge": "Bez hladnjaka",
+  "archiveSectionTitle": "Arhiva",
+  "whoPaysWhom": "Tko kome duguje",
+  "deptObstGemuese": "Voće i povrće",
+  "deptBackwaren": "Pekara",
+  "deptMolkerei": "Mliječni proizvodi",
+  "deptFleischFisch": "Meso i riba",
+  "deptTrockenware": "Suhe namirnice",
+  "deptKonserven": "Konzervirana hrana",
+  "deptSuesswaren": "Slatkiši i grickalice",
+  "deptGetraenke": "Pića",
+  "deptDrogerie": "Drogerija",
+  "deptHaushalt": "Kućanstvo",
+  "deptApotheke": "Ljekarna",
+  "deptTechnik": "Oprema za brod i tehnika",
+  "freezerAvailable": "Dostupan zamrzivač",
+  "freezerCapacityLiters": "Volumen zamrzivača (l)",
+  "waterTankLiters": "Brodski spremnik vode (l)",
+  "waterTankDrinkable": "Voda iz spremnika je pitka",
+  "waterTankDrinkableSubtitle": "Smanjena potreba za flaširanom vodom (min. 1,5 l po osobi pričuve)",
+  "step1TripTitle": "1. Plovidba",
+  "step2CrewTitle": "2. Posada",
+  "step3FoodTitle": "3. Hrana na brodu",
+  "wheelPickerButton": "Kotačić za odabir…",
+  "yes": "Da",
+  "no": "Ne",
+  "done": "Gotovo",
+  "selfShopping": "Samostalna kupovina",
+  "deliveryOrder": "Dostava na brod",
+  "checkDelivery": "Provjeri dostavu",
+  "confirmDelivery": "Potvrdi dostavu",
+  "orderReceived": "Dostava zaprimljena",
+  "viewOrder": "Pregled narudžbe",
+  "sendOrder": "Pošalji narudžbu",
+  "startTrip": "Pokreni",
+  "treasurerLabel": "Blagajnik",
+  "balanceLabel": "Stanje blagajne",
+  "recentExpenses": "Nedavni troškovi",
+  "sendViaWhatsApp": "Pošalji preko WhatsAppa",
+  "shareText": "Podijeli tekst",
+  "sharePdf": "Podijeli PDF",
+  "reviewAndSendOrder": "Pregledaj i pošalji narudžbu",
+  "adoptAllSuggestions": "Prihvati sve prijedloge",
+  "orSelectIndividually": "ili odaberi pojedinačno",
+  "categorySuggestions": "Prijedlozi za ovu kategoriju",
+  "moveItem": "Premjesti",
+  "orderMarkedSent": "Narudžba označena kao poslana.",
+  "checkStatePresent": "ima na brodu",
+  "checkStateMissing": "nedostaje",
+  "checkStateRestock": "dokupiti",
+  "totalWeight": "Ukupna težina",
+  "totalVolume": "Ukupni volumen",
+  "freezeImmediately": "odmah zamrznuti",
+  "waterBoostWarm": "+25% toplo",
+  "waterBoostHot": "+50% vruće / tropi",
+  "adjustQuantityTitle": "{name}: prilagodi količinu",
+  "itemAssignedToStop": "{item} dodijeljen za „{stop}“.",
+  "waterIncreasedNotice": "Količina vode povećana na {count} pakiranja (+{percent}%)",
+  "remainderNotice": "Ostatak cca {amount} – planirati u kasnijoj kupovini",
+  "weightKg": "{weight} kg",
+  "volumeLiters": "{volume} l",
+  "daysInTripCount": "{count} dana u planu plovidbe",
+  "settlementPaymentsCount": "{count} poravnanja",
+  "tripDayPort": "Dan {day} · {port}",
+  "tripDayOnly": "Dan {day}",
+  "stopDayPort": "Dan {day} · {name}",
+  "@appTitle": {
+    "description": "Name der App (vorläufiger Arbeitstitel)"
+  },
+  "@poweredBy": {
+    "description": "Dezenter Markenhinweis auf HullQ"
+  },
+  "@navShoppingList": {
+    "description": "Navigationsreiter für die Vorrats- und Einkaufsliste"
+  },
+  "@navTrip": {
+    "description": "Navigationsreiter für den Törn und die Tagesleiste"
+  },
+  "@navFund": {
+    "description": "Navigationsreiter für die Bordkasse"
+  },
+  "@navMore": {
+    "description": "Navigationsreiter für Einstellungen und Konto"
+  },
+  "@welcomeHeadline": {
+    "description": "Überschrift auf dem Startbildschirm"
+  },
+  "@welcomeSubline": {
+    "description": "Untertitel auf dem Startbildschirm"
+  },
+  "@fundOpenTransfers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@fundPaidBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fundDebtor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@fundCreditor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@timelineWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "@adjustQuantityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@itemAssignedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "@waterIncreasedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@remainderNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@weightKg": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "@volumeLiters": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "@daysInTripCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@settlementPaymentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@tripDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "port": {
+        "type": "String"
+      }
+    }
+  },
+  "@tripDayOnly": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "@stopDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setTreasurer": "Odredi blagajnika",
+  "whoManagesFund": "Tko upravlja blagajnom?",
+  "fundUsagePercent": "Iskorištenost: {percent}% potrošeno",
+  "@fundUsagePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "fundRemaining": "Preostalo: {balance}",
+  "@fundRemaining": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "fundExpenseDeletedTitle": "Trošak „{title}“ obrisan",
+  "@fundExpenseDeletedTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "treasurer": "Blagajnik",
+  "skipper": "Skiper",
+  "pay": "Plati",
+  "adjustIban": "Uredi IBAN",
+  "enterNow": "Unesi sada",
+  "paymentDataForMember": "Podaci o plaćanju za {name}",
+  "@paymentDataForMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paypalCopied": "PayPal veza kopirana u međuspremnik",
+  "paymentDetailsCopied": "Detalji o plaćanju kopirani u međuspremnik",
+  "fundPayerFund": "Blagajna",
+  "fundPayerPerson": "Osoba",
+  "moreOptions": "Više opcija",
+  "moreOptionsSubtitle": "Naslov / bilješka, prilagođena podjela",
+  "individualSplit": "Pojedinačna podjela iznosa",
+  "individualSplitSubtitle": "Razlikuje se od uobičajenog sudjelovanja",
+  "expenseCategoryProvisions": "Zalihe",
+  "expenseCategoryDrinks": "Pića",
+  "expenseCategoryMarinaBerth": "Luka i vez",
+  "expenseCategoryFuel": "Gorivo",
+  "expenseCategoryCharterDeposit": "Čarter i polog",
+  "expenseCategoryRestaurant": "Restoran",
+  "expenseCategoryOther": "Ostalo",
+  "demandApprox": "Potreba oko {amount} {unit}",
+  "@demandApprox": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "suggestionCount": "Prijedlog {count}",
+  "@suggestionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionPack": "Prijedlog: {count} × {size} {unit}",
+  "@suggestionPack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "customItem": "Vlastita stavka",
+  "decreaseQuantity": "Smanji količinu",
+  "increaseQuantity": "Povećaj količinu",
+  "selectStopTitle": "Odaberi zaustavljanje: {item}",
+  "@selectStopTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "selectStop": "Odaberi zaustavljanje",
+  "noOtherStops": "Nema drugih dostupnih postaja.",
+  "itemMovedToStop": "„{item}“ premješten na postaju „{stop}“.",
+  "@itemMovedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "moveItemToWhichStop": "{item}: Na koju postaju premjestiti?",
+  "@moveItemToWhichStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryDirectStoragePrompt": "Želite li sada pospremiti isporučene zalihe?",
+  "later": "Kasnije",
+  "storeNow": "Pospremi sada",
+  "shoppingFinishedTitle": "Kupnja završena!",
+  "shoppingFinishedContent": "Kupnja je gotova. Želite li sada pospremiti namirnice?",
+  "groupCheckedStatus": "{checked} od {total} provjereno",
+  "@groupCheckedStatus": {
+    "placeholders": {
+      "checked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionTotal": "Ukupan prijedlog: oko {amount} {unit}",
+  "@suggestionTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCountLabel": "{count} stavki",
+  "@itemCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingDayTitle": "Kupnja Dan {day} · {name}",
+  "@shoppingDayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingProgress": "{bought} od {total} završeno",
+  "@shoppingProgress": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItemsForStop": "Nema dodijeljenih stavki za ovu postaju.",
+  "unboughtNoticeLaterOrDrop": "{count} stavki nije kupljeno – zabilježiti za kasniju postaju ili ukloniti?",
+  "@unboughtNoticeLaterOrDrop": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNotFound": "Ruta nije pronađena",
+  "shoppingStopNotFound": "Postaja za kupnju nije pronađena",
+  "resendOrder": "Ponovno označi narudžbu kao poslanu",
+  "deliveryDetails": "Pojedinosti o dostavi",
+  "deliveryDate": "Datum dostave",
+  "supplier": "Dobavljač",
+  "marina": "Marina",
+  "berth": "Vez",
+  "boat": "Brod",
+  "contactPerson": "Kontakt osoba",
+  "hints": "Napomene",
+  "alreadyOrderedAt": "Već naručeno dana {datetime}",
+  "@alreadyOrderedAt": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSupplementNotice": "Broj stavki promijenio se od zadnje narudžbe ({oldCount} ➔ {newCount}). Ova će se pošiljka tretirati kao dodatak.",
+  "@orderSupplementNotice": {
+    "placeholders": {
+      "oldCount": {
+        "type": "int"
+      },
+      "newCount": {
+        "type": "int"
+      }
+    }
+  },
+  "containedItems": "Uključene stavke ({count})",
+  "@containedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectTripDurationTitle": "Odaberi trajanje rute",
+  "longTripStopsNotice": "Za dulja putovanja preporučuje se planirati postaje za kupnju.",
+  "byCategory": "Po kategoriji",
+  "byDepartment": "Po odjelu",
+  "item": "Stavka",
+  "switchStop": "Promijeni postaju",
+  "storageAffectsItems": "Odnosi se na: {items}",
+  "@storageAffectsItems": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "enterQuantityTooltip": "Unesi količinu",
+  "sharePercent": "Udio: {percent}%",
+  "@sharePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistHint": "Kontrolni popis (prisutno / nedostaje / dokupiti)",
+  "eachSplitHint": "Svaka se vrsta računa zasebno",
+  "needSplitHint": "Potreba: {amount} {unit} · {split}",
+  "@needSplitHint": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "searchCatalogPlaceholder": "Traži u katalogu",
+  "totalWeightVolumeSummary": "Ukupno: {weight} kg · {volume} l{pieceSuffix}",
+  "@totalWeightVolumeSummary": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      },
+      "pieceSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "planningListEmptyTitle": "Vaš popis zaliha je još uvijek prazan.",
+  "planningListEmptySubtitle": "Možete dodati sve preporučene osnovne zalihe jednim dodirom ili otvoriti pojedinačne grupe.",
+  "needsCooling": "zahtijeva hlađenje",
+  "tripDaysStopsSubtitle": "{days} dana · {stops} postaja",
+  "@tripDaysStopsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "stops": {
+        "type": "int"
+      }
+    }
+  },
+  "paidCash": "Isplaćeno u gotovini",
+  "transferMoney": "Prenijeti",
+  "setAsTreasurer": "Postavi kao blagajnika",
+  "addAsCustomItemNamed": "Stvori kao vlastitu stavku: „{name}”",
+  "unitPiece": "komad",
+  "unitGram": "g",
+  "unitKilogram": "kg",
+  "unitMilliliter": "ml",
+  "unitLiter": "l",
+  "unitPackage": "paket",
+  "undo": "Poništi",
+  "skipperFree": "Skiper oslobođen",
+  "initialShopping": "Početna kupovina",
+  "shoppingStop": "Stanica za kupovinu"
+}

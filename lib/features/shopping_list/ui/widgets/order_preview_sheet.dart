@@ -3,11 +3,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/services/pdf_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -128,22 +130,24 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
     widget.onOrderSent?.call();
 
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bestellung als gesendet markiert.')),
+        SnackBar(content: Text(l10n.orderMarkedSent)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final df = DateFormat('dd.MM.yyyy HH:mm');
 
     // Gruppierung nach Abteilung
     final byDept = <String, List<ShoppingListItemView>>{};
     for (final it in widget.items) {
-      byDept.putIfAbsent(it.department.displayName, () => []).add(it);
+      byDept.putIfAbsent(it.department.localizedName(context), () => []).add(it);
     }
 
     final hasSentBefore = _currentOrder.orderedAt != null;
@@ -154,7 +158,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bestellung prüfen & senden'),
+            Text(l10n.reviewAndSendOrder),
             Text(
               '${widget.trip.name} · Stopp: ${widget.stop.name}',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -184,34 +188,34 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Lieferdetails',
+                        l10n.deliveryDetails,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       TextButton.icon(
                         icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Bearbeiten'),
+                        label: Text(l10n.edit),
                         onPressed: _editDeliveryConfig,
                       ),
                     ],
                   ),
                   const Divider(),
                   if (_currentOrder.deliveryDateTime != null)
-                    _buildInfoRow('Liefertermin', '${df.format(_currentOrder.deliveryDateTime!)} Uhr'),
+                    _buildInfoRow(l10n.deliveryDate, '${df.format(_currentOrder.deliveryDateTime!)} Uhr'),
                   if (_currentOrder.supplier != null)
-                    _buildInfoRow('Lieferant', _currentOrder.supplier!.name),
+                    _buildInfoRow(l10n.supplier, _currentOrder.supplier!.name),
                   if (_currentOrder.marina != null && _currentOrder.marina!.isNotEmpty)
-                    _buildInfoRow('Marina', _currentOrder.marina!),
+                    _buildInfoRow(l10n.marina, _currentOrder.marina!),
                   if (_currentOrder.berth != null && _currentOrder.berth!.isNotEmpty)
-                    _buildInfoRow('Liegeplatz', _currentOrder.berth!),
+                    _buildInfoRow(l10n.berth, _currentOrder.berth!),
                   if (_currentOrder.boatName != null && _currentOrder.boatName!.isNotEmpty)
-                    _buildInfoRow('Boot', _currentOrder.boatName!),
+                    _buildInfoRow(l10n.boat, _currentOrder.boatName!),
                   if (_currentOrder.contactName != null && _currentOrder.contactName!.isNotEmpty)
                     _buildInfoRow(
-                      'Ansprechpartner',
+                      l10n.contactPerson,
                       '${_currentOrder.contactName}${_currentOrder.contactPhone != null ? " (${_currentOrder.contactPhone})" : ""}',
                     ),
                   if (_currentOrder.notes != null && _currentOrder.notes!.isNotEmpty)
-                    _buildInfoRow('Hinweise', _currentOrder.notes!),
+                    _buildInfoRow(l10n.hints, _currentOrder.notes!),
                 ],
               ),
             ),
@@ -239,7 +243,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Bereits bestellt am ${df.format(_currentOrder.orderedAt!)} Uhr',
+                        l10n.alreadyOrderedAt(df.format(_currentOrder.orderedAt!)),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: countChanged ? theme.colorScheme.onErrorContainer : theme.colorScheme.onPrimaryContainer,
@@ -250,7 +254,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
                   if (countChanged) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Seit der letzten Bestellung hat sich die Anzahl der Positionen geändert (${_currentOrder.lastOrderedItemCount} ➔ ${widget.items.length}). Dieser Versand wird als Nachtrag gewertet.',
+                      l10n.orderSupplementNotice(_currentOrder.lastOrderedItemCount, widget.items.length),
                       style: TextStyle(fontSize: 12, color: theme.colorScheme.onErrorContainer),
                     ),
                   ],
@@ -263,7 +267,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
             width: double.infinity,
             child: FilledButton.icon(
               icon: const Icon(Icons.chat),
-              label: const Text('Per WhatsApp senden'),
+              label: Text(l10n.sendViaWhatsApp),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF25D366),
                 foregroundColor: Colors.white,
@@ -277,7 +281,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.share),
-                  label: const Text('Text teilen'),
+                  label: Text(l10n.shareText),
                   onPressed: _shareText,
                 ),
               ),
@@ -285,7 +289,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('PDF teilen'),
+                  label: Text(l10n.sharePdf),
                   onPressed: _sharePdf,
                 ),
               ),
@@ -294,7 +298,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
           const SizedBox(height: 16),
 
           Text(
-            'Enthaltene Positionen (${widget.items.length})',
+            l10n.containedItems(widget.items.length),
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -331,7 +335,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
                   final packUnit = it.variant?.pack.unit ?? it.unit;
                   return ListTile(
                     dense: true,
-                    title: Text(it.name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    title: Text(it.localizedName(context), style: const TextStyle(fontWeight: FontWeight.w500)),
                     trailing: Text(
                       '${it.effectivePackages} × $sizeFormatted $packUnit',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -354,7 +358,7 @@ class _OrderPreviewSheetState extends ConsumerState<OrderPreviewSheet> {
           height: 48,
           child: FilledButton.icon(
             icon: const Icon(Icons.send_rounded),
-            label: Text(hasSentBefore ? 'Bestellung erneut als gesendet markieren' : 'Bestellung als gesendet markieren'),
+            label: Text(hasSentBefore ? l10n.resendOrder : l10n.orderMarkedSent),
             onPressed: _markAsSent,
           ),
         ),

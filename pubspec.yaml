@@ -61,6 +61,7 @@ flutter:
     - data/quantities_v0.6.json
     - data/quantities_v0.5.json
     - data/quantities_v0.4.json
+    - data/i18n/
 
   fonts:
     - family: IBM Plex Sans

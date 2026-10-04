@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Die zwei Bordkassenmodelle laut PRD und SLICES_v0.12.
 enum KittyModel {
@@ -48,6 +49,17 @@ enum ExpenseCategory {
         charterDeposit => 'Charter und Kaution',
         restaurant => 'Restaurant',
         other => 'Sonstiges',
+      };
+
+  /// Lokalisierter Anzeigename der Kategorie gemäß aktuellem Locale.
+  String localizedName(AppLocalizations l10n) => switch (this) {
+        provisions => l10n.expenseCategoryProvisions,
+        drinks => l10n.expenseCategoryDrinks,
+        marinaBerth => l10n.expenseCategoryMarinaBerth,
+        fuel => l10n.expenseCategoryFuel,
+        charterDeposit => l10n.expenseCategoryCharterDeposit,
+        restaurant => l10n.expenseCategoryRestaurant,
+        other => l10n.expenseCategoryOther,
       };
 
   /// Icon gemäß Design-Brief (Hafen: location_on, Diesel: local_gas_station, Charter: receipt_long).

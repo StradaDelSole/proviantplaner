@@ -3,6 +3,7 @@ library;
 
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import '../domain/calculation/quantity_engine.dart';
 import '../domain/models/catalog_models.dart';
 import '../domain/models/quantities_models.dart';
@@ -25,6 +26,7 @@ class CatalogRepository {
       catalogJson: catalogString,
       quantitiesJson: quantitiesString,
     );
+    await CatalogLocalizationService.instance.loadAll();
   }
 
   void loadFromJsonStrings({

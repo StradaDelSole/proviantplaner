@@ -3,8 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -65,9 +67,12 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
 
   Future<void> _moveMissingToStop(ShoppingListItemView it) async {
     final otherStops = widget.allStops.where((s) => s.id != widget.stop.id).toList();
+    final l10n = AppLocalizations.of(context)!;
+    final itemName = it.localizedName(context);
+
     if (otherStops.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keine weiteren Stopps vorhanden.')),
+        SnackBar(content: Text(l10n.noOtherStops)),
       );
       return;
     }
@@ -75,11 +80,11 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
     final targetStop = await showDialog<ShoppingStop>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: Text('${it.name}: Auf welchen Stopp verschieben?'),
+        title: Text(l10n.moveItemToWhichStop(itemName)),
         children: otherStops
             .map((s) => SimpleDialogOption(
                   onPressed: () => Navigator.of(ctx).pop(s),
-                  child: Text('Tag ${s.dayNumber} · ${s.name}'),
+                  child: Text(l10n.stopDayPort(s.dayNumber, s.name)),
                 ))
             .toList(),
       ),
@@ -96,7 +101,7 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
       setState(() => _receivedItemIds.remove(it.item.id));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${it.name} auf Stopp "${targetStop.name}" verschoben.')),
+          SnackBar(content: Text(l10n.itemMovedToStop(itemName, targetStop.name))),
         );
       }
     }
@@ -109,22 +114,23 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
     widget.onReceived?.call();
 
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     Navigator.of(context).pop();
 
     // Angebot: "Jetzt einlagern?" (UX-Konzept 2.4a & 2.5)
     final storeNow = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Lieferung erhalten'),
-        content: const Text('Möchtet ihr die gelieferten Vorräte jetzt direkt einlagern?'),
+        title: Text(l10n.orderReceived),
+        content: Text(l10n.deliveryDirectStoragePrompt),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Später'),
+            child: Text(l10n.later),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Jetzt einlagern'),
+            child: Text(l10n.storeNow),
           ),
         ],
       ),
@@ -138,15 +144,16 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Lieferung prüfen'),
+            Text(l10n.checkDelivery),
             Text(
-              'Stopp: ${widget.stop.name}',
+              '${l10n.shoppingStop}: ${widget.stop.name}',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
@@ -189,7 +196,7 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
                 },
               ),
               title: Text(
-                it.name,
+                it.localizedName(context),
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   decoration: isChecked ? null : TextDecoration.lineThrough,
@@ -200,7 +207,7 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
               trailing: !isChecked
                   ? TextButton.icon(
                       icon: const Icon(Icons.redo, size: 16),
-                      label: const Text('Verschieben'),
+                      label: Text(l10n.moveItem),
                       onPressed: () => _moveMissingToStop(it),
                     )
                   : const Chip(
@@ -222,7 +229,7 @@ class _DeliveryReceivedSheetState extends ConsumerState<DeliveryReceivedSheet> {
           height: 48,
           child: FilledButton.icon(
             icon: const Icon(Icons.done_all),
-            label: const Text('Lieferung bestätigen'),
+            label: Text(l10n.confirmDelivery),
             onPressed: _finishDelivery,
           ),
         ),

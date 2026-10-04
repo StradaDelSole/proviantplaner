@@ -148,7 +148,9 @@
   "fundOpenTransfers": "Open: {count} settle-up transfers",
   "@fundOpenTransfers": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fundExpensesSegment": "Expenses",
@@ -163,7 +165,9 @@
   "fundPaidBy": "paid by {name}",
   "@fundPaidBy": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "fundPaidByTitle": "Paid by",
@@ -205,13 +209,17 @@
   "fundDebtor": "pays {amount}",
   "@fundDebtor": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "fundCreditor": "receives {amount}",
   "@fundCreditor": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "fundBalanced": "balanced",
@@ -274,9 +282,15 @@
   "timelineWeek": "Week {week} (Day {startDay}–{endDay})",
   "@timelineWeek": {
     "placeholders": {
-      "week": { "type": "int" },
-      "startDay": { "type": "int" },
-      "endDay": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
     }
   },
   "eatOutQuestion": "Do you also eat out?",
@@ -294,5 +308,462 @@
   "transferBank": "Transfer",
   "noFridge": "No fridge",
   "archiveSectionTitle": "Archive",
-  "whoPaysWhom": "Who pays whom"
+  "whoPaysWhom": "Who pays whom",
+  "deptObstGemuese": "Fruits & Vegetables",
+  "deptBackwaren": "Bakery",
+  "deptMolkerei": "Dairy & Chilled",
+  "deptFleischFisch": "Meat & Fish",
+  "deptTrockenware": "Dry goods",
+  "deptKonserven": "Canned food",
+  "deptSuesswaren": "Sweets & Snacks",
+  "deptGetraenke": "Beverages",
+  "deptDrogerie": "Drugstore & Toiletries",
+  "deptHaushalt": "Household",
+  "deptApotheke": "First Aid & Pharmacy",
+  "deptTechnik": "Technical & Boat gear",
+  "freezerAvailable": "Freezer compartment available",
+  "freezerCapacityLiters": "Freezer volume (L)",
+  "waterTankLiters": "On-board water tank (L)",
+  "waterTankDrinkable": "Tank water is potable",
+  "waterTankDrinkableSubtitle": "Bottled water need is reduced (min. 1.5 L/person emergency reserve)",
+  "step1TripTitle": "1. Trip",
+  "step2CrewTitle": "2. Crew",
+  "step3FoodTitle": "3. Food on board",
+  "wheelPickerButton": "Wheel picker…",
+  "yes": "Yes",
+  "no": "No",
+  "done": "Done",
+  "selfShopping": "Self shopping",
+  "deliveryOrder": "Have it delivered",
+  "checkDelivery": "Check delivery",
+  "confirmDelivery": "Confirm delivery",
+  "orderReceived": "Delivery received",
+  "viewOrder": "View order",
+  "sendOrder": "Send order",
+  "startTrip": "Start",
+  "treasurerLabel": "Purser",
+  "balanceLabel": "Fund balance",
+  "recentExpenses": "Recent expenses",
+  "sendViaWhatsApp": "Send via WhatsApp",
+  "shareText": "Share text",
+  "sharePdf": "Share PDF",
+  "reviewAndSendOrder": "Review & send order",
+  "adoptAllSuggestions": "Accept all suggestions",
+  "orSelectIndividually": "or select individually",
+  "categorySuggestions": "Suggestions for this category",
+  "moveItem": "Move",
+  "orderMarkedSent": "Order marked as sent.",
+  "checkStatePresent": "in stock",
+  "checkStateMissing": "missing",
+  "checkStateRestock": "restock",
+  "totalWeight": "Total weight",
+  "totalVolume": "Total volume",
+  "freezeImmediately": "freeze immediately",
+  "waterBoostWarm": "+25% warm",
+  "waterBoostHot": "+50% hot/tropics",
+  "adjustQuantityTitle": "{name}: adjust quantity",
+  "@adjustQuantityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAssignedToStop": "{item} assigned to \"{stop}\".",
+  "@itemAssignedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "waterIncreasedNotice": "Water quantity increased to {count} packages (+{percent}%)",
+  "@waterIncreasedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "remainderNotice": "Remainder approx. {amount} – plan for a later shopping stop",
+  "@remainderNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "weightKg": "{weight} kg",
+  "@weightKg": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLiters": "{volume} L",
+  "@volumeLiters": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "daysInTripCount": "{count} days in trip itinerary",
+  "@daysInTripCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settlementPaymentsCount": "{count} balancing transfers",
+  "@settlementPaymentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripDayPort": "Day {day} · {port}",
+  "@tripDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "port": {
+        "type": "String"
+      }
+    }
+  },
+  "tripDayOnly": "Day {day}",
+  "@tripDayOnly": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "stopDayPort": "Day {day} · {name}",
+  "@stopDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setTreasurer": "Set treasurer",
+  "whoManagesFund": "Who manages the crew fund?",
+  "fundUsagePercent": "Usage: {percent}% spent",
+  "@fundUsagePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "fundRemaining": "Remaining: {balance}",
+  "@fundRemaining": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "fundExpenseDeletedTitle": "Expense “{title}” deleted",
+  "@fundExpenseDeletedTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "treasurer": "Treasurer",
+  "skipper": "Skipper",
+  "pay": "Pay",
+  "adjustIban": "Edit IBAN",
+  "enterNow": "Enter now",
+  "paymentDataForMember": "Payment details for {name}",
+  "@paymentDataForMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paypalCopied": "PayPal link copied to clipboard",
+  "paymentDetailsCopied": "Payment details copied to clipboard",
+  "fundPayerFund": "Crew fund",
+  "fundPayerPerson": "Person",
+  "moreOptions": "More options",
+  "moreOptionsSubtitle": "Title / note, custom split",
+  "individualSplit": "Individual amount split",
+  "individualSplitSubtitle": "Differs from standard participation",
+  "expenseCategoryProvisions": "Provisions",
+  "expenseCategoryDrinks": "Drinks",
+  "expenseCategoryMarinaBerth": "Marina & Berth",
+  "expenseCategoryFuel": "Fuel",
+  "expenseCategoryCharterDeposit": "Charter & Deposit",
+  "expenseCategoryRestaurant": "Restaurant",
+  "expenseCategoryOther": "Other",
+  "demandApprox": "Demand approx. {amount} {unit}",
+  "@demandApprox": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "suggestionCount": "Suggestion {count}",
+  "@suggestionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionPack": "Suggestion: {count} × {size} {unit}",
+  "@suggestionPack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "customItem": "Custom item",
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "selectStopTitle": "Select stop: {item}",
+  "@selectStopTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "selectStop": "Select stop",
+  "noOtherStops": "No other stops available.",
+  "itemMovedToStop": "“{item}” moved to stop “{stop}”.",
+  "@itemMovedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "moveItemToWhichStop": "{item}: Move to which stop?",
+  "@moveItemToWhichStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryDirectStoragePrompt": "Would you like to store the delivered provisions now?",
+  "later": "Later",
+  "storeNow": "Store now",
+  "shoppingFinishedTitle": "Shopping completed!",
+  "shoppingFinishedContent": "Shopping is done. Would you like to store the provisions now?",
+  "groupCheckedStatus": "{checked} of {total} checked",
+  "@groupCheckedStatus": {
+    "placeholders": {
+      "checked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionTotal": "Total suggestion: approx. {amount} {unit}",
+  "@suggestionTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCountLabel": "{count} items",
+  "@itemCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingDayTitle": "Shopping Day {day} · {name}",
+  "@shoppingDayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingProgress": "{bought} of {total} done",
+  "@shoppingProgress": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItemsForStop": "No items assigned to this stop.",
+  "unboughtNoticeLaterOrDrop": "{count} items not bought – postpone to later stop or dismiss?",
+  "@unboughtNoticeLaterOrDrop": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNotFound": "Trip not found",
+  "shoppingStopNotFound": "Shopping stop not found",
+  "resendOrder": "Mark order as sent again",
+  "deliveryDetails": "Delivery details",
+  "deliveryDate": "Delivery date",
+  "supplier": "Supplier",
+  "marina": "Marina",
+  "berth": "Berth",
+  "boat": "Boat",
+  "contactPerson": "Contact person",
+  "hints": "Notes",
+  "alreadyOrderedAt": "Already ordered on {datetime}",
+  "@alreadyOrderedAt": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSupplementNotice": "Item count changed since last order ({oldCount} ➔ {newCount}). This transmission will be treated as an amendment.",
+  "@orderSupplementNotice": {
+    "placeholders": {
+      "oldCount": {
+        "type": "int"
+      },
+      "newCount": {
+        "type": "int"
+      }
+    }
+  },
+  "containedItems": "Included items ({count})",
+  "@containedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectTripDurationTitle": "Select trip duration",
+  "longTripStopsNotice": "For longer trips, setting up shopping stops is recommended.",
+  "byCategory": "By category",
+  "byDepartment": "By department",
+  "item": "Item",
+  "switchStop": "Switch stop",
+  "storageAffectsItems": "Affects: {items}",
+  "@storageAffectsItems": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "enterQuantityTooltip": "Enter quantity",
+  "sharePercent": "Share: {percent}%",
+  "@sharePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistHint": "Checklist (present / missing / restock)",
+  "eachSplitHint": "Each variety is calculated separately",
+  "needSplitHint": "Demand: {amount} {unit} · {split}",
+  "@needSplitHint": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "searchCatalogPlaceholder": "Search in catalog",
+  "totalWeightVolumeSummary": "Total: {weight} kg · {volume} l{pieceSuffix}",
+  "@totalWeightVolumeSummary": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      },
+      "pieceSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "planningListEmptyTitle": "Your provision list is still empty.",
+  "planningListEmptySubtitle": "You can adopt all recommended basic provisions with one tap or expand individual groups.",
+  "needsCooling": "needs cooling",
+  "tripDaysStopsSubtitle": "{days} days · {stops} stops",
+  "@tripDaysStopsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "stops": {
+        "type": "int"
+      }
+    }
+  },
+  "paidCash": "Paid in cash",
+  "transferMoney": "Bank transfer",
+  "setAsTreasurer": "Set as treasurer",
+  "addAsCustomItemNamed": "Create as custom item: \"{name}\"",
+  "unitPiece": "piece",
+  "unitGram": "g",
+  "unitKilogram": "kg",
+  "unitMilliliter": "ml",
+  "unitLiter": "l",
+  "unitPackage": "pack",
+  "undo": "Undo",
+  "skipperFree": "Skipper free",
+  "initialShopping": "Initial shopping",
+  "shoppingStop": "Shopping stop"
 }

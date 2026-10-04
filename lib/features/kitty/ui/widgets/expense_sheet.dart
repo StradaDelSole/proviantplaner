@@ -190,7 +190,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          isEditing ? 'Ausgabe bearbeiten' : l10n.fundAddExpense,
+          isEditing ? l10n.edit : l10n.fundAddExpense,
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         Row(
@@ -226,11 +226,11 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       ),
       validator: (val) {
         if (val == null || val.trim().isEmpty) {
-          return 'Bitte einen Betrag eingeben';
+          return l10n.fundAmount;
         }
         final parsed = double.tryParse(val.trim().replaceAll(',', '.'));
         if (parsed == null || parsed <= 0) {
-          return 'Ungültiger Betrag';
+          return l10n.fundAmount;
         }
         return null;
       },
@@ -260,7 +260,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
             final isSelected = cat == _selectedCategory;
             return ChoiceChip(
               avatar: Icon(cat.icon, size: 18),
-              label: Text(cat.displayName),
+              label: Text(cat.localizedName(l10n)),
               selected: isSelected,
               onSelected: (_) => setState(() => _selectedCategory = cat),
             );
@@ -285,16 +285,16 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
         const SizedBox(height: 8),
         if (isShared) ...[
           SegmentedButton<bool>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: true,
-                label: Text('Kasse'),
-                icon: Icon(Icons.account_balance_wallet_outlined),
+                label: Text(l10n.fundPayerFund),
+                icon: const Icon(Icons.account_balance_wallet_outlined),
               ),
               ButtonSegment(
                 value: false,
-                label: Text('Person'),
-                icon: Icon(Icons.person_outline),
+                label: Text(l10n.fundPayerPerson),
+                icon: const Icon(Icons.person_outline),
               ),
             ],
             selected: {_isPaidFromKitty},
@@ -305,9 +305,9 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
         if (!isShared || !_isPaidFromKitty)
           DropdownButtonFormField<int>(
             value: _paidByMemberId,
-            decoration: const InputDecoration(
-              labelText: 'Wer hat bezahlt?',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.fundPaidByTitle,
+              border: const OutlineInputBorder(),
             ),
             items: widget.members.map((m) {
               return DropdownMenuItem(
@@ -318,7 +318,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
             onChanged: (val) => setState(() => _paidByMemberId = val),
             validator: (val) {
               if ((!isShared || !_isPaidFromKitty) && val == null) {
-                return 'Bitte die zahlende Person auswählen';
+                return l10n.fundPaidByTitle;
               }
               return null;
             },
@@ -336,14 +336,14 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       child: ExpansionTile(
         initiallyExpanded: hasCustomContent,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-        title: const Text('Mehr Optionen', style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: const Text('Titel / Notiz, abweichende Aufteilung'),
+        title: Text(l10n.moreOptions, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(l10n.moreOptionsSubtitle),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           const SizedBox(height: 8),
           _buildTitleField(theme, l10n),
           const SizedBox(height: 12),
-          _buildCustomSplitToggle(theme),
+          _buildCustomSplitToggle(theme, l10n),
           if (_customSplitEnabled) ...[
             const SizedBox(height: 8),
             _buildCustomSplitList(theme),
@@ -353,11 +353,11 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     );
   }
 
-  Widget _buildCustomSplitToggle(ThemeData theme) {
+  Widget _buildCustomSplitToggle(ThemeData theme, AppLocalizations l10n) {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
-      title: const Text('Individuelle Betragsaufteilung'),
-      subtitle: const Text('Weicht von der regulären Beteiligung ab'),
+      title: Text(l10n.individualSplit),
+      subtitle: Text(l10n.individualSplitSubtitle),
       value: _customSplitEnabled,
       onChanged: (val) => setState(() => _customSplitEnabled = val),
     );

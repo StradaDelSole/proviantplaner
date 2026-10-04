@@ -1,0 +1,769 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Proviantplaner",
+  "poweredBy": "powered by HullQ",
+  "navShoppingList": "Liste",
+  "navTrip": "Croisière",
+  "navFund": "Caisse de bord",
+  "navMore": "Plus",
+  "welcomeHeadline": "Avitaillement et caisse de bord – tout simplement",
+  "welcomeSubline": "Calculer les provisions, gérer les stocks et partager équitablement la caisse de bord.",
+  "tripWizardTitle": "Nouvelle croisière",
+  "stepBasic": "Données de base",
+  "stepBoat": "Bateau et zone",
+  "stepCrew": "Équipage et repas",
+  "tripName": "Nom de la croisière",
+  "startDate": "Date de départ",
+  "daysCount": "Nombre de jours",
+  "isCharter": "Bateau de location (charter)",
+  "isOwnBoat": "Bateau propriétaire",
+  "boatType": "Type de bateau",
+  "boatMonohull": "Monocoque",
+  "boatCatamaran": "Catamaran",
+  "region": "Zone de navigation",
+  "regionTemperate": "Tempérée (ex. Manche, Baltique)",
+  "regionMediterranean": "Méditerranée en été",
+  "regionTropics": "Tropicale / Chaude ou isolée",
+  "fridgeCapacity": "Volume du réfrigérateur (litres)",
+  "crewSectionTitle": "Équipage",
+  "addCrewMember": "+ Ajouter un équipier",
+  "crewCount": "Enregistrés",
+  "person": "Personne",
+  "persons": "Personnes",
+  "edit": "Modifier",
+  "delete": "Supprimer",
+  "isAdult": "Adulte",
+  "isChild": "Enfant",
+  "isVegetarian": "végétarien",
+  "noAlcohol": "sans alcool",
+  "profilTitle": "Profil de consommation",
+  "crewAppetiteQuestion": "Quel est l'appétit de votre équipage ?",
+  "appetiteLight": "Plutôt léger",
+  "appetiteNormal": "Normal",
+  "appetiteHearty": "Bon mangeur",
+  "appetiteHungrySailors": "Marins affamés",
+  "crewDrinkingQuestion": "Comment boit l'équipage à bord ?",
+  "drinkingRelaxed": "Modéré / Paisible",
+  "drinkingNormal": "Normal",
+  "drinkingFestive": "Festif",
+  "weatherReserve": "Réserve pour mauvais temps et mouillages (+10 %)",
+  "weatherReserveDescription": "Calcule automatiquement 1 ration sèche de secours sur les produits longue conservation.",
+  "adjustIndividualDetails": "Personnaliser par équipier",
+  "nextStep": "Suivant",
+  "previousStep": "Précédent",
+  "createTrip": "Créer la croisière",
+  "name": "Nom",
+  "save": "Enregistrer",
+  "cancel": "Annuler",
+  "timelineTitle": "Programme et repas",
+  "day": "Jour",
+  "lunchRestaurant": "Midi au restaurant",
+  "lunchBoard": "Midi à bord",
+  "eveningRestaurant": "Soir au restaurant",
+  "eveningBoard": "Soir à bord",
+  "portName": "Port / Mouillage (optionnel)",
+  "dayType": "Type de journée",
+  "shoppingStopsTitle": "Escales de ravitaillement",
+  "addShoppingStop": "+ Ajouter une escale de courses",
+  "firstStopProtected": "La première escale de courses ne peut pas être supprimée.",
+  "newTripButton": "Nouvelle croisière",
+  "noTripsYet": "Aucune croisière enregistrée.",
+  "metricBoardDinner": "Dîners à bord",
+  "metricBoardLunch": "Déjeuners à bord",
+  "metricRestaurant": "Visites au restaurant",
+  "customEatLevel": "Appétit particulier",
+  "customDrinkLevel": "Consommation d'alcool particulière",
+  "planView": "Préparer",
+  "shopView": "Faire les courses",
+  "allStops": "Toutes les escales",
+  "searchHint": "Rechercher dans le catalogue",
+  "allergenNotice": "Les mentions alimentaires ne garantissent pas l'absence d'allergènes",
+  "charterNotice": "En location, la base fournit le moteur et l'équipement technique. Afficher quand même ?",
+  "covered": "couvert",
+  "scarce": "juste",
+  "noneSelected": "aucun sélectionné",
+  "demand": "Besoin",
+  "reserve": "Réserve",
+  "holdsOneDay": "tient 1 jour",
+  "cooled": "au frais",
+  "overridden": "personnalisé",
+  "resetOverride": "réinitialiser",
+  "changePackSize": "Changer la taille du paquet",
+  "packSizeValue": "Format",
+  "packSizeUnit": "Unité",
+  "rememberForFutureTrips": "Mémoriser pour les prochaines croisières",
+  "packSizeRecalcNotice": "Le nombre de paquets sera recalculé.",
+  "allocateToStop": "Attribuer une quantité à une escale",
+  "allocateDialogTitle": "Attribuer à une escale",
+  "unallocatedNotice": "Les quantités non attribuées sont automatiquement rattachées à la première escale.",
+  "customItemTitle": "Article personnalisé",
+  "addCustomItem": "+ Ajouter un article personnalisé",
+  "category": "Catégorie",
+  "department": "Rayon",
+  "unit": "Unité",
+  "quantity": "Quantité",
+  "noSearchResults": "Introuvable dans le catalogue – créer comme article personnalisé ?",
+  "shoppingModeTitle": "Mode courses",
+  "shoppingDone": "Courses terminées",
+  "unboughtItemsDialogTitle": "Articles restants",
+  "postpone": "Reporter",
+  "dismiss": "Retirer",
+  "storageTitle": "Rangement à bord",
+  "storageNotice": "Déballer les cartons à quai – les nuisibles voyagent dans le carton ondulé.",
+  "storageFinish": "Terminer le rangement",
+  "storageCompleted": "Rangement terminé",
+  "customItemBadge": "article perso",
+  "takeOver": "Adopter",
+  "fundTitle": "Caisse de bord",
+  "fundModelShared": "Caisse de bord commune",
+  "fundModelIndividual": "Comptabilité individuelle",
+  "fundCurrentBalance": "Solde actuel de la caisse",
+  "fundTotalDeposits": "Total des versements",
+  "fundTotalExpenses": "Total des dépenses",
+  "fundTotalExpensesLabel": "Dépenses totales",
+  "fundOpenTransfers": "En attente : {count} virements d'équilibre",
+  "fundExpensesSegment": "Dépenses",
+  "fundPeopleSegment": "Équipage et parts",
+  "fundAddExpense": "Ajouter une dépense",
+  "fundAddDeposit": "Ajouter un versement",
+  "fundSettleTrip": "Bilan financier",
+  "fundSwitchModel": "Changer de modèle de caisse",
+  "fundSwitchModelExplain": "Souhaitez-vous changer de modèle ?",
+  "fundSwitchModelBlocked": "Le modèle ne peut être modifié que si aucune dépense n'a encore été saisie.",
+  "fundPaidFromFund": "payé avec la caisse",
+  "fundPaidBy": "payé par {name}",
+  "fundPaidByTitle": "Payé par",
+  "fundExpenseCategory": "Catégorie",
+  "fundAmount": "Montant",
+  "fundTitleField": "Objet / Titre",
+  "fundSaveExpense": "Enregistrer la dépense",
+  "fundExpenseSaved": "Dépense enregistrée",
+  "fundExpenseDeleted": "Dépense supprimée",
+  "fundSaveDeposit": "Enregistrer le versement",
+  "fundDepositSaved": "Versement enregistré",
+  "fundDepositDeleted": "Versement supprimé",
+  "fundEqualDepositForAll": "Montant identique pour tous",
+  "fundParticipationTitle": "Participation par personne",
+  "fundProfileAll": "Participe à tout",
+  "fundProfileSkipperFull": "Skipper dispensé (total)",
+  "fundProfileSkipperPartial": "Skipper dispensé (location, port, gazole)",
+  "fundProfileNoAlcohol": "Sans alcool",
+  "fundSettlementTitle": "Clôture des comptes",
+  "fundWhoPaysWhom": "Qui doit à qui",
+  "fundSettlementNotice": "Remarque : L'application n'effectue aucun paiement. Les transactions s'effectuent par votre banque ou services tiers.",
+  "fundCopyIbanData": "Copier les coordonnées bancaires",
+  "fundIbanCopied": "Coordonnées copiées dans le presse-papiers",
+  "fundSharePaypal": "Partager le lien PayPal",
+  "fundShareRevolut": "Partager le lien Revolut",
+  "fundMarkDone": "Marquer comme réglé",
+  "fundMarkOpen": "Marquer comme ouvert",
+  "fundSettled": "Réglé",
+  "fundOpen": "Ouvert",
+  "fundArchiveTrip": "Archiver la croisière",
+  "fundArchiveNotice": "Croisière archivée avec succès.",
+  "fundScanGiroCode": "Scanner le QR bancaire EPC",
+  "fundScanGiroCodeSubtitle": "Avec votre application bancaire",
+  "fundNightwatchScanHint": "Éclairage court pour le scan",
+  "fundReceiver": "Bénéficiaire",
+  "fundIban": "IBAN",
+  "fundRemittance": "Motif du virement",
+  "fundBalancesEqual": "Comptes de caisse équilibrés",
+  "fundDebtor": "doit {amount}",
+  "fundCreditor": "reçoit {amount}",
+  "fundBalanced": "équilibré",
+  "fundNoExpenses": "Aucune dépense enregistrée.",
+  "fundNoCrew": "Aucun équipier enregistré.",
+  "unlockTitle": "Planifier d'autres croisières",
+  "unlockSubtitle": "Avec un compte gratuit HullQ, planifiez des croisières illimitées et sauvegardez-les dans le cloud.",
+  "benefitUnlimitedTrips": "Croisières illimitées",
+  "benefitBackup": "Sauvegarde et restauration",
+  "benefitDevices": "Utilisation multi-appareils",
+  "loginGoogle": "Continuer avec Google",
+  "loginApple": "Continuer avec Apple",
+  "loginEmail": "Continuer avec e-mail",
+  "consentNewsletter": "Oui, je souhaite recevoir les informations sur le marché du bateau.",
+  "redeemTripCode": "Activer un code de croisière",
+  "tripCodeField": "Code de croisière (ex. PRO-2026)",
+  "tripCodeSuccess": "Code activé avec succès !",
+  "tripCodeInvalid": "Code de croisière non valide",
+  "privacyPolicy": "Confidentialité",
+  "termsOfUse": "Conditions d'utilisation",
+  "imprint": "Mentions légales",
+  "accountTitle": "Compte HullQ",
+  "accountNotLoggedIn": "Non connecté",
+  "accountUnlockFree": "Activer gratuitement avec un compte HullQ",
+  "accountStatusMember": "Membre HullQ",
+  "accountStatusPro": "Membre Pro",
+  "accountBackupStatus": "Sauvegarde : Dernière sauvegarde",
+  "accountBackupNever": "Aucune sauvegarde existante",
+  "accountBackupNow": "Sauvegarder maintenant",
+  "accountLogout": "Se déconnecter",
+  "accountDelete": "Supprimer le compte",
+  "accountDeleteConfirmTitle": "Vraiment supprimer le compte ?",
+  "accountDeleteConfirmContent": "Souhaitez-vous supprimer définitivement votre compte HullQ et toutes les données associées ? Les croisières sauvegardées seront effacées.",
+  "accountDeleteConfirmButton": "Supprimer définitivement le compte",
+  "accountDeletedNotice": "Votre compte et vos données locales ont été supprimés.",
+  "accountLogoutNotice": "Déconnexion réussie.",
+  "offlineLoginNotice": "La connexion nécessite une liaison Internet.",
+  "enterEmailTitle": "Saisir l'adresse e-mail",
+  "emailHint": "nom@exemple.com",
+  "emailInvalid": "Veuillez saisir une adresse e-mail valide.",
+  "accountBackupSuccess": "Sauvegarde réussie.",
+  "accountBackupRestore": "Restaurer la sauvegarde",
+  "accountRestoreSuccess": "Croisières restaurées avec succès.",
+  "exportPdf": "Exporter en PDF",
+  "exportShoppingListPdf": "Imprimer / Exporter la liste en PDF",
+  "exportSettlementPdf": "Imprimer / Exporter le bilan en PDF",
+  "climateQuestion": "Quelle température fera-t-il ?",
+  "climateCool": "Frais (généralement moins de 20 °C)",
+  "climateWarm": "Chaud (20–28 °C)",
+  "climateHot": "Très chaud (plus de 28 °C)",
+  "noFridgeSwitch": "Pas de réfrigérateur à bord",
+  "needsCoolingBadge": "au frais",
+  "coolingAlternativeHint": "Alternatives longue conservation sans frigo : lait UHT, beurre salé, fromage à pâte dure, saucisson sec, conserves.",
+  "durationOneWeek": "1 semaine",
+  "durationTwoWeeks": "2 semaines",
+  "durationOneMonth": "1 mois",
+  "durationThreeMonths": "3 mois",
+  "durationSixMonths": "6 mois",
+  "longTripHint": "Pour les croisières longues, prévoyez des escales de réapprovisionnement.",
+  "timelineWeek": "Semaine {week} (jours {startDay} à {endDay})",
+  "eatOutQuestion": "Mangez-vous aussi au restaurant ?",
+  "dinnerInRestaurant": "Dîner au restaurant",
+  "lunchInRestaurant": "Déjeuner au restaurant",
+  "nextStepLabel": "Étape suivante",
+  "daysInDetail": "Détail des journées",
+  "tripOverviewTitle": "Tableau de bord de croisière",
+  "recordExpense": "Saisir une dépense",
+  "deposit": "Verser",
+  "settle": "Bilan",
+  "editList": "Modifier la liste",
+  "startShopping": "Démarrer les courses",
+  "settledCash": "Réglé en espèces",
+  "transferBank": "Virement bancaire",
+  "noFridge": "Pas de frigo",
+  "archiveSectionTitle": "Archives",
+  "whoPaysWhom": "Règlements",
+  "deptObstGemuese": "Fruits et légumes",
+  "deptBackwaren": "Boulangerie",
+  "deptMolkerei": "Produits laitiers et frais",
+  "deptFleischFisch": "Viande et poisson",
+  "deptTrockenware": "Épicerie sèche",
+  "deptKonserven": "Conserves",
+  "deptSuesswaren": "Confiserie et snacks",
+  "deptGetraenke": "Boissons",
+  "deptDrogerie": "Droguerie",
+  "deptHaushalt": "Ménage",
+  "deptApotheke": "Pharmacie",
+  "deptTechnik": "Technique et équipement de bord",
+  "freezerAvailable": "Compartiment congélateur disponible",
+  "freezerCapacityLiters": "Volume du congélateur (l)",
+  "waterTankLiters": "Réservoir d'eau douce (l)",
+  "waterTankDrinkable": "L'eau du réservoir est potable",
+  "waterTankDrinkableSubtitle": "Besoin en bouteilles réduit (réserve minimale 1,5 l/personne)",
+  "step1TripTitle": "1. Croisière",
+  "step2CrewTitle": "2. Équipage",
+  "step3FoodTitle": "3. Repas à bord",
+  "wheelPickerButton": "Molette de choix…",
+  "yes": "Oui",
+  "no": "Non",
+  "done": "Terminé",
+  "selfShopping": "Faire les courses soi-même",
+  "deliveryOrder": "Faire livrer à bord",
+  "checkDelivery": "Vérifier la livraison",
+  "confirmDelivery": "Confirmer la réception",
+  "orderReceived": "Livraison reçue",
+  "viewOrder": "Voir la commande",
+  "sendOrder": "Envoyer la commande",
+  "startTrip": "Démarrer",
+  "treasurerLabel": "Trésorier",
+  "balanceLabel": "Solde de caisse",
+  "recentExpenses": "Dernières dépenses",
+  "sendViaWhatsApp": "Envoyer par WhatsApp",
+  "shareText": "Partager le texte",
+  "sharePdf": "Partager le PDF",
+  "reviewAndSendOrder": "Vérifier et envoyer la commande",
+  "adoptAllSuggestions": "Accepter toutes les suggestions",
+  "orSelectIndividually": "ou choisir individuellement",
+  "categorySuggestions": "Suggestions pour cette catégorie",
+  "moveItem": "Déplacer",
+  "orderMarkedSent": "Commande marquée comme envoyée.",
+  "checkStatePresent": "présent",
+  "checkStateMissing": "manquant",
+  "checkStateRestock": "à racheter",
+  "totalWeight": "Poids total",
+  "totalVolume": "Volume total",
+  "freezeImmediately": "congeler immédiatement",
+  "waterBoostWarm": "+25 % chaud",
+  "waterBoostHot": "+50 % tropiques / très chaud",
+  "adjustQuantityTitle": "{name} : ajuster la quantité",
+  "itemAssignedToStop": "{item} attribué à « {stop} ».",
+  "waterIncreasedNotice": "Quantité d'eau augmentée à {count} packs (+{percent} %)",
+  "remainderNotice": "Reste env. {amount} – à prévoir lors d'une prochaine escale",
+  "weightKg": "{weight} kg",
+  "volumeLiters": "{volume} l",
+  "daysInTripCount": "{count} jours d'itinéraire",
+  "settlementPaymentsCount": "{count} paiements compensatoires",
+  "tripDayPort": "Jour {day} · {port}",
+  "tripDayOnly": "Jour {day}",
+  "stopDayPort": "Jour {day} · {name}",
+  "@appTitle": {
+    "description": "Name der App (vorläufiger Arbeitstitel)"
+  },
+  "@poweredBy": {
+    "description": "Dezenter Markenhinweis auf HullQ"
+  },
+  "@navShoppingList": {
+    "description": "Navigationsreiter für die Vorrats- und Einkaufsliste"
+  },
+  "@navTrip": {
+    "description": "Navigationsreiter für den Törn und die Tagesleiste"
+  },
+  "@navFund": {
+    "description": "Navigationsreiter für die Bordkasse"
+  },
+  "@navMore": {
+    "description": "Navigationsreiter für Einstellungen und Konto"
+  },
+  "@welcomeHeadline": {
+    "description": "Überschrift auf dem Startbildschirm"
+  },
+  "@welcomeSubline": {
+    "description": "Untertitel auf dem Startbildschirm"
+  },
+  "@fundOpenTransfers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@fundPaidBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@fundDebtor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@fundCreditor": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@timelineWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "@adjustQuantityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@itemAssignedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "@waterIncreasedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "@remainderNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "@weightKg": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "@volumeLiters": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "@daysInTripCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@settlementPaymentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@tripDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "port": {
+        "type": "String"
+      }
+    }
+  },
+  "@tripDayOnly": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "@stopDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setTreasurer": "Désigner le trésorier",
+  "whoManagesFund": "Qui gère la caisse ?",
+  "fundUsagePercent": "Utilisation : {percent} % dépensé",
+  "@fundUsagePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "fundRemaining": "Reste : {balance}",
+  "@fundRemaining": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "fundExpenseDeletedTitle": "Dépense « {title} » supprimée",
+  "@fundExpenseDeletedTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "treasurer": "Trésorier",
+  "skipper": "Skipper",
+  "pay": "Payer",
+  "adjustIban": "Modifier l'IBAN",
+  "enterNow": "Saisir maintenant",
+  "paymentDataForMember": "Coordonnées de paiement pour {name}",
+  "@paymentDataForMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paypalCopied": "Lien PayPal copié dans le presse-papiers",
+  "paymentDetailsCopied": "Détails du paiement copiés dans le presse-papiers",
+  "fundPayerFund": "Caisse",
+  "fundPayerPerson": "Personne",
+  "moreOptions": "Plus d'options",
+  "moreOptionsSubtitle": "Titre / note, répartition personnalisée",
+  "individualSplit": "Répartition individuelle des montants",
+  "individualSplitSubtitle": "Dévie de la participation habituelle",
+  "expenseCategoryProvisions": "Provisions",
+  "expenseCategoryDrinks": "Boissons",
+  "expenseCategoryMarinaBerth": "Port & Place",
+  "expenseCategoryFuel": "Carburant",
+  "expenseCategoryCharterDeposit": "Location & Caution",
+  "expenseCategoryRestaurant": "Restaurant",
+  "expenseCategoryOther": "Autre",
+  "demandApprox": "Besoin env. {amount} {unit}",
+  "@demandApprox": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "suggestionCount": "Suggestion {count}",
+  "@suggestionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionPack": "Suggestion : {count} × {size} {unit}",
+  "@suggestionPack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "customItem": "Article personnalisé",
+  "decreaseQuantity": "Diminuer la quantité",
+  "increaseQuantity": "Augmenter la quantité",
+  "selectStopTitle": "Choisir une escale : {item}",
+  "@selectStopTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "selectStop": "Choisir une escale",
+  "noOtherStops": "Aucune autre escale disponible.",
+  "itemMovedToStop": "« {item} » déplacé vers « {stop} ».",
+  "@itemMovedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "moveItemToWhichStop": "{item} : Déplacer vers quelle escale ?",
+  "@moveItemToWhichStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryDirectStoragePrompt": "Souhaitez-vous ranger les provisions livrées maintenant ?",
+  "later": "Plus tard",
+  "storeNow": "Ranger maintenant",
+  "shoppingFinishedTitle": "Achats terminés !",
+  "shoppingFinishedContent": "Les achats sont finis. Souhaitez-vous ranger les provisions maintenant ?",
+  "groupCheckedStatus": "{checked} sur {total} vérifié(s)",
+  "@groupCheckedStatus": {
+    "placeholders": {
+      "checked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionTotal": "Suggestion totale : env. {amount} {unit}",
+  "@suggestionTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCountLabel": "{count} articles",
+  "@itemCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingDayTitle": "Achats Jour {day} · {name}",
+  "@shoppingDayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingProgress": "{bought} sur {total} terminé(s)",
+  "@shoppingProgress": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItemsForStop": "Aucun article assigné à cette escale.",
+  "unboughtNoticeLaterOrDrop": "{count} articles non achetés – reporter à une prochaine escale ou annuler ?",
+  "@unboughtNoticeLaterOrDrop": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNotFound": "Voyage non trouvé",
+  "shoppingStopNotFound": "Escale de ravitaillement non trouvée",
+  "resendOrder": "Marquer à nouveau la commande comme envoyée",
+  "deliveryDetails": "Détails de livraison",
+  "deliveryDate": "Date de livraison",
+  "supplier": "Fournisseur",
+  "marina": "Marina",
+  "berth": "Place de port",
+  "boat": "Bateau",
+  "contactPerson": "Contact",
+  "hints": "Remarques",
+  "alreadyOrderedAt": "Déjà commandé le {datetime}",
+  "@alreadyOrderedAt": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSupplementNotice": "Le nombre d'articles a changé depuis la dernière commande ({oldCount} ➔ {newCount}). Cet envoi sera traité comme un avenant.",
+  "@orderSupplementNotice": {
+    "placeholders": {
+      "oldCount": {
+        "type": "int"
+      },
+      "newCount": {
+        "type": "int"
+      }
+    }
+  },
+  "containedItems": "Articles inclus ({count})",
+  "@containedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectTripDurationTitle": "Choisir la durée de navigation",
+  "longTripStopsNotice": "Pour les longues navigations, il est recommandé de planifier des escales de ravitaillement.",
+  "byCategory": "Par catégorie",
+  "byDepartment": "Par rayon",
+  "item": "Article",
+  "switchStop": "Changer d'escale",
+  "storageAffectsItems": "Concerne : {items}",
+  "@storageAffectsItems": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "enterQuantityTooltip": "Saisir la quantité",
+  "sharePercent": "Part : {percent} %",
+  "@sharePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistHint": "Liste de contrôle (présent / manquant / racheter)",
+  "eachSplitHint": "Chaque variété est calculée individuellement",
+  "needSplitHint": "Besoin : {amount} {unit} · {split}",
+  "@needSplitHint": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "searchCatalogPlaceholder": "Rechercher dans le catalogue",
+  "totalWeightVolumeSummary": "Total : {weight} kg · {volume} l{pieceSuffix}",
+  "@totalWeightVolumeSummary": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      },
+      "pieceSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "planningListEmptyTitle": "Votre liste de provisions est encore vide.",
+  "planningListEmptySubtitle": "Vous pouvez adopter toutes les provisions de base recommandées en un clic ou développer des groupes individuels.",
+  "needsCooling": "nécessite réfrigération",
+  "tripDaysStopsSubtitle": "{days} jours · {stops} escales",
+  "@tripDaysStopsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "stops": {
+        "type": "int"
+      }
+    }
+  },
+  "paidCash": "Payé en espèces",
+  "transferMoney": "Virement",
+  "setAsTreasurer": "Désigner comme trésorier",
+  "addAsCustomItemNamed": "Créer comme article personnalisé : « {name} »",
+  "unitPiece": "pièce",
+  "unitGram": "g",
+  "unitKilogram": "kg",
+  "unitMilliliter": "ml",
+  "unitLiter": "l",
+  "unitPackage": "paquet",
+  "undo": "Annuler",
+  "skipperFree": "Skipper dispensé",
+  "initialShopping": "Premier avitaillement",
+  "shoppingStop": "Étape de courses"
+}

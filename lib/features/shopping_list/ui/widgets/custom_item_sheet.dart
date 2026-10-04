@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
@@ -154,7 +155,30 @@ class _CustomItemSheetState extends ConsumerState<CustomItemSheet> {
                       labelText: l10n.unit,
                       border: const OutlineInputBorder(),
                     ),
-                    items: _units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                    items: _units.map((u) {
+                      String label = u;
+                      switch (u) {
+                        case 'Stück':
+                          label = l10n.unitPiece;
+                          break;
+                        case 'g':
+                          label = l10n.unitGram;
+                          break;
+                        case 'kg':
+                          label = l10n.unitKilogram;
+                          break;
+                        case 'ml':
+                          label = l10n.unitMilliliter;
+                          break;
+                        case 'l':
+                          label = l10n.unitLiter;
+                          break;
+                        case 'Packung':
+                          label = l10n.unitPackage;
+                          break;
+                      }
+                      return DropdownMenuItem(value: u, child: Text(label));
+                    }).toList(),
                     onChanged: (val) {
                       if (val != null) setState(() => _selectedUnit = val);
                     },
@@ -170,7 +194,7 @@ class _CustomItemSheetState extends ConsumerState<CustomItemSheet> {
                 border: const OutlineInputBorder(),
               ),
               items: CatalogDepartment.values
-                  .map((d) => DropdownMenuItem(value: d, child: Text(d.rawValue)))
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d.localizedName(context))))
                   .toList(),
               onChanged: (val) {
                 if (val != null) setState(() => _selectedDept = val);
@@ -180,12 +204,12 @@ class _CustomItemSheetState extends ConsumerState<CustomItemSheet> {
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _selectedStopId,
-                decoration: const InputDecoration(
-                  labelText: 'Einkaufsstopp',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.shoppingStop,
+                  border: const OutlineInputBorder(),
                 ),
                 items: widget.stops
-                    .map((s) => DropdownMenuItem(value: s.id, child: Text('Tag ${s.dayNumber} · ${s.name}')))
+                    .map((s) => DropdownMenuItem(value: s.id, child: Text('${l10n.day} ${s.dayNumber} · ${s.name}')))
                     .toList(),
                 onChanged: (val) => setState(() => _selectedStopId = val),
               ),

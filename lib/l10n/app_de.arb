@@ -148,7 +148,9 @@
   "fundOpenTransfers": "Offen: {count} Ausgleichszahlungen",
   "@fundOpenTransfers": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "fundExpensesSegment": "Ausgaben",
@@ -163,7 +165,9 @@
   "fundPaidBy": "bezahlt von {name}",
   "@fundPaidBy": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "fundPaidByTitle": "Bezahlt von",
@@ -205,13 +209,17 @@
   "fundDebtor": "zahlt {amount}",
   "@fundDebtor": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "fundCreditor": "bekommt {amount}",
   "@fundCreditor": {
     "placeholders": {
-      "amount": { "type": "String" }
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "fundBalanced": "ausgeglichen",
@@ -274,9 +282,15 @@
   "timelineWeek": "Woche {week} (Tag {startDay}–{endDay})",
   "@timelineWeek": {
     "placeholders": {
-      "week": { "type": "int" },
-      "startDay": { "type": "int" },
-      "endDay": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
     }
   },
   "eatOutQuestion": "Esst ihr auch auswärts?",
@@ -294,5 +308,469 @@
   "transferBank": "Überweisen",
   "noFridge": "Kein Kühlschrank",
   "archiveSectionTitle": "Archiv",
-  "whoPaysWhom": "Wer zahlt wem"
+  "whoPaysWhom": "Wer zahlt wem",
+  "deptObstGemuese": "Obst und Gemüse",
+  "deptBackwaren": "Backwaren",
+  "deptMolkerei": "Molkerei und Kühlregal",
+  "deptFleischFisch": "Fleisch und Fisch",
+  "deptTrockenware": "Trockenware",
+  "deptKonserven": "Konserven",
+  "deptSuesswaren": "Süßwaren",
+  "deptGetraenke": "Getränke",
+  "deptDrogerie": "Drogerie",
+  "deptHaushalt": "Haushalt",
+  "deptApotheke": "Apotheke / Drogerie",
+  "deptTechnik": "Technik / Bootszubehör",
+  "freezerAvailable": "Tiefkühlfach vorhanden",
+  "freezerCapacityLiters": "Tiefkühlfach-Volumen (l)",
+  "waterTankLiters": "Wassertank an Bord (l)",
+  "waterTankDrinkable": "Tankwasser ist trinkbar",
+  "waterTankDrinkableSubtitle": "Flaschenwasserbedarf wird reduziert (min. 1,5 l/Person Mindestreserve)",
+  "step1TripTitle": "1. Törn",
+  "step2CrewTitle": "2. Crew",
+  "step3FoodTitle": "3. Essen an Bord",
+  "wheelPickerButton": "Wählrad…",
+  "yes": "Ja",
+  "no": "Nein",
+  "done": "Fertig",
+  "selfShopping": "Selbst einkaufen",
+  "deliveryOrder": "Liefern lassen",
+  "checkDelivery": "Lieferung prüfen",
+  "confirmDelivery": "Lieferung bestätigen",
+  "orderReceived": "Lieferung erhalten",
+  "viewOrder": "Bestellung ansehen",
+  "sendOrder": "Bestellung senden",
+  "startTrip": "Starten",
+  "treasurerLabel": "Kassenwart",
+  "balanceLabel": "Kassenstand",
+  "recentExpenses": "Letzte Ausgaben",
+  "sendViaWhatsApp": "Per WhatsApp senden",
+  "shareText": "Text teilen",
+  "sharePdf": "PDF teilen",
+  "reviewAndSendOrder": "Bestellung prüfen & senden",
+  "adoptAllSuggestions": "Alle Vorschläge übernehmen",
+  "orSelectIndividually": "oder einzeln auswählen",
+  "categorySuggestions": "Vorschläge dieser Kategorie",
+  "moveItem": "Verschieben",
+  "orderMarkedSent": "Bestellung als gesendet markiert.",
+  "checkStatePresent": "vorhanden",
+  "checkStateMissing": "fehlt",
+  "checkStateRestock": "nachkaufen",
+  "totalWeight": "Gesamtgewicht",
+  "totalVolume": "Gesamtvolumen",
+  "freezeImmediately": "gleich einfrieren",
+  "waterBoostWarm": "+25 % warm",
+  "waterBoostHot": "+50 % heiß/Tropen",
+  "adjustQuantityTitle": "{name}: Menge anpassen",
+  "@adjustQuantityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAssignedToStop": "{item} zu „{stop}“ zugeordnet.",
+  "@itemAssignedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "waterIncreasedNotice": "Wassermenge auf {count} Packungen erhöht (+{percent} %)",
+  "@waterIncreasedNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "remainderNotice": "Rest ca. {amount} – bei einem späteren Einkauf einplanen",
+  "@remainderNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "weightKg": "{weight} kg",
+  "@weightKg": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      }
+    }
+  },
+  "volumeLiters": "{volume} l",
+  "@volumeLiters": {
+    "placeholders": {
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "daysInTripCount": "{count} Tage im Törnverlauf",
+  "@daysInTripCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settlementPaymentsCount": "{count} Ausgleichszahlungen",
+  "@settlementPaymentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripDayPort": "Tag {day} · {port}",
+  "@tripDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "port": {
+        "type": "String"
+      }
+    }
+  },
+  "tripDayOnly": "Tag {day}",
+  "@tripDayOnly": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "stopDayPort": "Tag {day} · {name}",
+  "@stopDayPort": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setTreasurer": "Kassenwart festlegen",
+  "whoManagesFund": "Wer verwaltet die Kasse?",
+  "fundUsagePercent": "Auslastung: {percent}% verbraucht",
+  "@fundUsagePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "fundRemaining": "Rest: {balance}",
+  "@fundRemaining": {
+    "placeholders": {
+      "balance": {
+        "type": "String"
+      }
+    }
+  },
+  "fundExpenseDeletedTitle": "Ausgabe „{title}“ gelöscht",
+  "@fundExpenseDeletedTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "treasurer": "Kassenwart",
+  "skipper": "Skipper",
+  "pay": "Bezahlen",
+  "adjustIban": "IBAN anpassen",
+  "enterNow": "Jetzt eintragen",
+  "paymentDataForMember": "Zahlungsdaten für {name}",
+  "@paymentDataForMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paypalCopied": "PayPal-Link in Zwischenablage kopiert",
+  "paymentDetailsCopied": "Zahlungsdetails in Zwischenablage kopiert",
+  "fundPayerFund": "Kasse",
+  "fundPayerPerson": "Person",
+  "moreOptions": "Mehr Optionen",
+  "moreOptionsSubtitle": "Titel / Notiz, abweichende Aufteilung",
+  "individualSplit": "Individuelle Betragsaufteilung",
+  "individualSplitSubtitle": "Weicht von der regulären Beteiligung ab",
+  "expenseCategoryProvisions": "Proviant",
+  "expenseCategoryDrinks": "Getränke",
+  "expenseCategoryMarinaBerth": "Hafen und Liegeplatz",
+  "expenseCategoryFuel": "Diesel",
+  "expenseCategoryCharterDeposit": "Charter und Kaution",
+  "expenseCategoryRestaurant": "Restaurant",
+  "expenseCategoryOther": "Sonstiges",
+  "demandApprox": "Bedarf ca. {amount} {unit}",
+  "@demandApprox": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "suggestionCount": "Vorschlag {count}",
+  "@suggestionCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionPack": "Vorschlag: {count} × {size} {unit}",
+  "@suggestionPack": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "customItem": "Eigene Position",
+  "decreaseQuantity": "Menge verringern",
+  "increaseQuantity": "Menge erhöhen",
+  "selectStopTitle": "Stopp wählen: {item}",
+  "@selectStopTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "selectStop": "Stopp wählen",
+  "noOtherStops": "Keine weiteren Stopps vorhanden.",
+  "itemMovedToStop": "„{item}“ auf Stopp „{stop}“ verschoben.",
+  "@itemMovedToStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "stop": {
+        "type": "String"
+      }
+    }
+  },
+  "moveItemToWhichStop": "{item}: Auf welchen Stopp verschieben?",
+  "@moveItemToWhichStop": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveryDirectStoragePrompt": "Möchtet ihr die gelieferten Vorräte jetzt direkt einlagern?",
+  "later": "Später",
+  "storeNow": "Jetzt einlagern",
+  "shoppingFinishedTitle": "Fertig eingekauft!",
+  "shoppingFinishedContent": "Der Einkauf ist abgeschlossen. Möchtest du die Vorräte jetzt einlagern?",
+  "groupCheckedStatus": "{checked} von {total} geprüft",
+  "@groupCheckedStatus": {
+    "placeholders": {
+      "checked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "suggestionTotal": "Vorschlag gesamt: ca. {amount} {unit}",
+  "@suggestionTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemCountLabel": "{count} Posten",
+  "@itemCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingDayTitle": "Einkauf Tag {day} · {name}",
+  "@shoppingDayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingProgress": "{bought} von {total} erledigt",
+  "@shoppingProgress": {
+    "placeholders": {
+      "bought": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "noItemsForStop": "Keine Posten für diesen Stopp zugeordnet.",
+  "unboughtNoticeLaterOrDrop": "{count} Posten nicht gekauft – für einen späteren Stopp merken oder streichen?",
+  "@unboughtNoticeLaterOrDrop": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNotFound": "Törn nicht gefunden",
+  "shoppingStopNotFound": "Einkaufsstopp nicht gefunden",
+  "resendOrder": "Bestellung erneut als gesendet markieren",
+  "deliveryDetails": "Lieferdetails",
+  "deliveryDate": "Liefertermin",
+  "supplier": "Lieferant",
+  "marina": "Marina",
+  "berth": "Liegeplatz",
+  "boat": "Boot",
+  "contactPerson": "Ansprechpartner",
+  "hints": "Hinweise",
+  "alreadyOrderedAt": "Bereits bestellt am {datetime} Uhr",
+  "@alreadyOrderedAt": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "orderSupplementNotice": "Seit der letzten Bestellung hat sich die Anzahl der Positionen geändert ({oldCount} ➔ {newCount}). Dieser Versand wird als Nachtrag gewertet.",
+  "@orderSupplementNotice": {
+    "placeholders": {
+      "oldCount": {
+        "type": "int"
+      },
+      "newCount": {
+        "type": "int"
+      }
+    }
+  },
+  "containedItems": "Enthaltene Positionen ({count})",
+  "@containedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectTripDurationTitle": "Törndauer wählen",
+  "longTripStopsNotice": "Bei längeren Törns lohnt es sich, Einkaufsstopps anzulegen.",
+  "byCategory": "Nach Kategorie",
+  "byDepartment": "Nach Abteilung",
+  "item": "Position",
+  "switchStop": "Stopp wechseln",
+  "storageAffectsItems": "Betrifft: {items}",
+  "@storageAffectsItems": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "enterQuantityTooltip": "Menge eingeben",
+  "sharePercent": "Anteil: {percent} %",
+  "@sharePercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "checklistHint": "Prüfliste (vorhanden / fehlt / nachkaufen)",
+  "eachSplitHint": "Jede Sorte wird einzeln berechnet",
+  "needSplitHint": "Bedarf: {amount} {unit} · {split}",
+  "@needSplitHint": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "searchCatalogPlaceholder": "Im Vorratskatalog suchen",
+  "totalWeightVolumeSummary": "Gesamt: {weight} kg · {volume} l{pieceSuffix}",
+  "@totalWeightVolumeSummary": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      },
+      "pieceSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "planningListEmptyTitle": "Eure Vorratsliste ist noch leer.",
+  "planningListEmptySubtitle": "Ihr könnt alle empfohlenen Grundvorräte mit einem Klick übernehmen oder einzelne Gruppen aufklappen.",
+  "needsCooling": "braucht Kühlung",
+  "tripDaysStopsSubtitle": "{days} Tage · {stops} Stopps",
+  "@tripDaysStopsSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "stops": {
+        "type": "int"
+      }
+    }
+  },
+  "paidCash": "Bar ausgezahlt",
+  "transferMoney": "Überweisen",
+  "setAsTreasurer": "Als Kassenwart festlegen",
+  "addAsCustomItemNamed": "Als eigene Position anlegen: \"{name}\"",
+  "unitPiece": "Stück",
+  "unitGram": "g",
+  "unitKilogram": "kg",
+  "unitMilliliter": "ml",
+  "unitLiter": "l",
+  "unitPackage": "Packung",
+  "@addAsCustomItemNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "undo": "Rückgängig",
+  "skipperFree": "Skipper frei",
+  "initialShopping": "Ersteinkauf",
+  "shoppingStop": "Einkaufsstopp"
 }
