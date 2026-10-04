@@ -5,6 +5,7 @@ import type { Env, AppVariables } from './types';
 
 import { meRouter } from './routes/me';
 import { consentsRouter } from './routes/consents';
+import { backupsRouter } from './routes/backups';
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>();
 
@@ -46,9 +47,10 @@ app.get('/v1/info', (c) => {
   });
 });
 
-// Routen für B1: Nutzerkonto, Freischaltstatus und Einwilligungen
+// Routen für B1 & B2: Nutzerkonto, Einwilligungen, Sicherungen
 app.route('/v1/me', meRouter);
 app.route('/v1/consents', consentsRouter);
+app.route('/v1/backups', backupsRouter);
 
 // 404 Handler
 app.notFound((c) => {

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-26 – Slice B2: Cloud-Sicherung (R2), Mandantentrennung, 5er-Limit und IBAN-Schutz
+
+- **Backend Endpunkte `/v1/backups` (`backend/src/routes/backups.ts`, `backend/src/db/backups.ts`):**
+  - `POST /v1/backups`: Speicherung des Sicherungsinhalts in Cloudflare R2 (`BACKUPS_BUCKET`) und Metadaten in D1 `backups`.
+  - `GET /v1/backups`: Abruf aller Sicherungen des authentifizierten Nutzers, absteigend nach Erstellungsdatum sortiert.
+  - `GET /v1/backups/:id`: Sicherer Download von Sicherungen mit strikter Mandantentrennung (Konto A kann Sicherungen von Konto B weder einsehen noch abrufen).
+  - Kontingentierung: Beschränkung auf maximal 5 Sicherungen je Konto (überzählige ältere Sicherungen werden automatisch aus D1 und R2 gelöscht).
+  - Datenschutz: Serverseitige Ablehnung von Sicherungsinhalten mit IBANs (`INVALID_BACKUP_CONTENT`, Status 400).
+- **App-Anbindung (`lib/core/services/`):**
+  - `HttpHullqApiClient` um `uploadBackup`, `getBackups` und `downloadBackup` erweitert.
+  - `HttpHullqBackupService`: Reale Cloud-Sicherung gegen die Backend-API implementiert und über `hullqBackupServiceProvider` bereitgestellt.
+  - `BackupCoordinator`: Serialisierung und Wiederherstellung um FB2-B-Felder (`hasFreezer`, `freezerCapacity`, `waterTankLiters`, `isWaterTankDrinkable`) ergänzt.
+- **Tests & Qualitätssicherung:**
+  - 5 neue Backend-Tests in Vitest (`backend/test/backups.spec.ts`) verifizieren Upload, Download, Mandantentrennung, 5er-Limit und IBAN-Ablehnung (21/21 Backend-Tests grün).
+  - 4 neue Flutter Unit- und Integrationstests in `test/features/more/b2_backup_integration_test.dart` (201/201 Flutter-Tests grün).
+
 ## 2026-09-26 – Slice B1: Login mit Auth0, /v1/me, Einwilligung und Kontolöschung
 
 - **Backend Authentifizierung (`backend/src/auth.ts`):**

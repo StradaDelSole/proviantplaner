@@ -60,6 +60,21 @@ class FakeHullqApiClient implements HullqApiClient {
   Future<void> deleteMe(String token) async {
     deleteMeCalls.add(token);
   }
+
+  @override
+  Future<Map<String, dynamic>> uploadBackup(String token, {required String deviceId, required String content}) async {
+    return {'success': true, 'backup': {'id': 'test-b1-backup'}};
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getBackups(String token) async {
+    return [];
+  }
+
+  @override
+  Future<String> downloadBackup(String token, String backupId) async {
+    return '{}';
+  }
 }
 
 void main() {

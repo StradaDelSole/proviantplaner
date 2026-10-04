@@ -140,6 +140,10 @@ class BackupCoordinator {
               kittyModel: tMap['kittyModel'] != null
                   ? Value(KittyModel.fromString(tMap['kittyModel'] as String))
                   : const Value.absent(),
+              hasFreezer: Value(tMap['hasFreezer'] as bool? ?? false),
+              freezerCapacity: Value(tMap['freezerCapacity'] as int? ?? 0),
+              waterTankLiters: Value(tMap['waterTankLiters'] as int? ?? 0),
+              isWaterTankDrinkable: Value(tMap['isWaterTankDrinkable'] as bool? ?? false),
               createdAt: tMap['createdAt'] != null
                   ? Value(DateTime.parse(tMap['createdAt'] as String))
                   : const Value.absent(),
@@ -322,6 +326,10 @@ class BackupCoordinator {
         'isCharter': t.isCharter,
         'boatType': t.boatType,
         'fridgeCapacity': t.fridgeCapacity,
+        'hasFreezer': t.hasFreezer,
+        'freezerCapacity': t.freezerCapacity,
+        'waterTankLiters': t.waterTankLiters,
+        'isWaterTankDrinkable': t.isWaterTankDrinkable,
         'appetite': t.appetite.rawValue,
         'reserveDays': t.reserveDays,
         'drinkingHabit': t.drinkingHabit.rawValue,

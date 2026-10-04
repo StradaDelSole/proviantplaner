@@ -31,6 +31,19 @@ abstract class HullqApiClient {
 
   /// Löscht das Konto und alle Daten über DELETE /v1/me.
   Future<void> deleteMe(String token);
+
+  /// Lädt eine Sicherung über POST /v1/backups hoch.
+  Future<Map<String, dynamic>> uploadBackup(
+    String token, {
+    required String deviceId,
+    required String content,
+  });
+
+  /// Ruft die Liste der Sicherungen über GET /v1/backups ab.
+  Future<List<Map<String, dynamic>>> getBackups(String token);
+
+  /// Lädt den Inhalt einer Sicherung über GET /v1/backups/{id} herunter.
+  Future<String> downloadBackup(String token, String backupId);
 }
 
 /// Standard-Implementierung von [HullqApiClient] mit [HttpClient] (ohne Zusatzpakete).
@@ -119,5 +132,86 @@ class HttpHullqApiClient implements HullqApiClient {
         message: error?['message'] as String? ?? 'Fehler beim Löschen des Kontos',
       );
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadBackup(
+    String token, {
+    required String deviceId,
+    required String content,
+  }) async {
+    final uri = Uri.parse('$baseUrl/v1/backups');
+    final request = await _httpClient.postUrl(uri);
+    request.headers.set('Authorization', 'Bearer $token');
+    request.headers.set('Content-Type', 'application/json');
+    request.headers.set('Accept', 'application/json');
+
+    final payload = jsonEncode({
+      'device_id': deviceId,
+      'content': content,
+    });
+    request.write(payload);
+
+    final response = await request.close();
+    final bodyString = await response.transform(utf8.decoder).join();
+    final dynamic json = jsonDecode(bodyString);
+
+    if (response.statusCode >= 400) {
+      final error = json is Map<String, dynamic> ? json['error'] as Map<String, dynamic>? : null;
+      throw HullqApiException(
+        statusCode: response.statusCode,
+        code: error?['code'] as String? ?? 'UNKNOWN_ERROR',
+        message: error?['message'] as String? ?? 'Fehler beim Hochladen der Sicherung',
+      );
+    }
+
+    return json as Map<String, dynamic>;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getBackups(String token) async {
+    final uri = Uri.parse('$baseUrl/v1/backups');
+    final request = await _httpClient.getUrl(uri);
+    request.headers.set('Authorization', 'Bearer $token');
+    request.headers.set('Accept', 'application/json');
+
+    final response = await request.close();
+    final bodyString = await response.transform(utf8.decoder).join();
+    final dynamic json = jsonDecode(bodyString);
+
+    if (response.statusCode >= 400) {
+      final error = json is Map<String, dynamic> ? json['error'] as Map<String, dynamic>? : null;
+      throw HullqApiException(
+        statusCode: response.statusCode,
+        code: error?['code'] as String? ?? 'UNKNOWN_ERROR',
+        message: error?['message'] as String? ?? 'Fehler beim Abrufen der Sicherungen',
+      );
+    }
+
+    final rawList = (json as Map<String, dynamic>)['backups'] as List<dynamic>? ?? [];
+    return rawList.map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  @override
+  Future<String> downloadBackup(String token, String backupId) async {
+    final uri = Uri.parse('$baseUrl/v1/backups/$backupId');
+    final request = await _httpClient.getUrl(uri);
+    request.headers.set('Authorization', 'Bearer $token');
+    request.headers.set('Accept', 'application/json');
+
+    final response = await request.close();
+    final bodyString = await response.transform(utf8.decoder).join();
+    final dynamic json = jsonDecode(bodyString);
+
+    if (response.statusCode >= 400) {
+      final error = json is Map<String, dynamic> ? json['error'] as Map<String, dynamic>? : null;
+      throw HullqApiException(
+        statusCode: response.statusCode,
+        code: error?['code'] as String? ?? 'UNKNOWN_ERROR',
+        message: error?['message'] as String? ?? 'Fehler beim Herunterladen der Sicherung',
+      );
+    }
+
+    return (json as Map<String, dynamic>)['content'] as String;
   }
 }

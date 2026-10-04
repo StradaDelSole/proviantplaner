@@ -7,9 +7,14 @@ import 'package:proviantplaner/features/entitlements/data/entitlements_providers
 import 'backup_coordinator.dart';
 import 'hullq_backup_service.dart';
 
-/// Provider für den [HullqBackupService] (Mock).
+/// Provider für den [HullqBackupService] (Slice B2: HttpHullqBackupService).
 final hullqBackupServiceProvider = Provider<HullqBackupService>((ref) {
-  return MockHullqBackupService();
+  final apiClient = ref.watch(hullqApiClientProvider);
+  final authService = ref.watch(hullqAuthServiceProvider);
+  return HttpHullqBackupService(
+    apiClient: apiClient,
+    authService: authService,
+  );
 });
 
 /// Provider für den [BackupCoordinator].
