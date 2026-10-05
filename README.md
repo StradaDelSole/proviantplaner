@@ -6,7 +6,7 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 
 | Pfad | Inhalt |
 | --- | --- |
-| `docs/PRD_v0.21.md` | Produktanforderungen, Quelle der Wahrheit |
+| `docs/PRD_v0.21.md` | Produkt-Baseline; neuere ausdrücklich owner-accepted Product-/UX-Specs superseden widersprechende ältere Abschnitte |
 | `docs/SLICES_v0.19.md` | Umsetzungsplan in Slices mit Abnahmekriterien |
 | `docs/KATALOG_v0.10.md` | Vorratskatalog, lesbar |
 | `data/catalog_v0.10.json` | Vorratskatalog, maschinenlesbar |
@@ -27,6 +27,18 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/impl/` | Pläne und Berichte von Gemini je Slice |
 | `GEMINI.md` | Arbeitsanleitung für die Umsetzung mit Gemini |
 | `CHANGELOG.md` | Fortschritt pro Slice |
+
+### Vorrang neuer Owner-Entscheidungen
+
+`PRD_v0.21.md` bleibt die historische Produkt-Baseline, ist aber noch nicht vollständig auf die Entscheidungen vom 05.10.2026 rebased. Bei Widerspruch gelten die neueren ausdrücklich **OWNER-ACCEPTED** Dokumente, insbesondere:
+- `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
+- `docs/PRODUCT_GUEST_SHOPPING_v0.3.md`
+- `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`
+- `docs/design/PROVY_UX_DIRECTION_v0.5.md`
+- `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`
+- `docs/design/PROVY_UX_WIREFRAMES_v0.2.md`
+
+Implementierungsslices müssen diese neueren Entscheidungen vor älteren widersprechenden PRD-/UX-Passagen anwenden.
 
 ## Versionierung der Dokumente
 
