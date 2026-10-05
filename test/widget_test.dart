@@ -37,7 +37,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Meine Törns'), findsOneWidget);
+    expect(find.text('My Trips'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 }

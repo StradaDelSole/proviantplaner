@@ -38,7 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return TripOverviewScreen(tripId: tripId);
         },
@@ -51,7 +51,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return TripTimelineScreen(tripId: tripId);
         },
@@ -64,7 +64,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return ShoppingListScreen(tripId: tripId);
         },
@@ -79,10 +79,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final stopId = int.tryParse(stopStr ?? '');
           final l10n = AppLocalizations.of(context);
           if (tripId == null) {
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           if (stopId == null) {
-            return NotFoundScreen(message: l10n?.shoppingStopNotFound ?? 'Einkaufsstopp nicht gefunden');
+            return NotFoundScreen(message: l10n?.shoppingStopNotFound);
           }
           return ShoppingModeScreen(tripId: tripId, stopId: stopId);
         },
@@ -95,7 +95,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return StorageChecklistScreen(tripId: tripId);
         },
@@ -108,7 +108,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return KittyScreen(tripId: tripId);
         },
@@ -121,7 +121,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return SettlementScreen(tripId: tripId);
         },
@@ -139,7 +139,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final tripId = int.tryParse(idStr ?? '');
           if (tripId == null) {
             final l10n = AppLocalizations.of(context);
-            return NotFoundScreen(message: l10n?.tripNotFound ?? 'Törn nicht gefunden');
+            return NotFoundScreen(message: l10n?.tripNotFound);
           }
           return MoreScreen(tripId: tripId);
         },

@@ -97,31 +97,32 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
   }
 
   Future<void> _showQuantityDialog(BuildContext context, ShoppingListItemView v) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: v.effectivePackages.toString());
     final count = await showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${v.name}: Menge anpassen'),
+        title: Text(l10n.adjustQuantityTitle(v.name)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Anzahl Packungen',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.packageCountLabel,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Abbrechen'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               final parsed = int.tryParse(controller.text.trim());
               Navigator.of(ctx).pop(parsed);
             },
-            child: const Text('Speichern'),
+            child: Text(l10n.save),
           ),
         ],
       ),

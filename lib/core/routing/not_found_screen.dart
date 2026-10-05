@@ -17,7 +17,7 @@ class NotFoundScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n?.notFoundTitle ?? 'Nicht gefunden'),
+        title: Text(l10n?.notFoundTitle ?? 'Not Found'),
       ),
       body: Center(
         child: Padding(
@@ -32,7 +32,7 @@ class NotFoundScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                message ?? l10n?.notFoundMessage ?? 'Die angeforderte Seite oder der Törn wurde nicht gefunden.',
+                message ?? l10n?.notFoundMessage ?? 'The requested page or trip was not found.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
@@ -40,7 +40,7 @@ class NotFoundScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.home_outlined),
-                label: Text(l10n?.backToHome ?? 'Zurück zur Übersicht'),
+                label: Text(l10n?.backToHome ?? 'Back to Home'),
               ),
             ],
           ),

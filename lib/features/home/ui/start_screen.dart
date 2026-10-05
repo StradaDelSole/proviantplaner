@@ -32,7 +32,7 @@ class StartScreen extends ConsumerWidget {
     final tripEnded = now.isAfter(trip.startDate.add(Duration(days: trip.daysCount)));
     if (tripEnded) return '${l10n.nextStepLabel}: ${l10n.settle}';
     final tripStarted = now.isAfter(trip.startDate);
-    if (tripStarted) return '${l10n.nextStepLabel}: Unterwegs / Bordkasse';
+    if (tripStarted) return '${l10n.nextStepLabel}: ${l10n.underwayFund}';
     return '${l10n.nextStepLabel}: ${l10n.editList}';
   }
 
@@ -49,7 +49,7 @@ class StartScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Meine Törns',
+              l10n.myTrips,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 letterSpacing: -0.5,
@@ -65,7 +65,7 @@ class StartScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            tooltip: 'Nachtwache',
+            tooltip: l10n.nightWatch,
             icon: Icon(
               ref.watch(themeControllerProvider) == AppThemeMode.nightwatch
                   ? Icons.nightlight_round
@@ -76,7 +76,7 @@ class StartScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            tooltip: 'Einstellungen',
+            tooltip: l10n.settings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
               context.go('/more');
@@ -138,7 +138,7 @@ class StartScreen extends ConsumerWidget {
                         const SizedBox(height: 32),
                       ] else ...[
                         Text(
-                          'Aktive Törns (${activeTrips.length})',
+                          '${l10n.activeTripsSectionTitle} (${activeTrips.length})',
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: theme.colorScheme.outline,
                             fontWeight: FontWeight.bold,

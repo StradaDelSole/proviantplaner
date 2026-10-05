@@ -156,10 +156,10 @@ class TripTimelineScreen extends ConsumerWidget {
         appBar: AppBar(title: Text(l10n.timelineTitle)),
         body: const Center(child: CircularProgressIndicator()),
       ),
-      error: (err, _) => const NotFoundScreen(message: 'Törn nicht gefunden'),
+      error: (err, _) => NotFoundScreen(message: l10n.tripNotFound),
       data: (trip) {
         if (trip == null) {
-          return const NotFoundScreen(message: 'Törn nicht gefunden');
+          return NotFoundScreen(message: l10n.tripNotFound);
         }
 
         final days = daysAsync.valueOrNull ?? [];
@@ -219,7 +219,7 @@ class TripTimelineScreen extends ConsumerWidget {
                                 Icon(Icons.restaurant_menu, size: 18, color: theme.colorScheme.secondary),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'TÖRN-BILANZ VERPFLEGUNG',
+                                  l10n.tripCateringBalanceTitle.toUpperCase(),
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.2,

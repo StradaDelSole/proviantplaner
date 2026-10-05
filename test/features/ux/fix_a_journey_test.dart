@@ -27,6 +27,7 @@ import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
+import 'package:proviantplaner/features/trip/ui/trip_wizard_screen.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 
 void main() {
@@ -119,6 +120,10 @@ void main() {
           builder: (_, __) => const StartScreen(),
         ),
         GoRoute(
+          path: '/trips/new',
+          builder: (_, __) => const TripWizardScreen(),
+        ),
+        GoRoute(
           path: '/trips/:id',
           builder: (_, state) => TripOverviewScreen(tripId: int.parse(state.pathParameters['id']!)),
         ),
@@ -162,7 +167,7 @@ void main() {
   }
 
   Future<int> createSampleTrip({
-    String name = 'Test Törn',
+    String name = 'Summer Sailing',
     int daysCount = 7,
   }) async {
     final tripId = await tripService.createTripWithCrew(
@@ -182,6 +187,39 @@ void main() {
   }
 
   group('FIX-A Journey- & Routing-Tests', () {
+    testWidgets('Journey 0: New-trip journey via real router at /trips/new -> TripWizard UI steps -> land on TripOverviewScreen', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final router = createTestRouter(initialLocation: '/trips/new');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TripWizardScreen), findsOneWidget);
+
+      // Verify wizard title and sections
+      expect(find.text('1. Törn'), findsOneWidget);
+      expect(find.text('2. Crew (5)'), findsOneWidget);
+
+      // Tap submit button to create trip
+      final createButton = find.byKey(const Key('wizard_submit_trip_button'));
+      expect(createButton, findsOneWidget);
+      await tester.tap(createButton);
+      await tester.pumpAndSettle();
+
+      // Verify real router transitioned to TripOverviewScreen
+      expect(find.byType(TripOverviewScreen), findsOneWidget);
+      expect(find.byType(TripWizardScreen), findsNothing);
+
+      // Verify trip in database
+      final allTrips = await db.tripDao.getAllTrips();
+      expect(allTrips.length, equals(1));
+      expect(allTrips.first.daysCount, equals(7));
+    });
+
     testWidgets('Journey 1: TripOverviewScreen -> ShoppingList -> Back -> TripOverviewScreen', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
@@ -216,7 +254,7 @@ void main() {
       expect(find.byType(ShoppingListScreen), findsNothing);
     });
 
-    testWidgets('Journey 2: TripOverviewScreen -> KittyScreen -> Action -> Back -> TripOverviewScreen', (tester) async {
+    testWidgets('Journey 2: TripOverviewScreen -> KittyScreen -> Real UI Add Expense -> Persisted & Back -> TripOverviewScreen', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -239,12 +277,29 @@ void main() {
       // We are on KittyScreen
       expect(find.byType(KittyScreen), findsOneWidget);
 
-      // Switch segment to "Einzahlungen"
-      final depositTab = find.textContaining('Einzahlungen');
-      if (depositTab.evaluate().isNotEmpty) {
-        await tester.tap(depositTab.first);
-        await tester.pumpAndSettle();
-      }
+      // Real UI action: Tap FAB to open ExpenseSheet
+      final addExpenseFab = find.byType(FloatingActionButton);
+      expect(addExpenseFab, findsOneWidget);
+      await tester.tap(addExpenseFab);
+      await tester.pumpAndSettle();
+
+      // Enter amount in the amount field
+      final amountField = find.byType(TextFormField).first;
+      await tester.enterText(amountField, '45.00');
+      await tester.pumpAndSettle();
+
+      // Tap save expense
+      final saveExpenseButton = find.widgetWithText(FilledButton, 'Ausgabe speichern');
+      await tester.tap(saveExpenseButton);
+      await tester.pumpAndSettle();
+
+      // Verify in DB that the expense was persisted
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      expect(expenses.length, equals(1));
+      expect(expenses.first.amount, equals(45.0));
+
+      // Verify expense tile is visible on screen
+      expect(find.textContaining('45,00'), findsAtLeastNWidgets(1));
 
       // Tap back button
       final backButton = find.byIcon(Icons.arrow_back);
@@ -554,6 +609,180 @@ void main() {
       expect(find.textContaining('Einkaufsstopp'), findsNothing);
     });
 
+    testWidgets('Finding A: TripWizardScreen in English has zero German residue strings', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final router = createTestRouter(initialLocation: '/trips/new');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TripWizardScreen), findsOneWidget);
+
+      // English titles must be present
+      expect(find.text('New Trip'), findsOneWidget);
+      expect(find.text('1. Trip'), findsOneWidget);
+      expect(find.text('2. Crew (5)'), findsOneWidget);
+      expect(find.text('3. Food on Board'), findsOneWidget);
+      expect(find.text('Create Trip'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Törn Kroatien'), findsNothing);
+      expect(find.textContaining('1. Törn'), findsNothing);
+      expect(find.textContaining('3. Verpflegung'), findsNothing);
+      expect(find.textContaining('Mahlzeiten'), findsNothing);
+      expect(find.textContaining('Törn erstellen'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+    });
+
+    testWidgets('Finding A: ShoppingListScreen in English has zero German residue strings', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createSampleTrip();
+      final router = createTestRouter(initialLocation: '/trips/$tripId/shopping-list');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShoppingListScreen), findsOneWidget);
+
+      // English controls
+      expect(find.text('By category'), findsOneWidget);
+      expect(find.text('By department'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Proviantliste'), findsNothing);
+      expect(find.textContaining('Einkaufsstopp'), findsNothing);
+      expect(find.textContaining('Packung'), findsNothing);
+      expect(find.textContaining('Menge anpassen'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+    });
+
+    testWidgets('Finding A: ShoppingModeScreen in English has zero German residue strings', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createSampleTrip();
+      final stops = await db.tripDao.getShoppingStopsForTrip(tripId);
+      final stop = stops.first;
+
+      final router = createTestRouter(initialLocation: '/trips/$tripId/shop/${stop.id}');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ShoppingModeScreen), findsOneWidget);
+
+      // English action button
+      expect(find.text('Shopping complete'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Fertig eingekauft'), findsNothing);
+      expect(find.textContaining('Offene Posten'), findsNothing);
+      expect(find.textContaining('Einkaufsmodus'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+    });
+
+    testWidgets('Finding A: StorageChecklistScreen in English has zero German residue strings', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createSampleTrip();
+      final router = createTestRouter(initialLocation: '/trips/$tripId/storage');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(StorageChecklistScreen), findsOneWidget);
+
+      // English titles
+      expect(find.text('Storage'), findsOneWidget);
+      expect(find.text('Finish storage'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Einlagerung'), findsNothing);
+      expect(find.textContaining('Kartons an Land'), findsNothing);
+      expect(find.textContaining('Frischeprodukte'), findsNothing);
+      expect(find.textContaining('Eier kühl'), findsNothing);
+      expect(find.textContaining('Lagerungshinweis'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+    });
+
+    testWidgets('Finding A: KittyScreen in English has zero German residue and zero kitty terms', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createSampleTrip();
+      final router = createTestRouter(initialLocation: '/trips/$tripId/kitty');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KittyScreen), findsOneWidget);
+
+      // English titles
+      expect(find.text('Crew fund'), findsOneWidget);
+      expect(find.text('Add expense'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Bordkasse'), findsNothing);
+      expect(find.textContaining('Törn'), findsNothing);
+      expect(find.textContaining('Kassenwart'), findsNothing);
+      expect(find.textContaining('Personen'), findsNothing);
+      expect(find.textContaining('Tage'), findsNothing);
+      expect(find.textContaining('Skipper frei'), findsNothing);
+      expect(find.textContaining('Crew übernimmt Bordkasse'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+
+      // UX-C compliance: zero kitty
+      expect(find.textContaining('kitty'), findsNothing);
+      expect(find.textContaining('Kitty'), findsNothing);
+    });
+
+    testWidgets('Finding A: SettlementScreen in English has zero German residue and zero kitty terms', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createSampleTrip();
+      final router = createTestRouter(initialLocation: '/trips/$tripId/kitty/settlement');
+
+      await tester.pumpWidget(buildAppWithRouter(router: router, locale: const Locale('en')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SettlementScreen), findsOneWidget);
+
+      // English titles
+      expect(find.text('Settle up'), findsOneWidget);
+      expect(find.text('WHO PAYS WHOM'), findsOneWidget);
+      expect(find.text('Print settle-up / as PDF'), findsOneWidget);
+
+      // German residue strings must be absent
+      expect(find.textContaining('Abrechnung'), findsNothing);
+      expect(find.textContaining('Bordkasse'), findsNothing);
+      expect(find.textContaining('Zahlungen'), findsNothing);
+      expect(find.textContaining('zahlt'), findsNothing);
+      expect(find.textContaining('bekommt'), findsNothing);
+      expect(find.textContaining('Fehler:'), findsNothing);
+
+      // UX-C compliance: zero kitty
+      expect(find.textContaining('kitty'), findsNothing);
+      expect(find.textContaining('Kitty'), findsNothing);
+    });
+
     testWidgets('Finding C & A: MoreScreen in English has no German residue, language is info-only, no saved package sizes', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
@@ -612,6 +841,17 @@ void main() {
       expect(find.textContaining('Tage im Törnverlauf'), findsNothing);
       expect(find.textContaining('Ausgleichszahlungen'), findsNothing);
       expect(find.textContaining('Fehler:'), findsNothing);
+
+      // Navigate to KittyScreen in Spanish
+      final kittyButton = find.text('Abrir caja de a bordo');
+      expect(kittyButton, findsOneWidget);
+      await tester.tap(kittyButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(KittyScreen), findsOneWidget);
+      expect(find.text('Fondo común'), findsOneWidget);
+      expect(find.textContaining('Bordkasse'), findsNothing);
+      expect(find.textContaining('kitty'), findsNothing);
     });
   });
 }

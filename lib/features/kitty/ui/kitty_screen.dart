@@ -155,7 +155,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSubtitleRow(theme, data),
+          _buildSubtitleRow(theme, l10n, data),
           const SizedBox(height: 8),
           if (data.model == KittyModel.sharedKitty) ...[
             _buildTreasurerCard(context, ref, theme, l10n, data),
@@ -168,7 +168,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           _buildBentoCard(context, ref, theme, l10n, data),
           const SizedBox(height: 12),
           if (_hasSkipperFree(data.members))
-            _buildSkipperSnippet(theme, data.members),
+            _buildSkipperSnippet(theme, l10n, data.members),
           const SizedBox(height: 12),
           _buildSegmentedSwitch(ref, theme, l10n, data, activeSegment),
           const SizedBox(height: 16),
@@ -181,9 +181,9 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     );
   }
 
-  Widget _buildSubtitleRow(ThemeData theme, TripKittyData data) {
+  Widget _buildSubtitleRow(ThemeData theme, AppLocalizations l10n, TripKittyData data) {
     return Text(
-      'Törn ${data.trip.name} · ${data.members.length} Personen · ${data.trip.daysCount} Tage',
+      l10n.tripSubtitleInfo(data.trip.name, data.members.length, data.trip.daysCount),
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
@@ -216,7 +216,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Kasse fast leer – jeder legt 50 € nach?',
+              l10n.fundLowNachschussPrompt,
               style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
@@ -290,7 +290,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Alle Einzahlungen und Auszahlungen laufen über den Kassenwart.',
+                l10n.treasurerExplainer,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 12),
@@ -343,7 +343,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     return members.any((m) => m.isSkipperFree);
   }
 
-  Widget _buildSkipperSnippet(ThemeData theme, List<KittyMember> members) {
+  Widget _buildSkipperSnippet(ThemeData theme, AppLocalizations l10n, List<KittyMember> members) {
     final skipper = members.firstWhere((m) => m.isSkipperFree);
     return Card(
       color: theme.colorScheme.surfaceContainerLow,
@@ -368,7 +368,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                     style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Crew übernimmt Bordkasse',
+                    l10n.crewTakesOverFund,
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
@@ -377,7 +377,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             Chip(
               backgroundColor: theme.colorScheme.secondaryContainer,
               label: Text(
-                'Skipper frei',
+                l10n.skipperFree,
                 style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),
             ),
@@ -429,35 +429,41 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => _showSwitchModelDialog(context, ref, data),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isShared ? Icons.account_balance : Icons.groups,
-                  size: 16,
-                  color: theme.colorScheme.secondary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isShared ? l10n.fundModelShared : l10n.fundModelIndividual,
-                  style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_drop_down, size: 16, color: theme.colorScheme.outline),
-              ],
+        Flexible(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => _showSwitchModelDialog(context, ref, data),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainer,
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isShared ? Icons.account_balance : Icons.groups,
+                    size: 16,
+                    color: theme.colorScheme.secondary,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      isShared ? l10n.fundModelShared : l10n.fundModelIndividual,
+                      style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_drop_down, size: 16, color: theme.colorScheme.outline),
+                ],
+              ),
             ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           'EUR (€) TABULAR',
           style: theme.textTheme.labelSmall?.copyWith(
@@ -508,8 +514,22 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(l10n.fundUsagePercent(percent), style: theme.textTheme.bodySmall),
-            Text(l10n.fundRemaining(balanceFormatted), style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'JetBrains Mono')),
+            Flexible(
+              child: Text(
+                l10n.fundUsagePercent(percent),
+                style: theme.textTheme.bodySmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.fundRemaining(balanceFormatted),
+                style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'JetBrains Mono'),
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 6),
@@ -614,7 +634,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(l10n.fundSwitchModel),
         content: Text(
-          'Möchtest du das Modell zu "${newModel == KittyModel.sharedKitty ? l10n.fundModelShared : l10n.fundModelIndividual}" wechseln?',
+          l10n.fundSwitchModelConfirm(newModel == KittyModel.sharedKitty ? l10n.fundModelShared : l10n.fundModelIndividual),
         ),
         actions: [
           TextButton(
@@ -782,7 +802,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         ),
         title: Text(exp.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         subtitle: Text(
-          '${exp.category.displayName} • $payerName',
+          '${exp.category.localizedName(l10n)} • $payerName',
           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         trailing: Text(
@@ -843,7 +863,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             subtitle: Text(
               b.member.isSkipperFree
                   ? l10n.skipperFree
-                  : 'beteiligt an ${b.member.categoryParticipation.values.where((v) => v).length} von 7 Kategorien',
+                  : l10n.participatingInCategories(b.member.categoryParticipation.values.where((v) => v).length, 7),
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             trailing: Text(

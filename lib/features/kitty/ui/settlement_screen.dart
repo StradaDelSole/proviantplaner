@@ -71,13 +71,13 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
 
     if (asyncData.hasError) {
-      return const NotFoundScreen(message: 'Törn nicht gefunden');
+      return NotFoundScreen(message: l10n.tripNotFound);
     }
 
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -133,7 +133,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildStatusBanner(theme, data),
+          _buildStatusBanner(theme, l10n, data),
           const SizedBox(height: 16),
           _buildSectionHeader(theme, l10n, transfers.length),
           const SizedBox(height: 12),
@@ -162,7 +162,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     );
   }
 
-  Widget _buildStatusBanner(ThemeData theme, TripKittyData data) {
+  Widget _buildStatusBanner(ThemeData theme, AppLocalizations l10n, TripKittyData data) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -183,7 +183,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'STATUS // AUSGLEICHSBERECHNUNG · MINIMAL TRANSFERS',
+              l10n.settlementStatusMinimalTransfers,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,
@@ -211,7 +211,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          '$count Zahlungen',
+          l10n.paymentTransfersCount(count),
           style: theme.textTheme.labelSmall?.copyWith(
             fontFamily: 'JetBrains Mono',
             color: theme.colorScheme.outline,
@@ -238,10 +238,10 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     final isPayout = data.treasurer != null && transfer.fromMember.id == data.treasurer!.id;
     if (isPayout) {
       personName = transfer.toMember.name;
-      lineText = 'bekommt ${transfer.formattedAmount} von ${transfer.fromMember.name}';
+      lineText = l10n.settlementReceivesFrom(transfer.formattedAmount, transfer.fromMember.name);
     } else {
       personName = transfer.fromMember.name;
-      lineText = 'zahlt ${transfer.formattedAmount} an ${transfer.toMember.name}';
+      lineText = l10n.settlementPaysTo(transfer.formattedAmount, transfer.toMember.name);
     }
 
     return Card(
@@ -340,7 +340,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       );
     }
 
-    final remittance = 'Törn ${data.trip.name} Bordkasse ${transfer.fromMember.name}';
+    final remittance = l10n.settlementRemittance(data.trip.name, transfer.fromMember.name);
     final payload = EpcQrPayload(
       beneficiaryName: transfer.toMember.name,
       iban: memberIban,
@@ -416,7 +416,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Für ${member.name} sind keine Zahlungsdaten hinterlegt',
+                  l10n.noPaymentDataForMember(member.name),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -612,7 +612,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       onPressed: () {
-        final text = 'Empfänger: $recipient\nIBAN: $iban\nBetrag: $amount\nVerwendungszweck: $remittance';
+        final text = '${l10n.fundReceiver}: $recipient\n${l10n.fundIban}: $iban\n${l10n.fundAmount}: $amount\n${l10n.fundRemittance}: $remittance';
         Clipboard.setData(ClipboardData(text: text));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.fundIbanCopied)),
@@ -673,12 +673,16 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               final revolutUrl = transfer.toMember.revolutLink?.trim().isNotEmpty == true
                   ? transfer.toMember.revolutLink!.trim()
                   : 'https://revolut.me/${transfer.toMember.name}';
-              final text = 'Bordkasse: ${transfer.fromMember.name} zahlt ${transfer.formattedAmount} an ${transfer.toMember.name}.\n'
-                  'IBAN: $iban\n'
-                  'Verwendungszweck: $remittance\n'
-                  'Revolut: $revolutUrl';
+              final text = l10n.settlementShareText(
+                transfer.fromMember.name,
+                transfer.formattedAmount,
+                transfer.toMember.name,
+                iban,
+                remittance,
+                revolutUrl,
+              );
               try {
-                await Share.share(text, subject: 'Bordkassen-Ausgleich ${transfer.toMember.name}');
+                await Share.share(text, subject: l10n.settlementShareSubject(transfer.toMember.name));
               } catch (_) {
                 await Clipboard.setData(ClipboardData(text: text));
                 if (mounted) {
@@ -784,6 +788,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
   }
 
   Future<void> _exportSettlementPdf(BuildContext context, TripKittyData data) async {
+    final l10n = AppLocalizations.of(context)!;
     final pdfService = ref.read(pdfExportServiceProvider);
     final bytes = await pdfService.generateSettlementPdf(
       data: data,
@@ -791,8 +796,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
 
     await pdfService.shareOrPrintPdf(
       bytes: bytes,
-      filename: 'Bordkassenabrechnung_${data.trip.name.replaceAll(' ', '_')}.pdf',
-      subject: 'Bordkassenabrechnung ${data.trip.name}',
+      filename: l10n.settlementPdfFilename(data.trip.name.replaceAll(' ', '_')),
+      subject: l10n.settlementPdfSubject(data.trip.name),
     );
   }
 

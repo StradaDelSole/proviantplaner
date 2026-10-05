@@ -906,5 +906,210 @@
         "type": "int"
       }
     }
+  },
+  "defaultTripName": "Törn Kroatien",
+  "wizardStepTrip": "Törn",
+  "wizardStepCrew": "Crew",
+  "wizardStepFood": "Essen an Bord",
+  "tripDurationHelper": "Törnlänge zwischen 1 und 180 Tagen",
+  "countOfDays": "{count} von {total}",
+  "@countOfDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "guestMember": "Gast {index}",
+  "@guestMember": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "myTrips": "Meine Törns",
+  "nightWatch": "Nachtwache",
+  "settings": "Einstellungen",
+  "activeTripsSectionTitle": "Aktive Törns",
+  "tripSubtitleInfo": "Törn {name} · {personCount} Personen · {dayCount} Tage",
+  "@tripSubtitleInfo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "personCount": {
+        "type": "int"
+      },
+      "dayCount": {
+        "type": "int"
+      }
+    }
+  },
+  "fundLowNachschussPrompt": "Kasse fast leer – jeder legt 50 € nach?",
+  "treasurerExplainer": "Alle Einzahlungen und Auszahlungen laufen über den Kassenwart.",
+  "crewTakesOverFund": "Crew übernimmt Bordkasse",
+  "fundSwitchModelConfirm": "Möchtest du das Modell zu „{model}“ wechseln?",
+  "@fundSwitchModelConfirm": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "participatingInCategories": "beteiligt an {count} von {total} Kategorien",
+  "@participatingInCategories": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settlementStatusMinimalTransfers": "STATUS // AUSGLEICHSBERECHNUNG · MINIMALE ZAHLUNGEN",
+  "paymentTransfersCount": "{count, plural, =1{1 Zahlung} other{{count} Zahlungen}}",
+  "@paymentTransfersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settlementReceivesFrom": "bekommt {amount} von {fromPerson}",
+  "@settlementReceivesFrom": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "fromPerson": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPaysTo": "zahlt {amount} an {toPerson}",
+  "@settlementPaysTo": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "toPerson": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementRemittance": "Törn {tripName} Bordkasse {personName}",
+  "@settlementRemittance": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      },
+      "personName": {
+        "type": "String"
+      }
+    }
+  },
+  "noPaymentDataForMember": "Für {name} sind keine Zahlungsdaten hinterlegt",
+  "@noPaymentDataForMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementShareText": "Bordkasse: {fromPerson} zahlt {amount} an {toPerson}.\nIBAN: {iban}\nVerwendungszweck: {remittance}\nRevolut: {revolutUrl}",
+  "@settlementShareText": {
+    "placeholders": {
+      "fromPerson": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "toPerson": {
+        "type": "String"
+      },
+      "iban": {
+        "type": "String"
+      },
+      "remittance": {
+        "type": "String"
+      },
+      "revolutUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementShareSubject": "Bordkassen-Ausgleich {name}",
+  "@settlementShareSubject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPdfFilename": "Bordkassenabrechnung_{name}.pdf",
+  "@settlementPdfFilename": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPdfSubject": "Bordkassenabrechnung {name}",
+  "@settlementPdfSubject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tripCateringBalanceTitle": "Törn-Bilanz Verpflegung",
+  "storageHintTitle_remove_cardboard": "Kartons an Land auspacken",
+  "storageHintDesc_remove_cardboard": "Ungeziefer und Kakerlakeneier reisen bevorzugt in den Hohlräumen von Wellpappe mit. Vor dem Ablegen auspacken.",
+  "storageHintTitle_wash_produce": "Frischeprodukte waschen & trocknen",
+  "storageHintDesc_wash_produce": "Fruchtfliegen-Eier und Schimmelsporen abwaschen, gründlich trocknen, dann belüftet lagern.",
+  "storageHintTitle_potatoes_onions": "Kartoffeln & Zwiebeln dunkel lagern",
+  "storageHintDesc_potatoes_onions": "Nie zusammen lagern (Zwiebeln lassen Kartoffeln keimen). Beide dunkel, kühl und gut belüftet.",
+  "storageHintTitle_remove_labels": "Etiketten entfernen & Deckel beschriften",
+  "storageHintDesc_remove_labels": "Papieretiketten lösen sich in feuchter Bilge ab und verstopfen Lenzpumpen. Dosen mit Edding auf dem Deckel beschriften.",
+  "storageHintTitle_eggs": "Eier kühl & dunkel lagern",
+  "storageHintDesc_eggs": "Ungekühlt bis zu 14 Tage haltbar, wenn die Schutzschicht intakt ist (nicht waschen!). Regelmäßig wenden.",
+  "storageHintTitle_cool_first": "Sofort in die Kühlung",
+  "storageHintDesc_cool_first": "Unterbricht die Kühlkette nicht: Fleisch, Fisch und Milchprodukte als erstes einräumen.",
+  "storageHintTitle_keep_dry": "Trocken und dicht verpacken",
+  "storageHintDesc_keep_dry": "Mehl, Zucker, Reis, Nudeln in dichte Schraub- oder Zip-Beutel umfüllen – schützt vor Seeluft und Schädlingen.",
+  "deliveryConfigTitle": "Lieferdetails · {stopName}",
+  "@deliveryConfigTitle": {
+    "placeholders": {
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "deliverySelectSavedSupplier": "Gespeicherten Lieferanten wählen",
+  "supplierOrSupermarket": "Lieferant / Supermarkt",
+  "supplierPhone": "Telefon Lieferant",
+  "supplierEmail": "E-Mail Lieferant",
+  "rememberSupplierForFutureTrips": "Lieferant für spätere Törns merken",
+  "deliveryDateTimeTitle": "Liefertermin & Uhrzeit",
+  "changeAction": "Ändern",
+  "marinaOrHarbor": "Marina / Hafen",
+  "berthOrPier": "Liegeplatz / Steg",
+  "boatNameLabel": "Boot / Schiffsname",
+  "contactPhone": "Telefon Ansprechpartner",
+  "deliveryNotesLabel": "Hinweise für die Lieferung (z. B. Zufahrt, Kühler)",
+  "packageCountLabel": "Anzahl Packungen",
+  "packSizeTitle": "Packungsgröße {name}",
+  "@packSizeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

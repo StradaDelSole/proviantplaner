@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-05 – Slice FIX-A: Review 2 Amendment (Complete Localization & Real Journeys / Issue #20)
+
+- **Finding A (Issue #16 – Vollständige Beseitigung aller Rest-Strings & Lokalisierung aller Produktivscreens):**
+  - Alle verbliebenen deutschen Hardcoded-Strings in `TripWizardScreen`, `StartScreen`, `KittyScreen`, `SettlementScreen`, `TripTimelineScreen`, `NotFoundScreen`, `delivery_config_sheet.dart`, `group_detail_sheet.dart`, `package_size_dialog.dart` und `storage_checklist_screen.dart` über `AppLocalizations` / ARB geführt.
+  - Dynamische Katalog-Lagerhinweise (`storage_hints`) über standardisierte ARB-Schlüssel für Titel und Beschreibungen lokalisiert.
+  - Layout-Härtung: `Row` in `_buildModelHeader` und Saldo-Row in `KittyScreen` gegen RenderFlex-Overflows bei langen Übersetzungen mit `Flexible` und Ellipsis geschützt.
+  - Alle 6 Sprachen (DE, EN, ES, FR, HR, PT) synchronisiert; strikte Einhaltung der UX-C-Regel (kein Begriff "kitty" im ARB oder UI).
+- **Finding E (Issue #19 – Vollständige Journey- & Lokalisierungs-Testabdeckung):**
+  - **Journey 0**: End-to-End-Törnerstellung über echten Router unter `/trips/new` mit UI-Eingaben im `TripWizardScreen` und Übergang zur `TripOverviewScreen` (`/trips/$id`) mit SQLite-Verifikation.
+  - **Journey 2**: Echte UI-Ausgabenerfassung in `KittyScreen` via `ExpenseSheet`, SQLite-Persistenzprüfung und deterministischer Rücksprung auf `TripOverviewScreen`.
+  - Reale Screen-Lokalisierungstests für alle 8 Hauptscreens (`TripOverview`, `TripWizard`, `ShoppingList`, `ShoppingMode`, `StorageChecklist`, `Kitty`, `Settlement`, `More`) in Englisch ohne deutsche Reststrings sowie Spanisch-Test.
+  - `test/widget_test.dart`: Erwartung im englischen Modus von fehlerhaftem `'Meine Törns'` auf korrekt lokalisiertes `'My Trips'` angepasst.
+- **Qualitätsprüfung:**
+  - `flutter analyze`: 0 Fehler, 0 Warnungen, 0 Lints.
+  - `flutter test`: 246/246 Tests bestanden (100% grün).
+
 ## 2026-10-05 – Slice FIX-A: Review-Amendment (Findings A–E / Issue #20)
 
 - **Finding A (Issue #16 – Lokalisierung vollständig repariert):**

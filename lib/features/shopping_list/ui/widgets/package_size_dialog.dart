@@ -56,7 +56,7 @@ class _PackageSizeDialogState extends State<PackageSizeDialog> {
 
     return AlertDialog(
       title: Text(
-        'Packungsgröße ${widget.item.name}',
+        l10n.packSizeTitle(widget.item.name),
         style: theme.textTheme.titleMedium,
       ),
       content: Column(

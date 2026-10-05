@@ -150,7 +150,7 @@ class StorageChecklistScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.title,
+                    _entryTitle(l10n, entry),
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       decoration: entry.isCompleted ? TextDecoration.lineThrough : null,
@@ -158,7 +158,7 @@ class StorageChecklistScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    entry.explanation,
+                    _entryExplanation(l10n, entry),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -178,5 +178,31 @@ class StorageChecklistScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _entryTitle(AppLocalizations l10n, StorageChecklistEntry entry) {
+    return switch (entry.hintKey) {
+      'remove_cardboard' => l10n.storageHintTitle_remove_cardboard,
+      'wash_produce' => l10n.storageHintTitle_wash_produce,
+      'potatoes_onions' => l10n.storageHintTitle_potatoes_onions,
+      'remove_labels' => l10n.storageHintTitle_remove_labels,
+      'eggs' => l10n.storageHintTitle_eggs,
+      'cool_first' => l10n.storageHintTitle_cool_first,
+      'keep_dry' => l10n.storageHintTitle_keep_dry,
+      _ => entry.title,
+    };
+  }
+
+  String _entryExplanation(AppLocalizations l10n, StorageChecklistEntry entry) {
+    return switch (entry.hintKey) {
+      'remove_cardboard' => l10n.storageHintDesc_remove_cardboard,
+      'wash_produce' => l10n.storageHintDesc_wash_produce,
+      'potatoes_onions' => l10n.storageHintDesc_potatoes_onions,
+      'remove_labels' => l10n.storageHintDesc_remove_labels,
+      'eggs' => l10n.storageHintDesc_eggs,
+      'cool_first' => l10n.storageHintDesc_cool_first,
+      'keep_dry' => l10n.storageHintDesc_keep_dry,
+      _ => entry.explanation,
+    };
   }
 }

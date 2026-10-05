@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
@@ -164,16 +165,17 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final savedSuppliersAsync = ref.watch(savedSuppliersProvider);
     final df = DateFormat('dd.MM.yyyy · HH:mm');
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Lieferdetails · ${widget.stopName}'),
+        title: Text(l10n.deliveryConfigTitle(widget.stopName)),
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Speichern', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.save, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -184,16 +186,16 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
           children: [
             // Modus-Wahl: Selbst einkaufen vs. Liefern lassen
             SegmentedButton<bool>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: false,
-                  label: Text('Selbst einkaufen'),
-                  icon: Icon(Icons.shopping_cart_outlined),
+                  label: Text(l10n.selfShopping),
+                  icon: const Icon(Icons.shopping_cart_outlined),
                 ),
                 ButtonSegment(
                   value: true,
-                  label: Text('Liefern lassen'),
-                  icon: Icon(Icons.local_shipping_outlined),
+                  label: Text(l10n.deliveryOrder),
+                  icon: const Icon(Icons.local_shipping_outlined),
                 ),
               ],
               selected: {_isDelivery},
@@ -211,10 +213,10 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: DropdownButtonFormField<SupplierProfile>(
-                      decoration: const InputDecoration(
-                        labelText: 'Gespeicherten Lieferanten wählen',
-                        prefixIcon: Icon(Icons.storefront_outlined),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.deliverySelectSavedSupplier,
+                        prefixIcon: const Icon(Icons.storefront_outlined),
+                        border: const OutlineInputBorder(),
                       ),
                       value: _selectedSupplier,
                       items: suppliers
@@ -244,9 +246,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
 
               TextField(
                 controller: _supplierNameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Lieferant / Supermarkt',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.supplierOrSupermarket,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -256,9 +258,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _supplierPhoneCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Telefon Lieferant',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.supplierPhone,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,
                     ),
@@ -267,9 +269,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _supplierEmailCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'E-Mail Lieferant',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.supplierEmail,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
                     ),
@@ -282,7 +284,7 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                 contentPadding: EdgeInsets.zero,
                 value: _saveSupplierForFutureTrips,
                 onChanged: (val) => setState(() => _saveSupplierForFutureTrips = val ?? false),
-                title: const Text('Lieferant für spätere Törns merken'),
+                title: Text(l10n.rememberSupplierForFutureTrips),
                 controlAffinity: ListTileControlAffinity.leading,
               ),
               const Divider(height: 24),
@@ -291,11 +293,11 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.schedule_outlined),
-                title: const Text('Liefertermin & Uhrzeit'),
-                subtitle: Text('${df.format(_deliveryDateTime)} Uhr'),
+                title: Text(l10n.deliveryDateTimeTitle),
+                subtitle: Text(df.format(_deliveryDateTime)),
                 trailing: TextButton(
                   onPressed: _pickDateTime,
-                  child: const Text('Ändern'),
+                  child: Text(l10n.changeAction),
                 ),
               ),
               const Divider(height: 24),
@@ -303,9 +305,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
               // Ort und Liegeplatz
               TextField(
                 controller: _marinaCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Marina / Hafen',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.marinaOrHarbor,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -315,9 +317,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _berthCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Liegeplatz / Steg',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.berthOrPier,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -325,9 +327,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _boatNameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Boot / Schiffsname',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.boatNameLabel,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -341,9 +343,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _contactNameCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Ansprechpartner',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.contactPerson,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -351,9 +353,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
                   Expanded(
                     child: TextField(
                       controller: _contactPhoneCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Telefon Ansprechpartner',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.contactPhone,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.phone,
                     ),
@@ -365,9 +367,9 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
               // Notizen
               TextField(
                 controller: _notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Hinweise für die Lieferung (z. B. Zufahrt, Kühler)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.deliveryNotesLabel,
+                  border: const OutlineInputBorder(),
                 ),
                 maxLines: 2,
               ),
@@ -377,7 +379,7 @@ class _DeliveryConfigSheetState extends ConsumerState<DeliveryConfigSheet> {
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               onPressed: _save,
-              child: const Text('Speichern'),
+              child: Text(l10n.save),
             ),
           ],
         ),

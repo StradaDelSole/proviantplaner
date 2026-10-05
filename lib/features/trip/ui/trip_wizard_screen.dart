@@ -20,20 +20,38 @@ class TripWizardScreen extends ConsumerStatefulWidget {
 
 class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   // Sektion 1: Törn
-  final _nameController = TextEditingController(text: 'Törn Kroatien');
+  final _nameController = TextEditingController();
   late final TextEditingController _daysController;
   DateTime _startDate = DateTime.now();
   int _daysCount = 7;
   bool _isCharter = true;
+  bool _initializedDefaults = false;
 
   // Sektion 2: Crew (ohne Zahlungsdaten)
   final List<CrewMemberInput> _crewMembers = [
     const CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
     const CrewMemberInput(id: '2', name: 'Co-Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
-    const CrewMemberInput(id: '3', name: 'Gast 1', isAdult: true, isVegetarian: false, noAlcohol: false),
-    const CrewMemberInput(id: '4', name: 'Gast 2', isAdult: true, isVegetarian: true, noAlcohol: false),
-    const CrewMemberInput(id: '5', name: 'Gast 3', isAdult: true, isVegetarian: false, noAlcohol: true),
+    const CrewMemberInput(id: '3', name: 'Guest 1', isAdult: true, isVegetarian: false, noAlcohol: false),
+    const CrewMemberInput(id: '4', name: 'Guest 2', isAdult: true, isVegetarian: true, noAlcohol: false),
+    const CrewMemberInput(id: '5', name: 'Guest 3', isAdult: true, isVegetarian: false, noAlcohol: true),
   ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initializedDefaults) {
+      _initializedDefaults = true;
+      final l10n = AppLocalizations.of(context);
+      if (l10n != null) {
+        if (_nameController.text.isEmpty) {
+          _nameController.text = l10n.defaultTripName;
+        }
+        _crewMembers[2] = CrewMemberInput(id: '3', name: l10n.guestMember(1), isAdult: true, isVegetarian: false, noAlcohol: false);
+        _crewMembers[3] = CrewMemberInput(id: '4', name: l10n.guestMember(2), isAdult: true, isVegetarian: true, noAlcohol: false);
+        _crewMembers[4] = CrewMemberInput(id: '5', name: l10n.guestMember(3), isAdult: true, isVegetarian: false, noAlcohol: true);
+      }
+    }
+  }
 
   // Sektion 3: Essen an Bord
   CrewAppetite _crewAppetite = CrewAppetite.normal;
@@ -255,6 +273,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
+                  key: const Key('wizard_submit_trip_button'),
                   onPressed: _isSaving ? null : _submitTrip,
                   icon: _isSaving
                       ? const SizedBox(
@@ -284,7 +303,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          title: Text('1. Törn', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text('1. ${l10n.wizardStepTrip}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             TextField(
@@ -319,7 +338,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
               decoration: InputDecoration(
                 labelText: l10n.daysCount,
                 border: const OutlineInputBorder(),
-                helperText: 'Törnlänge zwischen 1 und 180 Tagen',
+                helperText: l10n.tripDurationHelper,
               ),
               onChanged: (val) {
                 final parsed = int.tryParse(val.trim());
@@ -425,7 +444,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          title: Text('2. Crew (${_crewMembers.length})', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text('2. ${l10n.wizardStepCrew} (${_crewMembers.length})', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             ..._crewMembers.asMap().entries.map((entry) {
@@ -526,7 +545,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          title: Text('3. Essen an Bord', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text('3. ${l10n.wizardStepFood}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             // Appetit
@@ -562,9 +581,9 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
             Text(l10n.eatOutQuestion, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: false, label: Text('Nein')),
-                ButtonSegment(value: true, label: Text('Ja')),
+              segments: [
+                ButtonSegment(value: false, label: Text(l10n.no)),
+                ButtonSegment(value: true, label: Text(l10n.yes)),
               ],
               selected: {_eatOut},
               onSelectionChanged: (val) => setState(() => _eatOut = val.first),
@@ -586,7 +605,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${l10n.dinnerInRestaurant}: $_restaurantDinners von $_daysCount',
+                          '${l10n.dinnerInRestaurant}: ${l10n.countOfDays(_restaurantDinners, _daysCount)}',
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -628,7 +647,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${l10n.lunchInRestaurant}: $_restaurantLunches von $_daysCount',
+                          '${l10n.lunchInRestaurant}: ${l10n.countOfDays(_restaurantLunches, _daysCount)}',
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
