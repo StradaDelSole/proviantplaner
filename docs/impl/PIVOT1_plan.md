@@ -1,7 +1,7 @@
 # PIVOT1 – Assisted List Core – Implementierungsplan
 
 Stand: 05.10.2026  
-Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.1.md`  
+Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.2.md`  
 Status: **OWNER-ACCEPTED PRODUKTRICHTUNG / IMPLEMENTIERUNG GESTOPPT bis FIX-A owner-accepted und laufende UX-Detailrunde freigegeben ist**
 
 ## Ziel
@@ -17,7 +17,7 @@ Den Kernflow der Vorratsliste von automatisch berechneter Vollversorgung auf ski
    - was wird durch den Pivot superseded,
    - welche bestehende Logik bleibt nützlich.
 4. Keine offenen lokalen Änderungen überschreiben.
-5. `docs/design/PROVY_UX_DIRECTION_v0.1.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien reconciliieren.
+5. `docs/design/PROVY_UX_DIRECTION_v0.2.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien reconciliieren.
 6. PIVOT1 nur starten, wenn README es nach FIX-A-Abnahme ausdrücklich wieder freigibt.
 
 ## Scope
@@ -66,6 +66,7 @@ Noch keine komplexe Review-Engine bauen; PIVOT1 muss nur verhindern, dass alle P
 - MHD-/Kühlmetadaten
 - Offline-Funktion
 - Backup-Kompatibilität
+- stabile `ListItem`-/`ShoppingStop`-/Allocation-Referenzen so erhalten/gestalten, dass spätere GUEST1-Share-Pakete darauf sicher referenzieren können; GUEST1 selbst wird in PIVOT1 noch nicht implementiert
 
 ### 6. Keine Menüplanung
 
@@ -122,6 +123,7 @@ Mindestens:
 - B3/B4/B5
 - Store-Publikation
 - neue Backend-Funktionen
+- GUEST1 Guest-Shopping-Backend/QR/Offline-Sharing (nur Datenmodell-Kompatibilität vorbereiten)
 - Preise/Vendor/Barcode/AI
 
 ## Abschluss
