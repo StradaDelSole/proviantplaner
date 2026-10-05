@@ -133,6 +133,11 @@ void main() {
       await tester.pumpWidget(buildTestableWidget(ShoppingListScreen(tripId: testTripId)));
       await tester.pumpAndSettle();
 
+      // PIVOT1 Decision 16: Vorratsliste startet standardmäßig nach Abteilung;
+      // für den Kategorie-Akkordeon-Test auf Kategorie umschalten:
+      await tester.tap(find.byIcon(Icons.category_outlined));
+      await tester.pumpAndSettle();
+
       // Es gibt Produktgruppen wie "Brot und Backwaren"
       final brotFinder = find.textContaining('Brot');
       expect(brotFinder, findsWidgets);

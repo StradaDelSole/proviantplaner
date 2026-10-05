@@ -109,6 +109,14 @@
   "demand": "Demand",
   "reserve": "Reserve",
   "holdsOneDay": "shelf life 1 day",
+  "holdsDays": "keeps {count} days",
+  "@holdsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cooled": "cooled",
   "overridden": "overridden",
   "resetOverride": "reset",
@@ -925,5 +933,42 @@
   "contactPhone": "Contact phone",
   "deliveryNotesLabel": "Delivery notes (e.g. access, cooling)",
   "packageCountLabel": "Number of packages",
-  "packSizeTitle": "Package size {name}"
+  "packSizeTitle": "Package size {name}",
+  "addToList": "Add to list",
+  "removeFromList": "Remove from list",
+  "packageSize": "Package size",
+  "customPackageSize": "Custom size...",
+  "totalQuantity": "Total quantity",
+  "provyGuideline": "Provy guideline",
+  "provyGuidelineNotice": "Provy guideline: {amount} {unit}",
+  "@provyGuidelineNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAddedNotice": "{item} added to list",
+  "@itemAddedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedNotice": "{item} removed from list",
+  "@itemRemovedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyListTitle": "Your provisioning list is empty",
+  "emptyListSubtitle": "Search for items or add custom items to build your list.",
+  "searchProducts": "Search products...",
+  "onListStatus": "On list"
 }

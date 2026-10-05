@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/tables.dart';
+import 'assist_type.dart';
 import 'catalog_models.dart';
 
 /// Deckungsstatus einer Bedarfsgruppe in der Planungsansicht.
@@ -108,6 +109,12 @@ class ShoppingListItemView {
 
   /// Gibt an, ob dieser Artikel auf der Einkaufsliste steht (übernommen mit Menge > 0 oder eigene Position).
   bool get isOnList => isCustom || (isAdopted && effectivePackages > 0);
+
+  /// Assistenzklasse gemäß PIVOT1 (needsBased, guided, preferenceBased).
+  AssistType get assistType => AssistClassifier.classifyVariant(
+        variantId: id,
+        groupId: variant?.group ?? categoryId,
+      );
 
   /// Effektive Packungsanzahl (überschrieben oder berechnet, wenn übernommen).
   int get effectivePackages {

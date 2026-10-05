@@ -85,6 +85,14 @@
   "demand": "Besoin",
   "reserve": "Réserve",
   "holdsOneDay": "tient 1 jour",
+  "holdsDays": "se conserve {count} jours",
+  "@holdsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cooled": "au frais",
   "overridden": "personnalisé",
   "resetOverride": "réinitialiser",
@@ -925,5 +933,42 @@
   "contactPhone": "Téléphone de contact",
   "deliveryNotesLabel": "Instructions de livraison (ex. accès, frigo)",
   "packageCountLabel": "Nombre de paquets",
-  "packSizeTitle": "Taille du paquet {name}"
+  "packSizeTitle": "Taille du paquet {name}",
+  "addToList": "Ajouter à la liste",
+  "removeFromList": "Retirer de la liste",
+  "packageSize": "Taille du paquet",
+  "customPackageSize": "Autre taille...",
+  "totalQuantity": "Quantité totale",
+  "provyGuideline": "Repère Provy",
+  "provyGuidelineNotice": "Repère Provy: {amount} {unit}",
+  "@provyGuidelineNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAddedNotice": "{item} ajouté à la liste",
+  "@itemAddedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedNotice": "{item} retiré de la liste",
+  "@itemRemovedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyListTitle": "Votre liste de provisions est vide",
+  "emptyListSubtitle": "Recherchez des articles ou ajoutez des éléments personnalisés pour constituer votre liste.",
+  "searchProducts": "Rechercher des produits...",
+  "onListStatus": "Sur la liste"
 }

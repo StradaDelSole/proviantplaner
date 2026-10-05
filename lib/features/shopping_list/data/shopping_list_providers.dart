@@ -32,8 +32,9 @@ final shoppingListServiceProvider = Provider<ShoppingListService>((ref) {
 });
 
 /// Aktiver Sortiermodus ("Nach Kategorie" oder "Nach Abteilung").
+/// PIVOT1 / Decision 16: Vorratsliste standardmäßig nach Supermarkt-Abteilung.
 final shoppingListSortModeProvider = StateProvider<ShoppingListSortMode>((ref) {
-  return ShoppingListSortMode.category;
+  return ShoppingListSortMode.department;
 });
 
 /// Rückwärtskompatibler Alias

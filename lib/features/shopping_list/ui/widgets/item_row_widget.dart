@@ -9,6 +9,7 @@ import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'add_or_edit_item_sheet.dart';
 
 class ShoppingListItemRow extends ConsumerStatefulWidget {
   final TripShoppingListData data;
@@ -175,69 +176,85 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Text-Spalte (Name, Vorschlag / Bedarf, Badges)
+                // Text-Spalte (Name, Vorschlag / Bedarf, Badges) - Tap öffnet AddOrEditItemSheet
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.localizedName(context),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (item.storageNotice != null || (widget.data.trip.fridgeCapacity <= 0 && item.isCooled)) ...[
-                        const SizedBox(height: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: (item.storageNotice?.contains('einfrieren') == true)
-                                ? theme.colorScheme.primaryContainer
-                                : theme.colorScheme.errorContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            item.storageNotice ?? l10n.needsCooling,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: (item.storageNotice?.contains('einfrieren') == true)
-                                  ? theme.colorScheme.onPrimaryContainer
-                                  : theme.colorScheme.onErrorContainer,
-                              fontWeight: FontWeight.bold,
+                  child: InkWell(
+                    key: ValueKey('item_tap_${item.item.id}'),
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      AddOrEditItemSheet.show(
+                        context,
+                        data: widget.data,
+                        item: item,
+                        isAdding: !isOnList,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            item.localizedName(context),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 2),
-                      if (!isOnList) ...[
-                        Text(
-                          item.suggestionDisplayLocalized(l10n),
-                          style: theme.proviantTypography.numberSmall.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ] else ...[
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 2,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
+                          if (item.storageNotice != null || (widget.data.trip.fridgeCapacity <= 0 && item.isCooled)) ...[
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: (item.storageNotice?.contains('einfrieren') == true)
+                                    ? theme.colorScheme.primaryContainer
+                                    : theme.colorScheme.errorContainer,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                item.storageNotice ?? l10n.needsCooling,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: (item.storageNotice?.contains('einfrieren') == true)
+                                      ? theme.colorScheme.onPrimaryContainer
+                                      : theme.colorScheme.onErrorContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 2),
+                          if (!isOnList) ...[
                             Text(
-                              item.demandDisplayLocalized(l10n),
+                              item.suggestionDisplayLocalized(l10n),
                               style: theme.proviantTypography.numberSmall.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            Text(
-                              '(${item.shortSuggestionDisplayLocalized(l10n)})',
-                              style: theme.proviantTypography.numberSmall.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
+                          ] else ...[
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  item.demandDisplayLocalized(l10n),
+                                  style: theme.proviantTypography.numberSmall.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                if (item.calculatedPackages > 0 && !item.assistType.isPreferenceBased)
+                                  Text(
+                                    '(${item.shortSuggestionDisplayLocalized(l10n)})',
+                                    style: theme.proviantTypography.numberSmall.copyWith(
+                                      color: theme.colorScheme.outline,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

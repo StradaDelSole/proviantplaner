@@ -3,6 +3,7 @@
 /// stattdessen Resthinweis `remainderNotice`, wenn Frisches abgerundet wurde.
 library;
 
+import '../models/assist_type.dart';
 import '../models/catalog_models.dart';
 
 /// Gesamtgewicht und -volumen einer Proviantliste gemäß FEEDBACK_R2 v0.3 Punkt 6.
@@ -47,6 +48,11 @@ class VariantCalculationResult {
   final String? storageNotice;
   final List<String> storage;
   final List<String> tags;
+  final AssistType? assistType;
+
+  AssistType get effectiveAssistType =>
+      assistType ??
+      AssistClassifier.classifyVariant(variantId: variantId, groupId: groupId);
 
   const VariantCalculationResult({
     required this.variantId,
@@ -70,6 +76,7 @@ class VariantCalculationResult {
     this.storageNotice,
     required this.storage,
     required this.tags,
+    this.assistType,
   });
 }
 

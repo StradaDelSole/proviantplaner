@@ -4,11 +4,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/services/catalog_localization_service.dart';
-import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'add_or_edit_item_sheet.dart';
 import 'custom_item_sheet.dart';
-import 'group_detail_sheet.dart';
 
 class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
   final TripShoppingListData data;
@@ -49,6 +48,21 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
     return _buildSearchResults(context);
   }
 
+  /// Filtert Positionen für einen Suchbegriff (ohne oder mit BuildContext für Lokalisierung).
+  List<ShoppingListItemView> filterItems(String query, [BuildContext? context]) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    return data.allItems.where((it) {
+      final locName = context != null ? it.localizedName(context).toLowerCase() : it.name.toLowerCase();
+      final nameMatches = it.name.toLowerCase().contains(q) || locName.contains(q);
+      final deptMatches = it.department.rawValue.toLowerCase().contains(q) ||
+          (context != null ? it.department.localizedName(context).toLowerCase().contains(q) : false);
+      final catMatches = it.categoryId.toLowerCase().contains(q);
+      final tagMatches = it.variant?.tags.any((t) => t.toLowerCase().contains(q)) ?? false;
+      return nameMatches || deptMatches || catMatches || tagMatches;
+    }).toList();
+  }
+
   Widget _buildSearchResults(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -83,14 +97,7 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
       );
     }
 
-    final matches = data.allItems.where((it) {
-      final locName = it.localizedName(context).toLowerCase();
-      final nameMatches = it.name.toLowerCase().contains(q) || locName.contains(q);
-      final deptMatches = it.department.rawValue.toLowerCase().contains(q) ||
-          it.department.localizedName(context).toLowerCase().contains(q);
-      final catMatches = it.categoryId.toLowerCase().contains(q);
-      return nameMatches || deptMatches || catMatches;
-    }).toList();
+    final matches = filterItems(query, context);
 
     if (matches.isEmpty) {
       return Center(
@@ -149,39 +156,35 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
           );
         }
         final it = matches[i];
+        final sizeFormatted = (it.effectivePackSize % 1 == 0)
+            ? it.effectivePackSize.toInt().toString()
+            : it.effectivePackSize.toStringAsFixed(1);
+        final packUnit = it.variant?.pack.unit ?? it.unit;
+
         return ListTile(
-          title: Text(it.localizedName(context), style: theme.textTheme.bodyLarge),
-          subtitle: Text(it.demandDisplay, style: theme.textTheme.bodySmall),
-          trailing: Text(
-            it.packDisplay,
-            style: theme.proviantTypography.numberSmall.copyWith(
-              fontWeight: FontWeight.bold,
+          title: Text(it.localizedName(context), style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500)),
+          subtitle: Text(
+            it.isOnList
+                ? '${it.department.localizedName(context)} · ${l10n.onListStatus}: ${it.packDisplay}'
+                : '${it.department.localizedName(context)} · $sizeFormatted $packUnit',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: it.isOnList ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          trailing: it.isOnList
+              ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 22)
+              : Icon(Icons.add_circle_outline, color: theme.colorScheme.primary, size: 22),
           onTap: () {
             close(context, it);
-            _openDetail(context, it);
+            AddOrEditItemSheet.show(
+              context,
+              data: data,
+              item: it,
+              isAdding: !it.isOnList,
+            );
           },
         );
       },
     );
-  }
-
-  void _openDetail(BuildContext context, ShoppingListItemView it) {
-    if (it.variant == null) return;
-    for (final cat in data.categories) {
-      for (final grp in cat.groups) {
-        if (grp.group.id == it.variant!.group) {
-          GroupDetailSheet.show(
-            context,
-            tripId: data.trip.id,
-            groupView: grp,
-            stops: data.stops,
-            isCharter: data.trip.isCharter,
-          );
-          return;
-        }
-      }
-    }
   }
 }

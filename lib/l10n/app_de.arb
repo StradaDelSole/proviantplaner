@@ -109,6 +109,14 @@
   "demand": "Bedarf",
   "reserve": "Reserve",
   "holdsOneDay": "hält 1 Tag",
+  "holdsDays": "hält {count} Tage",
+  "@holdsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cooled": "gekühlt",
   "overridden": "überschrieben",
   "resetOverride": "zurücksetzen",
@@ -1111,5 +1119,42 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addToList": "Auf die Liste",
+  "removeFromList": "Von Liste entfernen",
+  "packageSize": "Packungsgröße",
+  "customPackageSize": "Andere Größe...",
+  "totalQuantity": "Gesamtmenge",
+  "provyGuideline": "Provy-Richtwert",
+  "provyGuidelineNotice": "Provy-Richtwert: {amount} {unit}",
+  "@provyGuidelineNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAddedNotice": "{item} zur Liste hinzugefügt",
+  "@itemAddedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedNotice": "{item} von der Liste entfernt",
+  "@itemRemovedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyListTitle": "Deine Vorratsliste ist noch leer",
+  "emptyListSubtitle": "Suche nach Artikeln oder lege eigene Positionen an, um deine Liste aufzubauen.",
+  "searchProducts": "Produkte suchen...",
+  "onListStatus": "Auf der Liste"
 }

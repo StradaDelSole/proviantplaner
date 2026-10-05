@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-06 – Slice PIVOT1: Assisted List Core (Issue #10)
+
+- **Search-First Empty State:**
+  - Neue Törns starten mit 0 übernommenen Positionen auf der Vorratsliste (`EmptyShoppingListView`).
+  - Prominente, direkte Suche (`CatalogSearchDelegate`) und manuelle Erfassung eigener Positionen (`CustomItemSheet`) direkt aus dem Empty State erreichbar.
+  - Veralteter Button „Alle Vorschläge übernehmen“ vollständig aus der UI entfernt.
+- **Flacher Erfassungsflow (Decision 12–15, Wireframes v0.2):**
+  - Schnelle Teilstring-Suche (z. B. `kä`, `pesto`, `tofu`, `wasser`) listet sofort konkrete Varianten.
+  - Neues modales Bottom Sheet `AddOrEditItemSheet`: Variante → Packungsgrößen als horizontale Chips → Stepper (− / Zahl / +) mit Pickwheel/Direkteingabe → Hinzufügen / Speichern / Entfernen.
+  - Taktiles haptisches Feedback bei Mengenänderung (`HapticFeedback.selectionClick()`).
+  - Zeilen-Tap auf bestehende Vorratspositionen öffnet dasselbe Bottom Sheet zum Bearbeiten oder Entfernen.
+- **Klassifikation & Preference-Based Entkopplung:**
+  - Neues Domain-Modell `AssistType` (`needsBased`, `guided`, `preferenceBased`) und `AssistClassifier`.
+  - Preference-basierte Genuss- und Spezialartikel (Pesto, Tofu, Snacks, Süßigkeiten, spezielle Saucen) berechnen standardmäßig `calculatedNeedAmount = 0.0` und `calculatedPackages = 0`. Keine ungefragten 14-Gläser-Pesto-Vorschläge mehr.
+  - Needs-based Artikel (Trinkwasser) berechnen einen objektiven Richtwert als Orientierungshilfe; der Nutzer bestimmt Gebinde und Menge.
+  - Guided-Artikel (Grundnahrungsmittel) liefern Plausibilitäts-Richtwerte ohne Zwangsübernahme.
+- **Standard-Sortierung & Einkaufsmodus:**
+  - Vorratsliste standardmäßig nach Supermarkt-Abteilung (Decision 16); Umschaltung nach Kategorie bleibt erhalten.
+  - Einkaufsmodus filtert strikt nach tatsächlich übernommenen Positionen (`isOnList = true`) des jeweiligen Stopps.
+- **Lokalisierung:**
+  - Alle neuen Keys in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) gepflegt; strikte UX-C-Konformität (kein "kitty").
+- **Qualitätsprüfung:**
+  - `flutter analyze`: 0 Fehler, 0 Warnungen, 0 Lints.
+  - `flutter test`: 255/255 Tests bestanden (100% grün, inkl. 9 dedizierter PIVOT1-Akzeptanztests).
+
 ## 2026-10-05 – FIX-A Owner Acceptance
 
 - FIX-A ausdrücklich vom Product Owner abgenommen.

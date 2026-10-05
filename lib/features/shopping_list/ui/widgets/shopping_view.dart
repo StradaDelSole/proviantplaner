@@ -8,6 +8,7 @@ import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'empty_shopping_list_view.dart';
 import 'item_row_widget.dart';
 
 class ShoppingView extends ConsumerWidget {
@@ -26,6 +27,11 @@ class ShoppingView extends ConsumerWidget {
     final theme = Theme.of(context);
     final departments = data.departments;
 
+    final totalOnList = data.allItems.where((it) => it.isOnList).length;
+    if (totalOnList == 0) {
+      return EmptyShoppingListView(data: data);
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 32),
       itemCount: departments.length,
@@ -41,7 +47,7 @@ class ShoppingView extends ConsumerWidget {
 
   List<ShoppingListItemView> _filterItems(List<ShoppingListItemView> items) {
     if (selectedStopId == null) {
-      return items;
+      return items.where((it) => it.isOnList).toList();
     }
 
     final isFirstStop = data.stops.firstOrNull?.id == selectedStopId;

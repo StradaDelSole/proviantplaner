@@ -10,6 +10,7 @@
 /// - Modularisierte Funktionen (≤ 40 Zeilen) und Eingabeobjekt
 library;
 
+import '../models/assist_type.dart';
 import '../models/catalog_models.dart';
 import '../models/quantities_models.dart';
 import 'calculation_result.dart';
@@ -618,7 +619,8 @@ class QuantityEngine {
       final state = input.userItemStates[v.id];
       final isSel = (state?.isSelected ?? v.defaultSelected) &&
           !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
-      if (isSel) selectedVariants.add(v);
+      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
+      if (isSel && !isPref) selectedVariants.add(v);
     }
 
     final shelfLifeMap = {
@@ -655,8 +657,9 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
+      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
 
-      if (!isSel) {
+      if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
           variant: v,
           share: share,
@@ -664,6 +667,7 @@ class QuantityEngine {
           overriddenPackages: state?.overriddenPackages,
           effectiveShelfLife: effShelfLife,
           storageNotice: storageNotice,
+          isSelected: isSel,
         ));
         continue;
       }
@@ -712,8 +716,9 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
+      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
 
-      if (!isSel) {
+      if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
           variant: v,
           share: share,
@@ -721,6 +726,7 @@ class QuantityEngine {
           overriddenPackages: state?.overriddenPackages,
           effectiveShelfLife: effShelfLife,
           storageNotice: storageNotice,
+          isSelected: isSel,
         ));
         continue;
       }
@@ -778,17 +784,18 @@ class QuantityEngine {
     required int? overriddenPackages,
     required int effectiveShelfLife,
     required String? storageNotice,
+    bool isSelected = false,
   }) {
     return _VariantComputation(
       variant: variant,
-      isSelected: false,
+      isSelected: isSelected,
       share: share,
       allocatedNeed: 0.0,
       packSize: packSize,
       packUnit: variant.pack.unit,
       needInPackUnit: 0.0,
       packSizeInCommonUnit: 1.0,
-      packages: 0,
+      packages: overriddenPackages ?? 0,
       overriddenPackages: overriddenPackages,
       effectiveShelfLife: effectiveShelfLife,
       storageNotice: storageNotice,
@@ -807,6 +814,27 @@ class QuantityEngine {
     required String? storageNotice,
     String? shelfRemainderNotice,
   }) {
+    final assistType = AssistClassifier.classifyVariant(
+      variantId: variant.id,
+      groupId: group.id,
+    );
+    if (assistType.isPreferenceBased) {
+      return _VariantComputation(
+        variant: variant,
+        isSelected: true,
+        share: share,
+        allocatedNeed: 0.0,
+        packSize: packSize,
+        packUnit: variant.pack.unit,
+        needInPackUnit: 0.0,
+        packSizeInCommonUnit: 1.0,
+        packages: state?.overriddenPackages ?? 0,
+        overriddenPackages: state?.overriddenPackages,
+        remainderNotice: null,
+        storageNotice: storageNotice,
+        effectiveShelfLife: effectiveShelfLife,
+      );
+    }
     final needUnit = variant.need?.unit ?? group.need?.unit ?? variant.pack.unit;
     double effectiveNeed = allocatedNeed;
 
@@ -931,11 +959,16 @@ class QuantityEngine {
     required String groupUnit,
     required List<_VariantComputation> variants,
   }) {
-    if (variants.isEmpty) return;
-    final targetNeed = variants.fold(0.0, (sum, v) => sum + v.allocatedNeed);
+    final activeVariants = variants
+        .where((v) => !AssistClassifier.classifyVariant(
+                variantId: v.variant.id, groupId: v.variant.group)
+            .isPreferenceBased)
+        .toList();
+    if (activeVariants.isEmpty) return;
+    final targetNeed = activeVariants.fold(0.0, (sum, v) => sum + v.allocatedNeed);
     if (targetNeed <= epsilon) return;
 
-    double sumProvided = variants.fold(0.0, (sum, v) {
+    double sumProvided = activeVariants.fold(0.0, (sum, v) {
       final effPacks = v.overriddenPackages ?? v.packages;
       return sum + (effPacks * v.packSizeInCommonUnit);
     });
@@ -943,7 +976,7 @@ class QuantityEngine {
     // 1. Deckung sicherstellen: bei Unterdeckung Packung bei Variante mit geringstem Packmaß ergänzen
     while (sumProvided + epsilon < targetNeed) {
       _VariantComputation? bestCandidate;
-      for (final v in variants) {
+      for (final v in activeVariants) {
         if (v.overriddenPackages != null) continue;
         if (bestCandidate == null || v.packSizeInCommonUnit < bestCandidate.packSizeInCommonUnit) {
           bestCandidate = v;
@@ -959,7 +992,7 @@ class QuantityEngine {
     while (changed) {
       changed = false;
       _VariantComputation? bestCandidate;
-      for (final v in variants) {
+      for (final v in activeVariants) {
         if (v.overriddenPackages != null || v.packages <= 0) continue;
         if (sumProvided - v.packSizeInCommonUnit + epsilon >= targetNeed) {
           if (bestCandidate == null || v.packSizeInCommonUnit > bestCandidate.packSizeInCommonUnit) {
@@ -978,6 +1011,7 @@ class QuantityEngine {
   VariantCalculationResult _buildVariantResult(_VariantComputation c) {
     final v = c.variant;
     final effPacks = c.overriddenPackages ?? c.packages;
+    final assistType = AssistClassifier.classifyVariant(variantId: v.id, groupId: v.group);
 
     return VariantCalculationResult(
       variantId: v.id,
@@ -1001,6 +1035,7 @@ class QuantityEngine {
       storageNotice: c.storageNotice,
       storage: v.storage,
       tags: v.tags,
+      assistType: assistType,
     );
   }
 

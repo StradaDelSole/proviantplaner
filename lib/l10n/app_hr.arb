@@ -85,6 +85,14 @@
   "demand": "Potreba",
   "reserve": "Pričuva",
   "holdsOneDay": "traje 1 dan",
+  "holdsDays": "traje {count} dana",
+  "@holdsDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cooled": "u hladnjaku",
   "overridden": "ručno promijenjeno",
   "resetOverride": "poništi",
@@ -925,5 +933,42 @@
   "contactPhone": "Telefon kontakt osobe",
   "deliveryNotesLabel": "Napomene za dostavu (npr. pristup, hlađenje)",
   "packageCountLabel": "Broj pakiranja",
-  "packSizeTitle": "Veličina pakiranja {name}"
+  "packSizeTitle": "Veličina pakiranja {name}",
+  "addToList": "Dodaj na popis",
+  "removeFromList": "Ukloni s popisa",
+  "packageSize": "Veličina pakiranja",
+  "customPackageSize": "Druga veličina...",
+  "totalQuantity": "Ukupna količina",
+  "provyGuideline": "Provy smjernica",
+  "provyGuidelineNotice": "Provy smjernica: {amount} {unit}",
+  "@provyGuidelineNotice": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemAddedNotice": "{item} dodano na popis",
+  "@itemAddedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "itemRemovedNotice": "{item} uklonjeno s popisa",
+  "@itemRemovedNotice": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyListTitle": "Vaš popis zaliha je prazan",
+  "emptyListSubtitle": "Pretražite stavke ili dodajte prilagođene stavke kako biste izgradili svoj popis.",
+  "searchProducts": "Pretraži proizvode...",
+  "onListStatus": "Na popisu"
 }

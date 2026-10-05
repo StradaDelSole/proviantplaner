@@ -1,0 +1,464 @@
+/// PIVOT1: Assisted List Core – Abnahmetests (Issue #10)
+///
+/// Verbindliche Prinzipien aus `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
+/// und `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`:
+/// 1. Der Skipper baut die Liste. Provy macht sie vollständig, realistisch und bordtauglich.
+/// 2. Ein neuer Törn beginnt mit leerer / such-orientierter Liste (0 übernommene Positionen).
+/// 3. Search-First: Prominente Produktsuche + "+ Eigene Position".
+/// 4. Suche findet Varianten über Teilstring (z. B. "kä", "pesto", "tofu", "wasser").
+/// 5. Kompaktes Bottom Sheet: Variante → Packungsgröße (Chips) → Anzahl (−/Zahl/+) → Auf die Liste.
+/// 6. Zeilen-Tap öffnet Edit-Sheet mit gleicher Logik + Entfernen-Möglichkeit.
+/// 7. Assistenzklassen:
+///    - Needs-based: Richtwert berechnet und angezeigt (z. B. Trinkwasser).
+///    - Guided: Richtwert als Orientierung (z. B. Brot, Butter, Nudeln).
+///    - Preference-based: KEINE automatische Crew×Tage-Mengenberechnung (z. B. Pesto, Tofu).
+/// 8. Mengen-Stabilität: Manuell gewählte / übernommene Mengen werden bei Crew- oder Dauer-Änderungen nicht überschrieben.
+/// 9. Einkaufsmodus-Isolation: Nur tatsächlich übernommene Positionen (oder eigene) erscheinen im Einkaufsmodus.
+library;
+
+import 'dart:io';
+import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/core/theme/app_theme.dart';
+import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/add_or_edit_item_sheet.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/catalog_search_delegate.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/empty_shopping_list_view.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/data/trip_service.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late AppDatabase db;
+  late CatalogRepository catalogRepo;
+  late TripService tripService;
+  late ShoppingListService shoppingListService;
+  late int defaultTripId;
+
+  setUp(() async {
+    db = AppDatabase(NativeDatabase.memory());
+    catalogRepo = CatalogRepository();
+
+    final catFile = File('data/catalog_v0.10.json');
+    final quantFile = File('data/quantities_v0.6.json');
+    catalogRepo.loadFromJsonStrings(
+      catalogJson: catFile.readAsStringSync(),
+      quantitiesJson: quantFile.readAsStringSync(),
+    );
+
+    tripService = TripService(
+      tripDao: db.tripDao,
+      listItemDao: db.listItemDao,
+      catalogRepository: catalogRepo,
+    );
+
+    shoppingListService = ShoppingListService(
+      tripDao: db.tripDao,
+      listItemDao: db.listItemDao,
+      catalogRepository: catalogRepo,
+      tripService: tripService,
+    );
+
+    defaultTripId = await tripService.createTripWithCrew(
+      name: 'Kornaten Törn PIVOT1',
+      startDate: DateTime(2026, 9, 1),
+      daysCount: 7,
+      isCharter: true,
+      boatType: 'monohull',
+      region: 'mediterranean',
+      fridgeCapacityLiters: 90.0,
+      crewAppetite: CrewAppetite.normal,
+      crewReserve: false,
+      crewDrinking: CrewDrinking.normal,
+      crewMembers: [
+        const CrewMemberInput(id: '1', name: 'Skipper Markus', isAdult: true, isVegetarian: false, noAlcohol: false),
+        const CrewMemberInput(id: '2', name: 'Laura', isAdult: true, isVegetarian: false, noAlcohol: false),
+        const CrewMemberInput(id: '3', name: 'Felix', isAdult: true, isVegetarian: true, noAlcohol: false),
+      ],
+    );
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
+  Widget buildAppWithOverrides({required Widget home, Locale locale = const Locale('de')}) {
+    return ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        catalogRepositoryProvider.overrideWithValue(catalogRepo),
+        tripServiceProvider.overrideWithValue(tripService),
+        shoppingListServiceProvider.overrideWithValue(shoppingListService),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.lightTheme,
+        locale: locale,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: home,
+      ),
+    );
+  }
+
+  group('PIVOT1: Assisted List Core Abnahmetests', () {
+    testWidgets('1. Neuer Törn ist leer (Search-First): 0 übernommene Posten & Leerstadium angezeigt', (tester) async {
+      // 1. Prüfe Datenzustand: Keine Position ist übernommen
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final adoptedItems = data.allItems.where((i) => i.isAdopted).toList();
+      final onListItems = data.allItems.where((i) => i.isOnList).toList();
+
+      expect(adoptedItems, isEmpty, reason: 'Neuer Törn darf keine übernommenen Positionen haben');
+      expect(onListItems, isEmpty, reason: 'isOnList muss initial false sein');
+
+      // 2. Prüfe UI-Darstellung: ShoppingListScreen rendert standardmäßig nach Abteilung
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(buildAppWithOverrides(home: ShoppingListScreen(tripId: defaultTripId)));
+      await tester.pumpAndSettle();
+
+      // EmptyShoppingListView muss sichtbar sein
+      expect(find.byType(EmptyShoppingListView), findsOneWidget);
+      expect(find.textContaining('Vorratsliste ist noch leer'), findsOneWidget);
+      expect(find.textContaining('Suche nach Artikeln'), findsOneWidget);
+      expect(find.textContaining('Produkte suchen'), findsOneWidget);
+      expect(find.textContaining('Eigene Position'), findsOneWidget);
+
+      // 3. Umschalten auf Kategorie-Sicht
+      await tester.tap(find.byIcon(Icons.category_outlined));
+      await tester.pumpAndSettle();
+
+      // Auch in Kategorie-Sicht ist der Search-First Banner sichtbar
+      expect(find.textContaining('Vorratsliste ist noch leer'), findsOneWidget);
+    });
+
+    test('2. Katalogsuche mit Teilstrings findet Varianten (kä, pesto, tofu, wasser)', () async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final delegate = CatalogSearchDelegate(data: data);
+
+      // Teilstring "kä" -> findet Käse (z. B. kaese_hart, kaese_schnitt)
+      final cheeseResults = delegate.filterItems('kä');
+      expect(cheeseResults, isNotEmpty);
+      expect(cheeseResults.any((i) => i.id.contains('kaese') || i.name.toLowerCase().contains('käse')), isTrue);
+
+      // Teilstring "pesto" -> findet Pesto
+      final pestoResults = delegate.filterItems('pesto');
+      expect(pestoResults, isNotEmpty);
+      expect(pestoResults.any((i) => i.id.contains('pesto')), isTrue);
+
+      // Teilstring "tofu" -> findet Tofu
+      final tofuResults = delegate.filterItems('tofu');
+      expect(tofuResults, isNotEmpty);
+      expect(tofuResults.any((i) => i.id.contains('tofu')), isTrue);
+
+      // Teilstring "wasser" -> findet Trinkwasser
+      final waterResults = delegate.filterItems('wasser');
+      expect(waterResults, isNotEmpty);
+      expect(waterResults.any((i) => i.id.contains('water') || i.name.toLowerCase().contains('wasser')), isTrue);
+    });
+
+    testWidgets('3. Variante -> Packungsgröße Chips -> Stepper -> Auf die Liste', (tester) async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final spaghettiItem = data.allItems.firstWhere((i) => i.id == 'spaghetti');
+
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: Scaffold(
+          body: AddOrEditItemSheet(
+            data: data,
+            item: spaghettiItem,
+            isAdding: true,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Prüfe Header mit Variantenname und Abteilungsbadge
+      expect(find.text(spaghettiItem.name), findsOneWidget);
+      expect(find.text('Trockenware'), findsOneWidget);
+
+      // Packungsgrößen-Chips sichtbar
+      expect(find.byType(ChoiceChip), findsWidgets);
+
+      // Stepper: Erhöhe auf 3 Packungen
+      final plusButton = find.widgetWithIcon(IconButton, Icons.add);
+      expect(plusButton, findsOneWidget);
+      await tester.tap(plusButton);
+      await tester.pumpAndSettle();
+      await tester.tap(plusButton);
+      await tester.pumpAndSettle();
+
+      // CTA "Auf die Liste" tippen
+      final addButton = find.byKey(const ValueKey('sheet_primary_action_btn'));
+      expect(addButton, findsOneWidget);
+      await tester.ensureVisible(addButton);
+      await tester.pumpAndSettle();
+      await tester.tap(addButton);
+      await tester.pumpAndSettle();
+
+      // Überprüfe Persistenz in DB
+      final updatedData = await shoppingListService.loadShoppingList(defaultTripId);
+      final adoptedSpaghetti = updatedData.allItems.firstWhere((i) => i.id == 'spaghetti');
+      expect(adoptedSpaghetti.isAdopted, isTrue);
+      expect(adoptedSpaghetti.isOnList, isTrue);
+      expect(adoptedSpaghetti.effectivePackages, greaterThanOrEqualTo(2));
+    });
+
+    testWidgets('4. Zeilen-Tap öffnet Edit-Sheet -> Menge ändern und Speichern oder Entfernen', (tester) async {
+      // Vorbereitung: 1 Posten auf der Liste
+      final initialData = await shoppingListService.loadShoppingList(defaultTripId);
+      final butterItem = initialData.allItems.firstWhere((i) => i.id == 'butter_std');
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: butterItem.item.id, packages: 2);
+
+      final dataWithItem = await shoppingListService.loadShoppingList(defaultTripId);
+      final adoptedButter = dataWithItem.allItems.firstWhere((i) => i.id == 'butter_std');
+      expect(adoptedButter.isOnList, isTrue);
+
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // Öffne Edit-Sheet für den existierenden Posten
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: Scaffold(
+          body: AddOrEditItemSheet(
+            data: dataWithItem,
+            item: adoptedButter,
+            isAdding: false,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Button "Von Liste entfernen" vorhanden
+      final removeButtonFinder = find.byKey(const ValueKey('sheet_remove_btn'));
+      await tester.ensureVisible(removeButtonFinder);
+      await tester.pumpAndSettle();
+      expect(removeButtonFinder, findsOneWidget);
+
+      // Button "Speichern" vorhanden
+      final saveButtonFinder = find.byKey(const ValueKey('sheet_primary_action_btn'));
+      expect(saveButtonFinder, findsOneWidget);
+
+      // Erhöhe um 1 und speichere
+      final plusButton = find.widgetWithIcon(IconButton, Icons.add);
+      await tester.tap(plusButton);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(saveButtonFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButtonFinder);
+      await tester.pumpAndSettle();
+
+      var reloadedData = await shoppingListService.loadShoppingList(defaultTripId);
+      var reloadedButter = reloadedData.allItems.firstWhere((i) => i.id == 'butter_std');
+      expect(reloadedButter.effectivePackages, 3);
+
+      // Nun erneut öffnen und "Von Liste entfernen" tippen
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: Scaffold(
+          body: AddOrEditItemSheet(
+            data: reloadedData,
+            item: reloadedButter,
+            isAdding: false,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      final removeBtn2 = find.byKey(const ValueKey('sheet_remove_btn'));
+      await tester.ensureVisible(removeBtn2);
+      await tester.pumpAndSettle();
+      await tester.tap(removeBtn2);
+      await tester.pumpAndSettle();
+
+      reloadedData = await shoppingListService.loadShoppingList(defaultTripId);
+      reloadedButter = reloadedData.allItems.firstWhere((i) => i.id == 'butter_std');
+      expect(reloadedButter.isAdopted, isFalse);
+      expect(reloadedButter.isOnList, isFalse);
+      expect(reloadedButter.effectivePackages, 0);
+    });
+
+    test('5. Pesto Regressionstest (5 Personen, 14 Tage): Keine automatische 14-Gläser-Menge, berechnet 0', () async {
+      // 5 Personen, 14 Tage Törn anlegen
+      final pestoTripId = await tripService.createTripWithCrew(
+        name: 'Pesto Test 14 Tage',
+        startDate: DateTime(2026, 7, 10),
+        daysCount: 14,
+        isCharter: true,
+        boatType: 'monohull',
+        region: 'mediterranean',
+        fridgeCapacityLiters: 90.0,
+        crewAppetite: CrewAppetite.normal,
+        crewReserve: false,
+        crewDrinking: CrewDrinking.normal,
+        crewMembers: List.generate(
+          5,
+          (idx) => CrewMemberInput(id: '$idx', name: 'Crew $idx', isAdult: true, isVegetarian: false, noAlcohol: false),
+        ),
+      );
+
+      final data = await shoppingListService.loadShoppingList(pestoTripId);
+      final pesto = data.allItems.firstWhere((i) => i.id == 'pesto');
+
+      // Assistenzklasse ist preferenceBased
+      expect(pesto.assistType, equals(AssistType.preferenceBased));
+
+      // Automatischer Vorschlag ist 0 (NICHT 14 Gläser!)
+      expect(pesto.calculatedPackages, 0, reason: 'Pesto darf bei PIVOT1 keine automatische Bedarfsmenge haben');
+      expect(pesto.calculatedQuantity, 0.0);
+      expect(pesto.isOnList, isFalse);
+
+      // Nutzer wählt 1 Glas manuell
+      await shoppingListService.adoptItem(tripId: pestoTripId, listItemId: pesto.item.id, packages: 1);
+
+      final updated = await shoppingListService.loadShoppingList(pestoTripId);
+      final adoptedPesto = updated.allItems.firstWhere((i) => i.id == 'pesto');
+      expect(adoptedPesto.isOnList, isTrue);
+      expect(adoptedPesto.effectivePackages, 1, reason: 'Gewählte 1 Packung bleibt exakt 1 Packung');
+    });
+
+    test('6. Tofu Regressionstest: Vegetarische Crew -> Tofu hat keine automatische Crew-Menge (berechnet 0)', () async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final tofu = data.allItems.firstWhere((i) => i.id == 'tofu');
+
+      expect(tofu.assistType, equals(AssistType.preferenceBased));
+      expect(tofu.calculatedPackages, 0, reason: 'Tofu darf nicht automatisch berechnet werden');
+      expect(tofu.isOnList, isFalse);
+    });
+
+    testWidgets('7. Trinkwasser Needs-Based: Richtwert wird berechnet, angezeigt und vom Nutzer gewählt', (tester) async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final water = data.allItems.firstWhere((i) => i.id == 'water_5l' || i.id == 'water_15');
+
+      expect(water.assistType, equals(AssistType.needsBased));
+      expect(water.calculatedQuantity, greaterThan(0.0));
+
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: Scaffold(
+          body: AddOrEditItemSheet(
+            data: data,
+            item: water,
+            isAdding: true,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Provy Richtwert-Hinweis wird angezeigt
+      expect(find.textContaining('Provy-Richtwert'), findsOneWidget);
+
+      // Nutzer fügt weitere Packungen hinzu
+      await tester.tap(find.widgetWithIcon(IconButton, Icons.add));
+      await tester.pumpAndSettle();
+
+      final addBtnFinder = find.byKey(const ValueKey('sheet_primary_action_btn'));
+      await tester.ensureVisible(addBtnFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(addBtnFinder);
+      await tester.pumpAndSettle();
+
+      final updated = await shoppingListService.loadShoppingList(defaultTripId);
+      final adoptedWater = updated.allItems.firstWhere((i) => i.id == water.id);
+      expect(adoptedWater.isOnList, isTrue);
+      expect(adoptedWater.effectivePackages, greaterThanOrEqualTo(1));
+    });
+
+    test('8. Mengen-Stabilität: Crew- und Dauer-Änderungen überschreiben übernommene Posten nicht', () async {
+      // 1. Posten übernehmen und Menge manuell auf 5 setzen
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final bread = data.allItems.firstWhere((i) => i.id == 'toast_bread' || i.id.contains('bread'));
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: bread.item.id, packages: 5);
+
+      final beforeChange = await shoppingListService.loadShoppingList(defaultTripId);
+      final breadBefore = beforeChange.allItems.firstWhere((i) => i.id == bread.id);
+      expect(breadBefore.effectivePackages, 5);
+
+      // 2. Dauer ändern von 7 auf 14 Tage
+      final currentTrip = (await db.tripDao.getTripById(defaultTripId))!;
+      await db.tripDao.updateTrip(currentTrip.copyWith(daysCount: 14));
+
+      // 3. Crew vergrößern (+2 Personen)
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: defaultTripId,
+        name: 'Zusatz 1',
+        isChild: const Value(false),
+      ));
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: defaultTripId,
+        name: 'Zusatz 2',
+        isChild: const Value(false),
+      ));
+
+      // 4. Neu laden und prüfen: Die vom Nutzer gewählten 5 Packungen bleiben unverändert!
+      final afterChange = await shoppingListService.loadShoppingList(defaultTripId);
+      final breadAfter = afterChange.allItems.firstWhere((i) => i.id == bread.id);
+      expect(breadAfter.effectivePackages, 5, reason: 'Manuell gesetzte Packungszahl muss 5 bleiben');
+      expect(breadAfter.isOverridden, isTrue);
+    });
+
+    test('9. Einkaufsmodus-Isolation: Nur tatsächlich übernommene Positionen des Stopps erscheinen', () async {
+      var data = await shoppingListService.loadShoppingList(defaultTripId);
+      final stop1 = data.stops.first;
+
+      // 1. Initial sind 0 Positionen auf der Vorratsliste
+      final initialStopItems = data.allItems.where((it) {
+        if (!it.isOnList) return false;
+        final totalOtherAlloc = it.allocationsByStop.entries
+            .where((e) => e.key != stop1.id)
+            .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+        final count = it.packagesAtStop(stop1.id, isFirstStop: true, totalOtherAllocated: totalOtherAlloc);
+        return count > 0;
+      }).toList();
+      expect(initialStopItems, isEmpty, reason: 'Leere Liste darf 0 Posten im Einkaufsmodus haben');
+
+      // 2. Genau zwei Positionen übernehmen
+      final butter = data.allItems.firstWhere((i) => i.id == 'butter_std');
+      final salt = data.allItems.firstWhere((i) => i.id == 'salt_table' || i.id.contains('salt'));
+
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: butter.item.id, packages: 2);
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: salt.item.id, packages: 1);
+
+      data = await shoppingListService.loadShoppingList(defaultTripId);
+      final updatedStopItems = data.allItems.where((it) {
+        if (!it.isOnList) return false;
+        final totalOtherAlloc = it.allocationsByStop.entries
+            .where((e) => e.key != stop1.id)
+            .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+        final count = it.packagesAtStop(stop1.id, isFirstStop: true, totalOtherAllocated: totalOtherAlloc);
+        return count > 0;
+      }).toList();
+
+      expect(updatedStopItems.length, 2, reason: 'Exakt die 2 übernommenen Artikel müssen im Einkaufsmodus sein');
+      expect(updatedStopItems.any((i) => i.id == butter.id), isTrue);
+      expect(updatedStopItems.any((i) => i.id == salt.id), isTrue);
+    });
+  });
+}
