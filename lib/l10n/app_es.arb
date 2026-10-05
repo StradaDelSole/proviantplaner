@@ -776,5 +776,97 @@
   "packageSizeInfoTitle": "Tamaños de paquete personalizados",
   "packageSizeInfoContent": "Los tamaños de paquete personalizados se pueden ajustar directamente para cada artículo en la lista y se guardan para esta travesía.",
   "languageSettingTitle": "Idioma",
-  "languageSettingSubtitle": "Estándar del sistema (Español)"
+  "languageSettingSubtitle": "Estándar del sistema (Español)",
+  "settingsHeader": "Ajustes",
+  "legalAndInfo": "Legal e Información",
+  "nightwatchTitle": "Modo guardia nocturna",
+  "nightwatchSubtitle": "Rojo puro sobre negro para mantener la visión nocturna",
+  "myPaymentDetails": "Mis datos de pago",
+  "myPaymentDetailsSubtitle": "Guardado solo en este dispositivo",
+  "myPaymentDetailsInfo": "Los datos ingresados aquí (p. ej. IBAN, PayPal.Me) se sugieren al compartir liquidaciones. Se guardan exclusivamente de forma local.",
+  "paymentDetailsSaved": "Datos de pago guardados.",
+  "savedSuppliersTitle": "Proveedores guardados",
+  "savedSuppliersNone": "Sin proveedores registrados",
+  "savedSuppliersCount": "{count, plural, =1{1 proveedor guardado} other{{count} proveedores guardados}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "Aún no hay proveedores guardados.",
+  "addSupplier": "Añadir proveedor",
+  "editSupplier": "Editar proveedor",
+  "deleteSupplier": "Eliminar proveedor",
+  "deleteSupplierConfirm": "¿Realmente deseas eliminar \"{name}\"?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Sigue el idioma del dispositivo",
+  "accountBackupRestoreConfirmContent": "¿Deseas restaurar todos los viajes desde la copia de seguridad en la nube? Se sobrescribirán los datos locales existentes.",
+  "accountBackupFailed": "Copia de seguridad fallida.",
+  "accountBackupNotFound": "No se encontró ninguna copia de seguridad.",
+  "accountBackupError": "Error en la copia de seguridad: {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Error en la restauración: {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Capacidades de refrigeración y agua",
+  "atLeastOnePersonRequired": "Al menos una persona debe permanecer a bordo.",
+  "mealsSectionTitle": "Comidas y restaurante",
+  "createFollowUpStopTitle": "Crear parada posterior",
+  "createFollowUpStopContent": "No hay ninguna parada de compras posterior. ¿Cuándo deseas comprar los {count} artículos?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Crear parada y mover",
+  "itemsMovedToStopNotice": "{count} artículos movidos a \"{stopName}\".",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "No encontrado",
+  "notFoundMessage": "No se encontró la página o el viaje solicitado.",
+  "backToHome": "Volver al inicio",
+  "initialBaseStopLabel": "(Base)",
+  "genericError": "Error",
+  "supplierNameLabel": "Nombre del proveedor / mercado",
+  "supplierMarinaLabel": "Puerto / ubicación",
+  "supplierPhoneLabel": "Número de teléfono",
+  "supplierEmailLabel": "Correo electrónico",
+  "invalidIban": "IBAN no válido (error de suma de comprobación Modulo-97)",
+  "itemsOnListCount": "{count} artículos en la lista",
+  "shoppingStopsCount": "{count, plural, =1{1 parada de compras} other{{count} paradas de compras}}",
+  "adjustDeliveryDetails": "Ajustar detalles de entrega",
+  "createAsDelivery": "Configurar como entrega",
+  "notSpecified": "No especificado",
+  "allocatedPackagesCount": "Distribuido: {allocated} de {total} paquetes",
+  "membershipBadgeMember": "MIEMBRO",
+  "shoppingStopDayDefault": "Compras Día {day}"
 }

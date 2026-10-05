@@ -109,7 +109,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     }
 
     if (_trip == null) {
-      return const NotFoundScreen(message: 'Törn nicht gefunden');
+      return NotFoundScreen(message: l10n.tripNotFound);
     }
 
     return kittyAsync.when(
@@ -119,7 +119,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       ),
       error: (err, _) => Scaffold(
         appBar: AppBar(title: Text(_trip!.name)),
-        body: Center(child: Text('Fehler: $err')),
+        body: Center(child: Text('${l10n.genericError}: $err')),
       ),
       data: (kittyData) {
         final currentStep = _calculateCurrentStep(kittyData);
@@ -164,7 +164,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         theme: theme,
                         stepNumber: 1,
                         title: l10n.navShoppingList,
-                        subtitle: '${_items.where((it) => it.isAdopted || it.isCustom).length} Positionen auf der Liste',
+                        subtitle: l10n.itemsOnListCount(_items.where((it) => it.isAdopted || it.isCustom).length),
                         actionLabel: l10n.editList,
                         icon: Icons.inventory_2_outlined,
                         isCurrent: currentStep == 1,
@@ -377,7 +377,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     children: [
                       Text(l10n.shopView, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       Text(
-                        '${_stops.length} Einkaufsstopp${_stops.length == 1 ? '' : 's'}',
+                        l10n.shoppingStopsCount(_stops.length),
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
                       ),
                     ],
@@ -414,13 +414,13 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Tag ${s.dayNumber} · ${s.name} (Lieferung)',
+                                    '${l10n.day} ${s.dayNumber} · ${s.name} (${l10n.deliveryOrder})',
                                     style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined, size: 18),
-                                  tooltip: 'Lieferdetails anpassen',
+                                  tooltip: l10n.adjustDeliveryDetails,
                                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                   onPressed: () => _configureDelivery(s, order),
                                 ),
@@ -480,7 +480,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         Icon(Icons.storefront_outlined, size: 16, color: theme.colorScheme.secondary),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text('Tag ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
+                          child: Text('${l10n.day} ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
                         ),
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, size: 18),
@@ -495,7 +495,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                           ),
                         IconButton(
                           icon: const Icon(Icons.local_shipping_outlined, size: 18),
-                          tooltip: 'Als Lieferung anlegen',
+                          tooltip: l10n.createAsDelivery,
                           onPressed: () => _configureDelivery(s, null),
                         ),
                         TextButton(
@@ -597,7 +597,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     required bool isDone,
   }) {
     final balanceEuros = (kittyData.cashBalanceCents / 100.0).toStringAsFixed(2);
-    final treasurerName = kittyData.treasurer?.name ?? 'Nicht festgelegt';
+    final treasurerName = kittyData.treasurer?.name ?? l10n.notSpecified;
 
     return Card(
       elevation: 0,
@@ -755,7 +755,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(l10n.settle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      Text('${kittyData.transfers.length} Ausgleichszahlungen',
+                      Text(l10n.settlementPaymentsCount(kittyData.transfers.length),
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
                     ],
                   ),
@@ -783,7 +783,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           title: Text(l10n.daysInDetail, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          subtitle: Text('${_days.length} Tage im Törnverlauf', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+          subtitle: Text(l10n.daysInTripCount(_days.length), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             Padding(
@@ -804,7 +804,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   color: theme.colorScheme.surfaceContainerLowest,
                   child: ListTile(
-                    title: Text('Tag ${day.dayNumber} ${day.portName != null && day.portName!.isNotEmpty ? "· ${day.portName}" : ""}'),
+                    title: Text('${l10n.day} ${day.dayNumber} ${day.portName != null && day.portName!.isNotEmpty ? "· ${day.portName}" : ""}'),
                     subtitle: Row(
                       children: [
                         FilterChip(
@@ -856,7 +856,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
   }
 
   Future<void> _showAddStopDialog(BuildContext context, AppLocalizations l10n) async {
-    final nameCtrl = TextEditingController(text: 'Einkauf Tag ${_days.isNotEmpty ? _days.last.dayNumber : 1}');
+    final nameCtrl = TextEditingController(text: l10n.shoppingStopDayDefault(_days.isNotEmpty ? _days.last.dayNumber : 1));
     int selectedDay = _days.isNotEmpty ? _days.last.dayNumber : 1;
     await showDialog<void>(
       context: context,
@@ -1096,7 +1096,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
   Future<void> _deleteCrewMember(CrewMember member, AppLocalizations l10n) async {
     if (_crew.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mindestens eine Person muss an Bord bleiben.')),
+        SnackBar(content: Text(l10n.atLeastOnePersonRequired)),
       );
       return;
     }
@@ -1110,6 +1110,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     final nameCtrl = TextEditingController(text: _trip!.name);
     DateTime selectedDate = _trip!.startDate;
     int daysCount = _trip!.daysCount;
+    int lunchCount = _days.where((d) => d.lunchRestaurant).length;
+    int dinnerCount = _days.where((d) => d.dinnerRestaurant).length;
     int fridgeCapacity = _trip!.fridgeCapacity;
     bool hasFreezer = _trip!.hasFreezer;
     int freezerCapacity = _trip!.freezerCapacity;
@@ -1189,7 +1191,11 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline),
                             onPressed: daysCount > 1
-                                ? () => setSheetState(() => daysCount--)
+                                ? () => setSheetState(() {
+                                      daysCount--;
+                                      if (lunchCount > daysCount) lunchCount = daysCount;
+                                      if (dinnerCount > daysCount) dinnerCount = daysCount;
+                                    })
                                 : null,
                           ),
                           Text('$daysCount', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -1205,7 +1211,60 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   ),
                   const Divider(),
                   Text(
-                    'Kühl- & Wasserkapazitäten',
+                    l10n.mealsSectionTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l10n.lunchInRestaurant, style: theme.textTheme.bodyMedium),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline),
+                            onPressed: lunchCount > 0
+                                ? () => setSheetState(() => lunchCount--)
+                                : null,
+                          ),
+                          Text('$lunchCount', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            onPressed: lunchCount < daysCount
+                                ? () => setSheetState(() => lunchCount++)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l10n.dinnerInRestaurant, style: theme.textTheme.bodyMedium),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline),
+                            onPressed: dinnerCount > 0
+                                ? () => setSheetState(() => dinnerCount--)
+                                : null,
+                          ),
+                          Text('$dinnerCount', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            onPressed: dinnerCount < daysCount
+                                ? () => setSheetState(() => dinnerCount++)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Text(
+                    l10n.coolingAndWaterCapacities,
                     style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
                   ),
                   const SizedBox(height: 8),
@@ -1256,10 +1315,13 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${l10n.crewSectionTitle} (${_crew.length} ${l10n.persons})',
-                        style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                      Expanded(
+                        child: Text(
+                          '${l10n.crewSectionTitle} (${_crew.length} ${l10n.persons})',
+                          style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       TextButton.icon(
                         icon: const Icon(Icons.person_add_outlined, size: 18),
                         label: Text(l10n.addCrewMember),
@@ -1322,6 +1384,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         freezerCapacity: parsedFreezer,
                         waterTankLiters: parsedWater,
                         isWaterTankDrinkable: isWaterTankDrinkable,
+                        restaurantLunches: lunchCount,
+                        restaurantDinners: dinnerCount,
                       );
                       if (ctx.mounted) Navigator.of(ctx).pop();
                       if (mounted) _loadTripDetails();

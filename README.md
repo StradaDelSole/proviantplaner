@@ -47,6 +47,6 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 ## Status
 
 Konzeptphase läuft (PRD v0.21). Es gilt jeweils die höchste Versionsnummer.
-Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C, FB2-A, FB2-B, B0, B1, B2, S9, S10-T, FIX-A.
+Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C, FB2-A, FB2-B, B0, B1, B2, S9, S10-T, FIX-A (inkl. Review-Amendment).
 
 **Aktuell freigegeben für Gemini: nur FIX-A Review-Amendment gemäß `docs/impl/FIX-A_review_2026-10-05.md` / Issue #20.** FIX-A wurde mit `704ac83` implementiert, ist aber noch nicht owner-accepted. **Die UX-Detail-Freigabe ist abgeschlossen. PIVOT1 bleibt nur noch bis zur FIX-A-Abnahme gestoppt.** PIVOT1 muss anschließend `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`, `docs/impl/PIVOT1_plan.md` und `docs/design/PROVY_UX_DIRECTION_v0.5.md` gemeinsam erfüllen. UX-D wird über Issue #21 vorbereitet. **GUEST1 – Shared Shopping, QR & Offline ist owner-accepted und verpflichtend vor Store-v1, aber noch nicht zur Implementierung freigegeben; Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.3.md` und `docs/impl/GUEST1_plan.md`. RECEIPT1 – Expense Receipts & Settlement Package ist ebenfalls owner-accepted und verpflichtend vor Store-v1; Grundlage: `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md` und `docs/impl/RECEIPT1_plan.md`.** B3, B4, B5 bleiben NICHT freigegeben. S10 Store-Publikation bleibt ausgesetzt.

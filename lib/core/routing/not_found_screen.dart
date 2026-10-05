@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 
 /// Bildschirm für nicht gefundene Routen oder ungültige IDs (FB2-B).
@@ -13,9 +14,10 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nicht gefunden'),
+        title: Text(l10n?.notFoundTitle ?? 'Nicht gefunden'),
       ),
       body: Center(
         child: Padding(
@@ -30,7 +32,7 @@ class NotFoundScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                message ?? 'Die angeforderte Seite oder der Törn wurde nicht gefunden.',
+                message ?? l10n?.notFoundMessage ?? 'Die angeforderte Seite oder der Törn wurde nicht gefunden.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
@@ -38,7 +40,7 @@ class NotFoundScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.home_outlined),
-                label: const Text('Zurück zur Übersicht'),
+                label: Text(l10n?.backToHome ?? 'Zurück zur Übersicht'),
               ),
             ],
           ),

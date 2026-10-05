@@ -302,15 +302,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
             FilledButton(
               onPressed: () async {
                 Navigator.of(ctx).pop();
-                await ref.read(shoppingListServiceProvider).handleUnboughtItems(
-                      tripId: widget.tripId,
-                      currentStopId: widget.stopId,
-                      postpone: true,
-                    );
-                ref.invalidate(tripShoppingListProvider(widget.tripId));
-                if (context.mounted) {
-                  _promptStorage(context, l10n);
-                }
+                await _handlePostpone(context, unbought, l10n);
               },
               child: Text(l10n.postpone),
             ),
@@ -319,6 +311,130 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       );
     } else {
       _promptStorage(context, l10n);
+    }
+  }
+
+  Future<void> _handlePostpone(BuildContext context, int unboughtCount, AppLocalizations l10n) async {
+    final listData = await ref.read(shoppingListServiceProvider).loadShoppingList(widget.tripId);
+    final currentStop = listData.stops.where((s) => s.id == widget.stopId).firstOrNull;
+    if (currentStop == null) return;
+
+    final laterStops = listData.stops.where((s) => s.dayNumber >= currentStop.dayNumber && s.id != widget.stopId).toList();
+
+    if (laterStops.isNotEmpty) {
+      final targetStop = laterStops.first;
+      await ref.read(shoppingListServiceProvider).handleUnboughtItems(
+            tripId: widget.tripId,
+            currentStopId: widget.stopId,
+            postpone: true,
+            targetStopId: targetStop.id,
+          );
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.itemsMovedToStopNotice(unboughtCount, targetStop.name))),
+        );
+        _promptStorage(context, l10n);
+      }
+    } else {
+      if (!context.mounted) return;
+      await _promptCreateFollowUpStop(context, unboughtCount, currentStop, listData.trip.daysCount, l10n);
+    }
+  }
+
+  Future<void> _promptCreateFollowUpStop(
+    BuildContext context,
+    int unboughtCount,
+    ShoppingStop currentStop,
+    int totalTripDays,
+    AppLocalizations l10n,
+  ) async {
+    int defaultDay = (currentStop.dayNumber + 1).clamp(1, totalTripDays);
+    int selectedDay = defaultDay;
+    final nameCtrl = TextEditingController(text: l10n.shoppingStopDayDefault(selectedDay));
+
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.createFollowUpStopTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.createFollowUpStopContent(unboughtCount)),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedDay,
+                decoration: InputDecoration(
+                  labelText: l10n.day,
+                  border: const OutlineInputBorder(),
+                ),
+                items: List.generate(
+                  totalTripDays,
+                  (index) => DropdownMenuItem(
+                    value: index + 1,
+                    child: Text('${l10n.day} ${index + 1}'),
+                  ),
+                ),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDialogState(() {
+                      selectedDay = val;
+                      nameCtrl.text = l10n.shoppingStopDayDefault(val);
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l10n.createStopAndMove),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (created == true && context.mounted) {
+      final tripService = ref.read(tripServiceProvider);
+      final finalName = nameCtrl.text.trim().isNotEmpty
+          ? nameCtrl.text.trim()
+          : l10n.shoppingStopDayDefault(selectedDay);
+      final newStopId = await tripService.addShoppingStop(
+        tripId: widget.tripId,
+        name: finalName,
+        dayNumber: selectedDay,
+      );
+
+      await ref.read(shoppingListServiceProvider).handleUnboughtItems(
+            tripId: widget.tripId,
+            currentStopId: widget.stopId,
+            postpone: true,
+            targetStopId: newStopId,
+          );
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.itemsMovedToStopNotice(unboughtCount, finalName))),
+        );
+        _promptStorage(context, l10n);
+      }
     }
   }
 

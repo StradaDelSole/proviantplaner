@@ -776,5 +776,97 @@
   "packageSizeInfoTitle": "Tailles d'emballage personnalisées",
   "packageSizeInfoContent": "Les tailles d'emballage peuvent être ajustées directement dans la liste et sont mémorisées pour cette croisière.",
   "languageSettingTitle": "Langue",
-  "languageSettingSubtitle": "Système par défaut (Français)"
+  "languageSettingSubtitle": "Système par défaut (Français)",
+  "settingsHeader": "Paramètres",
+  "legalAndInfo": "Mentions légales & Informations",
+  "nightwatchTitle": "Mode quart de nuit",
+  "nightwatchSubtitle": "Rouge pur sur noir pour préserver la vision nocturne",
+  "myPaymentDetails": "Mes coordonnées de paiement",
+  "myPaymentDetailsSubtitle": "Enregistré uniquement sur cet appareil",
+  "myPaymentDetailsInfo": "Les coordonnées saisies ici (ex. IBAN, PayPal.Me) sont suggérées lors du partage des comptes. Elles sont stockées exclusivement en local.",
+  "paymentDetailsSaved": "Coordonnées de paiement enregistrées.",
+  "savedSuppliersTitle": "Fournisseurs enregistrés",
+  "savedSuppliersNone": "Aucun fournisseur enregistré",
+  "savedSuppliersCount": "{count, plural, =1{1 fournisseur enregistré} other{{count} fournisseurs enregistrés}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "Aucun fournisseur encore enregistré.",
+  "addSupplier": "Ajouter un fournisseur",
+  "editSupplier": "Modifier le fournisseur",
+  "deleteSupplier": "Supprimer le fournisseur",
+  "deleteSupplierConfirm": "Voulez-vous vraiment supprimer « {name} » ?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Suit la langue de l'appareil",
+  "accountBackupRestoreConfirmContent": "Voulez-vous restaurer tous les voyages à partir de la sauvegarde cloud ? Les données locales existantes seront écrasées.",
+  "accountBackupFailed": "Échec de la sauvegarde.",
+  "accountBackupNotFound": "Aucune sauvegarde trouvée.",
+  "accountBackupError": "Erreur lors de la sauvegarde : {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Erreur lors de la restauration : {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Capacités de refroidissement et d'eau",
+  "atLeastOnePersonRequired": "Au moins une personne doit rester à bord.",
+  "mealsSectionTitle": "Repas & Restaurant",
+  "createFollowUpStopTitle": "Créer une étape suivante",
+  "createFollowUpStopContent": "Il n'y a pas d'étape d'achat ultérieure. Quand souhaitez-vous acheter les {count} articles ?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Créer l'étape et déplacer",
+  "itemsMovedToStopNotice": "{count} articles déplacés vers « {stopName} ».",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "Non trouvé",
+  "notFoundMessage": "La page ou le voyage demandé est introuvable.",
+  "backToHome": "Retour à l'accueil",
+  "initialBaseStopLabel": "(Base)",
+  "genericError": "Erreur",
+  "supplierNameLabel": "Nom du fournisseur / magasin",
+  "supplierMarinaLabel": "Port de plaisance / lieu",
+  "supplierPhoneLabel": "Numéro de téléphone",
+  "supplierEmailLabel": "E-mail",
+  "invalidIban": "IBAN invalide (erreur de somme de contrôle Modulo-97)",
+  "itemsOnListCount": "{count} articles sur la liste",
+  "shoppingStopsCount": "{count, plural, =1{1 arrêt courses} other{{count} arrêts courses}}",
+  "adjustDeliveryDetails": "Ajuster les détails de livraison",
+  "createAsDelivery": "Configurer comme livraison",
+  "notSpecified": "Non spécifié",
+  "allocatedPackagesCount": "Réparti : {allocated} sur {total} paquets",
+  "membershipBadgeMember": "MEMBRE",
+  "shoppingStopDayDefault": "Courses Jour {day}"
 }

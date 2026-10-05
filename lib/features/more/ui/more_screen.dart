@@ -82,7 +82,7 @@ class MoreScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              success ? l10n.accountBackupSuccess : 'Sicherung fehlgeschlagen.',
+              success ? l10n.accountBackupSuccess : l10n.accountBackupFailed,
             ),
           ),
         );
@@ -90,7 +90,7 @@ class MoreScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler bei der Sicherung: $e')),
+          SnackBar(content: Text(l10n.accountBackupError(e.toString()))),
         );
       }
     }
@@ -103,9 +103,7 @@ class MoreScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.accountBackupRestore),
-        content: const Text(
-          'Möchtest du alle Törns aus der Cloud-Sicherung wiederherstellen? Bestehende lokale Daten werden überschrieben.',
-        ),
+        content: Text(l10n.accountBackupRestoreConfirmContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -128,7 +126,7 @@ class MoreScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                success ? l10n.accountRestoreSuccess : 'Keine Sicherung gefunden.',
+                success ? l10n.accountRestoreSuccess : l10n.accountBackupNotFound,
               ),
             ),
           );
@@ -136,7 +134,7 @@ class MoreScreen extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Fehler bei der Wiederherstellung: $e')),
+            SnackBar(content: Text(l10n.accountRestoreError(e.toString()))),
           );
         }
       }
@@ -152,14 +150,13 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     if (tripId != null) {
       final tripAsync = ref.watch(tripByIdProvider(tripId!));
       if (tripAsync.hasValue && tripAsync.value == null) {
-        return const NotFoundScreen(message: 'Törn nicht gefunden');
+        return NotFoundScreen(message: l10n.tripNotFound);
       }
     }
-
-    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
     final status = authState.status;
@@ -171,7 +168,7 @@ class MoreScreen extends ConsumerWidget {
         title: Text(l10n.navMore),
         actions: [
           IconButton(
-            tooltip: 'Nachtwache',
+            tooltip: l10n.nightwatchTitle,
             icon: Icon(
               isNightwatch ? Icons.nightlight_round : Icons.nightlight_outlined,
             ),
@@ -186,13 +183,13 @@ class MoreScreen extends ConsumerWidget {
         children: [
           _buildAccountCard(context, ref, theme, l10n, status, email),
           const SizedBox(height: 16),
-          _buildNightwatchTile(ref, theme, isNightwatch),
+          _buildNightwatchTile(ref, theme, l10n, isNightwatch),
           const Divider(height: 24),
-          _buildSectionHeader(theme, 'Einstellungen'),
+          _buildSectionHeader(theme, l10n.settingsHeader),
           ListTile(
             leading: const Icon(Icons.payment_outlined),
-            title: const Text('Meine Zahlungsdaten'),
-            subtitle: const Text('Nur auf diesem Gerät gespeichert'),
+            title: Text(l10n.myPaymentDetails),
+            subtitle: Text(l10n.myPaymentDetailsSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _showUserPaymentProfileDialog(context, ref),
           ),
@@ -201,13 +198,13 @@ class MoreScreen extends ConsumerWidget {
               final suppliersAsync = ref.watch(savedSuppliersProvider);
               final subtitle = suppliersAsync.maybeWhen(
                 data: (list) => list.isEmpty
-                    ? 'Keine Lieferanten hinterlegt'
-                    : '${list.length} Lieferant${list.length == 1 ? "" : "en"} hinterlegt',
-                orElse: () => 'Lieferanten verwalten',
+                    ? l10n.savedSuppliersNone
+                    : l10n.savedSuppliersCount(list.length),
+                orElse: () => l10n.savedSuppliersTitle,
               );
               return ListTile(
                 leading: const Icon(Icons.local_shipping_outlined),
-                title: const Text('Gespeicherte Lieferanten'),
+                title: Text(l10n.savedSuppliersTitle),
                 subtitle: Text(subtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showSuppliersDialog(context, ref),
@@ -215,50 +212,12 @@ class MoreScreen extends ConsumerWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.straighten_outlined),
-            title: Text(l10n.packageSizeInfoTitle),
-            subtitle: Text(l10n.packageSizeInfoContent),
-            isThreeLine: true,
-            trailing: const Icon(Icons.info_outline, size: 20),
-            onTap: () {
-              showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l10n.packageSizeInfoTitle),
-                  content: Text(l10n.packageSizeInfoContent),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.language_outlined),
             title: Text(l10n.languageSettingTitle),
-            subtitle: Text(l10n.languageSettingSubtitle),
-            trailing: const Icon(Icons.info_outline, size: 20),
-            onTap: () {
-              showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(l10n.languageSettingTitle),
-                  content: Text(l10n.languageSettingSubtitle),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            subtitle: Text(l10n.languageFollowsDevice),
           ),
           const Divider(height: 24),
-          _buildSectionHeader(theme, 'Rechtliches & Information'),
+          _buildSectionHeader(theme, l10n.legalAndInfo),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: Text(l10n.privacyPolicy),
@@ -315,7 +274,7 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNightwatchTile(WidgetRef ref, ThemeData theme, bool isNightwatch) {
+  Widget _buildNightwatchTile(WidgetRef ref, ThemeData theme, AppLocalizations l10n, bool isNightwatch) {
     return Card(
       elevation: 0,
       color: theme.colorScheme.surfaceContainerLow,
@@ -324,8 +283,8 @@ class MoreScreen extends ConsumerWidget {
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: SwitchListTile(
-        title: const Text('Nachtwache-Modus'),
-        subtitle: const Text('Reines Rot auf Schwarz zum Erhalt der Nachtsicht'),
+        title: Text(l10n.nightwatchTitle),
+        subtitle: Text(l10n.nightwatchSubtitle),
         secondary: Icon(
           isNightwatch ? Icons.nightlight_round : Icons.nightlight_outlined,
           color: isNightwatch ? theme.colorScheme.primary : null,
@@ -412,7 +371,7 @@ class MoreScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      status == HullqMembershipStatus.pro ? 'PRO' : 'MITGLIED',
+                      status == HullqMembershipStatus.pro ? 'PRO' : l10n.membershipBadgeMember,
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSecondaryContainer,
@@ -497,6 +456,7 @@ class MoreScreen extends ConsumerWidget {
 
     final nameController = TextEditingController(text: currentProfile.name);
     final ibanController = TextEditingController(text: currentProfile.iban ?? '');
+    final l10n = AppLocalizations.of(context)!;
     final paypalController = TextEditingController(text: currentProfile.paypalLink ?? '');
     final revolutController = TextEditingController(text: currentProfile.revolutLink ?? '');
     String? ibanError;
@@ -505,29 +465,29 @@ class MoreScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Meine Zahlungsdaten'),
+          title: Text(l10n.myPaymentDetails),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Nur auf diesem Gerät gespeichert. Werden bei Abrechnungen als Empfängerdaten genutzt.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                Text(
+                  l10n.myPaymentDetailsInfo,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.name,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: ibanController,
                   decoration: InputDecoration(
-                    labelText: 'IBAN',
+                    labelText: l10n.fundIban,
                     errorText: ibanError,
                     border: const OutlineInputBorder(),
                   ),
@@ -554,7 +514,7 @@ class MoreScreen extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Abbrechen'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () async {
@@ -562,7 +522,7 @@ class MoreScreen extends ConsumerWidget {
                 final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
                 if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
                   setDialogState(() {
-                    ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+                    ibanError = l10n.invalidIban;
                   });
                   return;
                 }
@@ -582,11 +542,11 @@ class MoreScreen extends ConsumerWidget {
                 }
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Zahlungsdaten gespeichert.')),
+                    SnackBar(content: Text(l10n.paymentDetailsSaved)),
                   );
                 }
               },
-              child: const Text('Speichern'),
+              child: Text(l10n.save),
             ),
           ],
         ),
@@ -595,6 +555,7 @@ class MoreScreen extends ConsumerWidget {
   }
 
   Future<void> _showSuppliersDialog(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -606,18 +567,18 @@ class MoreScreen extends ConsumerWidget {
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Gespeicherte Lieferanten'),
+              title: Text(l10n.savedSuppliersTitle),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.add),
-                  tooltip: 'Lieferant hinzufügen',
+                  tooltip: l10n.addSupplier,
                   onPressed: () => _showAddEditSupplierDialog(context, ref),
                 ),
               ],
             ),
             body: suppliersAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Fehler: $err')),
+              error: (err, _) => Center(child: Text('${l10n.genericError}: $err')),
               data: (suppliers) {
                 if (suppliers.isEmpty) {
                   return Center(
@@ -628,14 +589,14 @@ class MoreScreen extends ConsumerWidget {
                         children: [
                           Icon(Icons.local_shipping_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Noch keine Lieferanten hinterlegt.\nLieferanten können hier oder beim Anfordern einer Lieferung angelegt werden.',
+                          Text(
+                            l10n.savedSuppliersEmpty,
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 16),
                           FilledButton.icon(
                             icon: const Icon(Icons.add),
-                            label: const Text('Lieferant hinzufügen'),
+                            label: Text(l10n.addSupplier),
                             onPressed: () => _showAddEditSupplierDialog(context, ref),
                           ),
                         ],
@@ -666,21 +627,21 @@ class MoreScreen extends ConsumerWidget {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 20),
-                            tooltip: 'Bearbeiten',
+                            tooltip: l10n.editSupplier,
                             onPressed: () => _showAddEditSupplierDialog(context, ref, supplierToEdit: s),
                           ),
                           IconButton(
                             icon: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
-                            tooltip: 'Löschen',
+                            tooltip: l10n.deleteSupplier,
                             onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: context,
                                 builder: (dCtx) => AlertDialog(
-                                  title: const Text('Lieferant löschen'),
-                                  content: Text('Möchtest du "${s.name}" wirklich löschen?'),
+                                  title: Text(l10n.deleteSupplier),
+                                  content: Text(l10n.deleteSupplierConfirm(s.name)),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Abbrechen')),
-                                    FilledButton(onPressed: () => Navigator.pop(dCtx, true), child: const Text('Löschen')),
+                                    TextButton(onPressed: () => Navigator.pop(dCtx, false), child: Text(l10n.cancel)),
+                                    FilledButton(onPressed: () => Navigator.pop(dCtx, true), child: Text(l10n.delete)),
                                   ],
                                 ),
                               );
@@ -702,7 +663,7 @@ class MoreScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: FilledButton.icon(
                   icon: const Icon(Icons.add),
-                  label: const Text('Lieferant hinzufügen'),
+                  label: Text(l10n.addSupplier),
                   onPressed: () => _showAddEditSupplierDialog(context, ref),
                 ),
               ),
@@ -718,6 +679,7 @@ class MoreScreen extends ConsumerWidget {
     WidgetRef ref, {
     SupplierProfile? supplierToEdit,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController(text: supplierToEdit?.name ?? '');
     final marinaCtrl = TextEditingController(text: supplierToEdit?.marina ?? '');
     final phoneCtrl = TextEditingController(text: supplierToEdit?.phone ?? '');
@@ -726,38 +688,38 @@ class MoreScreen extends ConsumerWidget {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(supplierToEdit != null ? 'Lieferant bearbeiten' : 'Lieferant hinzufügen'),
+        title: Text(supplierToEdit != null ? l10n.editSupplier : l10n.addSupplier),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Name des Lieferanten / Marktes', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l10n.supplierNameLabel, border: const OutlineInputBorder()),
                 autofocus: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: marinaCtrl,
-                decoration: const InputDecoration(labelText: 'Marina / Ort', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l10n.supplierMarinaLabel, border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: 'Telefonnummer', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l10n.supplierPhoneLabel, border: const OutlineInputBorder()),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: emailCtrl,
-                decoration: const InputDecoration(labelText: 'E-Mail', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l10n.supplierEmailLabel, border: const OutlineInputBorder()),
                 keyboardType: TextInputType.emailAddress,
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           FilledButton(
             onPressed: () async {
               final name = nameCtrl.text.trim();
@@ -773,7 +735,7 @@ class MoreScreen extends ConsumerWidget {
               ref.invalidate(savedSuppliersProvider);
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Speichern'),
+            child: Text(l10n.save),
           ),
         ],
       ),

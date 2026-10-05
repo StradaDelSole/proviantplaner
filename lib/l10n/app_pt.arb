@@ -776,5 +776,97 @@
   "packageSizeInfoTitle": "Tamanhos de embalagem personalizados",
   "packageSizeInfoContent": "Os tamanhos de embalagem podem ser ajustados diretamente na lista de provisões e são guardados para esta viagem.",
   "languageSettingTitle": "Idioma",
-  "languageSettingSubtitle": "Padrão do sistema (Português)"
+  "languageSettingSubtitle": "Padrão do sistema (Português)",
+  "settingsHeader": "Configurações",
+  "legalAndInfo": "Legal e Informações",
+  "nightwatchTitle": "Modo vigia noturna",
+  "nightwatchSubtitle": "Vermelho puro em preto para manter a visão noturna",
+  "myPaymentDetails": "Meus dados de pagamento",
+  "myPaymentDetailsSubtitle": "Salvo apenas neste dispositivo",
+  "myPaymentDetailsInfo": "Os dados inseridos aqui (ex. IBAN, PayPal.Me) são sugeridos ao compartilhar liquidações. Eles são salvos exclusivamente de forma local.",
+  "paymentDetailsSaved": "Dados de pagamento salvos.",
+  "savedSuppliersTitle": "Fornecedores salvos",
+  "savedSuppliersNone": "Nenhum fornecedor registrado",
+  "savedSuppliersCount": "{count, plural, =1{1 fornecedor salvo} other{{count} fornecedores salvos}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "Nenhum fornecedor salvo ainda.",
+  "addSupplier": "Adicionar fornecedor",
+  "editSupplier": "Editar fornecedor",
+  "deleteSupplier": "Excluir fornecedor",
+  "deleteSupplierConfirm": "Deseja realmente excluir \"{name}\"?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Segue o idioma do dispositivo",
+  "accountBackupRestoreConfirmContent": "Deseja restaurar todas as viagens do backup na nuvem? Os dados locais existentes serão substituídos.",
+  "accountBackupFailed": "Falha no backup.",
+  "accountBackupNotFound": "Nenhum backup encontrado.",
+  "accountBackupError": "Erro no backup: {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Erro na restauração: {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Capacidades de refrigeração e água",
+  "atLeastOnePersonRequired": "Pelo menos uma pessoa deve permanecer a bordo.",
+  "mealsSectionTitle": "Refeições e restaurante",
+  "createFollowUpStopTitle": "Criar próxima parada",
+  "createFollowUpStopContent": "Não há nenhuma parada de compras posterior. Quando deseja comprar os {count} itens?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Criar parada e mover",
+  "itemsMovedToStopNotice": "{count} itens movidos para \"{stopName}\".",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "Não encontrado",
+  "notFoundMessage": "A página ou viagem solicitada não foi encontrada.",
+  "backToHome": "Voltar ao início",
+  "initialBaseStopLabel": "(Base)",
+  "genericError": "Erro",
+  "supplierNameLabel": "Nome do fornecedor / mercado",
+  "supplierMarinaLabel": "Marina / localização",
+  "supplierPhoneLabel": "Número de telefone",
+  "supplierEmailLabel": "E-mail",
+  "invalidIban": "IBAN inválido (erro de soma de verificação Modulo-97)",
+  "itemsOnListCount": "{count} itens na lista",
+  "shoppingStopsCount": "{count, plural, =1{1 parada de compras} other{{count} paradas de compras}}",
+  "adjustDeliveryDetails": "Ajustar detalhes de entrega",
+  "createAsDelivery": "Configurar como entrega",
+  "notSpecified": "Não especificado",
+  "allocatedPackagesCount": "Distribuído: {allocated} de {total} pacotes",
+  "membershipBadgeMember": "MEMBRO",
+  "shoppingStopDayDefault": "Compras Dia {day}"
 }

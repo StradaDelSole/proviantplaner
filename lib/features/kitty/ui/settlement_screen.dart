@@ -200,13 +200,16 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          l10n.fundWhoPaysWhom.toUpperCase(),
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+        Expanded(
+          child: Text(
+            l10n.fundWhoPaysWhom.toUpperCase(),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           '$count Zahlungen',
           style: theme.textTheme.labelSmall?.copyWith(
@@ -512,7 +515,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
                   final cleanIban = rawIban.replaceAll(RegExp(r'\s+'), '').toUpperCase();
                   if (cleanIban.isNotEmpty && !IbanValidator.isValid(cleanIban)) {
                     setDialogState(() {
-                      ibanError = 'Ungültige IBAN (Modulo-97 Prüfsummenfehler)';
+                      ibanError = l10n.invalidIban;
                     });
                     return;
                   }
@@ -716,13 +719,22 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(Icons.check_circle, size: 20, color: theme.colorScheme.secondary),
-              const SizedBox(width: 8),
-              Text(l10n.fundBalancesEqual, style: theme.textTheme.bodyMedium),
-            ],
+          Expanded(
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, size: 20, color: theme.colorScheme.secondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.fundBalancesEqual,
+                    style: theme.textTheme.bodyMedium,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Text(
             'Σ $totalFormatted',
             style: theme.textTheme.labelMedium?.copyWith(

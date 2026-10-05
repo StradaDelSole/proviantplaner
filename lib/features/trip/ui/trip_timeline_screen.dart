@@ -54,9 +54,9 @@ class TripTimelineScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Selbst einkaufen')),
-                  ButtonSegment(value: true, label: Text('Liefern lassen')),
+                segments: [
+                  ButtonSegment(value: false, label: Text(l10n.selfShopping)),
+                  ButtonSegment(value: true, label: Text(l10n.deliveryOrder)),
                 ],
                 selected: {isDelivery},
                 onSelectionChanged: (val) => setState(() => isDelivery = val.first),
@@ -287,7 +287,7 @@ class TripTimelineScreen extends ConsumerWidget {
                               child: Text('${stop.dayNumber}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                             ),
                             title: Text(stop.name),
-                            subtitle: Text('${l10n.day} ${stop.dayNumber}${stop.isInitial ? ' (Basis)' : ''}'),
+                            subtitle: Text('${l10n.day} ${stop.dayNumber}${stop.isInitial ? " ${l10n.initialBaseStopLabel}" : ""}'),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [

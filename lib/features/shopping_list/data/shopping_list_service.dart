@@ -553,12 +553,7 @@ class ShoppingListService {
         if (laterStops.isNotEmpty) {
           nextStopId = laterStops.first.id;
         } else {
-          final nextDay = (currentStop.dayNumber + 1).clamp(1, listData.trip.daysCount);
-          nextStopId = await tripService.addShoppingStop(
-            tripId: tripId,
-            name: 'Einkaufsstopp Tag $nextDay',
-            dayNumber: nextDay,
-          );
+          throw StateError('Kein Ziel-Einkaufsstopp für zurückgestellte Posten vorhanden.');
         }
       }
 

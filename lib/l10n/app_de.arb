@@ -783,5 +783,128 @@
   "packageSizeInfoTitle": "Gemerkte Packungsgrößen",
   "packageSizeInfoContent": "Individuelle Packungsgrößen werden direkt in der Vorratsliste an den Artikeln angepasst und für diesen Törn gespeichert.",
   "languageSettingTitle": "Sprache",
-  "languageSettingSubtitle": "Systemstandard (Deutsch)"
+  "languageSettingSubtitle": "Systemstandard (Deutsch)",
+  "settingsHeader": "Einstellungen",
+  "legalAndInfo": "Rechtliches & Information",
+  "nightwatchTitle": "Nachtwache-Modus",
+  "nightwatchSubtitle": "Reines Rot auf Schwarz zum Erhalt der Nachtsicht",
+  "myPaymentDetails": "Meine Zahlungsdaten",
+  "myPaymentDetailsSubtitle": "Nur auf diesem Gerät gespeichert",
+  "myPaymentDetailsInfo": "Hier hinterlegte Daten (z. B. IBAN, PayPal.Me) werden beim Teilen von Abrechnungen vorgeschlagen. Sie werden ausschließlich lokal gespeichert.",
+  "paymentDetailsSaved": "Zahlungsdaten gespeichert.",
+  "savedSuppliersTitle": "Gespeicherte Lieferanten",
+  "savedSuppliersNone": "Keine Lieferanten hinterlegt",
+  "savedSuppliersCount": "{count, plural, =1{1 Lieferant hinterlegt} other{{count} Lieferanten hinterlegt}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "Noch keine Lieferanten gespeichert.",
+  "addSupplier": "Lieferant hinzufügen",
+  "editSupplier": "Lieferant bearbeiten",
+  "deleteSupplier": "Lieferant löschen",
+  "deleteSupplierConfirm": "Möchtest du „{name}“ wirklich löschen?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Folgt der Gerätesprache",
+  "accountBackupRestoreConfirmContent": "Möchtest du alle Törns aus der Cloud-Sicherung wiederherstellen? Bestehende lokale Daten werden überschrieben.",
+  "accountBackupFailed": "Sicherung fehlgeschlagen.",
+  "accountBackupNotFound": "Keine Sicherung gefunden.",
+  "accountBackupError": "Fehler bei der Sicherung: {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Fehler bei der Wiederherstellung: {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Kühl- & Wasserkapazitäten",
+  "atLeastOnePersonRequired": "Mindestens eine Person muss an Bord bleiben.",
+  "mealsSectionTitle": "Mahlzeiten & Restaurant",
+  "createFollowUpStopTitle": "Folgestopp anlegen",
+  "createFollowUpStopContent": "Es gibt keinen späteren Einkaufsstopp. Wann möchtest du die {count} Positionen einkaufen?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Stopp anlegen & verschieben",
+  "itemsMovedToStopNotice": "{count} Positionen zu „{stopName}“ verschoben.",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "Nicht gefunden",
+  "notFoundMessage": "Die angeforderte Seite oder der Törn wurde nicht gefunden.",
+  "backToHome": "Zurück zur Übersicht",
+  "initialBaseStopLabel": "(Basis)",
+  "genericError": "Fehler",
+  "supplierNameLabel": "Name des Lieferanten / Marktes",
+  "supplierMarinaLabel": "Marina / Ort",
+  "supplierPhoneLabel": "Telefonnummer",
+  "supplierEmailLabel": "E-Mail",
+  "invalidIban": "Ungültige IBAN (Modulo-97 Prüfsummenfehler)",
+  "itemsOnListCount": "{count} Positionen auf der Liste",
+  "@itemsOnListCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingStopsCount": "{count, plural, =1{1 Einkaufsstopp} other{{count} Einkaufsstopps}}",
+  "@shoppingStopsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adjustDeliveryDetails": "Lieferdetails anpassen",
+  "createAsDelivery": "Als Lieferung anlegen",
+  "notSpecified": "Nicht festgelegt",
+  "allocatedPackagesCount": "Verteilt: {allocated} von {total} Packungen",
+  "@allocatedPackagesCount": {
+    "placeholders": {
+      "allocated": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "membershipBadgeMember": "MITGLIED",
+  "shoppingStopDayDefault": "Einkauf Tag {day}",
+  "@shoppingStopDayDefault": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -88,7 +88,7 @@ class StartScreen extends ConsumerWidget {
       body: SafeArea(
         child: allTripsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, _) => Center(child: Text('Fehler: $err')),
+          error: (err, _) => Center(child: Text('${l10n.genericError}: $err')),
           data: (trips) {
             final activeTrips = trips.where((t) => !t.isArchived).toList();
             final archivedTrips = trips.where((t) => t.isArchived).toList();

@@ -105,7 +105,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       ),
       body: asyncData.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Fehler: $err')),
+        error: (err, _) => Center(child: Text('${l10n.genericError}: $err')),
         data: (d) => _buildBody(context, ref, theme, l10n, d),
       ),
       floatingActionButton: FloatingActionButton.extended(

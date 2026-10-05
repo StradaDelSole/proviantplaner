@@ -776,5 +776,97 @@
   "packageSizeInfoTitle": "Prilagođene veličine pakiranja",
   "packageSizeInfoContent": "Prilagođene veličine pakiranja mogu se mijenjati izravno na popisu i pamte se za ovu plovidbu.",
   "languageSettingTitle": "Jezik",
-  "languageSettingSubtitle": "Zadano u sustavu (Hrvatski)"
+  "languageSettingSubtitle": "Zadano u sustavu (Hrvatski)",
+  "settingsHeader": "Postavke",
+  "legalAndInfo": "Pravne informacije i općenito",
+  "nightwatchTitle": "Noćna straža način rada",
+  "nightwatchSubtitle": "Čisto crveno na crnom za očuvanje noćnog vida",
+  "myPaymentDetails": "Moji podaci o plaćanju",
+  "myPaymentDetailsSubtitle": "Pohranjeno samo na ovom uređaju",
+  "myPaymentDetailsInfo": "Ovdje uneseni podaci (npr. IBAN, PayPal.Me) predlažu se pri dijeljenju obračuna. Pohranjuju se isključivo lokalno.",
+  "paymentDetailsSaved": "Podaci o plaćanju spremljeni.",
+  "savedSuppliersTitle": "Spremljeni dobavljači",
+  "savedSuppliersNone": "Nema unesenih dobavljača",
+  "savedSuppliersCount": "{count, plural, =1{1 dobavljač spremljen} other{{count} dobavljača spremljeno}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "Još nema spremljenih dobavljača.",
+  "addSupplier": "Dodaj dobavljača",
+  "editSupplier": "Uredi dobavljača",
+  "deleteSupplier": "Izbriši dobavljača",
+  "deleteSupplierConfirm": "Želite li doista izbrisati „{name}”?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Prati jezik uređaja",
+  "accountBackupRestoreConfirmContent": "Želite li vratiti sva putovanja iz sigurnosne kopije u oblaku? Postojeći lokalni podaci bit će prebrisani.",
+  "accountBackupFailed": "Sigurnosno kopiranje nije uspjelo.",
+  "accountBackupNotFound": "Nije pronađena sigurnosna kopija.",
+  "accountBackupError": "Pogreška pri sigurnosnom kopiranju: {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Pogreška pri vraćanju: {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Kapaciteti hlađenja i vode",
+  "atLeastOnePersonRequired": "Barem jedna osoba mora ostati na brodu.",
+  "mealsSectionTitle": "Obroci i restoran",
+  "createFollowUpStopTitle": "Stvori sljedeće zaustavljanje",
+  "createFollowUpStopContent": "Nema kasnijeg zaustavljanja za kupovinu. Kada želite kupiti {count} stavki?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Stvori zaustavljanje i premjesti",
+  "itemsMovedToStopNotice": "{count} stavki premješteno u „{stopName}”.",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "Nije pronađeno",
+  "notFoundMessage": "Tražena stranica ili putovanje nisu pronađeni.",
+  "backToHome": "Povratak na početnu stranicu",
+  "initialBaseStopLabel": "(Baza)",
+  "genericError": "Pogreška",
+  "supplierNameLabel": "Naziv dobavljača / trgovine",
+  "supplierMarinaLabel": "Marina / lokacija",
+  "supplierPhoneLabel": "Telefonski broj",
+  "supplierEmailLabel": "E-pošta",
+  "invalidIban": "Nevažeći IBAN (pogreška kontrolnog broja Modulo-97)",
+  "itemsOnListCount": "{count} stavki na popisu",
+  "shoppingStopsCount": "{count, plural, one{1 zaustavljanje za kupovinu} few{{count} zaustavljanja za kupovinu} other{{count} zaustavljanja za kupovinu}}",
+  "adjustDeliveryDetails": "Prilagodi detalje dostave",
+  "createAsDelivery": "Postavi kao dostavu",
+  "notSpecified": "Nije određeno",
+  "allocatedPackagesCount": "Raspoređeno: {allocated} od {total} paketa",
+  "membershipBadgeMember": "ČLAN",
+  "shoppingStopDayDefault": "Kupovina Dan {day}"
 }

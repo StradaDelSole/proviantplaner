@@ -776,5 +776,97 @@
   "packageSizeInfoTitle": "Custom Package Sizes",
   "packageSizeInfoContent": "Custom package sizes can be adjusted directly for each item in the provision list and are remembered for this trip.",
   "languageSettingTitle": "Language",
-  "languageSettingSubtitle": "System default (English)"
+  "languageSettingSubtitle": "System default (English)",
+  "settingsHeader": "Settings",
+  "legalAndInfo": "Legal & Information",
+  "nightwatchTitle": "Night Watch Mode",
+  "nightwatchSubtitle": "Pure red on black to preserve night vision",
+  "myPaymentDetails": "My Payment Details",
+  "myPaymentDetailsSubtitle": "Stored only on this device",
+  "myPaymentDetailsInfo": "Payment details entered here (e.g. IBAN, PayPal.Me) are suggested when sharing settlements. They are stored exclusively locally.",
+  "paymentDetailsSaved": "Payment details saved.",
+  "savedSuppliersTitle": "Saved Suppliers",
+  "savedSuppliersNone": "No suppliers saved",
+  "savedSuppliersCount": "{count, plural, =1{1 supplier saved} other{{count} suppliers saved}}",
+  "@savedSuppliersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "savedSuppliersEmpty": "No suppliers saved yet.",
+  "addSupplier": "Add Supplier",
+  "editSupplier": "Edit Supplier",
+  "deleteSupplier": "Delete Supplier",
+  "deleteSupplierConfirm": "Do you really want to delete “{name}”?",
+  "@deleteSupplierConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "languageFollowsDevice": "Follows device language",
+  "accountBackupRestoreConfirmContent": "Do you want to restore all trips from cloud backup? Existing local data will be overwritten.",
+  "accountBackupFailed": "Backup failed.",
+  "accountBackupNotFound": "No backup found.",
+  "accountBackupError": "Backup error: {error}",
+  "@accountBackupError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "accountRestoreError": "Restore error: {error}",
+  "@accountRestoreError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "coolingAndWaterCapacities": "Cooling & Water Capacities",
+  "atLeastOnePersonRequired": "At least one person must remain on board.",
+  "mealsSectionTitle": "Meals & Restaurant Visits",
+  "createFollowUpStopTitle": "Create Follow-up Stop",
+  "createFollowUpStopContent": "There is no subsequent shopping stop. When do you want to shop the {count} items?",
+  "@createFollowUpStopContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createStopAndMove": "Create Stop & Move Items",
+  "itemsMovedToStopNotice": "{count} items moved to “{stopName}”.",
+  "@itemsMovedToStopNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "stopName": {
+        "type": "String"
+      }
+    }
+  },
+  "notFoundTitle": "Not Found",
+  "notFoundMessage": "The requested page or trip was not found.",
+  "backToHome": "Back to Home",
+  "initialBaseStopLabel": "(Base)",
+  "genericError": "Error",
+  "supplierNameLabel": "Supplier / market name",
+  "supplierMarinaLabel": "Marina / location",
+  "supplierPhoneLabel": "Phone number",
+  "supplierEmailLabel": "Email",
+  "invalidIban": "Invalid IBAN (Modulo-97 checksum error)",
+  "itemsOnListCount": "{count} items on the list",
+  "shoppingStopsCount": "{count, plural, =1{1 shopping stop} other{{count} shopping stops}}",
+  "adjustDeliveryDetails": "Adjust delivery details",
+  "createAsDelivery": "Set up as delivery",
+  "notSpecified": "Not specified",
+  "allocatedPackagesCount": "Allocated: {allocated} of {total} packages",
+  "membershipBadgeMember": "MEMBER",
+  "shoppingStopDayDefault": "Shopping Day {day}"
 }

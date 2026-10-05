@@ -130,7 +130,7 @@ class _StopAllocationSheetState extends ConsumerState<StopAllocationSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Verteilt: $_totalAllocated von $_totalAvailable Packungen',
+            l10n.allocatedPackagesCount(_totalAllocated, _totalAvailable),
             style: theme.proviantTypography.numberMedium.copyWith(
               color: _totalAllocated > _totalAvailable
                   ? theme.colorScheme.error
@@ -176,14 +176,14 @@ class _StopAllocationSheetState extends ConsumerState<StopAllocationSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Tag ${stop.dayNumber} · ${stop.name}',
+                              '${l10n.day} ${stop.dayNumber} · ${stop.name}',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             if (stop.isInitial)
                               Text(
-                                'Ersteinkauf (Basis)',
+                                l10n.initialBaseStopLabel,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),

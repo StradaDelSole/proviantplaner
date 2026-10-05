@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-05 – Slice FIX-A: Review-Amendment (Findings A–E / Issue #20)
+
+- **Finding A (Issue #16 – Lokalisierung vollständig repariert):**
+  - Alle sichtbaren produktiven Strings in `TripOverviewScreen`, `MoreScreen`, `NotFoundScreen`, `SettlementScreen`, `PlanningView` und `StopAllocationSheet` konsequent über `AppLocalizations` / ARB geführt.
+  - Alle 6 Sprachen (DE, EN, ES, FR, HR, PT) synchronisiert und vollständig übersetzt (inkl. strikter UX-C-Konformität: kein "kitty" im ARB).
+  - Verifiziert durch echte UI-Tests in Englisch und Spanisch ohne deutsche Reststrings.
+- **Finding B (Issue #15 – Trip Edit mit Restaurant-Steppern & Clamping):**
+  - `_showEditTripDialog` um Zähler für Mittagessen (`restaurantLunches`) und Abendessen (`restaurantDinners`) mit Steppern (0..daysCount) erweitert.
+  - `TripService.updateTripDetails` speichert Restaurantzähler in den `tripDays` (SQLite), klemmt diese bei Verringerung der Reisedauer (`daysCount`) automatisch und stößt Mengen-Neuberechnung an.
+- **Finding C (Issue #17 – Keine Pseudo-Settings):**
+  - Kachel „Gemerkte Packungsgrößen“ aus der sichtbaren UI des `MoreScreen` entfernt.
+  - Kachel „Sprache“ als reine Information ohne Settings-/Chevron-Affordance (`onTap: null`, Untertitel „Folgt der Gerätesprache“).
+- **Finding D („Später“ beim Einkaufsabschluss ohne stilles Anlegen):**
+  - Existiert ein späterer Einkaufsstopp, werden offene Artikel dorthin verschoben mit SnackBar-Bestätigung.
+  - Existiert noch kein späterer Stopp, wird ein expliziter Eingabedialog für den Folgestopp vorgeschaltet (`_promptForNextStop`), der Stopp bewusst angelegt und die Positionen verschoben.
+  - `ShoppingListService.handleUnboughtItems` verbietet stilles Erzeugen ohne valide `targetStopId`.
+- **Finding E (Issue #19 – Echte UI-/Router-Journey-Tests):**
+  - Alle 7 Journeys in `test/features/ux/fix_a_journey_test.dart` führen reale Router- und UI-Pfade über `GoRouter` und echte Widget-Taps durch.
+  - Overflow-Härtung in `SettlementScreen`, `TripOverviewScreen` und `PlanningView`.
+- **Qualitätsprüfung:**
+  - `flutter analyze`: 0 Fehler, 0 Warnungen.
+  - `flutter test`: 239/239 Tests grün.
+
 ## 2026-10-05 – Slice FIX-A: Navigation & Lifecycle Regression Repair
 
 - **Behebung von Issue #11 (Einlagerung & Rücksprung):**

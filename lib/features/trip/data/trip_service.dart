@@ -296,7 +296,7 @@ class TripService {
     return tripDao.setTripPhase(tripId, phase);
   }
 
-  /// Aktualisiert Törn-Stammdaten (Name, Startdatum, Tage, Kapazitäten) und berechnet Mengen neu.
+  /// Aktualisiert Törn-Stammdaten (Name, Startdatum, Tage, Kapazitäten, Restaurantbesuche) und berechnet Mengen neu.
   Future<void> updateTripDetails({
     required int tripId,
     String? name,
@@ -307,9 +307,13 @@ class TripService {
     int? freezerCapacity,
     int? waterTankLiters,
     bool? isWaterTankDrinkable,
+    int? restaurantLunches,
+    int? restaurantDinners,
   }) async {
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return;
+
+    final effectiveDays = daysCount ?? trip.daysCount;
 
     if (daysCount != null && daysCount != trip.daysCount) {
       final existingDays = await tripDao.getDaysForTrip(tripId);
@@ -324,6 +328,25 @@ class TripService {
         final toRemove = existingDays.where((d) => d.dayNumber > daysCount);
         for (final d in toRemove) {
           await tripDao.deleteTripDay(d.id);
+        }
+      }
+    }
+
+    if (restaurantLunches != null || restaurantDinners != null) {
+      final days = await tripDao.getDaysForTrip(tripId);
+      final currentLunches = days.where((d) => d.lunchRestaurant).length;
+      final currentDinners = days.where((d) => d.dinnerRestaurant).length;
+      final clampedLunches = (restaurantLunches ?? currentLunches).clamp(0, effectiveDays);
+      final clampedDinners = (restaurantDinners ?? currentDinners).clamp(0, effectiveDays);
+
+      for (int i = 0; i < days.length; i++) {
+        final shouldDinner = i < clampedDinners;
+        final shouldLunch = i < clampedLunches;
+        if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
+          await tripDao.updateTripDay(days[i].copyWith(
+            dinnerRestaurant: shouldDinner,
+            lunchRestaurant: shouldLunch,
+          ));
         }
       }
     }
