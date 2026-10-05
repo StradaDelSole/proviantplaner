@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
@@ -18,6 +19,10 @@ import 'package:proviantplaner/features/shopping_list/ui/widgets/order_preview_s
 import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_received_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
+import 'package:proviantplaner/features/trip/ui/widgets/crew_member_dialog.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
 class TripOverviewScreen extends ConsumerStatefulWidget {
   final int tripId;
@@ -40,6 +45,12 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
   @override
   void initState() {
     super.initState();
+    _loadTripDetails();
+  }
+
+  @override
+  void didUpdateWidget(TripOverviewScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
     _loadTripDetails();
   }
 
@@ -68,13 +79,19 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
 
   int _calculateCurrentStep(TripKittyData kittyData) {
     if (_trip == null) return 1;
-    final now = DateTime.now();
-    final tripEnded = now.isAfter(_trip!.startDate.add(Duration(days: _trip!.daysCount)));
-    if (tripEnded) return 4;
-    final tripStarted = now.isAfter(_trip!.startDate) || kittyData.expenses.isNotEmpty;
-    if (tripStarted) return 3;
-    final hasItems = _items.isNotEmpty;
-    if (hasItems) return 2;
+    if (_trip!.isArchived || _trip!.phase == TripPhase.conclusion) {
+      return 4;
+    }
+    if (_trip!.phase == TripPhase.underway || kittyData.expenses.isNotEmpty) {
+      return 3;
+    }
+    if (_trip!.phase == TripPhase.storage || _trip!.phase == TripPhase.shopping) {
+      return 2;
+    }
+    final hasAdopted = _items.any((it) => it.isAdopted || it.isCustom);
+    if (hasAdopted) {
+      return 2;
+    }
     return 1;
   }
 
@@ -110,13 +127,23 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: l10n.previousStep,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/');
+                }
+              },
+            ),
             title: Text(_trip!.name),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
-                tooltip: l10n.edit,
+                tooltip: l10n.editTrip,
                 onPressed: () {
-                  // Schnellbearbeitung Törn-Stammdaten
                   _showEditTripDialog(context, l10n);
                 },
               ),
@@ -137,12 +164,12 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         theme: theme,
                         stepNumber: 1,
                         title: l10n.navShoppingList,
-                        subtitle: '${_items.length} Positionen kalkuliert',
+                        subtitle: '${_items.where((it) => it.isAdopted || it.isCustom).length} Positionen auf der Liste',
                         actionLabel: l10n.editList,
                         icon: Icons.inventory_2_outlined,
                         isCurrent: currentStep == 1,
                         isDone: currentStep > 1,
-                        onAction: () => context.go('/trips/${widget.tripId}/shopping-list'),
+                        onAction: () => context.push('/trips/${widget.tripId}/shopping-list'),
                       ),
                       _buildStepConnector(theme),
                       _buildShoppingStepCard(
@@ -358,7 +385,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                 ),
                 if (_stops.isNotEmpty)
                   FilledButton.tonal(
-                    onPressed: () => context.go('/trips/${widget.tripId}/shop/${_stops.first.id}'),
+                    onPressed: () => context.push('/trips/${widget.tripId}/shop/${_stops.first.id}'),
                     child: Text(l10n.startShopping),
                   ),
               ],
@@ -405,11 +432,11 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                                 children: [
                                   const Icon(Icons.check_circle, size: 16, color: Colors.green),
                                   const SizedBox(width: 4),
-                                  const Text('Lieferung erhalten', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                                  Text(l10n.orderReceived, style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                                   const Spacer(),
                                   TextButton(
                                     onPressed: () => _openOrderPreview(s, order),
-                                    child: const Text('Bestellung ansehen'),
+                                    child: Text(l10n.viewOrder),
                                   ),
                                 ],
                               ),
@@ -424,12 +451,12 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                                 children: [
                                   FilledButton.tonal(
                                     onPressed: () => _openDeliveryReceived(s, order),
-                                    child: const Text('Lieferung erhalten'),
+                                    child: Text(l10n.orderReceived),
                                   ),
                                   const SizedBox(width: 8),
                                   TextButton(
                                     onPressed: () => _openOrderPreview(s, order),
-                                    child: const Text('Bestellung ansehen'),
+                                    child: Text(l10n.viewOrder),
                                   ),
                                 ],
                               ),
@@ -437,7 +464,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                               const SizedBox(height: 8),
                               FilledButton.tonal(
                                 onPressed: () => _openOrderPreview(s, order),
-                                child: const Text('Bestellung senden'),
+                                child: Text(l10n.sendOrder),
                               ),
                             ],
                           ],
@@ -452,21 +479,39 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                       children: [
                         Icon(Icons.storefront_outlined, size: 16, color: theme.colorScheme.secondary),
                         const SizedBox(width: 8),
-                        Text('Tag ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
-                        const Spacer(),
+                        Expanded(
+                          child: Text('Tag ${s.dayNumber} · ${s.name}', style: theme.textTheme.bodyMedium),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          tooltip: l10n.edit,
+                          onPressed: () => _showEditStopDialog(context, s, l10n),
+                        ),
+                        if (!s.isInitial)
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+                            tooltip: l10n.delete,
+                            onPressed: () => _deleteStop(context, s, l10n),
+                          ),
                         IconButton(
                           icon: const Icon(Icons.local_shipping_outlined, size: 18),
                           tooltip: 'Als Lieferung anlegen',
                           onPressed: () => _configureDelivery(s, null),
                         ),
                         TextButton(
-                          onPressed: () => context.go('/trips/${widget.tripId}/shop/${s.id}'),
-                          child: const Text('Starten'),
+                          onPressed: () => context.push('/trips/${widget.tripId}/shop/${s.id}'),
+                          child: Text(l10n.startTrip),
                         ),
                       ],
                     ),
                   );
                 }),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addShoppingStop),
+              onPressed: () => _showAddStopDialog(context, l10n),
+            ),
           ],
         ),
       ),
@@ -591,10 +636,14 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Unterwegs / Bordkasse', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      Text('Kassenwart: $treasurerName', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                      Text(l10n.underwayFund, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('${l10n.treasurerLabel} $treasurerName', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
                     ],
                   ),
+                ),
+                FilledButton.tonal(
+                  onPressed: () => context.push('/trips/${widget.tripId}/kitty'),
+                  child: Text(l10n.openFund),
                 ),
               ],
             ),
@@ -609,7 +658,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Kassenstand:', style: theme.textTheme.bodyMedium),
+                  Text(l10n.balanceLabel, style: theme.textTheme.bodyMedium),
                   Text(
                     '$balanceEuros €',
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -643,7 +692,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
             ),
             if (kittyData.expenses.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('Letzte Ausgaben:', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.outline)),
+              Text(l10n.recentExpenses, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.outline)),
               const SizedBox(height: 4),
               ...kittyData.expenses.take(3).map((e) => Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
@@ -712,7 +761,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   ),
                 ),
                 FilledButton(
-                  onPressed: () => context.go('/trips/${widget.tripId}/kitty/settlement'),
+                  onPressed: () => context.push('/trips/${widget.tripId}/kitty/settlement'),
                   child: Text(l10n.settle),
                 ),
               ],
@@ -737,6 +786,20 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
           subtitle: Text('${_days.length} Tage im Törnverlauf', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      label: Text(l10n.openTimeline),
+                      onPressed: () => context.push('/trips/${widget.tripId}/timeline'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             ..._days.map((day) => Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   color: theme.colorScheme.surfaceContainerLowest,
@@ -792,38 +855,485 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     ref.invalidate(tripKittyDataProvider(widget.tripId));
   }
 
-  Future<void> _showEditTripDialog(BuildContext context, AppLocalizations l10n) async {
-    final nameCtrl = TextEditingController(text: _trip!.name);
+  Future<void> _showAddStopDialog(BuildContext context, AppLocalizations l10n) async {
+    final nameCtrl = TextEditingController(text: 'Einkauf Tag ${_days.isNotEmpty ? _days.last.dayNumber : 1}');
+    int selectedDay = _days.isNotEmpty ? _days.last.dayNumber : 1;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.edit),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: InputDecoration(
-            labelText: l10n.tripName,
-            border: const OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.addShoppingStop),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: selectedDay,
+                decoration: InputDecoration(
+                  labelText: l10n.day,
+                  border: const OutlineInputBorder(),
+                ),
+                items: List.generate(
+                  _days.length,
+                  (index) => DropdownMenuItem(
+                    value: index + 1,
+                    child: Text('${l10n.day} ${index + 1}'),
+                  ),
+                ),
+                onChanged: (val) {
+                  if (val != null) {
+                    setDialogState(() => selectedDay = val);
+                  }
+                },
+              ),
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isNotEmpty) {
+                  final service = ref.read(tripServiceProvider);
+                  await service.addShoppingStop(
+                    tripId: widget.tripId,
+                    name: name,
+                    dayNumber: selectedDay,
+                  );
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (mounted) _loadTripDetails();
+                }
+              },
+              child: Text(l10n.save),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _showEditStopDialog(BuildContext context, ShoppingStop stop, AppLocalizations l10n) async {
+    final nameCtrl = TextEditingController(text: stop.name);
+    int selectedDay = stop.dayNumber;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.edit),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.name,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              if (!stop.isInitial) ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: selectedDay,
+                  decoration: InputDecoration(
+                    labelText: l10n.day,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: List.generate(
+                    _days.length,
+                    (index) => DropdownMenuItem(
+                      value: index + 1,
+                      child: Text('${l10n.day} ${index + 1}'),
+                    ),
+                  ),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => selectedDay = val);
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isNotEmpty) {
+                  final service = ref.read(tripServiceProvider);
+                  await service.updateShoppingStop(
+                    stop.copyWith(
+                      name: name,
+                      dayNumber: selectedDay,
+                    ),
+                  );
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (mounted) _loadTripDetails();
+                }
+              },
+              child: Text(l10n.save),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteStop(BuildContext context, ShoppingStop stop, AppLocalizations l10n) async {
+    if (stop.isInitial) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.firstStopProtected)),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteStopConfirmTitle),
+        content: Text(l10n.deleteStopConfirmContent),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
-            onPressed: () async {
-              final newName = nameCtrl.text.trim();
-              if (newName.isNotEmpty) {
-                final db = ref.read(databaseProvider);
-                await db.tripDao.updateTrip(_trip!.copyWith(name: newName));
-                if (ctx.mounted) {
-                  Navigator.of(ctx).pop();
-                }
-                if (mounted) {
-                  _loadTripDetails();
-                }
-              }
-            },
-            child: Text(l10n.save),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.delete),
           ),
         ],
+      ),
+    );
+    if (confirmed == true) {
+      final service = ref.read(tripServiceProvider);
+      await service.deleteShoppingStop(stop.id);
+      if (mounted) _loadTripDetails();
+    }
+  }
+
+  Future<void> _addCrewMember(BuildContext context, AppLocalizations l10n) async {
+    final input = await showDialog<CrewMemberInput>(
+      context: context,
+      builder: (ctx) => const CrewMemberDialog(),
+    );
+    if (input != null) {
+      final db = ref.read(databaseProvider);
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: widget.tripId,
+        name: input.name,
+        isChild: Value(!input.isAdult),
+        isVegetarian: Value(input.isVegetarian),
+        isNonDrinker: Value(input.noAlcohol),
+        customEatLevel: Value(input.customEatLevel?.rawValue),
+        customDrinkLevel: Value(input.customDrinkLevel?.rawValue),
+      ));
+      await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
+      if (mounted) _loadTripDetails();
+    }
+  }
+
+  Future<void> _editCrewMember(BuildContext context, CrewMember member, AppLocalizations l10n) async {
+    EatProfileLevel? eat;
+    if (member.customEatLevel != null) {
+      try {
+        eat = EatProfileLevel.fromString(member.customEatLevel!);
+      } catch (_) {}
+    }
+    DrinkProfileLevel? drink;
+    if (member.customDrinkLevel != null) {
+      try {
+        drink = DrinkProfileLevel.fromString(member.customDrinkLevel!);
+      } catch (_) {}
+    }
+
+    final initial = CrewMemberInput(
+      id: member.id.toString(),
+      name: member.name,
+      isAdult: !member.isChild,
+      isVegetarian: member.isVegetarian,
+      noAlcohol: member.isNonDrinker,
+      customEatLevel: eat,
+      customDrinkLevel: drink,
+    );
+
+    final input = await showDialog<CrewMemberInput>(
+      context: context,
+      builder: (ctx) => CrewMemberDialog(initialMember: initial),
+    );
+    if (input != null) {
+      final db = ref.read(databaseProvider);
+      await db.tripDao.updateCrewMember(member.copyWith(
+        name: input.name,
+        isChild: !input.isAdult,
+        isVegetarian: input.isVegetarian,
+        isNonDrinker: input.noAlcohol,
+        customEatLevel: Value(input.customEatLevel?.rawValue),
+        customDrinkLevel: Value(input.customDrinkLevel?.rawValue),
+      ));
+      await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
+      if (mounted) _loadTripDetails();
+    }
+  }
+
+  Future<void> _deleteCrewMember(CrewMember member, AppLocalizations l10n) async {
+    if (_crew.length <= 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mindestens eine Person muss an Bord bleiben.')),
+      );
+      return;
+    }
+    final db = ref.read(databaseProvider);
+    await db.tripDao.deleteCrewMember(member.id);
+    await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
+    if (mounted) _loadTripDetails();
+  }
+
+  Future<void> _showEditTripDialog(BuildContext context, AppLocalizations l10n) async {
+    final nameCtrl = TextEditingController(text: _trip!.name);
+    DateTime selectedDate = _trip!.startDate;
+    int daysCount = _trip!.daysCount;
+    int fridgeCapacity = _trip!.fridgeCapacity;
+    bool hasFreezer = _trip!.hasFreezer;
+    int freezerCapacity = _trip!.freezerCapacity;
+    int waterTankLiters = _trip!.waterTankLiters;
+    bool isWaterTankDrinkable = _trip!.isWaterTankDrinkable;
+
+    final fridgeCtrl = TextEditingController(text: fridgeCapacity.toString());
+    final freezerCtrl = TextEditingController(text: freezerCapacity.toString());
+    final waterCtrl = TextEditingController(text: waterTankLiters.toString());
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final theme = Theme.of(ctx);
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.85,
+            maxChildSize: 0.95,
+            minChildSize: 0.5,
+            builder: (ctx, scrollController) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l10n.editTrip, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.tripName,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.startDate),
+                    subtitle: Text('${selectedDate.day}.${selectedDate.month}.${selectedDate.year}'),
+                    trailing: const Icon(Icons.calendar_today_outlined),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2040),
+                      );
+                      if (picked != null) {
+                        setSheetState(() => selectedDate = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l10n.daysCount, style: theme.textTheme.bodyMedium),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline),
+                            onPressed: daysCount > 1
+                                ? () => setSheetState(() => daysCount--)
+                                : null,
+                          ),
+                          Text('$daysCount', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            onPressed: daysCount < 180
+                                ? () => setSheetState(() => daysCount++)
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  Text(
+                    'Kühl- & Wasserkapazitäten',
+                    style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: fridgeCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: l10n.fridgeCapacity,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.freezerAvailable),
+                    value: hasFreezer,
+                    onChanged: (val) => setSheetState(() => hasFreezer = val),
+                  ),
+                  if (hasFreezer) ...[
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: freezerCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: l10n.freezerCapacityLiters,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: waterCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: l10n.waterTankLiters,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.waterTankDrinkable),
+                    subtitle: Text(l10n.waterTankDrinkableSubtitle),
+                    value: isWaterTankDrinkable,
+                    onChanged: (val) => setSheetState(() => isWaterTankDrinkable = val),
+                  ),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${l10n.crewSectionTitle} (${_crew.length} ${l10n.persons})',
+                        style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.person_add_outlined, size: 18),
+                        label: Text(l10n.addCrewMember),
+                        onPressed: () async {
+                          await _addCrewMember(context, l10n);
+                          setSheetState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                  ..._crew.map((member) => ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: CircleAvatar(
+                          radius: 14,
+                          child: Text(member.name.isNotEmpty ? member.name[0].toUpperCase() : '?'),
+                        ),
+                        title: Text(member.name),
+                        subtitle: Text([
+                          !member.isChild ? l10n.isAdult : l10n.isChild,
+                          if (member.isVegetarian) l10n.isVegetarian,
+                          if (member.isNonDrinker) l10n.noAlcohol,
+                        ].join(' · ')),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              onPressed: () async {
+                                await _editCrewMember(context, member, l10n);
+                                setSheetState(() {});
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+                              onPressed: () async {
+                                await _deleteCrewMember(member, l10n);
+                                setSheetState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      )),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () async {
+                      final newName = nameCtrl.text.trim();
+                      final parsedFridge = int.tryParse(fridgeCtrl.text.trim()) ?? fridgeCapacity;
+                      final parsedFreezer = int.tryParse(freezerCtrl.text.trim()) ?? freezerCapacity;
+                      final parsedWater = int.tryParse(waterCtrl.text.trim()) ?? waterTankLiters;
+
+                      final service = ref.read(tripServiceProvider);
+                      await service.updateTripDetails(
+                        tripId: widget.tripId,
+                        name: newName.isNotEmpty ? newName : null,
+                        startDate: selectedDate,
+                        daysCount: daysCount,
+                        fridgeCapacity: parsedFridge,
+                        hasFreezer: hasFreezer,
+                        freezerCapacity: parsedFreezer,
+                        waterTankLiters: parsedWater,
+                        isWaterTankDrinkable: isWaterTankDrinkable,
+                      );
+                      if (ctx.mounted) Navigator.of(ctx).pop();
+                      if (mounted) _loadTripDetails();
+                    },
+                    child: Text(l10n.save),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

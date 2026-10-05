@@ -52,6 +52,18 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.previousStep,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/trips/${widget.tripId}');
+            }
+          },
+        ),
         title: Text(l10n.fundTitle),
         actions: [
           IconButton(

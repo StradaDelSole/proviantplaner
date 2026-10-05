@@ -511,6 +511,106 @@ class ShoppingListService {
     );
   }
 
+  /// Verarbeitet nicht gekaufte Artikel eines Einkaufsstopps (FIX-A / Issue #14).
+  /// [postpone]: true = "Später" (verschiebt auf Folge-Stopp), false = "Streichen" (Menge reduzieren/entfernen).
+  Future<void> handleUnboughtItems({
+    required int tripId,
+    required int currentStopId,
+    required bool postpone,
+    int? targetStopId,
+  }) async {
+    final listData = await loadShoppingList(tripId);
+    final currentStop = listData.stops.where((s) => s.id == currentStopId).firstOrNull;
+    if (currentStop == null) return;
+
+    final isFirstStop = listData.stops.firstOrNull?.id == currentStopId;
+
+    final unboughtItems = <({ShoppingListItemView item, int unboughtCount})>[];
+    for (final it in listData.allItems) {
+      if (!it.isOnList) continue;
+      final totalOtherAlloc = it.allocationsByStop.entries
+          .where((e) => e.key != currentStopId)
+          .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+      final countAtStop = it.packagesAtStop(
+        currentStopId,
+        isFirstStop: isFirstStop,
+        totalOtherAllocated: totalOtherAlloc,
+      );
+      final isBought = it.isBoughtAtStop(currentStopId);
+      if (countAtStop > 0 && !isBought) {
+        unboughtItems.add((item: it, unboughtCount: countAtStop));
+      }
+    }
+
+    if (unboughtItems.isEmpty) return;
+
+    if (postpone) {
+      int nextStopId;
+      if (targetStopId != null) {
+        nextStopId = targetStopId;
+      } else {
+        final laterStops = listData.stops.where((s) => s.dayNumber >= currentStop.dayNumber && s.id != currentStopId).toList();
+        if (laterStops.isNotEmpty) {
+          nextStopId = laterStops.first.id;
+        } else {
+          final nextDay = (currentStop.dayNumber + 1).clamp(1, listData.trip.daysCount);
+          nextStopId = await tripService.addShoppingStop(
+            tripId: tripId,
+            name: 'Einkaufsstopp Tag $nextDay',
+            dayNumber: nextDay,
+          );
+        }
+      }
+
+      for (final entry in unboughtItems) {
+        final it = entry.item;
+        final unbought = entry.unboughtCount;
+
+        final currentAlloc = it.allocationsByStop[currentStopId];
+        if (currentAlloc != null) {
+          final newCurrent = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
+          await listItemDao.setAllocation(
+            tripId: tripId,
+            listItemId: it.item.id,
+            shoppingStopId: currentStopId,
+            packages: newCurrent,
+          );
+        }
+
+        final targetAlloc = it.allocationsByStop[nextStopId]?.allocatedPackages ?? 0;
+        await listItemDao.setAllocation(
+          tripId: tripId,
+          listItemId: it.item.id,
+          shoppingStopId: nextStopId,
+          packages: targetAlloc + unbought,
+        );
+      }
+    } else {
+      for (final entry in unboughtItems) {
+        final it = entry.item;
+        final unbought = entry.unboughtCount;
+        final newEffective = it.effectivePackages - unbought;
+
+        final currentAlloc = it.allocationsByStop[currentStopId];
+        if (currentAlloc != null) {
+          final newCur = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
+          await listItemDao.setAllocation(
+            tripId: tripId,
+            listItemId: it.item.id,
+            shoppingStopId: currentStopId,
+            packages: newCur,
+          );
+        }
+
+        if (newEffective <= 0) {
+          await listItemDao.unadoptItem(it.item.id);
+        } else {
+          await listItemDao.adoptItem(it.item.id, packages: newEffective);
+        }
+      }
+    }
+  }
+
   /// Legt eine eigene Position an.
   Future<int> addCustomItem(CustomItemInput input) {
     return listItemDao.addCustomItem(

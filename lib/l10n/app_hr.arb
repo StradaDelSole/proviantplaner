@@ -765,5 +765,16 @@
   "undo": "Poništi",
   "skipperFree": "Skiper oslobođen",
   "initialShopping": "Početna kupovina",
-  "shoppingStop": "Stanica za kupovinu"
+  "shoppingStop": "Stanica za kupovinu",
+  "openFund": "Otvori brodsku blagajnu",
+  "underwayFund": "Na moru / Brodska blagajna",
+  "openTimeline": "Otvori vremensku crtu",
+  "editTrip": "Uredi plovidbu",
+  "manageCrew": "Upravljaj posadom",
+  "deleteStopConfirmTitle": "Obriši stanicu za kupovinu",
+  "deleteStopConfirmContent": "Sigurno želiš obrisati ovu stanicu za kupovinu?",
+  "packageSizeInfoTitle": "Prilagođene veličine pakiranja",
+  "packageSizeInfoContent": "Prilagođene veličine pakiranja mogu se mijenjati izravno na popisu i pamte se za ovu plovidbu.",
+  "languageSettingTitle": "Jezik",
+  "languageSettingSubtitle": "Zadano u sustavu (Hrvatski)"
 }

@@ -772,5 +772,16 @@
   "undo": "Rückgängig",
   "skipperFree": "Skipper frei",
   "initialShopping": "Ersteinkauf",
-  "shoppingStop": "Einkaufsstopp"
+  "shoppingStop": "Einkaufsstopp",
+  "openFund": "Bordkasse öffnen",
+  "underwayFund": "Unterwegs / Bordkasse",
+  "openTimeline": "Tagesleiste öffnen",
+  "editTrip": "Törn bearbeiten",
+  "manageCrew": "Crew verwalten",
+  "deleteStopConfirmTitle": "Einkaufsstopp löschen",
+  "deleteStopConfirmContent": "Möchtest du diesen Einkaufsstopp wirklich löschen?",
+  "packageSizeInfoTitle": "Gemerkte Packungsgrößen",
+  "packageSizeInfoContent": "Individuelle Packungsgrößen werden direkt in der Vorratsliste an den Artikeln angepasst und für diesen Törn gespeichert.",
+  "languageSettingTitle": "Sprache",
+  "languageSettingSubtitle": "Systemstandard (Deutsch)"
 }

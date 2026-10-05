@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/tables.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 part 'daos.g.dart';
 
@@ -75,11 +76,23 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
     return updateTrip(trip.copyWith(treasurerMemberId: Value(memberId)));
   }
 
+  /// Aktualisiert die Phase eines Törns (TripPhase, FIX-A).
+  Future<bool> setTripPhase(int tripId, TripPhase phase) async {
+    final trip = await getTripById(tripId);
+    if (trip == null) return false;
+    return updateTrip(trip.copyWith(phase: phase));
+  }
+
   // TripDays
   Future<List<TripDay>> getDaysForTrip(int tripId) =>
       (select(tripDays)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).get();
 
   Future<bool> updateTripDay(TripDay day) => update(tripDays).replace(day);
+
+  Future<int> addTripDay(TripDaysCompanion day) => into(tripDays).insert(day);
+
+  Future<int> deleteTripDay(int id) =>
+      (delete(tripDays)..where((tbl) => tbl.id.equals(id))).go();
 
   // CrewMembers
   Future<int> addCrewMember(CrewMembersCompanion member) =>

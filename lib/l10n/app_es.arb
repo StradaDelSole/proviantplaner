@@ -765,5 +765,16 @@
   "undo": "Deshacer",
   "skipperFree": "Patrón exento",
   "initialShopping": "Compra inicial",
-  "shoppingStop": "Parada de compras"
+  "shoppingStop": "Parada de compras",
+  "openFund": "Abrir caja de a bordo",
+  "underwayFund": "En ruta / Caja de a bordo",
+  "openTimeline": "Abrir cronograma",
+  "editTrip": "Editar travesía",
+  "manageCrew": "Gestionar tripulación",
+  "deleteStopConfirmTitle": "Eliminar parada de compra",
+  "deleteStopConfirmContent": "¿Realmente deseas eliminar esta parada de compra?",
+  "packageSizeInfoTitle": "Tamaños de paquete personalizados",
+  "packageSizeInfoContent": "Los tamaños de paquete personalizados se pueden ajustar directamente para cada artículo en la lista y se guardan para esta travesía.",
+  "languageSettingTitle": "Idioma",
+  "languageSettingSubtitle": "Estándar del sistema (Español)"
 }

@@ -13,6 +13,8 @@ import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 class ShoppingModeScreen extends ConsumerStatefulWidget {
   final int tripId;
@@ -77,6 +79,17 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
 
         return Scaffold(
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: l10n.previousStep,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/trips/${widget.tripId}');
+                }
+              },
+            ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -272,16 +285,32 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(ctx).pop();
-                _promptStorage(context, l10n);
+                await ref.read(shoppingListServiceProvider).handleUnboughtItems(
+                      tripId: widget.tripId,
+                      currentStopId: widget.stopId,
+                      postpone: false,
+                    );
+                ref.invalidate(tripShoppingListProvider(widget.tripId));
+                if (context.mounted) {
+                  _promptStorage(context, l10n);
+                }
               },
               child: Text(l10n.dismiss),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(ctx).pop();
-                _promptStorage(context, l10n);
+                await ref.read(shoppingListServiceProvider).handleUnboughtItems(
+                      tripId: widget.tripId,
+                      currentStopId: widget.stopId,
+                      postpone: true,
+                    );
+                ref.invalidate(tripShoppingListProvider(widget.tripId));
+                if (context.mounted) {
+                  _promptStorage(context, l10n);
+                }
               },
               child: Text(l10n.postpone),
             ),
@@ -301,19 +330,24 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         content: Text(l10n.shoppingFinishedContent),
         actions: [
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
+              await ref.read(tripServiceProvider).setTripPhase(widget.tripId, TripPhase.storage);
+              if (context.mounted) {
+                context.go('/trips/${widget.tripId}');
+              }
             },
             child: Text(l10n.later),
           ),
           FilledButton.icon(
             icon: const Icon(Icons.inventory_2_outlined),
             label: Text(l10n.storeNow),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-              context.push('/trips/${widget.tripId}/storage');
+              await ref.read(tripServiceProvider).setTripPhase(widget.tripId, TripPhase.storage);
+              if (context.mounted) {
+                context.push('/trips/${widget.tripId}/storage');
+              }
             },
           ),
         ],

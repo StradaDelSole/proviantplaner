@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
@@ -170,6 +171,17 @@ class TripTimelineScreen extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: l10n.previousStep,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/trips/$tripId');
+                }
+              },
+            ),
             title: Text(trip.name),
             actions: [
               IconButton(

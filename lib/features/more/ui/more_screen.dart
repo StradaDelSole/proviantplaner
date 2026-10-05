@@ -216,17 +216,46 @@ class MoreScreen extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.straighten_outlined),
-            title: const Text('Gemerkte Packungsgrößen'),
-            subtitle: const Text('Keine Packungsgrößen angepasst'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            title: Text(l10n.packageSizeInfoTitle),
+            subtitle: Text(l10n.packageSizeInfoContent),
+            isThreeLine: true,
+            trailing: const Icon(Icons.info_outline, size: 20),
+            onTap: () {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l10n.packageSizeInfoTitle),
+                  content: Text(l10n.packageSizeInfoContent),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           ListTile(
             leading: const Icon(Icons.language_outlined),
-            title: const Text('Sprache'),
-            subtitle: const Text('Deutsch'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            title: Text(l10n.languageSettingTitle),
+            subtitle: Text(l10n.languageSettingSubtitle),
+            trailing: const Icon(Icons.info_outline, size: 20),
+            onTap: () {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l10n.languageSettingTitle),
+                  content: Text(l10n.languageSettingSubtitle),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const Divider(height: 24),
           _buildSectionHeader(theme, 'Rechtliches & Information'),

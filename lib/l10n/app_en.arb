@@ -765,5 +765,16 @@
   "undo": "Undo",
   "skipperFree": "Skipper free",
   "initialShopping": "Initial shopping",
-  "shoppingStop": "Shopping stop"
+  "shoppingStop": "Shopping stop",
+  "openFund": "Open Crew Fund",
+  "underwayFund": "Underway / Crew Fund",
+  "openTimeline": "Open Timeline",
+  "editTrip": "Edit Trip",
+  "manageCrew": "Manage Crew",
+  "deleteStopConfirmTitle": "Delete Shopping Stop",
+  "deleteStopConfirmContent": "Do you really want to delete this shopping stop?",
+  "packageSizeInfoTitle": "Custom Package Sizes",
+  "packageSizeInfoContent": "Custom package sizes can be adjusted directly for each item in the provision list and are remembered for this trip.",
+  "languageSettingTitle": "Language",
+  "languageSettingSubtitle": "System default (English)"
 }

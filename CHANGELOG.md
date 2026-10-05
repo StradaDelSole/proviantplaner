@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-05 – Slice FIX-A: Navigation & Lifecycle Regression Repair
+
+- **Behebung von Issue #11 (Einlagerung & Rücksprung):**
+  - Abschluss der Einlagerung in `StorageChecklistScreen` aktualisiert `TripPhase` auf `underway` und navigiert deterministisch per `context.go('/trips/$tripId')` zurück zur Törn-Übersicht statt zum Listen-Editor.
+- **Behebung von Issue #12 (Bordkasse & Törnverlauf wieder erreichbar):**
+  - Direkte Einstiege in `TripOverviewScreen`: Button „Bordkasse öffnen“ führt zur vollen `KittyScreen`-Funktionalität; Button „Tagesleiste öffnen“ in der Tage-im-Detail-Sektion führt zu `TripTimelineScreen`.
+- **Behebung von Issue #13 (Lifecycle & Stepper-Logik):**
+  - `TripDao` und `TripService` um `setTripPhase` erweitert.
+  - Stepper-Berechnung in `TripOverviewScreen` (`_calculateCurrentStep`) orientiert sich an `TripPhase` (plan, shopping, storage, underway, conclusion) und prüft echten Listenstand (`isAdopted || isCustom`), anstatt alle generierten Vorschläge fälschlicherweise als fertige Nutzerliste zu werten.
+- **Behebung von Issue #14 (Einkaufsabschluss: Später vs. Streichen):**
+  - `ShoppingListService.handleUnboughtItems` implementiert:
+    - „Später“ (`postpone: true`): Verschiebt offene/ungedeckte Mengen auf den nächsten Einkaufsstopp (legt diesen automatisch an, falls noch keiner existiert) und passt die Allokationen an.
+    - „Streichen“ (`postpone: false`): Reduziert die Gesamtmenge der betroffenen Positionen bzw. entfernt sie aus der Einkaufsliste (`isAdopted: false`).
+- **Behebung von Issue #15 (Törn-Details, Einkaufsstopps & Crew bearbeiten):**
+  - `TripService.updateTripDetails`: Bearbeiten von Törn-Name, Startdatum, Reisedauer (`daysCount` mit automatischer Anpassung der `TripDays`), Kühl- und Gefrierkapazität sowie Wassertank und Trinkwasser-Eigenschaft inkl. Mengen-Neuberechnung.
+  - Törn bearbeiten Dialog (`_showEditTripDialog`) in `TripOverviewScreen` bietet vollständiges Setup an.
+  - Einkaufsstopp-CRUD (Hinzufügen, Umbenennen, Löschen mit Schutz des Initialstopps) direkt in der Törn-Übersicht.
+  - Crew-Verwaltung (Hinzufügen, Bearbeiten, Löschen mit Schutz vor Leerung) direkt in der Törn-Übersicht.
+- **Behebung von Issue #18 (Konsistenter Routingvertrag):**
+  - Detail-Screens (`ShoppingListScreen`, `ShoppingModeScreen`, `StorageChecklistScreen`, `KittyScreen`, `SettlementScreen`, `TripTimelineScreen`) werden per `context.push()` geöffnet.
+  - Einheitlicher Zurück-Pfad via App-Bar Icon-Button (`previousStep`): `context.canPop() ? context.pop() : context.go('/trips/$tripId')` garantiert deterministischen Rückweg auch bei Direktaufruf oder isoliertem Stack.
+- **Behebung von Issues #16 & #17 (Lokalisierung & No-op-Kacheln):**
+  - Kacheln „Gemerkte Packungsgrößen“ und „Sprache“ in `MoreScreen` nutzen lokalisierte Texte und öffnen informative Dialoge (`AlertDialog`).
+  - Neue Übersetzungsschlüssel in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) unter strikter Einhaltung der UX-C-Regeln hinzugefügt (`openFund`, `underwayFund`, `openTimeline`, `editTrip`, `manageCrew`, `deleteStopConfirmTitle`, `deleteStopConfirmContent`, `packageSizeInfoTitle`, `packageSizeInfoContent`, `languageSettingTitle`, `languageSettingSubtitle`).
+- **Behebung von Issue #19 (Automatisierte Journey- & Lifecycle-Tests):**
+  - Neue Testsuite `test/features/ux/fix_a_journey_test.dart` mit 6 End-to-End-Journey-Tests deckt alle 11 Punkte der Definition of Done ab.
+  - Vollständige Flutter-Testsuite (235/235 Tests) grün; `flutter analyze` 0 Warnungen/Fehler.
+
 ## 2026-10-04 – Slice S10-T: Technische Store-Bereitschaft (ohne Veröffentlichung)
 
 - **Zentraler App-Name (`lib/core/config/app_config.dart`):**

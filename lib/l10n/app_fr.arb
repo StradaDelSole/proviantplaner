@@ -765,5 +765,16 @@
   "undo": "Annuler",
   "skipperFree": "Skipper dispensé",
   "initialShopping": "Premier avitaillement",
-  "shoppingStop": "Étape de courses"
+  "shoppingStop": "Étape de courses",
+  "openFund": "Ouvrir la caisse de bord",
+  "underwayFund": "En mer / Caisse de bord",
+  "openTimeline": "Ouvrir l'itinéraire",
+  "editTrip": "Modifier la croisière",
+  "manageCrew": "Gérer l'équipage",
+  "deleteStopConfirmTitle": "Supprimer l'étape de courses",
+  "deleteStopConfirmContent": "Voulez-vous vraiment supprimer cette étape de courses ?",
+  "packageSizeInfoTitle": "Tailles d'emballage personnalisées",
+  "packageSizeInfoContent": "Les tailles d'emballage peuvent être ajustées directement dans la liste et sont mémorisées pour cette croisière.",
+  "languageSettingTitle": "Langue",
+  "languageSettingSubtitle": "Système par défaut (Français)"
 }

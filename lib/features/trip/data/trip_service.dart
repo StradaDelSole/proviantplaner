@@ -7,6 +7,7 @@ import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 class TripService {
   final TripDao tripDao;
@@ -288,5 +289,56 @@ class TripService {
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return false;
     return tripDao.updateTrip(trip.copyWith(isArchived: archive));
+  }
+
+  /// Setzt die Phase des Törns (FIX-A).
+  Future<bool> setTripPhase(int tripId, TripPhase phase) {
+    return tripDao.setTripPhase(tripId, phase);
+  }
+
+  /// Aktualisiert Törn-Stammdaten (Name, Startdatum, Tage, Kapazitäten) und berechnet Mengen neu.
+  Future<void> updateTripDetails({
+    required int tripId,
+    String? name,
+    DateTime? startDate,
+    int? daysCount,
+    int? fridgeCapacity,
+    bool? hasFreezer,
+    int? freezerCapacity,
+    int? waterTankLiters,
+    bool? isWaterTankDrinkable,
+  }) async {
+    final trip = await tripDao.getTripById(tripId);
+    if (trip == null) return;
+
+    if (daysCount != null && daysCount != trip.daysCount) {
+      final existingDays = await tripDao.getDaysForTrip(tripId);
+      if (daysCount > existingDays.length) {
+        for (int i = existingDays.length + 1; i <= daysCount; i++) {
+          await tripDao.addTripDay(TripDaysCompanion.insert(
+            tripId: tripId,
+            dayNumber: i,
+          ));
+        }
+      } else if (daysCount < existingDays.length) {
+        final toRemove = existingDays.where((d) => d.dayNumber > daysCount);
+        for (final d in toRemove) {
+          await tripDao.deleteTripDay(d.id);
+        }
+      }
+    }
+
+    final updated = trip.copyWith(
+      name: name ?? trip.name,
+      startDate: startDate ?? trip.startDate,
+      daysCount: daysCount ?? trip.daysCount,
+      fridgeCapacity: fridgeCapacity ?? trip.fridgeCapacity,
+      hasFreezer: hasFreezer ?? trip.hasFreezer,
+      freezerCapacity: freezerCapacity ?? trip.freezerCapacity,
+      waterTankLiters: waterTankLiters ?? trip.waterTankLiters,
+      isWaterTankDrinkable: isWaterTankDrinkable ?? trip.isWaterTankDrinkable,
+    );
+    await tripDao.updateTrip(updated);
+    await recalculateTrip(tripId);
   }
 }

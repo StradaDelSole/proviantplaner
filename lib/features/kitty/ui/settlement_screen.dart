@@ -13,6 +13,8 @@ import 'package:proviantplaner/core/services/pdf_providers.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
 import '../domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import 'widgets/epc_qr_widget.dart';
 
 /// Screen für den Törnabschluss mit Ausgleichszahlungen und EPC-QR-Code.
@@ -50,6 +52,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
   }
 
   Future<void> _archiveTrip(BuildContext context) async {
+    final tripService = ref.read(tripServiceProvider);
+    await tripService.setTripPhase(widget.tripId, TripPhase.conclusion);
     final service = ref.read(kittyServiceProvider);
     await service.archiveTrip(widget.tripId);
     if (context.mounted) {
@@ -81,7 +85,18 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         title: Text(l10n.fundSettlementTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
+          tooltip: l10n.previousStep,
+          onPressed: () {
+            try {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/trips/${widget.tripId}');
+              }
+            } catch (_) {
+              Navigator.of(context).maybePop();
+            }
+          },
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         ),
         actions: [

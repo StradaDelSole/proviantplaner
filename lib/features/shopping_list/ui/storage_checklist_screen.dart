@@ -4,10 +4,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 class StorageChecklistScreen extends ConsumerWidget {
   final int tripId;
@@ -26,6 +29,17 @@ class StorageChecklistScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.previousStep,
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/trips/$tripId');
+            }
+          },
+        ),
         title: Text(l10n.storageTitle),
       ),
       body: checklistAsync.when(
@@ -79,11 +93,14 @@ class StorageChecklistScreen extends ConsumerWidget {
           width: double.infinity,
           height: 48,
           child: FilledButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.storageCompleted)),
-              );
-              Navigator.of(context).pop();
+            onPressed: () async {
+              await ref.read(tripServiceProvider).setTripPhase(tripId, TripPhase.underway);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.storageCompleted)),
+                );
+                context.go('/trips/$tripId');
+              }
             },
             child: Text(l10n.storageFinish),
           ),

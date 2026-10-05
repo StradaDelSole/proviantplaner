@@ -35,6 +35,17 @@ class ShoppingListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          tooltip: l10n.previousStep,
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/trips/$tripId');
+            }
+          },
+        ),
         title: listDataAsync.when(
           loading: () => Text(l10n.navShoppingList),
           error: (_, __) => Text(l10n.navShoppingList),
