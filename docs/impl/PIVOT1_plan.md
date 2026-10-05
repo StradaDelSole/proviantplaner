@@ -1,8 +1,8 @@
 # PIVOT1 – Assisted List Core – Implementierungsplan
 
 Stand: 05.10.2026  
-Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`  
-Status: **OWNER-FREIGEGEBEN als nächster Produkt-Slice**
+Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.1.md`  
+Status: **OWNER-ACCEPTED PRODUKTRICHTUNG / IMPLEMENTIERUNG GESTOPPT bis FIX-A owner-accepted und laufende UX-Detailrunde freigegeben ist**
 
 ## Ziel
 
@@ -17,6 +17,8 @@ Den Kernflow der Vorratsliste von automatisch berechneter Vollversorgung auf ski
    - was wird durch den Pivot superseded,
    - welche bestehende Logik bleibt nützlich.
 4. Keine offenen lokalen Änderungen überschreiben.
+5. `docs/design/PROVY_UX_DIRECTION_v0.1.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien reconciliieren.
+6. PIVOT1 nur starten, wenn README es nach FIX-A-Abnahme ausdrücklich wieder freigibt.
 
 ## Scope
 
@@ -68,6 +70,19 @@ Noch keine komplexe Review-Engine bauen; PIVOT1 muss nur verhindern, dass alle P
 ### 6. Keine Menüplanung
 
 Keine Rezepte, Mahlzeiten oder Tagesmenüs generieren.
+
+## Verbindliche UX-Leitplanken aus Provy UX Direction
+
+- Search-first statt Katalogbaum als Hauptweg.
+- Eine sofort erkennbare primäre Aktion; keine unnötigen Zwischenebenen.
+- Variante → Gebinde → Anzahl → Liste in einem flachen, mobilen Flow.
+- Progressive Disclosure: MHD/Kühlung/Gewicht/weitere Details nur dort prominent zeigen, wo sie die Entscheidung unterstützen.
+- Tactile feedback für Hinzufügen, Mengenänderung und Bestätigung; Animation erklärt Zustand, nicht dekorieren.
+- Anzahl bevorzugt als schneller Stepper; Tap auf Wert darf später Pickwheel öffnen; direkte Eingabe bleibt möglich.
+- Color Coding nur als subtiler Funktions-/Statusakzent, nie als einzige Information.
+- Gute Empty States: leere Liste führt unmittelbar in die Produktsuche.
+- Keine neue Dashboard-/Bento-Struktur innerhalb des eigentlichen Listen-Task-Screens.
+- Alle UI-Entscheidungen müssen Low Friction, Einfachheit, professionellen und funktionalen Eindruck priorisieren.
 
 ## UX-Abnahme
 
