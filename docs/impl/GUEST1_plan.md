@@ -1,7 +1,7 @@
 # GUEST1 – Shared Shopping, QR & Offline – Implementierungsrahmen
 
 Stand: 05.10.2026  
-Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.1.md`  
+Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.2.md` + `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`  
 Status: **OWNER-ACCEPTED / verpflichtender zukünftiger Slice, noch NICHT freigegeben**
 
 ## Ziel
