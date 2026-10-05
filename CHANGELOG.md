@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-05 – FIX-A Owner Acceptance
+
+- FIX-A ausdrücklich vom Product Owner abgenommen.
+- Verifizierter Implementierungs-HEAD: `357d340841188654e2af680b48f41af2966429d0`.
+- Unabhängiger Abschlussreview: `docs/impl/FIX-A_acceptance_review_2026-10-05.md`.
+- Findings A–E gelten als geschlossen.
+- Issues #11, #12, #13, #14, #15, #16, #17, #18, #19 und #20 werden als abgeschlossen geführt.
+- PIVOT1 – Assisted List Core ist ab dieser Owner-Abnahme offiziell zur Implementierung freigegeben.
+- UX-D, GUEST1, RECEIPT1, B3, B4, B5 und Store-Publikation bleiben separat gegatet.
+
+
 ## 2026-10-05 – Slice FIX-A: Review 2 Amendment (Complete Localization & Real Journeys / Issue #20)
 
 - **Finding A (Issue #16 – Vollständige Beseitigung aller Rest-Strings & Lokalisierung aller Produktivscreens):**
