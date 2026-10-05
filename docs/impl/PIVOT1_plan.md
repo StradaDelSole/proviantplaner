@@ -1,8 +1,8 @@
 # PIVOT1 – Assisted List Core – Implementierungsplan
 
 Stand: 05.10.2026  
-Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.3.md`  
-Status: **OWNER-ACCEPTED PRODUKTRICHTUNG / IMPLEMENTIERUNG GESTOPPT bis FIX-A owner-accepted und laufende UX-Detailrunde freigegeben ist**
+Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.4.md`  
+Status: **OWNER-ACCEPTED PRODUKTRICHTUNG / UX-DETAILS FREIGEGEBEN / IMPLEMENTIERUNG GESTOPPT bis FIX-A owner-accepted ist**
 
 ## Ziel
 
@@ -17,7 +17,7 @@ Den Kernflow der Vorratsliste von automatisch berechneter Vollversorgung auf ski
    - was wird durch den Pivot superseded,
    - welche bestehende Logik bleibt nützlich.
 4. Keine offenen lokalen Änderungen überschreiben.
-5. `docs/design/PROVY_UX_DIRECTION_v0.3.md` und `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien reconciliieren.
+5. `docs/design/PROVY_UX_DIRECTION_v0.4.md`, `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` und `docs/design/PROVY_UX_WIREFRAMES_v0.1.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien/Wireframes reconciliieren.
 6. PIVOT1 nur starten, wenn README es nach FIX-A-Abnahme ausdrücklich wieder freigibt.
 
 ## Scope
