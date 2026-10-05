@@ -1,7 +1,7 @@
 # GUEST1 – Shared Shopping, QR & Offline – Implementierungsrahmen
 
 Stand: 05.10.2026  
-Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.2.md` + `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`  
+Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.3.md` + `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`  
 Status: **OWNER-ACCEPTED / verpflichtender zukünftiger Slice, noch NICHT freigegeben**
 
 ## Ziel
@@ -58,7 +58,13 @@ GUEST1 darf erst beginnen, wenn:
 - lokale Owner-Daten bleiben kanonisch
 - kein doppeltes Kaufen durch Mergefehler
 
-### G. QR + Link UX
+### G. Finance-Grenze
+- Guest bleibt finance-free: kein Betrag, keine Währung, kein Zahler, kein Beleg-Upload
+- nach dem Einkauf erfasst der Owner die normale Expense
+- keine Kopplung von Shopping-Assignment und Zahlerannahme
+- verbindliche Beleg-/Finance-Grundlage: `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`
+
+### H. QR + Link UX
 - QR anzeigen
 - Link teilen
 - Offline teilen
