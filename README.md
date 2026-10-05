@@ -15,8 +15,9 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.2.md` | Startprompt und Folgeprompts für jede Gemini-Sitzung |
 | `docs/design/UX_KONZEPT_v0.6.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
-| `docs/design/PROVY_UX_DIRECTION_v0.3.md` | Owner-accepted UX-Grundsätze inkl. Home-Launchpad, 4er-Command-Grid, Guest Shopping, Color/Motion/Haptics und psychologischer Klarheit |
-| `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` | Owner-accepted 40-Punkte-Entscheidungssatz; Verhalten/Hierarchie/Interaktion verbindlich, Wireframe-Runde noch offen |
+| `docs/design/PROVY_UX_DIRECTION_v0.4.md` | Owner-accepted UX-Grundsätze inkl. Home-Launchpad, 4er-Command-Grid, Guest Shopping, Color/Motion/Haptics und psychologischer Klarheit |
+| `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` | Owner-accepted 40-Punkte-Entscheidungssatz; Verhalten/Hierarchie/Interaktion verbindlich |
+| `docs/design/PROVY_UX_WIREFRAMES_v0.1.md` | Owner-accepted Kern-Wireframes für Home, Command Center, Vorräte, Einkaufen/Guest, Crew & Boot und Bordkasse; UX-D Design frozen |
 | `docs/research/WETTBEWERB_v0.4.md` | Wettbewerbsanalyse |
 | `docs/BACKEND_KONZEPT_v0.2.md` | Planer-Backend (Cloudflare, Auth0) |
 | `backend/`, `portal/` | Backend-Code (Worker) und Webseiten (Pages), ab B0; `web/` ist Flutter-Web |
@@ -35,4 +36,4 @@ Jede neue Fassung eines Dokuments wird als neue Datei mit Versionsnummer im Name
 Konzeptphase läuft (PRD v0.21). Es gilt jeweils die höchste Versionsnummer.
 Umgesetzt: S0, S1, S2, S2a, S-UI, S3, S4, S5, S5a, S6, S7, S8, S8a, FB1-A, FB1-B, FB1-C, FB1-D, UX-A, UX-B, UX-C, FB2-A, FB2-B, B0, B1, B2, S9, S10-T, FIX-A.
 
-**Aktuell freigegeben für Gemini: nur FIX-A Review-Amendment gemäß `docs/impl/FIX-A_review_2026-10-05.md` / Issue #20.** FIX-A wurde mit `704ac83` implementiert, ist aber noch nicht owner-accepted. **PIVOT1 bleibt bis zur FIX-A-Abnahme und zur laufenden UX-Detail-Freigabe gestoppt.** PIVOT1 muss anschließend `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`, `docs/impl/PIVOT1_plan.md` und `docs/design/PROVY_UX_DIRECTION_v0.3.md` gemeinsam erfüllen. UX-D wird über Issue #21 vorbereitet. **GUEST1 – Shared Shopping, QR & Offline ist owner-accepted und verpflichtend vor Store-v1, aber noch nicht zur Implementierung freigegeben; Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.2.md` und `docs/impl/GUEST1_plan.md`.** B3, B4, B5 bleiben NICHT freigegeben. S10 Store-Publikation bleibt ausgesetzt.
+**Aktuell freigegeben für Gemini: nur FIX-A Review-Amendment gemäß `docs/impl/FIX-A_review_2026-10-05.md` / Issue #20.** FIX-A wurde mit `704ac83` implementiert, ist aber noch nicht owner-accepted. **Die UX-Detail-Freigabe ist abgeschlossen. PIVOT1 bleibt nur noch bis zur FIX-A-Abnahme gestoppt.** PIVOT1 muss anschließend `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`, `docs/impl/PIVOT1_plan.md` und `docs/design/PROVY_UX_DIRECTION_v0.4.md` gemeinsam erfüllen. UX-D wird über Issue #21 vorbereitet. **GUEST1 – Shared Shopping, QR & Offline ist owner-accepted und verpflichtend vor Store-v1, aber noch nicht zur Implementierung freigegeben; Grundlage: `docs/PRODUCT_GUEST_SHOPPING_v0.2.md` und `docs/impl/GUEST1_plan.md`.** B3, B4, B5 bleiben NICHT freigegeben. S10 Store-Publikation bleibt ausgesetzt.
