@@ -2,7 +2,7 @@
 
 Stand: 05.10.2026  
 Grundlage: `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md` + `docs/design/PROVY_UX_DIRECTION_v0.5.md`  
-Status: **OWNER-ACCEPTED PRODUKTRICHTUNG / UX-DETAILS FREIGEGEBEN / IMPLEMENTIERUNG GESTOPPT bis FIX-A owner-accepted ist**
+Status: **OWNER-ACCEPTED / IMPLEMENTIERUNG FREIGEGEBEN**
 
 ## Ziel
 
@@ -18,7 +18,7 @@ Den Kernflow der Vorratsliste von automatisch berechneter Vollversorgung auf ski
    - welche bestehende Logik bleibt nützlich.
 4. Keine offenen lokalen Änderungen überschreiben.
 5. `docs/design/PROVY_UX_DIRECTION_v0.5.md`, `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` und `docs/design/PROVY_UX_WIREFRAMES_v0.2.md` lesen und die für PIVOT1 verbindlichen UX-Prinzipien/Wireframes reconciliieren.
-6. PIVOT1 nur starten, wenn README es nach FIX-A-Abnahme ausdrücklich wieder freigibt.
+6. README prüfen: PIVOT1 muss ausdrücklich als aktuell freigegebener Slice markiert sein. Diese Freigabe ist seit der FIX-A-Owner-Abnahme erfüllt.
 
 ## Scope
 
