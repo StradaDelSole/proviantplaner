@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-06 – FIX-B Unified Settlement Ledger Release
+
+- Confirmed external-review Finding F1 promoted to dedicated correction slice.
+- **FIX-B – Unified Settlement Ledger (Issue #27) is the only currently released implementation slice.**
+- Canonical reconciliation: `docs/impl/FIXB_release_reconciliation_2026-10-06.md`.
+- Implementation plan: `docs/impl/FIXB_plan.md`.
+- Two UX modes remain, but both use one accounting truth.
+- All confirmed expenses contribute to cost shares.
+- Personally paid group expenses credit the payer even in shared-kitty mode.
+- Kitty cash remains deposits minus only kitty-paid expenses.
+- Remaining kitty cash is modeled explicitly as treasurer-held group cash in settlement, not by synthetic paid values.
+- Model switching must preserve per-member economic net balances.
+- PIVOT2 remains ON HOLD; DATA1 and Watermaker reserve reconciliation remain later prerequisites.
+- No later slice released.
+
+
 ## 2026-10-06 – External Review Reconciliation / PIVOT2 Hold
 
 - External independent review reconciled against current production code.
