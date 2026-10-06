@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
@@ -7,10 +7,11 @@ void main() {
   test('S1/FB1-C Abnahmekriterium: Schema- und Migrationstest', () async {
     final db = AppDatabase(NativeDatabase.memory());
 
-    // SchemaVersion prüfen (jetzt 6 nach FB2-B)
-    expect(db.schemaVersion, 6);
+    // SchemaVersion prüfen (jetzt 7 nach PIVOT3-A)
+    expect(db.schemaVersion, 7);
 
     // Prüfen, ob alle Tabellen angelegt wurden
+    expect(await db.select(db.boatProfiles).get(), isEmpty);
     expect(await db.select(db.trips).get(), isEmpty);
     expect(await db.select(db.tripDays).get(), isEmpty);
     expect(await db.select(db.crewMembers).get(), isEmpty);
@@ -24,7 +25,7 @@ void main() {
     final strategy = db.migration;
     expect(strategy, isNotNull);
 
-    // Trip mit treasurerMemberId, Tiefkühlfach und Wassertank einfügen
+    // Trip mit treasurerMemberId, Tiefkühlfach, Wassertank und PIVOT3-A Snapshot-Feldern einfügen
     final tripId = await db.into(db.trips).insert(
       TripsCompanion.insert(
         name: 'Törn mit Kassenwart',
@@ -34,6 +35,8 @@ void main() {
         freezerCapacity: const Value(25),
         waterTankLiters: const Value(200),
         isWaterTankDrinkable: const Value(true),
+        hasWatermaker: const Value(true),
+        boatName: const Value('Bavaria 46'),
       ),
     );
     final inserted = await (db.select(db.trips)..where((t) => t.id.equals(tripId))).getSingle();
@@ -42,6 +45,9 @@ void main() {
     expect(inserted.freezerCapacity, 25);
     expect(inserted.waterTankLiters, 200);
     expect(inserted.isWaterTankDrinkable, isTrue);
+    expect(inserted.hasWatermaker, isTrue);
+    expect(inserted.boatName, 'Bavaria 46');
+    expect(inserted.boatProfileId, isNull);
 
     await db.close();
   });

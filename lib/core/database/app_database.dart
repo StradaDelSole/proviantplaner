@@ -13,6 +13,7 @@ part 'app_database.g.dart';
 /// ListItemAllocations, Expenses und KittyPayments.
 @DriftDatabase(
   tables: [
+    BoatProfiles,
     Trips,
     TripDays,
     CrewMembers,
@@ -26,13 +27,14 @@ part 'app_database.g.dart';
     TripDao,
     ListItemDao,
     ExpenseDao,
+    BoatProfileDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -70,6 +72,14 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(trips, trips.freezerCapacity);
           await m.addColumn(trips, trips.waterTankLiters);
           await m.addColumn(trips, trips.isWaterTankDrinkable);
+        }
+        if (from < 7) {
+          await m.createTable(boatProfiles);
+          await m.addColumn(trips, trips.boatProfileId);
+          await m.addColumn(trips, trips.boatName);
+          await m.addColumn(trips, trips.boatManufacturer);
+          await m.addColumn(trips, trips.boatModel);
+          await m.addColumn(trips, trips.hasWatermaker);
         }
       },
       beforeOpen: (details) async {

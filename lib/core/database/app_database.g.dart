@@ -3,6 +3,624 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $BoatProfilesTable extends BoatProfiles
+    with TableInfo<$BoatProfilesTable, BoatProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BoatProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 100),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _manufacturerMeta =
+      const VerificationMeta('manufacturer');
+  @override
+  late final GeneratedColumn<String> manufacturer = GeneratedColumn<String>(
+      'manufacturer', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _modelMeta = const VerificationMeta('model');
+  @override
+  late final GeneratedColumn<String> model = GeneratedColumn<String>(
+      'model', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fridgeCapacityMeta =
+      const VerificationMeta('fridgeCapacity');
+  @override
+  late final GeneratedColumn<int> fridgeCapacity = GeneratedColumn<int>(
+      'fridge_capacity', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(100));
+  static const VerificationMeta _hasFreezerMeta =
+      const VerificationMeta('hasFreezer');
+  @override
+  late final GeneratedColumn<bool> hasFreezer = GeneratedColumn<bool>(
+      'has_freezer', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("has_freezer" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _freezerCapacityMeta =
+      const VerificationMeta('freezerCapacity');
+  @override
+  late final GeneratedColumn<int> freezerCapacity = GeneratedColumn<int>(
+      'freezer_capacity', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _waterTankLitersMeta =
+      const VerificationMeta('waterTankLiters');
+  @override
+  late final GeneratedColumn<int> waterTankLiters = GeneratedColumn<int>(
+      'water_tank_liters', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _isWaterTankDrinkableMeta =
+      const VerificationMeta('isWaterTankDrinkable');
+  @override
+  late final GeneratedColumn<bool> isWaterTankDrinkable = GeneratedColumn<bool>(
+      'is_water_tank_drinkable', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_water_tank_drinkable" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _hasWatermakerMeta =
+      const VerificationMeta('hasWatermaker');
+  @override
+  late final GeneratedColumn<bool> hasWatermaker = GeneratedColumn<bool>(
+      'has_watermaker', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_watermaker" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _isArchivedMeta =
+      const VerificationMeta('isArchived');
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+      'is_archived', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_archived" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        manufacturer,
+        model,
+        fridgeCapacity,
+        hasFreezer,
+        freezerCapacity,
+        waterTankLiters,
+        isWaterTankDrinkable,
+        hasWatermaker,
+        isArchived,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'boat_profiles';
+  @override
+  VerificationContext validateIntegrity(Insertable<BoatProfile> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('manufacturer')) {
+      context.handle(
+          _manufacturerMeta,
+          manufacturer.isAcceptableOrUnknown(
+              data['manufacturer']!, _manufacturerMeta));
+    }
+    if (data.containsKey('model')) {
+      context.handle(
+          _modelMeta, model.isAcceptableOrUnknown(data['model']!, _modelMeta));
+    }
+    if (data.containsKey('fridge_capacity')) {
+      context.handle(
+          _fridgeCapacityMeta,
+          fridgeCapacity.isAcceptableOrUnknown(
+              data['fridge_capacity']!, _fridgeCapacityMeta));
+    }
+    if (data.containsKey('has_freezer')) {
+      context.handle(
+          _hasFreezerMeta,
+          hasFreezer.isAcceptableOrUnknown(
+              data['has_freezer']!, _hasFreezerMeta));
+    }
+    if (data.containsKey('freezer_capacity')) {
+      context.handle(
+          _freezerCapacityMeta,
+          freezerCapacity.isAcceptableOrUnknown(
+              data['freezer_capacity']!, _freezerCapacityMeta));
+    }
+    if (data.containsKey('water_tank_liters')) {
+      context.handle(
+          _waterTankLitersMeta,
+          waterTankLiters.isAcceptableOrUnknown(
+              data['water_tank_liters']!, _waterTankLitersMeta));
+    }
+    if (data.containsKey('is_water_tank_drinkable')) {
+      context.handle(
+          _isWaterTankDrinkableMeta,
+          isWaterTankDrinkable.isAcceptableOrUnknown(
+              data['is_water_tank_drinkable']!, _isWaterTankDrinkableMeta));
+    }
+    if (data.containsKey('has_watermaker')) {
+      context.handle(
+          _hasWatermakerMeta,
+          hasWatermaker.isAcceptableOrUnknown(
+              data['has_watermaker']!, _hasWatermakerMeta));
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+          _isArchivedMeta,
+          isArchived.isAcceptableOrUnknown(
+              data['is_archived']!, _isArchivedMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BoatProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BoatProfile(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      manufacturer: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}manufacturer']),
+      model: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}model']),
+      fridgeCapacity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}fridge_capacity'])!,
+      hasFreezer: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_freezer'])!,
+      freezerCapacity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}freezer_capacity'])!,
+      waterTankLiters: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}water_tank_liters'])!,
+      isWaterTankDrinkable: attachedDatabase.typeMapping.read(DriftSqlType.bool,
+          data['${effectivePrefix}is_water_tank_drinkable'])!,
+      hasWatermaker: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_watermaker'])!,
+      isArchived: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_archived'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $BoatProfilesTable createAlias(String alias) {
+    return $BoatProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class BoatProfile extends DataClass implements Insertable<BoatProfile> {
+  final int id;
+  final String name;
+  final String? manufacturer;
+  final String? model;
+  final int fridgeCapacity;
+  final bool hasFreezer;
+  final int freezerCapacity;
+  final int waterTankLiters;
+  final bool isWaterTankDrinkable;
+  final bool hasWatermaker;
+  final bool isArchived;
+  final DateTime createdAt;
+  const BoatProfile(
+      {required this.id,
+      required this.name,
+      this.manufacturer,
+      this.model,
+      required this.fridgeCapacity,
+      required this.hasFreezer,
+      required this.freezerCapacity,
+      required this.waterTankLiters,
+      required this.isWaterTankDrinkable,
+      required this.hasWatermaker,
+      required this.isArchived,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || manufacturer != null) {
+      map['manufacturer'] = Variable<String>(manufacturer);
+    }
+    if (!nullToAbsent || model != null) {
+      map['model'] = Variable<String>(model);
+    }
+    map['fridge_capacity'] = Variable<int>(fridgeCapacity);
+    map['has_freezer'] = Variable<bool>(hasFreezer);
+    map['freezer_capacity'] = Variable<int>(freezerCapacity);
+    map['water_tank_liters'] = Variable<int>(waterTankLiters);
+    map['is_water_tank_drinkable'] = Variable<bool>(isWaterTankDrinkable);
+    map['has_watermaker'] = Variable<bool>(hasWatermaker);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  BoatProfilesCompanion toCompanion(bool nullToAbsent) {
+    return BoatProfilesCompanion(
+      id: Value(id),
+      name: Value(name),
+      manufacturer: manufacturer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(manufacturer),
+      model:
+          model == null && nullToAbsent ? const Value.absent() : Value(model),
+      fridgeCapacity: Value(fridgeCapacity),
+      hasFreezer: Value(hasFreezer),
+      freezerCapacity: Value(freezerCapacity),
+      waterTankLiters: Value(waterTankLiters),
+      isWaterTankDrinkable: Value(isWaterTankDrinkable),
+      hasWatermaker: Value(hasWatermaker),
+      isArchived: Value(isArchived),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory BoatProfile.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BoatProfile(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      manufacturer: serializer.fromJson<String?>(json['manufacturer']),
+      model: serializer.fromJson<String?>(json['model']),
+      fridgeCapacity: serializer.fromJson<int>(json['fridgeCapacity']),
+      hasFreezer: serializer.fromJson<bool>(json['hasFreezer']),
+      freezerCapacity: serializer.fromJson<int>(json['freezerCapacity']),
+      waterTankLiters: serializer.fromJson<int>(json['waterTankLiters']),
+      isWaterTankDrinkable:
+          serializer.fromJson<bool>(json['isWaterTankDrinkable']),
+      hasWatermaker: serializer.fromJson<bool>(json['hasWatermaker']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'manufacturer': serializer.toJson<String?>(manufacturer),
+      'model': serializer.toJson<String?>(model),
+      'fridgeCapacity': serializer.toJson<int>(fridgeCapacity),
+      'hasFreezer': serializer.toJson<bool>(hasFreezer),
+      'freezerCapacity': serializer.toJson<int>(freezerCapacity),
+      'waterTankLiters': serializer.toJson<int>(waterTankLiters),
+      'isWaterTankDrinkable': serializer.toJson<bool>(isWaterTankDrinkable),
+      'hasWatermaker': serializer.toJson<bool>(hasWatermaker),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  BoatProfile copyWith(
+          {int? id,
+          String? name,
+          Value<String?> manufacturer = const Value.absent(),
+          Value<String?> model = const Value.absent(),
+          int? fridgeCapacity,
+          bool? hasFreezer,
+          int? freezerCapacity,
+          int? waterTankLiters,
+          bool? isWaterTankDrinkable,
+          bool? hasWatermaker,
+          bool? isArchived,
+          DateTime? createdAt}) =>
+      BoatProfile(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        manufacturer:
+            manufacturer.present ? manufacturer.value : this.manufacturer,
+        model: model.present ? model.value : this.model,
+        fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
+        hasFreezer: hasFreezer ?? this.hasFreezer,
+        freezerCapacity: freezerCapacity ?? this.freezerCapacity,
+        waterTankLiters: waterTankLiters ?? this.waterTankLiters,
+        isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
+        hasWatermaker: hasWatermaker ?? this.hasWatermaker,
+        isArchived: isArchived ?? this.isArchived,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  BoatProfile copyWithCompanion(BoatProfilesCompanion data) {
+    return BoatProfile(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      manufacturer: data.manufacturer.present
+          ? data.manufacturer.value
+          : this.manufacturer,
+      model: data.model.present ? data.model.value : this.model,
+      fridgeCapacity: data.fridgeCapacity.present
+          ? data.fridgeCapacity.value
+          : this.fridgeCapacity,
+      hasFreezer:
+          data.hasFreezer.present ? data.hasFreezer.value : this.hasFreezer,
+      freezerCapacity: data.freezerCapacity.present
+          ? data.freezerCapacity.value
+          : this.freezerCapacity,
+      waterTankLiters: data.waterTankLiters.present
+          ? data.waterTankLiters.value
+          : this.waterTankLiters,
+      isWaterTankDrinkable: data.isWaterTankDrinkable.present
+          ? data.isWaterTankDrinkable.value
+          : this.isWaterTankDrinkable,
+      hasWatermaker: data.hasWatermaker.present
+          ? data.hasWatermaker.value
+          : this.hasWatermaker,
+      isArchived:
+          data.isArchived.present ? data.isArchived.value : this.isArchived,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BoatProfile(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('model: $model, ')
+          ..write('fridgeCapacity: $fridgeCapacity, ')
+          ..write('hasFreezer: $hasFreezer, ')
+          ..write('freezerCapacity: $freezerCapacity, ')
+          ..write('waterTankLiters: $waterTankLiters, ')
+          ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
+          ..write('hasWatermaker: $hasWatermaker, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      name,
+      manufacturer,
+      model,
+      fridgeCapacity,
+      hasFreezer,
+      freezerCapacity,
+      waterTankLiters,
+      isWaterTankDrinkable,
+      hasWatermaker,
+      isArchived,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BoatProfile &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.manufacturer == this.manufacturer &&
+          other.model == this.model &&
+          other.fridgeCapacity == this.fridgeCapacity &&
+          other.hasFreezer == this.hasFreezer &&
+          other.freezerCapacity == this.freezerCapacity &&
+          other.waterTankLiters == this.waterTankLiters &&
+          other.isWaterTankDrinkable == this.isWaterTankDrinkable &&
+          other.hasWatermaker == this.hasWatermaker &&
+          other.isArchived == this.isArchived &&
+          other.createdAt == this.createdAt);
+}
+
+class BoatProfilesCompanion extends UpdateCompanion<BoatProfile> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> manufacturer;
+  final Value<String?> model;
+  final Value<int> fridgeCapacity;
+  final Value<bool> hasFreezer;
+  final Value<int> freezerCapacity;
+  final Value<int> waterTankLiters;
+  final Value<bool> isWaterTankDrinkable;
+  final Value<bool> hasWatermaker;
+  final Value<bool> isArchived;
+  final Value<DateTime> createdAt;
+  const BoatProfilesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.manufacturer = const Value.absent(),
+    this.model = const Value.absent(),
+    this.fridgeCapacity = const Value.absent(),
+    this.hasFreezer = const Value.absent(),
+    this.freezerCapacity = const Value.absent(),
+    this.waterTankLiters = const Value.absent(),
+    this.isWaterTankDrinkable = const Value.absent(),
+    this.hasWatermaker = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  BoatProfilesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.manufacturer = const Value.absent(),
+    this.model = const Value.absent(),
+    this.fridgeCapacity = const Value.absent(),
+    this.hasFreezer = const Value.absent(),
+    this.freezerCapacity = const Value.absent(),
+    this.waterTankLiters = const Value.absent(),
+    this.isWaterTankDrinkable = const Value.absent(),
+    this.hasWatermaker = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<BoatProfile> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? manufacturer,
+    Expression<String>? model,
+    Expression<int>? fridgeCapacity,
+    Expression<bool>? hasFreezer,
+    Expression<int>? freezerCapacity,
+    Expression<int>? waterTankLiters,
+    Expression<bool>? isWaterTankDrinkable,
+    Expression<bool>? hasWatermaker,
+    Expression<bool>? isArchived,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (manufacturer != null) 'manufacturer': manufacturer,
+      if (model != null) 'model': model,
+      if (fridgeCapacity != null) 'fridge_capacity': fridgeCapacity,
+      if (hasFreezer != null) 'has_freezer': hasFreezer,
+      if (freezerCapacity != null) 'freezer_capacity': freezerCapacity,
+      if (waterTankLiters != null) 'water_tank_liters': waterTankLiters,
+      if (isWaterTankDrinkable != null)
+        'is_water_tank_drinkable': isWaterTankDrinkable,
+      if (hasWatermaker != null) 'has_watermaker': hasWatermaker,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  BoatProfilesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String?>? manufacturer,
+      Value<String?>? model,
+      Value<int>? fridgeCapacity,
+      Value<bool>? hasFreezer,
+      Value<int>? freezerCapacity,
+      Value<int>? waterTankLiters,
+      Value<bool>? isWaterTankDrinkable,
+      Value<bool>? hasWatermaker,
+      Value<bool>? isArchived,
+      Value<DateTime>? createdAt}) {
+    return BoatProfilesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      manufacturer: manufacturer ?? this.manufacturer,
+      model: model ?? this.model,
+      fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
+      hasFreezer: hasFreezer ?? this.hasFreezer,
+      freezerCapacity: freezerCapacity ?? this.freezerCapacity,
+      waterTankLiters: waterTankLiters ?? this.waterTankLiters,
+      isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
+      hasWatermaker: hasWatermaker ?? this.hasWatermaker,
+      isArchived: isArchived ?? this.isArchived,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (manufacturer.present) {
+      map['manufacturer'] = Variable<String>(manufacturer.value);
+    }
+    if (model.present) {
+      map['model'] = Variable<String>(model.value);
+    }
+    if (fridgeCapacity.present) {
+      map['fridge_capacity'] = Variable<int>(fridgeCapacity.value);
+    }
+    if (hasFreezer.present) {
+      map['has_freezer'] = Variable<bool>(hasFreezer.value);
+    }
+    if (freezerCapacity.present) {
+      map['freezer_capacity'] = Variable<int>(freezerCapacity.value);
+    }
+    if (waterTankLiters.present) {
+      map['water_tank_liters'] = Variable<int>(waterTankLiters.value);
+    }
+    if (isWaterTankDrinkable.present) {
+      map['is_water_tank_drinkable'] =
+          Variable<bool>(isWaterTankDrinkable.value);
+    }
+    if (hasWatermaker.present) {
+      map['has_watermaker'] = Variable<bool>(hasWatermaker.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BoatProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('manufacturer: $manufacturer, ')
+          ..write('model: $model, ')
+          ..write('fridgeCapacity: $fridgeCapacity, ')
+          ..write('hasFreezer: $hasFreezer, ')
+          ..write('freezerCapacity: $freezerCapacity, ')
+          ..write('waterTankLiters: $waterTankLiters, ')
+          ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
+          ..write('hasWatermaker: $hasWatermaker, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -64,6 +682,33 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_charter" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _boatProfileIdMeta =
+      const VerificationMeta('boatProfileId');
+  @override
+  late final GeneratedColumn<int> boatProfileId = GeneratedColumn<int>(
+      'boat_profile_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES boat_profiles (id) ON DELETE SET NULL'));
+  static const VerificationMeta _boatNameMeta =
+      const VerificationMeta('boatName');
+  @override
+  late final GeneratedColumn<String> boatName = GeneratedColumn<String>(
+      'boat_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _boatManufacturerMeta =
+      const VerificationMeta('boatManufacturer');
+  @override
+  late final GeneratedColumn<String> boatManufacturer = GeneratedColumn<String>(
+      'boat_manufacturer', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _boatModelMeta =
+      const VerificationMeta('boatModel');
+  @override
+  late final GeneratedColumn<String> boatModel = GeneratedColumn<String>(
+      'boat_model', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _boatTypeMeta =
       const VerificationMeta('boatType');
   @override
@@ -115,6 +760,16 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       requiredDuringInsert: false,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_water_tank_drinkable" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _hasWatermakerMeta =
+      const VerificationMeta('hasWatermaker');
+  @override
+  late final GeneratedColumn<bool> hasWatermaker = GeneratedColumn<bool>(
+      'has_watermaker', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("has_watermaker" IN (0, 1))'),
       defaultValue: const Constant(false));
   static const VerificationMeta _appetiteMeta =
       const VerificationMeta('appetite');
@@ -211,12 +866,17 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         region,
         climate,
         isCharter,
+        boatProfileId,
+        boatName,
+        boatManufacturer,
+        boatModel,
         boatType,
         fridgeCapacity,
         hasFreezer,
         freezerCapacity,
         waterTankLiters,
         isWaterTankDrinkable,
+        hasWatermaker,
         appetite,
         reserveDays,
         drinkingHabit,
@@ -269,6 +929,26 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
       context.handle(_isCharterMeta,
           isCharter.isAcceptableOrUnknown(data['is_charter']!, _isCharterMeta));
     }
+    if (data.containsKey('boat_profile_id')) {
+      context.handle(
+          _boatProfileIdMeta,
+          boatProfileId.isAcceptableOrUnknown(
+              data['boat_profile_id']!, _boatProfileIdMeta));
+    }
+    if (data.containsKey('boat_name')) {
+      context.handle(_boatNameMeta,
+          boatName.isAcceptableOrUnknown(data['boat_name']!, _boatNameMeta));
+    }
+    if (data.containsKey('boat_manufacturer')) {
+      context.handle(
+          _boatManufacturerMeta,
+          boatManufacturer.isAcceptableOrUnknown(
+              data['boat_manufacturer']!, _boatManufacturerMeta));
+    }
+    if (data.containsKey('boat_model')) {
+      context.handle(_boatModelMeta,
+          boatModel.isAcceptableOrUnknown(data['boat_model']!, _boatModelMeta));
+    }
     if (data.containsKey('boat_type')) {
       context.handle(_boatTypeMeta,
           boatType.isAcceptableOrUnknown(data['boat_type']!, _boatTypeMeta));
@@ -302,6 +982,12 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           _isWaterTankDrinkableMeta,
           isWaterTankDrinkable.isAcceptableOrUnknown(
               data['is_water_tank_drinkable']!, _isWaterTankDrinkableMeta));
+    }
+    if (data.containsKey('has_watermaker')) {
+      context.handle(
+          _hasWatermakerMeta,
+          hasWatermaker.isAcceptableOrUnknown(
+              data['has_watermaker']!, _hasWatermakerMeta));
     }
     context.handle(_appetiteMeta, const VerificationResult.success());
     if (data.containsKey('reserve_days')) {
@@ -362,6 +1048,14 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           .read(DriftSqlType.string, data['${effectivePrefix}climate'])!,
       isCharter: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_charter'])!,
+      boatProfileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}boat_profile_id']),
+      boatName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}boat_name']),
+      boatManufacturer: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}boat_manufacturer']),
+      boatModel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}boat_model']),
       boatType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}boat_type'])!,
       fridgeCapacity: attachedDatabase.typeMapping
@@ -374,6 +1068,8 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
           .read(DriftSqlType.int, data['${effectivePrefix}water_tank_liters'])!,
       isWaterTankDrinkable: attachedDatabase.typeMapping.read(DriftSqlType.bool,
           data['${effectivePrefix}is_water_tank_drinkable'])!,
+      hasWatermaker: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}has_watermaker'])!,
       appetite: $TripsTable.$converterappetite.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}appetite'])!),
@@ -423,12 +1119,17 @@ class Trip extends DataClass implements Insertable<Trip> {
   final String region;
   final String climate;
   final bool isCharter;
+  final int? boatProfileId;
+  final String? boatName;
+  final String? boatManufacturer;
+  final String? boatModel;
   final String boatType;
   final int fridgeCapacity;
   final bool hasFreezer;
   final int freezerCapacity;
   final int waterTankLiters;
   final bool isWaterTankDrinkable;
+  final bool hasWatermaker;
   final CrewAppetite appetite;
   final String reserveDays;
   final CrewDrinking drinkingHabit;
@@ -447,12 +1148,17 @@ class Trip extends DataClass implements Insertable<Trip> {
       required this.region,
       required this.climate,
       required this.isCharter,
+      this.boatProfileId,
+      this.boatName,
+      this.boatManufacturer,
+      this.boatModel,
       required this.boatType,
       required this.fridgeCapacity,
       required this.hasFreezer,
       required this.freezerCapacity,
       required this.waterTankLiters,
       required this.isWaterTankDrinkable,
+      required this.hasWatermaker,
       required this.appetite,
       required this.reserveDays,
       required this.drinkingHabit,
@@ -473,12 +1179,25 @@ class Trip extends DataClass implements Insertable<Trip> {
     map['region'] = Variable<String>(region);
     map['climate'] = Variable<String>(climate);
     map['is_charter'] = Variable<bool>(isCharter);
+    if (!nullToAbsent || boatProfileId != null) {
+      map['boat_profile_id'] = Variable<int>(boatProfileId);
+    }
+    if (!nullToAbsent || boatName != null) {
+      map['boat_name'] = Variable<String>(boatName);
+    }
+    if (!nullToAbsent || boatManufacturer != null) {
+      map['boat_manufacturer'] = Variable<String>(boatManufacturer);
+    }
+    if (!nullToAbsent || boatModel != null) {
+      map['boat_model'] = Variable<String>(boatModel);
+    }
     map['boat_type'] = Variable<String>(boatType);
     map['fridge_capacity'] = Variable<int>(fridgeCapacity);
     map['has_freezer'] = Variable<bool>(hasFreezer);
     map['freezer_capacity'] = Variable<int>(freezerCapacity);
     map['water_tank_liters'] = Variable<int>(waterTankLiters);
     map['is_water_tank_drinkable'] = Variable<bool>(isWaterTankDrinkable);
+    map['has_watermaker'] = Variable<bool>(hasWatermaker);
     {
       map['appetite'] =
           Variable<String>($TripsTable.$converterappetite.toSql(appetite));
@@ -514,12 +1233,25 @@ class Trip extends DataClass implements Insertable<Trip> {
       region: Value(region),
       climate: Value(climate),
       isCharter: Value(isCharter),
+      boatProfileId: boatProfileId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boatProfileId),
+      boatName: boatName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boatName),
+      boatManufacturer: boatManufacturer == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boatManufacturer),
+      boatModel: boatModel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boatModel),
       boatType: Value(boatType),
       fridgeCapacity: Value(fridgeCapacity),
       hasFreezer: Value(hasFreezer),
       freezerCapacity: Value(freezerCapacity),
       waterTankLiters: Value(waterTankLiters),
       isWaterTankDrinkable: Value(isWaterTankDrinkable),
+      hasWatermaker: Value(hasWatermaker),
       appetite: Value(appetite),
       reserveDays: Value(reserveDays),
       drinkingHabit: Value(drinkingHabit),
@@ -546,6 +1278,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       region: serializer.fromJson<String>(json['region']),
       climate: serializer.fromJson<String>(json['climate']),
       isCharter: serializer.fromJson<bool>(json['isCharter']),
+      boatProfileId: serializer.fromJson<int?>(json['boatProfileId']),
+      boatName: serializer.fromJson<String?>(json['boatName']),
+      boatManufacturer: serializer.fromJson<String?>(json['boatManufacturer']),
+      boatModel: serializer.fromJson<String?>(json['boatModel']),
       boatType: serializer.fromJson<String>(json['boatType']),
       fridgeCapacity: serializer.fromJson<int>(json['fridgeCapacity']),
       hasFreezer: serializer.fromJson<bool>(json['hasFreezer']),
@@ -553,6 +1289,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       waterTankLiters: serializer.fromJson<int>(json['waterTankLiters']),
       isWaterTankDrinkable:
           serializer.fromJson<bool>(json['isWaterTankDrinkable']),
+      hasWatermaker: serializer.fromJson<bool>(json['hasWatermaker']),
       appetite: serializer.fromJson<CrewAppetite>(json['appetite']),
       reserveDays: serializer.fromJson<String>(json['reserveDays']),
       drinkingHabit: serializer.fromJson<CrewDrinking>(json['drinkingHabit']),
@@ -577,12 +1314,17 @@ class Trip extends DataClass implements Insertable<Trip> {
       'region': serializer.toJson<String>(region),
       'climate': serializer.toJson<String>(climate),
       'isCharter': serializer.toJson<bool>(isCharter),
+      'boatProfileId': serializer.toJson<int?>(boatProfileId),
+      'boatName': serializer.toJson<String?>(boatName),
+      'boatManufacturer': serializer.toJson<String?>(boatManufacturer),
+      'boatModel': serializer.toJson<String?>(boatModel),
       'boatType': serializer.toJson<String>(boatType),
       'fridgeCapacity': serializer.toJson<int>(fridgeCapacity),
       'hasFreezer': serializer.toJson<bool>(hasFreezer),
       'freezerCapacity': serializer.toJson<int>(freezerCapacity),
       'waterTankLiters': serializer.toJson<int>(waterTankLiters),
       'isWaterTankDrinkable': serializer.toJson<bool>(isWaterTankDrinkable),
+      'hasWatermaker': serializer.toJson<bool>(hasWatermaker),
       'appetite': serializer.toJson<CrewAppetite>(appetite),
       'reserveDays': serializer.toJson<String>(reserveDays),
       'drinkingHabit': serializer.toJson<CrewDrinking>(drinkingHabit),
@@ -604,12 +1346,17 @@ class Trip extends DataClass implements Insertable<Trip> {
           String? region,
           String? climate,
           bool? isCharter,
+          Value<int?> boatProfileId = const Value.absent(),
+          Value<String?> boatName = const Value.absent(),
+          Value<String?> boatManufacturer = const Value.absent(),
+          Value<String?> boatModel = const Value.absent(),
           String? boatType,
           int? fridgeCapacity,
           bool? hasFreezer,
           int? freezerCapacity,
           int? waterTankLiters,
           bool? isWaterTankDrinkable,
+          bool? hasWatermaker,
           CrewAppetite? appetite,
           String? reserveDays,
           CrewDrinking? drinkingHabit,
@@ -628,12 +1375,20 @@ class Trip extends DataClass implements Insertable<Trip> {
         region: region ?? this.region,
         climate: climate ?? this.climate,
         isCharter: isCharter ?? this.isCharter,
+        boatProfileId:
+            boatProfileId.present ? boatProfileId.value : this.boatProfileId,
+        boatName: boatName.present ? boatName.value : this.boatName,
+        boatManufacturer: boatManufacturer.present
+            ? boatManufacturer.value
+            : this.boatManufacturer,
+        boatModel: boatModel.present ? boatModel.value : this.boatModel,
         boatType: boatType ?? this.boatType,
         fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
         hasFreezer: hasFreezer ?? this.hasFreezer,
         freezerCapacity: freezerCapacity ?? this.freezerCapacity,
         waterTankLiters: waterTankLiters ?? this.waterTankLiters,
         isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
+        hasWatermaker: hasWatermaker ?? this.hasWatermaker,
         appetite: appetite ?? this.appetite,
         reserveDays: reserveDays ?? this.reserveDays,
         drinkingHabit: drinkingHabit ?? this.drinkingHabit,
@@ -656,6 +1411,14 @@ class Trip extends DataClass implements Insertable<Trip> {
       region: data.region.present ? data.region.value : this.region,
       climate: data.climate.present ? data.climate.value : this.climate,
       isCharter: data.isCharter.present ? data.isCharter.value : this.isCharter,
+      boatProfileId: data.boatProfileId.present
+          ? data.boatProfileId.value
+          : this.boatProfileId,
+      boatName: data.boatName.present ? data.boatName.value : this.boatName,
+      boatManufacturer: data.boatManufacturer.present
+          ? data.boatManufacturer.value
+          : this.boatManufacturer,
+      boatModel: data.boatModel.present ? data.boatModel.value : this.boatModel,
       boatType: data.boatType.present ? data.boatType.value : this.boatType,
       fridgeCapacity: data.fridgeCapacity.present
           ? data.fridgeCapacity.value
@@ -671,6 +1434,9 @@ class Trip extends DataClass implements Insertable<Trip> {
       isWaterTankDrinkable: data.isWaterTankDrinkable.present
           ? data.isWaterTankDrinkable.value
           : this.isWaterTankDrinkable,
+      hasWatermaker: data.hasWatermaker.present
+          ? data.hasWatermaker.value
+          : this.hasWatermaker,
       appetite: data.appetite.present ? data.appetite.value : this.appetite,
       reserveDays:
           data.reserveDays.present ? data.reserveDays.value : this.reserveDays,
@@ -703,12 +1469,17 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('region: $region, ')
           ..write('climate: $climate, ')
           ..write('isCharter: $isCharter, ')
+          ..write('boatProfileId: $boatProfileId, ')
+          ..write('boatName: $boatName, ')
+          ..write('boatManufacturer: $boatManufacturer, ')
+          ..write('boatModel: $boatModel, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
           ..write('hasFreezer: $hasFreezer, ')
           ..write('freezerCapacity: $freezerCapacity, ')
           ..write('waterTankLiters: $waterTankLiters, ')
           ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
+          ..write('hasWatermaker: $hasWatermaker, ')
           ..write('appetite: $appetite, ')
           ..write('reserveDays: $reserveDays, ')
           ..write('drinkingHabit: $drinkingHabit, ')
@@ -732,12 +1503,17 @@ class Trip extends DataClass implements Insertable<Trip> {
         region,
         climate,
         isCharter,
+        boatProfileId,
+        boatName,
+        boatManufacturer,
+        boatModel,
         boatType,
         fridgeCapacity,
         hasFreezer,
         freezerCapacity,
         waterTankLiters,
         isWaterTankDrinkable,
+        hasWatermaker,
         appetite,
         reserveDays,
         drinkingHabit,
@@ -760,12 +1536,17 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.region == this.region &&
           other.climate == this.climate &&
           other.isCharter == this.isCharter &&
+          other.boatProfileId == this.boatProfileId &&
+          other.boatName == this.boatName &&
+          other.boatManufacturer == this.boatManufacturer &&
+          other.boatModel == this.boatModel &&
           other.boatType == this.boatType &&
           other.fridgeCapacity == this.fridgeCapacity &&
           other.hasFreezer == this.hasFreezer &&
           other.freezerCapacity == this.freezerCapacity &&
           other.waterTankLiters == this.waterTankLiters &&
           other.isWaterTankDrinkable == this.isWaterTankDrinkable &&
+          other.hasWatermaker == this.hasWatermaker &&
           other.appetite == this.appetite &&
           other.reserveDays == this.reserveDays &&
           other.drinkingHabit == this.drinkingHabit &&
@@ -786,12 +1567,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<String> region;
   final Value<String> climate;
   final Value<bool> isCharter;
+  final Value<int?> boatProfileId;
+  final Value<String?> boatName;
+  final Value<String?> boatManufacturer;
+  final Value<String?> boatModel;
   final Value<String> boatType;
   final Value<int> fridgeCapacity;
   final Value<bool> hasFreezer;
   final Value<int> freezerCapacity;
   final Value<int> waterTankLiters;
   final Value<bool> isWaterTankDrinkable;
+  final Value<bool> hasWatermaker;
   final Value<CrewAppetite> appetite;
   final Value<String> reserveDays;
   final Value<CrewDrinking> drinkingHabit;
@@ -810,12 +1596,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.region = const Value.absent(),
     this.climate = const Value.absent(),
     this.isCharter = const Value.absent(),
+    this.boatProfileId = const Value.absent(),
+    this.boatName = const Value.absent(),
+    this.boatManufacturer = const Value.absent(),
+    this.boatModel = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
     this.hasFreezer = const Value.absent(),
     this.freezerCapacity = const Value.absent(),
     this.waterTankLiters = const Value.absent(),
     this.isWaterTankDrinkable = const Value.absent(),
+    this.hasWatermaker = const Value.absent(),
     this.appetite = const Value.absent(),
     this.reserveDays = const Value.absent(),
     this.drinkingHabit = const Value.absent(),
@@ -835,12 +1626,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.region = const Value.absent(),
     this.climate = const Value.absent(),
     this.isCharter = const Value.absent(),
+    this.boatProfileId = const Value.absent(),
+    this.boatName = const Value.absent(),
+    this.boatManufacturer = const Value.absent(),
+    this.boatModel = const Value.absent(),
     this.boatType = const Value.absent(),
     this.fridgeCapacity = const Value.absent(),
     this.hasFreezer = const Value.absent(),
     this.freezerCapacity = const Value.absent(),
     this.waterTankLiters = const Value.absent(),
     this.isWaterTankDrinkable = const Value.absent(),
+    this.hasWatermaker = const Value.absent(),
     this.appetite = const Value.absent(),
     this.reserveDays = const Value.absent(),
     this.drinkingHabit = const Value.absent(),
@@ -861,12 +1657,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<String>? region,
     Expression<String>? climate,
     Expression<bool>? isCharter,
+    Expression<int>? boatProfileId,
+    Expression<String>? boatName,
+    Expression<String>? boatManufacturer,
+    Expression<String>? boatModel,
     Expression<String>? boatType,
     Expression<int>? fridgeCapacity,
     Expression<bool>? hasFreezer,
     Expression<int>? freezerCapacity,
     Expression<int>? waterTankLiters,
     Expression<bool>? isWaterTankDrinkable,
+    Expression<bool>? hasWatermaker,
     Expression<String>? appetite,
     Expression<String>? reserveDays,
     Expression<String>? drinkingHabit,
@@ -886,6 +1687,10 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (region != null) 'region': region,
       if (climate != null) 'climate': climate,
       if (isCharter != null) 'is_charter': isCharter,
+      if (boatProfileId != null) 'boat_profile_id': boatProfileId,
+      if (boatName != null) 'boat_name': boatName,
+      if (boatManufacturer != null) 'boat_manufacturer': boatManufacturer,
+      if (boatModel != null) 'boat_model': boatModel,
       if (boatType != null) 'boat_type': boatType,
       if (fridgeCapacity != null) 'fridge_capacity': fridgeCapacity,
       if (hasFreezer != null) 'has_freezer': hasFreezer,
@@ -893,6 +1698,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (waterTankLiters != null) 'water_tank_liters': waterTankLiters,
       if (isWaterTankDrinkable != null)
         'is_water_tank_drinkable': isWaterTankDrinkable,
+      if (hasWatermaker != null) 'has_watermaker': hasWatermaker,
       if (appetite != null) 'appetite': appetite,
       if (reserveDays != null) 'reserve_days': reserveDays,
       if (drinkingHabit != null) 'drinking_habit': drinkingHabit,
@@ -915,12 +1721,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       Value<String>? region,
       Value<String>? climate,
       Value<bool>? isCharter,
+      Value<int?>? boatProfileId,
+      Value<String?>? boatName,
+      Value<String?>? boatManufacturer,
+      Value<String?>? boatModel,
       Value<String>? boatType,
       Value<int>? fridgeCapacity,
       Value<bool>? hasFreezer,
       Value<int>? freezerCapacity,
       Value<int>? waterTankLiters,
       Value<bool>? isWaterTankDrinkable,
+      Value<bool>? hasWatermaker,
       Value<CrewAppetite>? appetite,
       Value<String>? reserveDays,
       Value<CrewDrinking>? drinkingHabit,
@@ -939,12 +1750,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       region: region ?? this.region,
       climate: climate ?? this.climate,
       isCharter: isCharter ?? this.isCharter,
+      boatProfileId: boatProfileId ?? this.boatProfileId,
+      boatName: boatName ?? this.boatName,
+      boatManufacturer: boatManufacturer ?? this.boatManufacturer,
+      boatModel: boatModel ?? this.boatModel,
       boatType: boatType ?? this.boatType,
       fridgeCapacity: fridgeCapacity ?? this.fridgeCapacity,
       hasFreezer: hasFreezer ?? this.hasFreezer,
       freezerCapacity: freezerCapacity ?? this.freezerCapacity,
       waterTankLiters: waterTankLiters ?? this.waterTankLiters,
       isWaterTankDrinkable: isWaterTankDrinkable ?? this.isWaterTankDrinkable,
+      hasWatermaker: hasWatermaker ?? this.hasWatermaker,
       appetite: appetite ?? this.appetite,
       reserveDays: reserveDays ?? this.reserveDays,
       drinkingHabit: drinkingHabit ?? this.drinkingHabit,
@@ -982,6 +1798,18 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (isCharter.present) {
       map['is_charter'] = Variable<bool>(isCharter.value);
     }
+    if (boatProfileId.present) {
+      map['boat_profile_id'] = Variable<int>(boatProfileId.value);
+    }
+    if (boatName.present) {
+      map['boat_name'] = Variable<String>(boatName.value);
+    }
+    if (boatManufacturer.present) {
+      map['boat_manufacturer'] = Variable<String>(boatManufacturer.value);
+    }
+    if (boatModel.present) {
+      map['boat_model'] = Variable<String>(boatModel.value);
+    }
     if (boatType.present) {
       map['boat_type'] = Variable<String>(boatType.value);
     }
@@ -1000,6 +1828,9 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (isWaterTankDrinkable.present) {
       map['is_water_tank_drinkable'] =
           Variable<bool>(isWaterTankDrinkable.value);
+    }
+    if (hasWatermaker.present) {
+      map['has_watermaker'] = Variable<bool>(hasWatermaker.value);
     }
     if (appetite.present) {
       map['appetite'] = Variable<String>(
@@ -1048,12 +1879,17 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('region: $region, ')
           ..write('climate: $climate, ')
           ..write('isCharter: $isCharter, ')
+          ..write('boatProfileId: $boatProfileId, ')
+          ..write('boatName: $boatName, ')
+          ..write('boatManufacturer: $boatManufacturer, ')
+          ..write('boatModel: $boatModel, ')
           ..write('boatType: $boatType, ')
           ..write('fridgeCapacity: $fridgeCapacity, ')
           ..write('hasFreezer: $hasFreezer, ')
           ..write('freezerCapacity: $freezerCapacity, ')
           ..write('waterTankLiters: $waterTankLiters, ')
           ..write('isWaterTankDrinkable: $isWaterTankDrinkable, ')
+          ..write('hasWatermaker: $hasWatermaker, ')
           ..write('appetite: $appetite, ')
           ..write('reserveDays: $reserveDays, ')
           ..write('drinkingHabit: $drinkingHabit, ')
@@ -4452,6 +5288,7 @@ class KittyPaymentsCompanion extends UpdateCompanion<KittyPayment> {
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $BoatProfilesTable boatProfiles = $BoatProfilesTable(this);
   late final $TripsTable trips = $TripsTable(this);
   late final $TripDaysTable tripDays = $TripDaysTable(this);
   late final $CrewMembersTable crewMembers = $CrewMembersTable(this);
@@ -4464,11 +5301,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ListItemDao listItemDao = ListItemDao(this as AppDatabase);
   late final ExpenseDao expenseDao = ExpenseDao(this as AppDatabase);
+  late final BoatProfileDao boatProfileDao =
+      BoatProfileDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+        boatProfiles,
         trips,
         tripDays,
         crewMembers,
@@ -4481,6 +5321,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('boat_profiles',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('trips', kind: UpdateKind.update),
+            ],
+          ),
           WritePropagation(
             on: TableUpdateQuery.onTableName('trips',
                 limitUpdateKind: UpdateKind.delete),
@@ -4562,6 +5409,369 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       );
 }
 
+typedef $$BoatProfilesTableCreateCompanionBuilder = BoatProfilesCompanion
+    Function({
+  Value<int> id,
+  required String name,
+  Value<String?> manufacturer,
+  Value<String?> model,
+  Value<int> fridgeCapacity,
+  Value<bool> hasFreezer,
+  Value<int> freezerCapacity,
+  Value<int> waterTankLiters,
+  Value<bool> isWaterTankDrinkable,
+  Value<bool> hasWatermaker,
+  Value<bool> isArchived,
+  Value<DateTime> createdAt,
+});
+typedef $$BoatProfilesTableUpdateCompanionBuilder = BoatProfilesCompanion
+    Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String?> manufacturer,
+  Value<String?> model,
+  Value<int> fridgeCapacity,
+  Value<bool> hasFreezer,
+  Value<int> freezerCapacity,
+  Value<int> waterTankLiters,
+  Value<bool> isWaterTankDrinkable,
+  Value<bool> hasWatermaker,
+  Value<bool> isArchived,
+  Value<DateTime> createdAt,
+});
+
+final class $$BoatProfilesTableReferences
+    extends BaseReferences<_$AppDatabase, $BoatProfilesTable, BoatProfile> {
+  $$BoatProfilesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$TripsTable, List<Trip>> _tripsRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.trips,
+          aliasName:
+              $_aliasNameGenerator(db.boatProfiles.id, db.trips.boatProfileId));
+
+  $$TripsTableProcessedTableManager get tripsRefs {
+    final manager = $$TripsTableTableManager($_db, $_db.trips)
+        .filter((f) => f.boatProfileId.id($_item.id));
+
+    final cache = $_typedResult.readTableOrNull(_tripsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$BoatProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $BoatProfilesTable> {
+  $$BoatProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get model => $composableBuilder(
+      column: $table.model, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get fridgeCapacity => $composableBuilder(
+      column: $table.fridgeCapacity,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  Expression<bool> tripsRefs(
+      Expression<bool> Function($$TripsTableFilterComposer f) f) {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.trips,
+        getReferencedColumn: (t) => t.boatProfileId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$TripsTableFilterComposer(
+              $db: $db,
+              $table: $db.trips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$BoatProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BoatProfilesTable> {
+  $$BoatProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get model => $composableBuilder(
+      column: $table.model, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get fridgeCapacity => $composableBuilder(
+      column: $table.fridgeCapacity,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BoatProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BoatProfilesTable> {
+  $$BoatProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get manufacturer => $composableBuilder(
+      column: $table.manufacturer, builder: (column) => column);
+
+  GeneratedColumn<String> get model =>
+      $composableBuilder(column: $table.model, builder: (column) => column);
+
+  GeneratedColumn<int> get fridgeCapacity => $composableBuilder(
+      column: $table.fridgeCapacity, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasFreezer => $composableBuilder(
+      column: $table.hasFreezer, builder: (column) => column);
+
+  GeneratedColumn<int> get freezerCapacity => $composableBuilder(
+      column: $table.freezerCapacity, builder: (column) => column);
+
+  GeneratedColumn<int> get waterTankLiters => $composableBuilder(
+      column: $table.waterTankLiters, builder: (column) => column);
+
+  GeneratedColumn<bool> get isWaterTankDrinkable => $composableBuilder(
+      column: $table.isWaterTankDrinkable, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+      column: $table.isArchived, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> tripsRefs<T extends Object>(
+      Expression<T> Function($$TripsTableAnnotationComposer a) f) {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.trips,
+        getReferencedColumn: (t) => t.boatProfileId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$TripsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.trips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$BoatProfilesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BoatProfilesTable,
+    BoatProfile,
+    $$BoatProfilesTableFilterComposer,
+    $$BoatProfilesTableOrderingComposer,
+    $$BoatProfilesTableAnnotationComposer,
+    $$BoatProfilesTableCreateCompanionBuilder,
+    $$BoatProfilesTableUpdateCompanionBuilder,
+    (BoatProfile, $$BoatProfilesTableReferences),
+    BoatProfile,
+    PrefetchHooks Function({bool tripsRefs})> {
+  $$BoatProfilesTableTableManager(_$AppDatabase db, $BoatProfilesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BoatProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BoatProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BoatProfilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> manufacturer = const Value.absent(),
+            Value<String?> model = const Value.absent(),
+            Value<int> fridgeCapacity = const Value.absent(),
+            Value<bool> hasFreezer = const Value.absent(),
+            Value<int> freezerCapacity = const Value.absent(),
+            Value<int> waterTankLiters = const Value.absent(),
+            Value<bool> isWaterTankDrinkable = const Value.absent(),
+            Value<bool> hasWatermaker = const Value.absent(),
+            Value<bool> isArchived = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              BoatProfilesCompanion(
+            id: id,
+            name: name,
+            manufacturer: manufacturer,
+            model: model,
+            fridgeCapacity: fridgeCapacity,
+            hasFreezer: hasFreezer,
+            freezerCapacity: freezerCapacity,
+            waterTankLiters: waterTankLiters,
+            isWaterTankDrinkable: isWaterTankDrinkable,
+            hasWatermaker: hasWatermaker,
+            isArchived: isArchived,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            Value<String?> manufacturer = const Value.absent(),
+            Value<String?> model = const Value.absent(),
+            Value<int> fridgeCapacity = const Value.absent(),
+            Value<bool> hasFreezer = const Value.absent(),
+            Value<int> freezerCapacity = const Value.absent(),
+            Value<int> waterTankLiters = const Value.absent(),
+            Value<bool> isWaterTankDrinkable = const Value.absent(),
+            Value<bool> hasWatermaker = const Value.absent(),
+            Value<bool> isArchived = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              BoatProfilesCompanion.insert(
+            id: id,
+            name: name,
+            manufacturer: manufacturer,
+            model: model,
+            fridgeCapacity: fridgeCapacity,
+            hasFreezer: hasFreezer,
+            freezerCapacity: freezerCapacity,
+            waterTankLiters: waterTankLiters,
+            isWaterTankDrinkable: isWaterTankDrinkable,
+            hasWatermaker: hasWatermaker,
+            isArchived: isArchived,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$BoatProfilesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({tripsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (tripsRefs) db.trips],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (tripsRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable:
+                            $$BoatProfilesTableReferences._tripsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$BoatProfilesTableReferences(db, table, p0)
+                                .tripsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.boatProfileId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$BoatProfilesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BoatProfilesTable,
+    BoatProfile,
+    $$BoatProfilesTableFilterComposer,
+    $$BoatProfilesTableOrderingComposer,
+    $$BoatProfilesTableAnnotationComposer,
+    $$BoatProfilesTableCreateCompanionBuilder,
+    $$BoatProfilesTableUpdateCompanionBuilder,
+    (BoatProfile, $$BoatProfilesTableReferences),
+    BoatProfile,
+    PrefetchHooks Function({bool tripsRefs})>;
 typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   Value<int> id,
   required String name,
@@ -4570,12 +5780,17 @@ typedef $$TripsTableCreateCompanionBuilder = TripsCompanion Function({
   Value<String> region,
   Value<String> climate,
   Value<bool> isCharter,
+  Value<int?> boatProfileId,
+  Value<String?> boatName,
+  Value<String?> boatManufacturer,
+  Value<String?> boatModel,
   Value<String> boatType,
   Value<int> fridgeCapacity,
   Value<bool> hasFreezer,
   Value<int> freezerCapacity,
   Value<int> waterTankLiters,
   Value<bool> isWaterTankDrinkable,
+  Value<bool> hasWatermaker,
   Value<CrewAppetite> appetite,
   Value<String> reserveDays,
   Value<CrewDrinking> drinkingHabit,
@@ -4595,12 +5810,17 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
   Value<String> region,
   Value<String> climate,
   Value<bool> isCharter,
+  Value<int?> boatProfileId,
+  Value<String?> boatName,
+  Value<String?> boatManufacturer,
+  Value<String?> boatModel,
   Value<String> boatType,
   Value<int> fridgeCapacity,
   Value<bool> hasFreezer,
   Value<int> freezerCapacity,
   Value<int> waterTankLiters,
   Value<bool> isWaterTankDrinkable,
+  Value<bool> hasWatermaker,
   Value<CrewAppetite> appetite,
   Value<String> reserveDays,
   Value<CrewDrinking> drinkingHabit,
@@ -4616,6 +5836,20 @@ typedef $$TripsTableUpdateCompanionBuilder = TripsCompanion Function({
 final class $$TripsTableReferences
     extends BaseReferences<_$AppDatabase, $TripsTable, Trip> {
   $$TripsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BoatProfilesTable _boatProfileIdTable(_$AppDatabase db) =>
+      db.boatProfiles.createAlias(
+          $_aliasNameGenerator(db.trips.boatProfileId, db.boatProfiles.id));
+
+  $$BoatProfilesTableProcessedTableManager? get boatProfileId {
+    if ($_item.boatProfileId == null) return null;
+    final manager = $$BoatProfilesTableTableManager($_db, $_db.boatProfiles)
+        .filter((f) => f.id($_item.boatProfileId!));
+    final item = $_typedResult.readTableOrNull(_boatProfileIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
 
   static MultiTypedResultKey<$TripDaysTable, List<TripDay>> _tripDaysRefsTable(
           _$AppDatabase db) =>
@@ -4751,6 +5985,16 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
   ColumnFilters<bool> get isCharter => $composableBuilder(
       column: $table.isCharter, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get boatName => $composableBuilder(
+      column: $table.boatName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get boatManufacturer => $composableBuilder(
+      column: $table.boatManufacturer,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get boatModel => $composableBuilder(
+      column: $table.boatModel, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get boatType => $composableBuilder(
       column: $table.boatType, builder: (column) => ColumnFilters(column));
 
@@ -4772,6 +6016,9 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
   ColumnFilters<bool> get isWaterTankDrinkable => $composableBuilder(
       column: $table.isWaterTankDrinkable,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker, builder: (column) => ColumnFilters(column));
 
   ColumnWithTypeConverterFilters<CrewAppetite, CrewAppetite, String>
       get appetite => $composableBuilder(
@@ -4812,6 +6059,26 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  $$BoatProfilesTableFilterComposer get boatProfileId {
+    final $$BoatProfilesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.boatProfileId,
+        referencedTable: $db.boatProfiles,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BoatProfilesTableFilterComposer(
+              $db: $db,
+              $table: $db.boatProfiles,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 
   Expression<bool> tripDaysRefs(
       Expression<bool> Function($$TripDaysTableFilterComposer f) f) {
@@ -4991,6 +6258,16 @@ class $$TripsTableOrderingComposer
   ColumnOrderings<bool> get isCharter => $composableBuilder(
       column: $table.isCharter, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get boatName => $composableBuilder(
+      column: $table.boatName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get boatManufacturer => $composableBuilder(
+      column: $table.boatManufacturer,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get boatModel => $composableBuilder(
+      column: $table.boatModel, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get boatType => $composableBuilder(
       column: $table.boatType, builder: (column) => ColumnOrderings(column));
 
@@ -5011,6 +6288,10 @@ class $$TripsTableOrderingComposer
 
   ColumnOrderings<bool> get isWaterTankDrinkable => $composableBuilder(
       column: $table.isWaterTankDrinkable,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker,
       builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get appetite => $composableBuilder(
@@ -5045,6 +6326,26 @@ class $$TripsTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  $$BoatProfilesTableOrderingComposer get boatProfileId {
+    final $$BoatProfilesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.boatProfileId,
+        referencedTable: $db.boatProfiles,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BoatProfilesTableOrderingComposer(
+              $db: $db,
+              $table: $db.boatProfiles,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$TripsTableAnnotationComposer
@@ -5077,6 +6378,15 @@ class $$TripsTableAnnotationComposer
   GeneratedColumn<bool> get isCharter =>
       $composableBuilder(column: $table.isCharter, builder: (column) => column);
 
+  GeneratedColumn<String> get boatName =>
+      $composableBuilder(column: $table.boatName, builder: (column) => column);
+
+  GeneratedColumn<String> get boatManufacturer => $composableBuilder(
+      column: $table.boatManufacturer, builder: (column) => column);
+
+  GeneratedColumn<String> get boatModel =>
+      $composableBuilder(column: $table.boatModel, builder: (column) => column);
+
   GeneratedColumn<String> get boatType =>
       $composableBuilder(column: $table.boatType, builder: (column) => column);
 
@@ -5094,6 +6404,9 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<bool> get isWaterTankDrinkable => $composableBuilder(
       column: $table.isWaterTankDrinkable, builder: (column) => column);
+
+  GeneratedColumn<bool> get hasWatermaker => $composableBuilder(
+      column: $table.hasWatermaker, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<CrewAppetite, String> get appetite =>
       $composableBuilder(column: $table.appetite, builder: (column) => column);
@@ -5126,6 +6439,26 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$BoatProfilesTableAnnotationComposer get boatProfileId {
+    final $$BoatProfilesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.boatProfileId,
+        referencedTable: $db.boatProfiles,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BoatProfilesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.boatProfiles,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 
   Expression<T> tripDaysRefs<T extends Object>(
       Expression<T> Function($$TripDaysTableAnnotationComposer a) f) {
@@ -5289,7 +6622,8 @@ class $$TripsTableTableManager extends RootTableManager<
     (Trip, $$TripsTableReferences),
     Trip,
     PrefetchHooks Function(
-        {bool tripDaysRefs,
+        {bool boatProfileId,
+        bool tripDaysRefs,
         bool crewMembersRefs,
         bool shoppingStopsRefs,
         bool listItemsRefs,
@@ -5314,12 +6648,17 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<String> region = const Value.absent(),
             Value<String> climate = const Value.absent(),
             Value<bool> isCharter = const Value.absent(),
+            Value<int?> boatProfileId = const Value.absent(),
+            Value<String?> boatName = const Value.absent(),
+            Value<String?> boatManufacturer = const Value.absent(),
+            Value<String?> boatModel = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
             Value<bool> hasFreezer = const Value.absent(),
             Value<int> freezerCapacity = const Value.absent(),
             Value<int> waterTankLiters = const Value.absent(),
             Value<bool> isWaterTankDrinkable = const Value.absent(),
+            Value<bool> hasWatermaker = const Value.absent(),
             Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
             Value<CrewDrinking> drinkingHabit = const Value.absent(),
@@ -5339,12 +6678,17 @@ class $$TripsTableTableManager extends RootTableManager<
             region: region,
             climate: climate,
             isCharter: isCharter,
+            boatProfileId: boatProfileId,
+            boatName: boatName,
+            boatManufacturer: boatManufacturer,
+            boatModel: boatModel,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,
             hasFreezer: hasFreezer,
             freezerCapacity: freezerCapacity,
             waterTankLiters: waterTankLiters,
             isWaterTankDrinkable: isWaterTankDrinkable,
+            hasWatermaker: hasWatermaker,
             appetite: appetite,
             reserveDays: reserveDays,
             drinkingHabit: drinkingHabit,
@@ -5364,12 +6708,17 @@ class $$TripsTableTableManager extends RootTableManager<
             Value<String> region = const Value.absent(),
             Value<String> climate = const Value.absent(),
             Value<bool> isCharter = const Value.absent(),
+            Value<int?> boatProfileId = const Value.absent(),
+            Value<String?> boatName = const Value.absent(),
+            Value<String?> boatManufacturer = const Value.absent(),
+            Value<String?> boatModel = const Value.absent(),
             Value<String> boatType = const Value.absent(),
             Value<int> fridgeCapacity = const Value.absent(),
             Value<bool> hasFreezer = const Value.absent(),
             Value<int> freezerCapacity = const Value.absent(),
             Value<int> waterTankLiters = const Value.absent(),
             Value<bool> isWaterTankDrinkable = const Value.absent(),
+            Value<bool> hasWatermaker = const Value.absent(),
             Value<CrewAppetite> appetite = const Value.absent(),
             Value<String> reserveDays = const Value.absent(),
             Value<CrewDrinking> drinkingHabit = const Value.absent(),
@@ -5389,12 +6738,17 @@ class $$TripsTableTableManager extends RootTableManager<
             region: region,
             climate: climate,
             isCharter: isCharter,
+            boatProfileId: boatProfileId,
+            boatName: boatName,
+            boatManufacturer: boatManufacturer,
+            boatModel: boatModel,
             boatType: boatType,
             fridgeCapacity: fridgeCapacity,
             hasFreezer: hasFreezer,
             freezerCapacity: freezerCapacity,
             waterTankLiters: waterTankLiters,
             isWaterTankDrinkable: isWaterTankDrinkable,
+            hasWatermaker: hasWatermaker,
             appetite: appetite,
             reserveDays: reserveDays,
             drinkingHabit: drinkingHabit,
@@ -5411,7 +6765,8 @@ class $$TripsTableTableManager extends RootTableManager<
                   (e.readTable(table), $$TripsTableReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: (
-              {tripDaysRefs = false,
+              {boatProfileId = false,
+              tripDaysRefs = false,
               crewMembersRefs = false,
               shoppingStopsRefs = false,
               listItemsRefs = false,
@@ -5429,7 +6784,32 @@ class $$TripsTableTableManager extends RootTableManager<
                 if (expensesRefs) db.expenses,
                 if (kittyPaymentsRefs) db.kittyPayments
               ],
-              addJoins: null,
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (boatProfileId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.boatProfileId,
+                    referencedTable:
+                        $$TripsTableReferences._boatProfileIdTable(db),
+                    referencedColumn:
+                        $$TripsTableReferences._boatProfileIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (tripDaysRefs)
@@ -5532,7 +6912,8 @@ typedef $$TripsTableProcessedTableManager = ProcessedTableManager<
     (Trip, $$TripsTableReferences),
     Trip,
     PrefetchHooks Function(
-        {bool tripDaysRefs,
+        {bool boatProfileId,
+        bool tripDaysRefs,
         bool crewMembersRefs,
         bool shoppingStopsRefs,
         bool listItemsRefs,
@@ -8462,6 +9843,8 @@ typedef $$KittyPaymentsTableProcessedTableManager = ProcessedTableManager<
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$BoatProfilesTableTableManager get boatProfiles =>
+      $$BoatProfilesTableTableManager(_db, _db.boatProfiles);
   $$TripsTableTableManager get trips =>
       $$TripsTableTableManager(_db, _db.trips);
   $$TripDaysTableTableManager get tripDays =>

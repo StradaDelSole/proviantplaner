@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-A: Boat/Profile Foundation (Issue #24)
+
+- **Datenmodell & Schema v7:**
+  - Neue Tabelle `BoatProfiles` für wiederverwendbare Bootsprofile (Name, Werft, Modell, Kühlschrank, Tiefkühlfach, Wassertank, Trinkbarkeit, Watermaker, Archivierungs-Status).
+  - Drift Schema Version von 6 auf 7 inkrementiert.
+  - Saubere Migration v6 -> v7 mit vollständiger Datenintegrität und Nullverlust bestehender Trips; Spalten `boat_profile_id`, `boat_name`, `boat_manufacturer`, `boat_model`, `has_watermaker` zu `trips` hinzugefügt.
+  - Snapshot-Architektur: Alle Kapazitäts- und Boots-Parameter verbleiben als autonome Snapshot-Werte auf dem Trip; spätere Änderungen am Bootsprofil verändern historische/laufende Törns nicht.
+  - SQLite Foreign Key `ON DELETE SET NULL` bei `boat_profile_id`; Löschen eines Profils lässt den Törn-Snapshot vollständig intakt.
+- **DAO & Services:**
+  - `BoatProfileDao` mit CRUD, Archivierungs-Filterung und physischem Löschen implementiert.
+  - `BoatProfileService` bereitgestellt für Profil-Verwaltung und Provider verdrahtet.
+  - `TripService` erweitert um Snapshot-Initialisierung bei Törn-Erstellung sowie explizite `resyncTripBoatProfile`-Methode inklusive automatischer Mengen-Neuberechnung.
+- **Backup & Restore (Payload v2):**
+  - Backup-Payload-Version von 1 auf 2 angehoben.
+  - Vollständiger Export von `boatProfiles` und Trip-Bootsschnappschüssen (inkl. `hasWatermaker`).
+  - Robuster Import von v2 mit ID-Remapping von `boatProfileId`.
+  - Vollständige Abwärtskompatibilität: v1-Backups lassen sich fehlerfrei in Schema v7 wiederherstellen (mit Standardwerten `hasWatermaker = false`, `boatProfileId = null`).
+- **Gating & Scope-Treue:**
+  - PIVOT3-B, Issue #4 (Crew-Berechnung), Issue #5 (Watermaker-Logik) und UI-Masken für Profile wurden strikt nicht vorgezogen.
+
 ## 2026-10-06 – PIVOT3 Reconciliation / PIVOT3-A Release
 
 - Owner-accepted Rebase der Implementierungsreihenfolge: **PIVOT3-A → PIVOT3-B → PIVOT2**.

@@ -488,3 +488,35 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
         .fold<double>(0.0, (sum, e) => sum + e.amount);
   }
 }
+
+/// DAO für wiederverwendbare Bootsprofile (PIVOT3-A).
+@DriftAccessor(tables: [BoatProfiles])
+class BoatProfileDao extends DatabaseAccessor<AppDatabase> with _$BoatProfileDaoMixin {
+  BoatProfileDao(super.db);
+
+  /// Legt ein neues Bootsprofil an.
+  Future<int> createProfile(BoatProfilesCompanion profile) =>
+      into(boatProfiles).insert(profile);
+
+  /// Lädt ein Bootsprofil nach ID.
+  Future<BoatProfile?> getProfileById(int id) =>
+      (select(boatProfiles)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
+  /// Liefert alle Bootsprofile, optional gefiltert nach Aktiv-Status.
+  Future<List<BoatProfile>> getAllProfiles({bool includeArchived = false}) {
+    final query = select(boatProfiles);
+    if (!includeArchived) {
+      query.where((tbl) => tbl.isArchived.equals(false));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.get();
+  }
+
+  /// Aktualisiert ein bestehendes Bootsprofil.
+  Future<bool> updateProfile(BoatProfile profile) =>
+      update(boatProfiles).replace(profile);
+
+  /// Löscht ein Bootsprofil.
+  Future<int> deleteProfile(int id) =>
+      (delete(boatProfiles)..where((tbl) => tbl.id.equals(id))).go();
+}

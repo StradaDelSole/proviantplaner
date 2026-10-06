@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 
@@ -22,4 +22,9 @@ final listItemDaoProvider = Provider<ListItemDao>((ref) {
 /// Provider für ExpenseDao.
 final expenseDaoProvider = Provider<ExpenseDao>((ref) {
   return ref.watch(databaseProvider).expenseDao;
+});
+
+/// Provider für BoatProfileDao (PIVOT3-A).
+final boatProfileDaoProvider = Provider<BoatProfileDao>((ref) {
+  return ref.watch(databaseProvider).boatProfileDao;
 });

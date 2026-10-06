@@ -43,6 +43,7 @@ void main() {
       freezerCapacity: 0,
       waterTankLiters: 0,
       isWaterTankDrinkable: false,
+      hasWatermaker: false,
       phase: TripPhase.shopping,
       isArchived: false,
       currency: 'EUR',

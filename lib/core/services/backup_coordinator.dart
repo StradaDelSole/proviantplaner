@@ -40,6 +40,7 @@ class BackupCoordinator {
     }
 
     final allTrips = await _db.tripDao.getAllTrips();
+    final allBoatProfiles = await _db.boatProfileDao.getAllProfiles(includeArchived: true);
     final tripsBackupList = <Map<String, dynamic>>[];
 
     for (final trip in allTrips) {
@@ -70,15 +71,16 @@ class BackupCoordinator {
     }
 
     final backupPayload = jsonEncode({
-      'version': 1,
+      'version': 2,
       'exportedAt': DateTime.now().toIso8601String(),
+      'boatProfiles': allBoatProfiles.map(_serializeBoatProfile).toList(),
       'trips': tripsBackupList,
     });
 
     return _backupService.backupData(backupPayload);
   }
 
-  /// Stellt alle gesicherten Törns wieder her.
+  /// Stellt alle gesicherten Törns und Bootsprofile wieder her.
   /// Gewährleistet relationale Integrität durch Neu-Verknüpfung der generierten IDs.
   Future<bool> restoreBackup() async {
     final status = await _authService.getMembershipStatus();
@@ -92,6 +94,7 @@ class BackupCoordinator {
     }
 
     final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
+    final rawProfiles = decoded['boatProfiles'] as List<dynamic>? ?? [];
     final tripsList = decoded['trips'] as List<dynamic>? ?? [];
 
     await _db.transaction(() async {
@@ -106,12 +109,41 @@ class BackupCoordinator {
         await _db.delete(_db.crewMembers).go();
         await _db.delete(_db.tripDays).go();
         await _db.delete(_db.trips).go();
+        await _db.delete(_db.boatProfiles).go();
+
+        // 0. Bootsprofile einfügen (falls in Backup vorhanden)
+        final profileIdMap = <int, int>{};
+        for (final rawProfile in rawProfiles) {
+          final pMap = rawProfile as Map<String, dynamic>;
+          final oldProfileId = pMap['id'] as int;
+          final newProfileId = await _db.into(_db.boatProfiles).insert(
+            BoatProfilesCompanion.insert(
+              name: pMap['name'] as String,
+              manufacturer: Value(pMap['manufacturer'] as String?),
+              model: Value(pMap['model'] as String?),
+              fridgeCapacity: Value(pMap['fridgeCapacity'] as int? ?? 100),
+              hasFreezer: Value(pMap['hasFreezer'] as bool? ?? false),
+              freezerCapacity: Value(pMap['freezerCapacity'] as int? ?? 0),
+              waterTankLiters: Value(pMap['waterTankLiters'] as int? ?? 0),
+              isWaterTankDrinkable: Value(pMap['isWaterTankDrinkable'] as bool? ?? false),
+              hasWatermaker: Value(pMap['hasWatermaker'] as bool? ?? false),
+              isArchived: Value(pMap['isArchived'] as bool? ?? false),
+              createdAt: pMap['createdAt'] != null
+                  ? Value(DateTime.parse(pMap['createdAt'] as String))
+                  : const Value.absent(),
+            ),
+          );
+          profileIdMap[oldProfileId] = newProfileId;
+        }
 
         for (final rawTripData in tripsList) {
           final tripData = rawTripData as Map<String, dynamic>;
           final tMap = tripData['trip'] as Map<String, dynamic>;
 
           // 1. Trip einfügen
+          final oldBoatProfileId = tMap['boatProfileId'] as int?;
+          final newBoatProfileId = oldBoatProfileId != null ? profileIdMap[oldBoatProfileId] : null;
+
           final newTripId = await _db.into(_db.trips).insert(
             TripsCompanion.insert(
               name: tMap['name'] as String,
@@ -122,6 +154,10 @@ class BackupCoordinator {
                       ? 'cool'
                       : (tMap['region'] == 'hot_or_remote' ? 'hot' : 'warm'))),
               isCharter: Value(tMap['isCharter'] as bool? ?? true),
+              boatProfileId: Value(newBoatProfileId),
+              boatName: Value(tMap['boatName'] as String?),
+              boatManufacturer: Value(tMap['boatManufacturer'] as String?),
+              boatModel: Value(tMap['boatModel'] as String?),
               boatType: Value(tMap['boatType'] as String? ?? 'mono'),
               fridgeCapacity: Value(tMap['fridgeCapacity'] as int? ?? 100),
               appetite: tMap['appetite'] != null
@@ -144,6 +180,7 @@ class BackupCoordinator {
               freezerCapacity: Value(tMap['freezerCapacity'] as int? ?? 0),
               waterTankLiters: Value(tMap['waterTankLiters'] as int? ?? 0),
               isWaterTankDrinkable: Value(tMap['isWaterTankDrinkable'] as bool? ?? false),
+              hasWatermaker: Value(tMap['hasWatermaker'] as bool? ?? false),
               createdAt: tMap['createdAt'] != null
                   ? Value(DateTime.parse(tMap['createdAt'] as String))
                   : const Value.absent(),
@@ -324,12 +361,17 @@ class BackupCoordinator {
         'region': t.region,
         'climate': t.climate,
         'isCharter': t.isCharter,
+        'boatProfileId': t.boatProfileId,
+        'boatName': t.boatName,
+        'boatManufacturer': t.boatManufacturer,
+        'boatModel': t.boatModel,
         'boatType': t.boatType,
         'fridgeCapacity': t.fridgeCapacity,
         'hasFreezer': t.hasFreezer,
         'freezerCapacity': t.freezerCapacity,
         'waterTankLiters': t.waterTankLiters,
         'isWaterTankDrinkable': t.isWaterTankDrinkable,
+        'hasWatermaker': t.hasWatermaker,
         'appetite': t.appetite.rawValue,
         'reserveDays': t.reserveDays,
         'drinkingHabit': t.drinkingHabit.rawValue,
@@ -340,6 +382,21 @@ class BackupCoordinator {
         'kittyModel': t.kittyModel.rawValue,
         'treasurerMemberId': t.treasurerMemberId,
         'createdAt': t.createdAt.toIso8601String(),
+      };
+
+  Map<String, dynamic> _serializeBoatProfile(BoatProfile p) => {
+        'id': p.id,
+        'name': p.name,
+        'manufacturer': p.manufacturer,
+        'model': p.model,
+        'fridgeCapacity': p.fridgeCapacity,
+        'hasFreezer': p.hasFreezer,
+        'freezerCapacity': p.freezerCapacity,
+        'waterTankLiters': p.waterTankLiters,
+        'isWaterTankDrinkable': p.isWaterTankDrinkable,
+        'hasWatermaker': p.hasWatermaker,
+        'isArchived': p.isArchived,
+        'createdAt': p.createdAt.toIso8601String(),
       };
 
   Map<String, dynamic> _serializeDay(TripDay d) => {

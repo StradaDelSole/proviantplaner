@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'boat_profile_service.dart';
 import 'trip_service.dart';
 
 /// Singleton Provider für das CatalogRepository.
@@ -20,7 +21,21 @@ final tripServiceProvider = Provider<TripService>((ref) {
     tripDao: ref.watch(tripDaoProvider),
     listItemDao: ref.watch(listItemDaoProvider),
     catalogRepository: ref.watch(catalogRepositoryProvider),
+    boatProfileDao: ref.watch(boatProfileDaoProvider),
   );
+});
+
+/// Provider für den BoatProfileService (PIVOT3-A).
+final boatProfileServiceProvider = Provider<BoatProfileService>((ref) {
+  return BoatProfileService(
+    boatProfileDao: ref.watch(boatProfileDaoProvider),
+  );
+});
+
+/// Provider für alle aktiven Bootsprofile.
+final activeBoatProfilesProvider = FutureProvider<List<BoatProfile>>((ref) async {
+  final service = ref.watch(boatProfileServiceProvider);
+  return service.getActiveProfiles();
 });
 
 /// Aktuell ausgewählte Trip-ID (Standard: erster vorhandener Trip oder null).

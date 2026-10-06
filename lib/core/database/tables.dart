@@ -75,6 +75,22 @@ class CheckItemStateConverter extends TypeConverter<CheckItemState, String> {
   String toSql(CheckItemState value) => value.rawValue;
 }
 
+/// 0. BoatProfile: Wiederverwendbare Bootsprofile mit Snapshot-Semantik (PIVOT3-A)
+class BoatProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  TextColumn get manufacturer => text().nullable()();
+  TextColumn get model => text().nullable()();
+  IntColumn get fridgeCapacity => integer().withDefault(const Constant(100))();
+  BoolColumn get hasFreezer => boolean().withDefault(const Constant(false))();
+  IntColumn get freezerCapacity => integer().withDefault(const Constant(0))();
+  IntColumn get waterTankLiters => integer().withDefault(const Constant(0))();
+  BoolColumn get isWaterTankDrinkable => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasWatermaker => boolean().withDefault(const Constant(false))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 /// 1. Trip: Törn-Stammdaten, Phasen, Crew-Fragen, Einstellungen
 class Trips extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -84,12 +100,21 @@ class Trips extends Table {
   TextColumn get region => text().withDefault(const Constant('mediterranean'))();
   TextColumn get climate => text().withDefault(const Constant('warm'))();
   BoolColumn get isCharter => boolean().withDefault(const Constant(true))();
+
+  // PIVOT3-A: Bootsprofil-Referenz und Identitäts-Snapshots
+  IntColumn get boatProfileId => integer().nullable().references(BoatProfiles, #id, onDelete: KeyAction.setNull)();
+  TextColumn get boatName => text().nullable()();
+  TextColumn get boatManufacturer => text().nullable()();
+  TextColumn get boatModel => text().nullable()();
+
+  // Snapshot-Werte der Bootskapazitäten
   TextColumn get boatType => text().withDefault(const Constant('mono'))();
   IntColumn get fridgeCapacity => integer().withDefault(const Constant(100))();
   BoolColumn get hasFreezer => boolean().withDefault(const Constant(false))();
   IntColumn get freezerCapacity => integer().withDefault(const Constant(0))();
   IntColumn get waterTankLiters => integer().withDefault(const Constant(0))();
   BoolColumn get isWaterTankDrinkable => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasWatermaker => boolean().withDefault(const Constant(false))();
 
   // Crew-Fragen (Appetit, Reserve, Trinken)
   TextColumn get appetite => text().map(const CrewAppetiteConverter()).withDefault(const Constant('normal'))();

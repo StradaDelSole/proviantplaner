@@ -13,15 +13,18 @@ class TripService {
   final TripDao tripDao;
   final ListItemDao listItemDao;
   final CatalogRepository catalogRepository;
+  final BoatProfileDao? boatProfileDao;
 
   TripService({
     required this.tripDao,
     required this.listItemDao,
     required this.catalogRepository,
+    this.boatProfileDao,
   });
 
   /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
   /// Führt unmittelbar die Initial-Berechnung aller Vorräte durch.
+  /// Falls [boatProfileId] angegeben ist, werden Identitäts- und Bootswerte als Snapshot übernommen.
   Future<int> createTripWithCrew({
     required String name,
     required DateTime startDate,
@@ -41,6 +44,11 @@ class TripService {
     required List<CrewMemberInput> crewMembers,
     int restaurantDinnersCount = 0,
     int restaurantLunchesCount = 0,
+    int? boatProfileId,
+    String? boatName,
+    String? boatManufacturer,
+    String? boatModel,
+    bool? hasWatermaker,
   }) async {
     final effectiveClimate = climate ??
         (region != null
@@ -51,6 +59,32 @@ class TripService {
                     : (region == 'mediterranean' || region == 'mediterranean_summer' ? 'warm' : region)))
             : 'warm');
 
+    // Falls ein Bootsprofil angegeben ist, dessen Werte als Basis für den Snapshot laden
+    BoatProfile? profile;
+    if (boatProfileId != null && boatProfileDao != null) {
+      profile = await boatProfileDao!.getProfileById(boatProfileId);
+    }
+
+    final effectiveBoatName = boatName ?? profile?.name;
+    final effectiveBoatManufacturer = boatManufacturer ?? profile?.manufacturer;
+    final effectiveBoatModel = boatModel ?? profile?.model;
+    final effectiveFridgeCapacity = profile != null
+        ? profile.fridgeCapacity
+        : fridgeCapacityLiters.round();
+    final effectiveHasFreezer = profile != null
+        ? profile.hasFreezer
+        : hasFreezer;
+    final effectiveFreezerCapacity = profile != null
+        ? profile.freezerCapacity
+        : (freezerCapacityLiters?.round() ?? 0);
+    final effectiveWaterTankLiters = profile != null
+        ? profile.waterTankLiters
+        : (waterTankLiters?.round() ?? 0);
+    final effectiveIsWaterTankDrinkable = profile != null
+        ? profile.isWaterTankDrinkable
+        : isWaterTankDrinkable;
+    final effectiveHasWatermaker = hasWatermaker ?? (profile?.hasWatermaker ?? false);
+
     // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
     final tripCompanion = TripsCompanion.insert(
       name: name,
@@ -59,12 +93,17 @@ class TripService {
       region: Value(effectiveClimate),
       climate: Value(effectiveClimate),
       isCharter: Value(isCharter),
+      boatProfileId: Value(boatProfileId),
+      boatName: Value(effectiveBoatName),
+      boatManufacturer: Value(effectiveBoatManufacturer),
+      boatModel: Value(effectiveBoatModel),
       boatType: Value(boatType),
-      fridgeCapacity: Value(fridgeCapacityLiters.round()),
-      hasFreezer: Value(hasFreezer),
-      freezerCapacity: Value(freezerCapacityLiters?.round() ?? 0),
-      waterTankLiters: Value(waterTankLiters?.round() ?? 0),
-      isWaterTankDrinkable: Value(isWaterTankDrinkable),
+      fridgeCapacity: Value(effectiveFridgeCapacity),
+      hasFreezer: Value(effectiveHasFreezer),
+      freezerCapacity: Value(effectiveFreezerCapacity),
+      waterTankLiters: Value(effectiveWaterTankLiters),
+      isWaterTankDrinkable: Value(effectiveIsWaterTankDrinkable),
+      hasWatermaker: Value(effectiveHasWatermaker),
       hasStorageChecklist: Value(effectiveClimate == 'hot'),
       appetite: Value(crewAppetite),
       reserveDays: Value(crewReserve ? 'all_anchoring_days' : 'none'),
@@ -296,6 +335,35 @@ class TripService {
     return tripDao.setTripPhase(tripId, phase);
   }
 
+  /// Führt einen expliziten Resync der Bootsdaten eines Törns mit dem verknüpften Bootsprofil durch (PIVOT3-A).
+  /// Aktualisiert die Snapshot-Werte des Törns auf den aktuellen Stand des verknüpften Bootsprofils.
+  /// Gibt false zurück, wenn kein Törn, keine boatProfileId oder kein passendes Profil gefunden wurde.
+  Future<bool> resyncTripBoatProfile(int tripId) async {
+    final trip = await tripDao.getTripById(tripId);
+    if (trip == null || trip.boatProfileId == null || boatProfileDao == null) {
+      return false;
+    }
+    final profile = await boatProfileDao!.getProfileById(trip.boatProfileId!);
+    if (profile == null) {
+      return false;
+    }
+
+    final updated = trip.copyWith(
+      boatName: Value(profile.name),
+      boatManufacturer: Value(profile.manufacturer),
+      boatModel: Value(profile.model),
+      fridgeCapacity: profile.fridgeCapacity,
+      hasFreezer: profile.hasFreezer,
+      freezerCapacity: profile.freezerCapacity,
+      waterTankLiters: profile.waterTankLiters,
+      isWaterTankDrinkable: profile.isWaterTankDrinkable,
+      hasWatermaker: profile.hasWatermaker,
+    );
+    await tripDao.updateTrip(updated);
+    await recalculateTrip(tripId);
+    return true;
+  }
+
   /// Aktualisiert Törn-Stammdaten (Name, Startdatum, Tage, Kapazitäten, Restaurantbesuche) und berechnet Mengen neu.
   Future<void> updateTripDetails({
     required int tripId,
@@ -309,6 +377,11 @@ class TripService {
     bool? isWaterTankDrinkable,
     int? restaurantLunches,
     int? restaurantDinners,
+    int? boatProfileId,
+    String? boatName,
+    String? boatManufacturer,
+    String? boatModel,
+    bool? hasWatermaker,
   }) async {
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return;
@@ -360,6 +433,11 @@ class TripService {
       freezerCapacity: freezerCapacity ?? trip.freezerCapacity,
       waterTankLiters: waterTankLiters ?? trip.waterTankLiters,
       isWaterTankDrinkable: isWaterTankDrinkable ?? trip.isWaterTankDrinkable,
+      boatProfileId: boatProfileId != null ? Value(boatProfileId) : Value(trip.boatProfileId),
+      boatName: boatName != null ? Value(boatName) : Value(trip.boatName),
+      boatManufacturer: boatManufacturer != null ? Value(boatManufacturer) : Value(trip.boatManufacturer),
+      boatModel: boatModel != null ? Value(boatModel) : Value(trip.boatModel),
+      hasWatermaker: hasWatermaker ?? trip.hasWatermaker,
     );
     await tripDao.updateTrip(updated);
     await recalculateTrip(tripId);
