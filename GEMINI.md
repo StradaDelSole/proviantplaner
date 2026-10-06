@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.10
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.11
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -13,21 +13,24 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.7 | 26.09.2026 | Backend-Regeln (TypeScript, Cloudflare, Geheimnisse, kein Deployment); Freigabe B0–B5 |
 | v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; PIVOT3-A Review-Gate; Bootsprofil-Scope ausdrücklich erlaubt |
 | v0.9 | 06.10.2026 | PIVOT3-A owner-accepted; ausschließlich PIVOT3-B freigegeben; verbindliche Crew-/Watermaker-Reconciliation |
-| v0.10 | 06.10.2026 | PIVOT3-B owner-accepted; PIVOT3-A/B abgeschlossen; aktuell kein Implementierungsslice freigegeben |
+| v0.10 | 06.10.2026 | PIVOT3-B owner-accepted; PIVOT3-A/B abgeschlossen; kein Folgeslice freigegeben |
+| v0.11 | 06.10.2026 | PIVOT2 Provisioning Review als einziger aktueller Implementierungsslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist **kein Implementierungsslice freigegeben**.
+Aktuell ist ausschließlich freigegeben:
+- **PIVOT2 – Provisioning Review**, Issue #26
+- Plan: `docs/impl/PIVOT2_plan.md`
+- Release/Reconciliation: `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`
 
 Abgeschlossen:
-- **PIVOT3-A – Boat/Profile Foundation: OWNER-ACCEPTED / COMPLETE**
-- **PIVOT3-B – Setup Integration & Water Logic: OWNER-ACCEPTED / COMPLETE**
-- PIVOT3-B Owner Acceptance: `docs/impl/PIVOT3B_owner_acceptance_2026-10-06.md`
+- PIVOT1 – OWNER-ACCEPTED / COMPLETE
+- PIVOT3-A – OWNER-ACCEPTED / COMPLETE
+- PIVOT3-B – OWNER-ACCEPTED / COMPLETE
 
 Nicht freigegeben:
-- PIVOT2
 - UX-D (#21)
 - GUEST1 (#22)
 - RECEIPT1 (#23)
@@ -35,7 +38,7 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Bis zu einer neuen ausdrücklich owner-accepted Reconciliation/Release-Entscheidung gilt: **STOP – keinen neuen Slice implementieren.**
+Nach PIVOT2: **STOP für unabhängigen Review / Owner Acceptance.**
 
 Ältere Statusangaben in historischen PRD-/SLICES-/Session-Prompt-Dokumenten sind keine aktuelle Implementierungsfreigabe. Die aktuelle Release-/Gate-Wahrheit steht in README + den neuesten ausdrücklich owner-accepted Reconciliation-/Acceptance-Dokumenten.
 
@@ -49,6 +52,7 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 2. Neueste ausdrücklich **OWNER-ACCEPTED** Reconciliation-, Product- und UX-Dokumente, insbesondere aktuell:
    - `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
    - `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
+   - `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`
    - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
    - `docs/design/PROVY_UX_DIRECTION_v0.5.md`
    - `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`
