@@ -484,13 +484,14 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     final balanceCents = shared?.currentBalanceInCents ?? 0;
     final depositsCents = shared?.totalDepositsInCents ?? 0;
     final expensesCents = shared?.totalExpensesInCents ?? 0;
+    final kittyPaidCents = shared?.kittyPaidExpensesInCents ?? expensesCents;
 
     final balanceFormatted = _formatCents(balanceCents);
     final depositsFormatted = _formatCents(depositsCents);
     final expensesFormatted = _formatCents(expensesCents);
 
     final ratio = depositsCents > 0
-        ? (expensesCents / depositsCents).clamp(0.0, 1.0)
+        ? (kittyPaidCents / depositsCents).clamp(0.0, 1.0)
         : 0.0;
     final percent = (ratio * 100).round();
 

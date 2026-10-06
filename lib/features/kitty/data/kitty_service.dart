@@ -37,12 +37,14 @@ class TripKittyData {
   List<PaymentTransfer> get transfers =>
       sharedResult?.settlementTransfers ?? individualResult?.simplifiedTransfers ?? const [];
 
-  /// Gibt das aktuelle Kassen-Guthaben in Cent zurück (Shared Kitty).
-  int get cashBalanceCents => sharedResult?.currentBalanceInCents ?? 0;
+  /// Gibt das aktuelle Kassen-Guthaben in Cent zurück (Shared Kitty oder historische Kasse).
+  int get cashBalanceCents =>
+      sharedResult?.currentBalanceInCents ?? individualResult?.currentBalanceInCents ?? 0;
 
   /// Gibt den Kassenwart zurück.
   KittyMember? get treasurer =>
       sharedResult?.treasurer ??
+      individualResult?.treasurer ??
       (trip.treasurerMemberId != null
           ? members.where((m) => m.id == trip.treasurerMemberId).firstOrNull
           : members.where((m) => m.isSkipperFree).firstOrNull ?? members.firstOrNull);
@@ -114,6 +116,8 @@ class KittyService {
       indRes = engine.calculateIndividualSettlement(
         members: members,
         expenses: expenses,
+        deposits: deposits,
+        treasurerMemberId: trip.treasurerMemberId,
       );
     }
 
@@ -188,8 +192,22 @@ class KittyService {
     );
   }
 
+  void _validateExpenseInput(ExpenseInput input) {
+    if (input.isPaidFromKitty && input.paidByMemberId != null) {
+      throw ArgumentError(
+        'Ungültige Zahlungsquelle: Kassenausgaben dürfen keinen persönlichen Zahler haben (paidByMemberId muss null sein).',
+      );
+    }
+    if (!input.isPaidFromKitty && input.paidByMemberId == null) {
+      throw ArgumentError(
+        'Ungültige Zahlungsquelle: Personenausgaben müssen ein Crew-Mitglied als Zahler haben (paidByMemberId darf nicht null sein).',
+      );
+    }
+  }
+
   /// Erfasst eine neue Ausgabe (SC-KAS-02).
   Future<int> addExpense(ExpenseInput input) {
+    _validateExpenseInput(input);
     final euros = input.amountInCents / 100.0;
     String? splitJson;
     if (input.customSplitInCents != null) {
@@ -263,6 +281,7 @@ class KittyService {
     required int id,
     required ExpenseInput input,
   }) {
+    _validateExpenseInput(input);
     final euros = input.amountInCents / 100.0;
     String? splitJson;
     if (input.customSplitInCents != null) {
@@ -288,6 +307,16 @@ class KittyService {
 
   /// Stellt eine gelöschte Ausgabe wieder her (Rückgängig-Funktion).
   Future<int> restoreExpense(KittyExpense exp) {
+    if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
+      throw ArgumentError(
+        'Ungültige Zahlungsquelle für Wiederherstellung: Kassenausgaben dürfen keinen persönlichen Zahler haben.',
+      );
+    }
+    if (!exp.isPaidFromKitty && exp.paidByMemberId == null) {
+      throw ArgumentError(
+        'Ungültige Zahlungsquelle für Wiederherstellung: Personenausgaben müssen ein Crew-Mitglied als Zahler haben.',
+      );
+    }
     return expenseDao.addExpense(
       ExpensesCompanion.insert(
         id: Value(exp.id),

@@ -298,7 +298,12 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
               ),
             ],
             selected: {_isPaidFromKitty},
-            onSelectionChanged: (val) => setState(() => _isPaidFromKitty = val.first),
+            onSelectionChanged: (val) => setState(() {
+              _isPaidFromKitty = val.first;
+              if (!_isPaidFromKitty && _paidByMemberId == null) {
+                _paidByMemberId = widget.members.firstOrNull?.id;
+              }
+            }),
           ),
           const SizedBox(height: 8),
         ],

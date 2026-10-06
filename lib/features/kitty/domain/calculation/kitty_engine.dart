@@ -3,11 +3,34 @@ library;
 
 import '../models/kitty_models.dart';
 
-/// Ergebnis der Kassenberechnung für eine gemeinsame Bordkasse.
+/// Ergebnis der einheitlichen Abrechnungsgrundlage (Unified Ledger, FIX-B).
+class UnifiedLedgerResult {
+  final int totalDepositsInCents;
+  final int totalExpensesInCents;
+  final int kittyPaidExpensesInCents;
+  final int personallyPaidExpensesInCents;
+  final int kittyCashInCents;
+  final List<MemberBalance> memberBalances;
+  final KittyMember? treasurer;
+
+  const UnifiedLedgerResult({
+    required this.totalDepositsInCents,
+    required this.totalExpensesInCents,
+    required this.kittyPaidExpensesInCents,
+    required this.personallyPaidExpensesInCents,
+    required this.kittyCashInCents,
+    required this.memberBalances,
+    this.treasurer,
+  });
+}
+
+/// Ergebnis der Kassenberechnung für eine gemeinsame Bordkasse (FIX-B).
 class SharedKittyCalculationResult {
   final int totalDepositsInCents;
   final int totalExpensesInCents;
   final int currentBalanceInCents;
+  final int kittyPaidExpensesInCents;
+  final int personallyPaidExpensesInCents;
   final List<MemberBalance> memberBalances;
   final List<PaymentTransfer> settlementTransfers;
   final KittyMember? treasurer;
@@ -16,28 +39,93 @@ class SharedKittyCalculationResult {
     required this.totalDepositsInCents,
     required this.totalExpensesInCents,
     required this.currentBalanceInCents,
+    this.kittyPaidExpensesInCents = 0,
+    this.personallyPaidExpensesInCents = 0,
     required this.memberBalances,
     required this.settlementTransfers,
     this.treasurer,
   });
 }
 
-/// Ergebnis der Einzelabrechnung ("wer schuldet wem").
+/// Ergebnis der Einzelabrechnung ("wer schuldet wem", FIX-B).
 class IndividualSettlementResult {
   final int totalExpensesInCents;
   final List<MemberBalance> memberBalances;
   final List<PaymentTransfer> simplifiedTransfers;
+  final int totalDepositsInCents;
+  final int kittyPaidExpensesInCents;
+  final int personallyPaidExpensesInCents;
+  final int currentBalanceInCents;
+  final KittyMember? treasurer;
 
   const IndividualSettlementResult({
     required this.totalExpensesInCents,
     required this.memberBalances,
     required this.simplifiedTransfers,
+    this.totalDepositsInCents = 0,
+    this.kittyPaidExpensesInCents = 0,
+    this.personallyPaidExpensesInCents = 0,
+    this.currentBalanceInCents = 0,
+    this.treasurer,
   });
 }
 
-/// Engine zur centgenauen Berechnung beider Bordkassenmodelle.
+/// Engine zur centgenauen Berechnung beider Bordkassenmodelle (FIX-B: Unified Ledger).
 class KittyEngine {
   const KittyEngine();
+
+  /// Berechnet die einheitliche Abrechnungsgrundlage (Unified Ledger) für beide Modelle.
+  UnifiedLedgerResult calculateUnifiedLedger({
+    required List<KittyMember> members,
+    required List<KittyDeposit> deposits,
+    required List<KittyExpense> expenses,
+    int? treasurerMemberId,
+  }) {
+    _validateLedgerInputs(members, deposits, expenses);
+
+    final kittyExpenses = expenses.where((e) => e.isPaidFromKitty).toList();
+    final personExpenses = expenses.where((e) => !e.isPaidFromKitty).toList();
+
+    final totalDeposits = deposits.fold<int>(0, (sum, d) => sum + d.amountInCents);
+    final kittyPaidExpenses = kittyExpenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
+    final personallyPaidExpenses = personExpenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
+    final totalExpenses = expenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
+    final kittyCash = totalDeposits - kittyPaidExpenses;
+
+    final resolvedTreasurer = _resolveTreasurer(members, treasurerMemberId);
+    final memberDeposits = _sumDepositsByMember(deposits);
+    final memberPersonalExpenses = _sumExpensesByPayer(personExpenses);
+    final memberCostShares = _calculateCostShares(expenses, members);
+
+    final balances = members.map((m) {
+      final actualDeposits = memberDeposits[m.id] ?? 0;
+      final personallyPaid = memberPersonalExpenses[m.id] ?? 0;
+      final grossContribution = actualDeposits + personallyPaid;
+      final costShare = memberCostShares[m.id] ?? 0;
+      final isTreasurer = m.id == resolvedTreasurer?.id;
+      final cashHeld = isTreasurer ? kittyCash : 0;
+
+      return MemberBalance(
+        member: m,
+        paidInCents: grossContribution,
+        costShareInCents: costShare,
+        isTreasurer: isTreasurer,
+        actualDepositsInCents: actualDeposits,
+        personallyPaidExpensesInCents: personallyPaid,
+        cashHeldInCents: cashHeld,
+      );
+    }).toList();
+
+    return UnifiedLedgerResult(
+      totalDepositsInCents: totalDeposits,
+      totalExpensesInCents: totalExpenses,
+      kittyPaidExpensesInCents: kittyPaidExpenses,
+      personallyPaidExpensesInCents: personallyPaidExpenses,
+      kittyCashInCents: kittyCash,
+      memberBalances: balances,
+      treasurer: resolvedTreasurer,
+    );
+  }
 
   /// Berechnet Modell 1: Gemeinsame Bordkasse (FB1-D mit Kassenwart).
   SharedKittyCalculationResult calculateSharedKitty({
@@ -46,71 +134,24 @@ class KittyEngine {
     required List<KittyExpense> expenses,
     int? treasurerMemberId,
   }) {
-    final kittyExpenses = expenses.where((e) => e.isPaidFromKitty).toList();
-    final totalDeposits = deposits.fold<int>(0, (sum, d) => sum + d.amountInCents);
-    final totalExpenses = kittyExpenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
-    final currentBalance = totalDeposits - totalExpenses;
+    final ledger = calculateUnifiedLedger(
+      members: members,
+      deposits: deposits,
+      expenses: expenses,
+      treasurerMemberId: treasurerMemberId,
+    );
 
-    final memberPaidMap = _sumDepositsByMember(deposits);
-    final memberCostShareMap = _calculateCostShares(kittyExpenses, members);
-
-    KittyMember? resolvedTreasurer;
-    if (members.isNotEmpty) {
-      resolvedTreasurer = members.firstWhere(
-        (m) => m.id == treasurerMemberId,
-        orElse: () => members.firstWhere(
-          (m) => m.isSkipperFree,
-          orElse: () => members.first,
-        ),
-      );
-    }
-
-    final treasurerId = resolvedTreasurer?.id;
-
-    // Summe der Netto-Salden aller Nicht-Kassenwarte
-    int otherNetSum = 0;
-    for (final m in members) {
-      if (m.id != treasurerId) {
-        final paid = memberPaidMap[m.id] ?? 0;
-        final cost = memberCostShareMap[m.id] ?? 0;
-        otherNetSum += (paid - cost);
-      }
-    }
-
-    final balances = members.map((m) {
-      final cost = memberCostShareMap[m.id] ?? 0;
-      final rawPaid = memberPaidMap[m.id] ?? 0;
-      if (m.id == treasurerId) {
-        // Der Kassenwart gleicht die Kasse aus, so dass die Gesamtsumme aller Salden exakt 0 ist:
-        // netBalance = -otherNetSum
-        // paidInCents = cost - otherNetSum (damit paid - cost = -otherNetSum)
-        return MemberBalance(
-          member: m,
-          paidInCents: cost - otherNetSum,
-          costShareInCents: cost,
-          isTreasurer: true,
-          actualDepositsInCents: rawPaid,
-        );
-      } else {
-        return MemberBalance(
-          member: m,
-          paidInCents: rawPaid,
-          costShareInCents: cost,
-          isTreasurer: false,
-          actualDepositsInCents: rawPaid,
-        );
-      }
-    }).toList();
-
-    final transfers = _generateSharedKittyTransfers(balances, resolvedTreasurer);
+    final transfers = _generateSharedKittyTransfers(ledger.memberBalances, ledger.treasurer);
 
     return SharedKittyCalculationResult(
-      totalDepositsInCents: totalDeposits,
-      totalExpensesInCents: totalExpenses,
-      currentBalanceInCents: currentBalance,
-      memberBalances: balances,
+      totalDepositsInCents: ledger.totalDepositsInCents,
+      totalExpensesInCents: ledger.totalExpensesInCents,
+      currentBalanceInCents: ledger.kittyCashInCents,
+      kittyPaidExpensesInCents: ledger.kittyPaidExpensesInCents,
+      personallyPaidExpensesInCents: ledger.personallyPaidExpensesInCents,
+      memberBalances: ledger.memberBalances,
       settlementTransfers: transfers,
-      treasurer: resolvedTreasurer,
+      treasurer: ledger.treasurer,
     );
   }
 
@@ -118,24 +159,69 @@ class KittyEngine {
   IndividualSettlementResult calculateIndividualSettlement({
     required List<KittyMember> members,
     required List<KittyExpense> expenses,
+    List<KittyDeposit> deposits = const [],
+    int? treasurerMemberId,
   }) {
-    final totalExpenses = expenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
-    final memberPaidMap = _sumExpensesByPayer(expenses);
-    final memberCostShareMap = _calculateCostShares(expenses, members);
+    final ledger = calculateUnifiedLedger(
+      members: members,
+      deposits: deposits,
+      expenses: expenses,
+      treasurerMemberId: treasurerMemberId,
+    );
 
-    final balances = members.map((m) {
-      final paid = memberPaidMap[m.id] ?? 0;
-      final cost = memberCostShareMap[m.id] ?? 0;
-      return MemberBalance(member: m, paidInCents: paid, costShareInCents: cost);
-    }).toList();
-
-    final transfers = simplifyDebts(balances);
+    final transfers = simplifyDebts(ledger.memberBalances);
 
     return IndividualSettlementResult(
-      totalExpensesInCents: totalExpenses,
-      memberBalances: balances,
+      totalExpensesInCents: ledger.totalExpensesInCents,
+      memberBalances: ledger.memberBalances,
       simplifiedTransfers: transfers,
+      totalDepositsInCents: ledger.totalDepositsInCents,
+      kittyPaidExpensesInCents: ledger.kittyPaidExpensesInCents,
+      personallyPaidExpensesInCents: ledger.personallyPaidExpensesInCents,
+      currentBalanceInCents: ledger.kittyCashInCents,
+      treasurer: ledger.treasurer,
     );
+  }
+
+  void _validateLedgerInputs(
+    List<KittyMember> members,
+    List<KittyDeposit> deposits,
+    List<KittyExpense> expenses,
+  ) {
+    for (final exp in expenses) {
+      if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
+        throw ArgumentError(
+          'Kassenausgabe "${exp.title}" darf keinen persönlichen Zahler haben.',
+        );
+      }
+      if (!exp.isPaidFromKitty && exp.paidByMemberId == null) {
+        throw ArgumentError(
+          'Personenausgabe "${exp.title}" muss ein Crew-Mitglied als Zahler haben.',
+        );
+      }
+      if (exp.paidByMemberId != null && !members.any((m) => m.id == exp.paidByMemberId)) {
+        throw ArgumentError(
+          'Zahler für Ausgabe "${exp.title}" (ID: ${exp.paidByMemberId}) ist nicht in den Crew-Mitgliedern enthalten.',
+        );
+      }
+    }
+
+    for (final dep in deposits) {
+      if (!members.any((m) => m.id == dep.memberId)) {
+        throw ArgumentError(
+          'Einzahler mit ID ${dep.memberId} ist nicht in den Crew-Mitgliedern enthalten.',
+        );
+      }
+    }
+  }
+
+  KittyMember? _resolveTreasurer(List<KittyMember> members, int? treasurerMemberId) {
+    if (members.isEmpty) return null;
+    if (treasurerMemberId != null) {
+      final found = members.where((m) => m.id == treasurerMemberId).firstOrNull;
+      if (found != null) return found;
+    }
+    return members.where((m) => m.isSkipperFree).firstOrNull ?? members.firstOrNull;
   }
 
   /// Verteilt eine Ausgabe centgenau auf die teilnehmenden Crew-Mitglieder.

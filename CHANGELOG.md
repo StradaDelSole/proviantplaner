@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-06 – FIX-B Unified Settlement Ledger Implementation Completed
+
+- **FIX-B – Unified Settlement Ledger (Issue #27) vollständig implementiert.**
+- Eine einheitliche Accounting Truth (`UnifiedLedgerResult` / `calculateUnifiedLedger`) für `sharedKitty` und `individualSettlement`.
+- Jede bestätigte Ausgabe fließt voll in Gesamtausgaben und Kostenanteile ein, unabhängig von der Zahlungsquelle.
+- Persönlich bezahlte Gruppenausgaben schreiben dem Zahlenden den vollen Bruttobeitrag (`grossContribution = actualDeposits + personallyPaidExpenses`) gut und verringern den physischen Kassenbestand nicht.
+- Kassenbestand ist strikt `totalDeposits - kittyPaidExpenses`.
+- Treuhänderisch gehaltener Kassenbestand wird in `MemberBalance` explizit als `cashHeldInCents` modelliert (Kassenwart hält Kassenbestand, Nicht-Kassenwarte 0); keine synthetischen `paidInCents`-Werte.
+- Netto-Saldo: `netBalanceInCents = paidInCents - costShareInCents - cashHeldInCents`.
+- Mathematischer Invarianzbeweis: `Σ netBalanceInCents == 0` für alle gültigen Eingaben (sowohl bei positivem, ausgeglichenem als auch negativem Kassenstand).
+- Model-Switch-Invarianz: Umschalten zwischen `sharedKitty` und `individualSettlement` erhält die Netto-Salden für jedes Mitglied centgenau.
+- Service-Validierung erzwingt Zahlungsquellen-Invariante strikt an der Servicegrenze (`isPaidFromKitty == true && paidByMemberId == null` oder `isPaidFromKitty == false && paidByMemberId != null`).
+- UI: SegmentedButton in `ExpenseSheet` wechselt nahtlos zwischen Kasse und Person; Kassenstand-Bento-Progress zeigt physische Kassenverzehrquote; `SettlementScreen` und EPC-QR nutzen einheitliche Salden.
+- 17 dedizierte FIX-B Akzeptanztests in `test/features/kitty/fix_b_unified_ledger_test.dart` inklusive 100-Fall-Seeded-Matrix-Test; 319/319 Flutter-Tests grün; `flutter analyze` fehlerfrei.
+- STOP für unabhängigen Review und Owner Acceptance.
+
 ## 2026-10-06 – FIX-B Unified Settlement Ledger Release
 
 - Confirmed external-review Finding F1 promoted to dedicated correction slice.

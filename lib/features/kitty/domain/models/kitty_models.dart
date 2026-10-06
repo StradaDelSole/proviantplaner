@@ -185,24 +185,30 @@ class KittyDeposit {
   });
 }
 
-/// Saldo einer einzelnen Person.
+/// Saldo einer einzelnen Person (FIX-B: Unified Settlement Ledger).
 class MemberBalance {
   final KittyMember member;
   final int paidInCents;
   final int costShareInCents;
   final bool isTreasurer;
-  final int? actualDepositsInCents;
+  final int actualDepositsInCents;
+  final int personallyPaidExpensesInCents;
+  final int cashHeldInCents;
 
   const MemberBalance({
     required this.member,
     required this.paidInCents,
     required this.costShareInCents,
     this.isTreasurer = false,
-    this.actualDepositsInCents,
+    this.actualDepositsInCents = 0,
+    this.personallyPaidExpensesInCents = 0,
+    this.cashHeldInCents = 0,
   });
 
   /// Netto-Saldo: Positiv = bekommt Geld zurück, Negativ = muss zahlen.
-  int get netBalanceInCents => paidInCents - costShareInCents;
+  /// Für Nicht-Kassenwart: grossContribution - costShare.
+  /// Für Kassenwart: grossContribution - costShare - cashHeldInCents.
+  int get netBalanceInCents => paidInCents - costShareInCents - cashHeldInCents;
 
   /// Formatierte Anzeige des Betrags in Euro (z. B. "18,00 €").
   String get formattedNetBalance {
