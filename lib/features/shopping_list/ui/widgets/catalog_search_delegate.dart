@@ -88,12 +88,17 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               icon: const Icon(Icons.add),
               label: Text(l10n.addCustomItem),
               onPressed: () {
+                final targetContext = parentContext ?? context;
                 close(context, null);
-                CustomItemSheet.show(
-                  context,
-                  tripId: data.trip.id,
-                  stops: data.stops,
-                );
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (targetContext.mounted) {
+                    CustomItemSheet.show(
+                      targetContext,
+                      tripId: data.trip.id,
+                      stops: data.stops,
+                    );
+                  }
+                });
               },
             ),
           ],
@@ -119,16 +124,22 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
+                key: const ValueKey('no_results_custom_item_btn'),
                 icon: const Icon(Icons.add),
                 label: Text(l10n.addAsCustomItemNamed(query.trim())),
                 onPressed: () {
+                  final targetContext = parentContext ?? context;
                   close(context, null);
-                  CustomItemSheet.show(
-                    context,
-                    tripId: data.trip.id,
-                    stops: data.stops,
-                    initialName: query.trim(),
-                  );
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (targetContext.mounted) {
+                      CustomItemSheet.show(
+                        targetContext,
+                        tripId: data.trip.id,
+                        stops: data.stops,
+                        initialName: query.trim(),
+                      );
+                    }
+                  });
                 },
               ),
             ],

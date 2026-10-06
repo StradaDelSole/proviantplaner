@@ -11,9 +11,12 @@
 - **Finding B (Beseitigung UI-Bypass):**
   - Direkter `adoptItem`-Aufruf aus dem sichtbaren Aktionsbutton in `ShoppingListItemRow` entfernt.
   - Sowohl Zeilen-Tap als auch Add-Button öffnen nun zwingend `AddOrEditItemSheet(isAdding: true)` für bewusste Packungs- und Mengenauswahl vor DB-Persistenz.
-- **Finding C (Reale Search/Add UI-Journey):**
-  - Vollständige End-to-End-UI-Journey über `ShoppingListScreen` Empty State Button -> Suche -> Auswahl -> Sheet -> Packungs-/Mengenauswahl -> Übernahme -> DB-Persistenz verifiziert.
+- **Finding C & Micro-Finding 1 (Reale Search/Add UI-Journey inkl. Gebindeauswahl):**
+  - Vollständige End-to-End-UI-Journey über `ShoppingListScreen` Empty State Button -> Suche -> Auswahl -> Sheet -> konkrete ChoiceChip-Gebindegröße auswählen (250 g statt Standard 190 g) -> Stepper auf 2 Gläser -> Übernahme -> DB-Persistenz von Stückzahl und Gebindegröße verifiziert.
   - `CatalogSearchDelegate` verwendet `parentContext` und `addPostFrameCallback` für saubere Sheet-Öffnung nach Route-Pop.
+- **Micro-Finding 2 (Härtung No-Result -> Custom Item):**
+  - No-Results-Button (`matches.isEmpty`) und Empty-Query-Button in `CatalogSearchDelegate` auf denselben sicheren Parent-Context/Post-Frame-Pfad umgestellt.
+  - Reale E2E-Widget-Journey (Test 16): Suche nach Begriff ohne Treffer -> Button antippen -> `CustomItemSheet` öffnet sich auf echtem Screen -> Speichern -> Vorratsliste aktualisiert und SQLite-Persistenz verifiziert.
 - **Finding D (Mengen-Stabilität bei echter Neuberechnung):**
   - Härtung des Stabilitäts-Tests gegen realen Produktionspfad `tripService.updateTripDetails()` (Dauer-Änderung) und `tripService.recalculateTrip()` (Crew-Erweiterung) für Preference-Items, Custom-Items und manuell überschriebene Guided-Items.
 - **Finding E (Echte ShoppingModeScreen Bildschirm-Isolation):**

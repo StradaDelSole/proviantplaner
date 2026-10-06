@@ -1,8 +1,8 @@
-# Abschlussbericht PIVOT1 – Assisted List Core (inkl. Review-Amendment)
+# Abschlussbericht PIVOT1 – Assisted List Core (inkl. Review-Amendments)
 
 Slice: PIVOT1 – Assisted List Core (Issue #10)  
 Datum: 06.10.2026  
-Status: Implementiert, Review-Amendment abgeschlossen, wartet auf unabhängige Abnahme / Owner Acceptance  
+Status: Implementiert, alle Review- & Micro-Amendments abgeschlossen, bereit für finale Owner Acceptance  
 
 ---
 
@@ -26,7 +26,7 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 ---
 
-## 2. Umgesetzte PIVOT1-Funktionen & Review-Amendment
+## 2. Umgesetzte PIVOT1-Funktionen & Review-Amendments
 
 ### A. Kern-Pivot (Erstfassung)
 - **Neuer Törn ist leer (Search-First):**
@@ -45,7 +45,7 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 - **Vollständige Lokalisierung:**
   - Alle neuen Keys (`addToList`, `removeFromList`, `packageSize`, `customPackageSize`, `totalQuantity`, `provyGuideline`, `provyGuidelineNotice`, `itemAddedNotice`, `itemRemovedNotice`, `emptyListTitle`, `emptyListSubtitle`, `searchProducts`, `onListStatus`, `holdsDays`) in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) gepflegt. Keine "kitty"-Begriffe verwendet (UX-C-Konformität).
 
-### B. Schließung der Befunde aus dem Independent Review (06.10.2026)
+### B. Schließung der Befunde aus dem Independent Review 1 & 2 (06.10.2026)
 
 - **Finding A – Assist-Klassifikation gegen kanonischen Katalog v0.10 gehärtet:**
   - Nicht-existierende Dummy-Gruppen-IDs (`snacks`, `sauces_special`) entfernt.
@@ -60,9 +60,14 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
   - Sowohl Zeilen-Tap (`item_tap_${item.item.id}`) als auch der sichtbare Aktions-Button (`item_add_btn_${item.item.id}`) öffnen nun ausnahmslos das `AddOrEditItemSheet(isAdding: true)`.
   - Beide Pfade erzwingen die bewusste Festlegung von Packungsgröße und Stückzahl durch den Skipper, bevor Daten in SQLite persistiert werden.
 
-- **Finding C – Reale Search/Add UI-Journey:**
-  - End-to-End-Widget-Journey über den echten `ShoppingListScreen` implementiert: Empty State Button (`empty_search_btn`) tippen → `showSearch` mit `CatalogSearchDelegate` → Texteingabe `'pesto'` → Treffer in `ListTile` antippen → modales `AddOrEditItemSheet` → Stepper auf 2 Gläser → "Auf die Liste" tippen → SnackBar & Liste aktualisiert → Pesto sichtbar mit 2 Gläsern → SQLite-Persistenz verifiziert.
+- **Finding C & Micro-Finding 1 – Reale Search/Add UI-Journey inkl. Gebindeauswahl:**
+  - End-to-End-Widget-Journey über den echten `ShoppingListScreen` implementiert: Empty State Button (`empty_search_btn`) tippen → `showSearch` mit `CatalogSearchDelegate` → Texteingabe `'pesto'` → Treffer in `ListTile` antippen → modales `AddOrEditItemSheet` → **konkrete ChoiceChip-Gebindegröße auswählen** (250 g statt Standard 190 g) → Stepper auf 2 Gläser → "Auf die Liste" tippen → SnackBar & Liste aktualisiert → Pesto sichtbar mit 2 Gläsern → SQLite-Persistenz verifiziert: Packungsanzahl (2) UND benutzerdefinierte Gebindegröße (`customPackageSize: 250.0`, `effectivePackSize: 250.0`) nach Neuladen aus DB verifiziert.
   - `CatalogSearchDelegate` verwendet `parentContext` und `addPostFrameCallback`, um modale Sheets nach dem Schließen der Suchroute sauber im Navigator-Stack des aufrufenden Screens zu öffnen.
+
+- **Micro-Finding 2 – Härtung von No-Result → Custom Item:**
+  - Sowohl der Empty-Query-Button als auch der No-Results-Button (`matches.isEmpty`) in `CatalogSearchDelegate` auf denselben sicheren Parent-Context/Post-Frame-Pfad umgestellt:
+    `targetContext = parentContext ?? context`, `close(context, null)`, `WidgetsBinding.instance.addPostFrameCallback((_) { if (targetContext.mounted) CustomItemSheet.show(targetContext, ...); })`.
+  - Reale E2E-Widget-Journey (Test 16): Suche nach Begriff ohne Treffer (`'Fantasie-Kekse XYZ'`) → Button `no_results_custom_item_btn` antippen → `CustomItemSheet` öffnet sich auf dem echten Screen → Speichern tippen → Vorratsliste aktualisiert und Custom Item mit 1 Packung in SQLite persistiert.
 
 - **Finding D – Mengen-Stabilität bei echter Neuberechnung:**
   - Test gegen den echten Produktionspfad `tripService.updateTripDetails(tripId, daysCount: 14)` und `tripService.recalculateTrip(tripId)` gehärtet.
@@ -112,11 +117,11 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
   No issues found! (0 Fehler, 0 Warnungen, 0 Lints)
 
 - **flutter test:**
-  261/261 Tests bestanden (100% grün, alle Test-Suiten grün).
+  262/262 Tests bestanden (100% grün, alle Test-Suiten grün).
 
 ---
 
-## 5. Abnahmekriterien (SLICES_v0.19.md, PIVOT1_plan.md & PIVOT1_review_2026-10-06.md)
+## 5. Abnahmekriterien (SLICES_v0.19.md, PIVOT1_plan.md & PIVOT1_review2_2026-10-06.md)
 
 1. **Neuer Törn ist leer (Search-First):**
    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 1. Neuer Törn ist leer (Search-First): 0 übernommene Posten & Leerstadium angezeigt` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
@@ -154,7 +159,7 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 12. **Finding B: Ausschluss des UI-Bypass (Zeilen-Tap & Add-Button):**
     - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 12. Kein UI-Bypass: Sowohl Zeilen-Tap als auch Add-Button öffnen AddOrEditItemSheet und adoptieren nicht still` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
-13. **Finding C: Reale Search/Add UI-Journey:**
+13. **Finding C & Micro-Finding 1: Reale Search/Add UI-Journey inkl. ChoiceChip-Gebindewahl:**
     - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 13. Reale Search/Add UI-Journey: Suche -> Treffer -> Sheet -> Packung & Stepper -> Liste -> DB-Persistenz` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
 14. **Finding D: Mengen-Stabilität bei echter TripService-Neuberechnung:**
@@ -162,6 +167,9 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 15. **Finding E: Reale ShoppingModeScreen Bildschirm-Isolation:**
     - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 15. ShoppingModeScreen: Reale Bildschirm-Isolation zeigt nur übernommene & eigene Artikel` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+16. **Micro-Finding 2: Reale No-Result -> Custom Item UI-Journey:**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 16. Reale No-Result -> Custom Item UI-Journey: Suche ohne Treffer -> Button -> CustomItemSheet -> Speichern -> DB-Persistenz` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
 ---
 
@@ -187,13 +195,13 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 - **Regel 1 (Feste Typen):** eingehalten. `AssistType` als striktes Enum definiert; `AssistClassifier` arbeitet auf typisierten IDs und Datenstrukturen; keine Magic Strings in der Rechenlogik.
 - **Regel 2 (Keine versteckten Platzhalter):** eingehalten. Keine leeren Funktionen, Stubs oder `TODO`s.
-- **Regel 3 (Ehrliche Berichte):** eingehalten. Alle 15 Kriterien sind mit exakten, bestehenden Testnamen belegt.
+- **Regel 3 (Ehrliche Berichte):** eingehalten. Alle 16 Kriterien sind mit exakten, bestehenden Testnamen belegt.
 - **Regel 4 (Alles datengetrieben):** eingehalten. Alle konfigurierten IDs validiert gegen `catalog_v0.10.json`; Mengenumrechnungen respektieren die physikalischen Einheiten.
 - **Regel 5 (Rechnen mit Kommazahlen):** eingehalten. Epsilon-Arithmetik und Cent-Beträge als ganze Zahlen (`int`).
 - **Regel 6 (Struktur):** eingehalten. Schlanke Widgets und modulare Methoden (≤ 40 Zeilen).
-- **Regel 7 (Tests):** eingehalten. 15 dedizierte Akzeptanztests in `pivot1_assisted_list_test.dart`, Gesamttestsuite mit 261 Tests 100% grün.
+- **Regel 7 (Tests):** eingehalten. 16 dedizierte Akzeptanztests in `pivot1_assisted_list_test.dart`, Gesamttestsuite mit 262 Tests 100% grün.
 - **Regel 8 (Keine Eigenbauten von Standards):** eingehalten. Etablierte Flutter-Material-Komponenten und Standard-Haptik.
-- **Regel 9 (Nur berichten, was tatsächlich geschehen ist):** eingehalten. Alle Testergebnisse und Analysen beruhen auf echten Durchläufen (`flutter analyze`: 0 issues; `flutter test`: 261/261 passed).
+- **Regel 9 (Nur berichten, was tatsächlich geschehen ist):** eingehalten. Alle Testergebnisse und Analysen beruhen auf echten Durchläufen (`flutter analyze`: 0 issues; `flutter test`: 262/262 passed).
 - **Regel 10 (Nichts aus späteren Versionen sichtbar bauen):** eingehalten. Keine sichtbaren Fragmente aus UX-D, GUEST1, RECEIPT1 oder B3–B5.
 
 ---
@@ -204,5 +212,4 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 ---
 
-Commit: `PIVOT1: Address review findings A-E (catalog classification, UI bypass, real journey & stability tests)`
-
+Commit: `PIVOT1: Final micro-amendment (package size selection in journey, hardened custom item sheet transition)`

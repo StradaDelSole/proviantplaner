@@ -38,6 +38,7 @@ import 'package:proviantplaner/features/shopping_list/ui/widgets/add_or_edit_ite
 import 'package:proviantplaner/features/shopping_list/ui/widgets/catalog_search_delegate.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/empty_shopping_list_view.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/custom_item_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/item_row_widget.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
@@ -604,6 +605,12 @@ void main() {
       // AddOrEditItemSheet hat sich geöffnet
       expect(find.byType(AddOrEditItemSheet), findsOneWidget);
 
+      // Packungsgröße wählen: Anderes Gebinde als Standard 190 g wählen (z. B. 250 g)
+      final chip250 = find.widgetWithText(ChoiceChip, '250 g');
+      expect(chip250, findsOneWidget);
+      await tester.tap(chip250);
+      await tester.pumpAndSettle();
+
       // Stepper: 2 Gläser wählen (bei Preference startet Menge bei 1)
       final plusBtn = find.widgetWithIcon(IconButton, Icons.add);
       expect(plusBtn, findsOneWidget);
@@ -623,12 +630,14 @@ void main() {
       expect(find.text('Pesto'), findsOneWidget);
       expect(find.byType(ShoppingListItemRow), findsOneWidget);
 
-      // DB-Persistenz prüfen
+      // DB-Persistenz prüfen: Packungsanzahl UND gewählte Gebindegröße persistiert
       final refreshed = await shoppingListService.loadShoppingList(defaultTripId);
       final persistedPesto = refreshed.allItems.firstWhere((i) => i.id == 'pesto');
       expect(persistedPesto.isOnList, isTrue);
       expect(persistedPesto.isAdopted, isTrue);
       expect(persistedPesto.effectivePackages, 2);
+      expect(persistedPesto.customPackageSize, 250.0);
+      expect(persistedPesto.effectivePackSize, 250.0);
     });
 
     test('14. Mengen-Stabilität bei echter Neuberechnung (TripService): Preference, Custom & Overridden Guided überleben Dauer & Crew-Änderung', () async {
@@ -729,6 +738,59 @@ void main() {
       expect(find.textContaining('Butter'), findsNothing);
       expect(find.textContaining('Salz'), findsNothing);
       expect(find.textContaining('Vollmilch'), findsNothing);
+    });
+
+    testWidgets('16. Reale No-Result -> Custom Item UI-Journey: Suche ohne Treffer -> Button -> CustomItemSheet -> Speichern -> DB-Persistenz', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // 1. Starte auf dem echten ShoppingListScreen
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: ShoppingListScreen(tripId: defaultTripId),
+      ));
+      await tester.pumpAndSettle();
+
+      // 2. Suche über Empty-State-Button öffnen
+      final searchBtn = find.byKey(const ValueKey('empty_search_btn'));
+      expect(searchBtn, findsOneWidget);
+      await tester.tap(searchBtn);
+      await tester.pumpAndSettle();
+
+      // 3. Einen Suchbegriff eingeben, der garantiert keine Katalogtreffer hat
+      final searchInput = find.byType(TextField);
+      expect(searchInput, findsOneWidget);
+      await tester.enterText(searchInput, 'Fantasie-Kekse XYZ');
+      await tester.pumpAndSettle();
+
+      // 4. No-Results Hinweis & Button "Als eigene Position anlegen" sichtbar
+      expect(find.byIcon(Icons.search_off), findsOneWidget);
+      final addCustomBtn = find.byKey(const ValueKey('no_results_custom_item_btn'));
+      expect(addCustomBtn, findsOneWidget);
+
+      // 5. Button antippen
+      await tester.tap(addCustomBtn);
+      await tester.pumpAndSettle();
+
+      // 6. CustomItemSheet ist über den sicheren Parent-Context/Post-Frame-Pfad geöffnet
+      expect(find.byType(CustomItemSheet), findsOneWidget);
+
+      // 7. Eigene Position speichern
+      final saveBtn = find.widgetWithText(FilledButton, 'Speichern');
+      expect(saveBtn, findsOneWidget);
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      // 8. Zurück auf der Vorratsliste: Empty State verschwunden, Custom Item sichtbar
+      expect(find.byType(EmptyShoppingListView), findsNothing);
+      expect(find.text('Fantasie-Kekse XYZ'), findsOneWidget);
+
+      // 9. SQLite-Persistenz verifizieren
+      final dataAfter = await shoppingListService.loadShoppingList(defaultTripId);
+      final customItem = dataAfter.allItems.firstWhere((i) => i.name == 'Fantasie-Kekse XYZ');
+      expect(customItem.isCustom, isTrue);
+      expect(customItem.isOnList, isTrue);
+      expect(customItem.effectivePackages, 1);
     });
   });
 }
