@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.11
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.12
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -14,23 +14,28 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; PIVOT3-A Review-Gate; Bootsprofil-Scope ausdrücklich erlaubt |
 | v0.9 | 06.10.2026 | PIVOT3-A owner-accepted; ausschließlich PIVOT3-B freigegeben; verbindliche Crew-/Watermaker-Reconciliation |
 | v0.10 | 06.10.2026 | PIVOT3-B owner-accepted; PIVOT3-A/B abgeschlossen; kein Folgeslice freigegeben |
-| v0.11 | 06.10.2026 | PIVOT2 Provisioning Review als einziger aktueller Implementierungsslice freigegeben |
+| v0.11 | 06.10.2026 | PIVOT2 Provisioning Review freigegeben |
+| v0.12 | 06.10.2026 | Externe Zweitprüfung: PIVOT2 HOLD; vorgezogen werden FIX-B, DATA1 und Watermaker-Reserve-Reconciliation |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist ausschließlich freigegeben:
-- **PIVOT2 – Provisioning Review**, Issue #26
-- Plan: `docs/impl/PIVOT2_plan.md`
-- Release/Reconciliation: `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`
+Aktuell ist **kein Implementierungsslice freigegeben**, bis die externe Zweitprüfung reconciliert ist.
 
-Abgeschlossen:
-- PIVOT1 – OWNER-ACCEPTED / COMPLETE
-- PIVOT3-A – OWNER-ACCEPTED / COMPLETE
-- PIVOT3-B – OWNER-ACCEPTED / COMPLETE
+Verbindlich:
+- `docs/impl/EXTERNAL_REVIEW_RECONCILIATION_2026-10-06.md`
+
+PIVOT2 (#26) ist **ON HOLD**.
+
+Vorgesehene Reihenfolge:
+1. FIX-B – Unified Settlement Ledger
+2. DATA1 – Catalog-driven Assist Classification
+3. Watermaker-Reserve-Entscheidung + schmaler PIVOT3-B-Water-Amendment
+4. PIVOT2 – Provisioning Review
 
 Nicht freigegeben:
+- PIVOT2
 - UX-D (#21)
 - GUEST1 (#22)
 - RECEIPT1 (#23)
@@ -38,9 +43,7 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Nach PIVOT2: **STOP für unabhängigen Review / Owner Acceptance.**
-
-Ältere Statusangaben in historischen PRD-/SLICES-/Session-Prompt-Dokumenten sind keine aktuelle Implementierungsfreigabe. Die aktuelle Release-/Gate-Wahrheit steht in README + den neuesten ausdrücklich owner-accepted Reconciliation-/Acceptance-Dokumenten.
+Bis zu einer neuen ausdrücklichen Owner-Release-Entscheidung gilt: **STOP – keinen Slice implementieren.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
