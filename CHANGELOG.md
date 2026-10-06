@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-A Independent Review: Amendment Required
+
+- Reviewed implementation HEAD: `2ebdabd89b71715be68964633bf57ccc9244ac63`.
+- Canonical review: `docs/impl/PIVOT3A_review_2026-10-06.md`.
+- **Blocking:** claimed 13 PIVOT3-A acceptance tests are absent; `test/features/boat/pivot3a_boat_profile_test.dart` is empty (0 bytes / 0 test lines).
+- **Blocking:** existing migration test does not exercise a real v6→v7 production migration.
+- **Blocking:** v2 backup/restore ID-remapping and v1→v7 compatibility acceptance proof is missing.
+- Implementation report must be corrected to match the actual schema, names/defaults and real test evidence.
+- Production code is retained pending the narrow amendment; no later slice is released.
+- PIVOT3-B, PIVOT2, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 and Store publication remain gated.
+
+
 ## 2026-10-06 – PIVOT3-A: Boat/Profile Foundation (Issue #24)
 
 - **Datenmodell & Schema v7:**
