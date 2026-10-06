@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.13
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.14
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -17,35 +17,32 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.11 | 06.10.2026 | PIVOT2 Provisioning Review freigegeben |
 | v0.12 | 06.10.2026 | Externe Zweitprüfung: PIVOT2 HOLD; vorgezogen werden FIX-B, DATA1 und Watermaker-Reserve-Reconciliation |
 | v0.13 | 06.10.2026 | FIX-B – Unified Settlement Ledger als einziger Implementierungsslice freigegeben |
+| v0.14 | 06.10.2026 | FIX-B independent review: enger Review-Amendment freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
 Aktuell ist ausschließlich freigegeben:
-- **FIX-B – Unified Settlement Ledger**, Issue #27
-- Plan: `docs/impl/FIXB_plan.md`
-- Release/Reconciliation: `docs/impl/FIXB_release_reconciliation_2026-10-06.md`
+- **FIX-B Review Amendment**, Issue #27
+- Canonical review: `docs/impl/FIXB_review_2026-10-06.md`
+- Supplemental requirements: `docs/impl/FIXB_supplemental_review_requirements_2026-10-06.md`
+- Core implementation baseline: `e8290f2d43fbf60ce375bca162d4b6aa95af532e`
 
 PIVOT2 (#26) bleibt **ON HOLD**.
 
-Nach FIX-B vorgesehen, aber noch nicht freigegeben:
-- DATA1 – Catalog-driven Assist Classification
-- Watermaker-Reserve-Reconciliation / schmaler PIVOT3-B-Water-Amendment
-- danach PIVOT2
-
 Nicht freigegeben:
-- PIVOT2
 - DATA1
 - Watermaker-Amendment
+- PIVOT2
 - RECEIPT1
+- GUEST1
 - UX-D (#21)
-- GUEST1 (#22)
 - CAT1
 - B3/B4/B5
 - Store-Publikation
 
-Nach FIX-B: **STOP für unabhängigen Review / Owner Acceptance.**
+Nach dem FIX-B Review-Amendment: **STOP für unabhängigen Re-Review / Owner Acceptance.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
