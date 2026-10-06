@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-06 – PIVOT2 Provisioning Review Release
+
+- PIVOT3-A und PIVOT3-B sind OWNER-ACCEPTED / COMPLETE.
+- **PIVOT2 – Provisioning Review (Issue #26) ist der einzige aktuell freigegebene Implementierungsslice.**
+- Canonical reconciliation: `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`.
+- Implementierungsplan: `docs/impl/PIVOT2_plan.md`.
+- Review ist read-only gegenüber Nutzerentscheidungen: keine automatische Adoption, Mengenänderung oder Stop-Reallocation.
+- Needs-based darf objektiv Unterdeckung melden; Guided erhält keinen generischen globalen Unterversorgungsalarm; Preference-based keine Mengenbewertung.
+- Missing Basics werden über neue datengetriebene Regeln in `data/provisioning_review_v0.1.json` modelliert.
+- Frische/Haltbarkeit wird als kontextueller Hinweis behandelt; alte automatische Stop-Verteilung aus Issue #8 ist superseded.
+- Kühl-/TK-Plausibilität nutzt nur tatsächliche Listenpositionen und bekannte Größen; keine erfundenen Stück-Volumina.
+- Readiness: Bereit / Noch prüfen / Aktion nötig; kein Score.
+- Issue #9 als durch PIVOT1 gelöst geschlossen; #7 und #8 bleiben PIVOT2-Closure-Targets.
+- UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 und Store-Publikation bleiben gegatet.
+
+
 ## 2026-10-06 – PIVOT3-B Owner Acceptance
 
 - PIVOT3-B – Setup Integration & Water Logic ausdrücklich vom Product Owner abgenommen.
