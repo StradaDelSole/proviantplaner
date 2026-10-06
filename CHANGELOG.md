@@ -12,6 +12,8 @@
 - PIVOT3-B Plan: `docs/impl/PIVOT3B_plan.md`; Issue #25.
 - **Nur PIVOT3-A ist zur Implementierung freigegeben.**
 - PIVOT3-B, PIVOT2, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 und Store-Publikation bleiben gegatet.
+- `GEMINI.md` auf v0.8 rebased: post-Pivot Source-Priority, Review-Gating und explizite PIVOT3-A-Freigabe.
+- Neuer Session-Startprompt `docs/PROMPT_SESSION_START_v0.3.md`; historischer Durchlauf-Modus gilt für post-Pivot-Slices nicht mehr.
 
 
 ## 2026-10-06 – PIVOT1 Owner Acceptance
