@@ -307,7 +307,35 @@ class BackupCoordinator {
           for (final e in expenses) {
             final eMap = e as Map<String, dynamic>;
             final oldPayerId = eMap['paidByCrewMemberId'] as int?;
+            if (oldPayerId != null && !crewIdMap.containsKey(oldPayerId)) {
+              throw StateError(
+                'Cannot restore expense: payer ID $oldPayerId could not be mapped to restored crew.',
+              );
+            }
             final newPayerId = oldPayerId != null ? crewIdMap[oldPayerId] : null;
+
+            String? remappedCustomSplit;
+            final rawSplit = eMap['customSplit'] as String?;
+            if (rawSplit != null && rawSplit.isNotEmpty) {
+              final dynamic decoded = jsonDecode(rawSplit);
+              if (decoded is Map) {
+                final remappedMap = <String, dynamic>{};
+                for (final entry in decoded.entries) {
+                  final oldId = int.tryParse(entry.key.toString());
+                  if (oldId == null || !crewIdMap.containsKey(oldId)) {
+                    throw StateError(
+                      'Cannot restore custom split: member ID ${entry.key} could not be mapped to restored crew.',
+                    );
+                  }
+                  final newId = crewIdMap[oldId]!;
+                  remappedMap[newId.toString()] = entry.value;
+                }
+                remappedCustomSplit = jsonEncode(remappedMap);
+              } else {
+                remappedCustomSplit = rawSplit;
+              }
+            }
+
             await _db.into(_db.expenses).insert(
               ExpensesCompanion.insert(
                 tripId: newTripId,
@@ -316,7 +344,7 @@ class BackupCoordinator {
                 category: ExpenseCategory.fromString(eMap['category'] as String),
                 paidByCrewMemberId: Value(newPayerId),
                 isPaidFromKitty: Value(eMap['isPaidFromKitty'] as bool? ?? false),
-                customSplit: Value(eMap['customSplit'] as String?),
+                customSplit: Value(remappedCustomSplit),
                 note: Value(eMap['note'] as String?),
                 createdAt: eMap['createdAt'] != null
                     ? Value(DateTime.parse(eMap['createdAt'] as String))
@@ -330,19 +358,22 @@ class BackupCoordinator {
           for (final p in payments) {
             final pMap = p as Map<String, dynamic>;
             final oldMemberId = pMap['crewMemberId'] as int;
-            final newMemberId = crewIdMap[oldMemberId];
-            if (newMemberId != null) {
-              await _db.into(_db.kittyPayments).insert(
-                KittyPaymentsCompanion.insert(
-                  tripId: newTripId,
-                  crewMemberId: newMemberId,
-                  amount: pMap['amount'] as double,
-                  paidAt: pMap['paidAt'] != null
-                      ? Value(DateTime.parse(pMap['paidAt'] as String))
-                      : const Value.absent(),
-                ),
+            if (!crewIdMap.containsKey(oldMemberId)) {
+              throw StateError(
+                'Cannot restore kitty payment: member ID $oldMemberId could not be mapped to restored crew.',
               );
             }
+            final newMemberId = crewIdMap[oldMemberId]!;
+            await _db.into(_db.kittyPayments).insert(
+              KittyPaymentsCompanion.insert(
+                tripId: newTripId,
+                crewMemberId: newMemberId,
+                amount: pMap['amount'] as double,
+                paidAt: pMap['paidAt'] != null
+                    ? Value(DateTime.parse(pMap['paidAt'] as String))
+                    : const Value.absent(),
+              ),
+            );
           }
         }
       } finally {

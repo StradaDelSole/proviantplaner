@@ -986,7 +986,8 @@
   "resyncBoatProfile": "Atualizar a partir do perfil do barco",
   "resyncBoatProfileConfirm": "Deseja realmente atualizar os dados do barco a partir do perfil? As alterações manuais nesta viagem serão substituídas.",
   "resyncSuccess": "Dados do barco atualizados com sucesso a partir do perfil.",
-  "saveAsBoatProfile": "Guardar como perfil de barco",
-  "boatProfileSaved": "Perfil do barco guardado.",
-  "boatSectionTitle": "Barco e equipamento"
+  "boatSectionTitle": "Barco e equipamento",
+  "cannotDeleteCrewMemberFinancialHistory": "Este membro da tripulação não pode ser eliminado porque está registado nas contas ou no fundo comum.",
+  "ledgerDataInvalidTitle": "Verificar liquidação",
+  "ledgerDataInvalidMessage": "A liquidação contém registos inválidos ou contraditórios. Por favor, reveja as despesas e os depósitos."
 }

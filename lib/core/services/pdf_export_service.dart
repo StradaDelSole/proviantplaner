@@ -9,8 +9,65 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
+import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+
+/// Aggregierte Zusammenfassung für den Export der Bordkassenabrechnung (FIX-B Finding E / S5).
+class SettlementPdfSummary {
+  final int totalExpensesCents;
+  final int totalDepositsCents;
+  final int? kittyCashCents;
+  final List<MemberBalance> memberBalances;
+  final List<PaymentTransfer> transfers;
+  final KittyMember? treasurer;
+  final KittyModel model;
+
+  const SettlementPdfSummary({
+    required this.totalExpensesCents,
+    required this.totalDepositsCents,
+    required this.kittyCashCents,
+    required this.memberBalances,
+    required this.transfers,
+    this.treasurer,
+    required this.model,
+  });
+
+  factory SettlementPdfSummary.fromTripKittyData(TripKittyData data) {
+    final isShared = data.model == KittyModel.sharedKitty;
+    final totalExpenses = data.sharedResult?.totalExpensesInCents ??
+        data.individualResult?.totalExpensesInCents ??
+        data.expenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
+
+    final totalDeposits = data.sharedResult?.totalDepositsInCents ??
+        data.individualResult?.totalDepositsInCents ??
+        data.deposits.fold<int>(0, (sum, d) => sum + d.amountInCents);
+
+    final int? kittyCash;
+    if (isShared) {
+      kittyCash = data.sharedResult?.currentBalanceInCents ?? data.cashBalanceCents;
+    } else {
+      final depositsCount = data.deposits.length;
+      final kittyPaidCount = data.expenses.where((e) => e.isPaidFromKitty).length;
+      if (depositsCount > 0 || kittyPaidCount > 0) {
+        kittyCash = data.individualResult?.currentBalanceInCents ?? data.cashBalanceCents;
+      } else {
+        // Im reinen Einzelabrechnungsmodus ohne Einzahlungen/Kassenausgaben existiert kein Kassenbestand
+        kittyCash = null;
+      }
+    }
+
+    return SettlementPdfSummary(
+      totalExpensesCents: totalExpenses,
+      totalDepositsCents: totalDeposits,
+      kittyCashCents: kittyCash,
+      memberBalances: data.balances,
+      transfers: data.transfers,
+      treasurer: data.treasurer,
+      model: data.model,
+    );
+  }
+}
 
 /// Dienst zur Generierung und zum Drucken/Teilen von PDF-Dokumenten.
 class PdfExportService {
@@ -153,6 +210,9 @@ class PdfExportService {
     required TripKittyData data,
   }) async {
     final trip = data.trip;
+    final summary = SettlementPdfSummary.fromTripKittyData(data);
+    final currency = trip.currency;
+
     final doc = pw.Document(
       title: 'Bordkassenabrechnung - ${trip.name}',
       author: 'Proviantplaner - powered by HullQ',
@@ -166,9 +226,9 @@ class PdfExportService {
     final dateFormat = DateFormat('dd.MM.yyyy');
     final formattedDate = dateFormat.format(trip.startDate);
 
-    final totalExpensesCents = data.expenses.fold<int>(0, (sum, e) => sum + e.amountInCents);
-    final totalDepositsCents = data.deposits.fold<int>(0, (sum, d) => sum + d.amountInCents);
-    final balanceCents = totalDepositsCents - totalExpensesCents;
+    final totalExpensesCents = summary.totalExpensesCents;
+    final totalDepositsCents = summary.totalDepositsCents;
+    final balanceCents = summary.kittyCashCents;
 
     doc.addPage(
       pw.MultiPage(
@@ -200,21 +260,21 @@ class PdfExportService {
                 children: [
                   _buildSummaryItem(
                     label: 'Gesamtausgaben',
-                    value: _formatCents(totalExpensesCents),
+                    value: _formatCents(totalExpensesCents, currency),
                     fontBold: fontBold,
                     fontRegular: fontRegular,
                     fontMono: fontMonoBold,
                   ),
                   _buildSummaryItem(
                     label: 'Einzahlungen',
-                    value: _formatCents(totalDepositsCents),
+                    value: _formatCents(totalDepositsCents, currency),
                     fontBold: fontBold,
                     fontRegular: fontRegular,
                     fontMono: fontMonoBold,
                   ),
                   _buildSummaryItem(
-                    label: 'Kassen-Endstand',
-                    value: _formatCents(balanceCents),
+                    label: balanceCents != null ? 'Kassen-Endstand' : 'Abrechnungsmodell',
+                    value: balanceCents != null ? _formatCents(balanceCents, currency) : 'Einzeln',
                     fontBold: fontBold,
                     fontRegular: fontRegular,
                     fontMono: fontMonoBold,
@@ -227,7 +287,7 @@ class PdfExportService {
           // 2. Wer zahlt wem (Minimale Überweisungen)
           widgets.add(_buildSectionTitle('WER ZAHLT WEM (AUSGLEICH)', fontBold));
 
-          if (data.transfers.isEmpty) {
+          if (summary.transfers.isEmpty) {
             widgets.add(
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(vertical: 8),
@@ -248,12 +308,12 @@ class PdfExportService {
                       _buildTableCell('Betrag', fontBold, isHeader: true, alignRight: true),
                     ],
                   ),
-                  for (final t in data.transfers)
+                  for (final t in summary.transfers)
                     pw.TableRow(
                       children: [
                         _buildTableCell(t.fromMember.name, fontRegular),
                         _buildTableCell(t.toMember.name, fontRegular),
-                        _buildTableCell(_formatCents(t.amountInCents), fontMono, alignRight: true),
+                        _buildTableCell(_formatCents(t.amountInCents, currency), fontMono, alignRight: true),
                       ],
                     ),
                 ],
@@ -279,14 +339,14 @@ class PdfExportService {
                     _buildTableCell('Saldo', fontBold, isHeader: true, alignRight: true),
                   ],
                 ),
-                for (final balance in data.balances)
+                for (final balance in summary.memberBalances)
                   pw.TableRow(
                     children: [
                       _buildTableCell(balance.member.name, fontRegular),
-                      _buildTableCell(_formatCents(balance.paidInCents), fontMono, alignRight: true),
-                      _buildTableCell(_formatCents(balance.costShareInCents), fontMono, alignRight: true),
+                      _buildTableCell(_formatCents(balance.paidInCents, currency), fontMono, alignRight: true),
+                      _buildTableCell(_formatCents(balance.costShareInCents, currency), fontMono, alignRight: true),
                       _buildTableCell(
-                        (balance.netBalanceInCents >= 0 ? '+' : '') + _formatCents(balance.netBalanceInCents),
+                        (balance.netBalanceInCents >= 0 ? '+' : '') + _formatCents(balance.netBalanceInCents, currency),
                         fontMonoBold,
                         alignRight: true,
                         textColor: balance.netBalanceInCents >= 0 ? PdfColors.green800 : PdfColors.red800,
@@ -549,10 +609,10 @@ class PdfExportService {
     );
   }
 
-  String _formatCents(int cents) {
-    final euros = cents ~/ 100;
+  String _formatCents(int cents, [String currency = 'EUR']) {
+    final whole = cents ~/ 100;
     final rest = (cents % 100).abs();
-    return '$euros,${rest.toString().padLeft(2, '0')} EUR';
+    return '$whole,${rest.toString().padLeft(2, '0')} $currency';
   }
 
   /// Druckt oder teilt das PDF-Dokument über Standard-Systemdialoge.

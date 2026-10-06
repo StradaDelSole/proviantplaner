@@ -232,5 +232,86 @@ void main() {
       final header = ascii.decode(pdfBytes.sublist(0, 5));
       expect(header, equals('%PDF-'));
     });
+
+    test('FIX-B Finding E: SettlementPdfSummary canonical mixed case (320 EUR Ausgaben, 200 EUR Kassenstand)', () async {
+      final trip = createTestTrip();
+      const member1 = KittyMember(id: 1, name: 'Anna', categoryParticipation: {});
+      const member2 = KittyMember(id: 2, name: 'Ben', categoryParticipation: {});
+      const member3 = KittyMember(id: 3, name: 'Clara', categoryParticipation: {});
+      const member4 = KittyMember(id: 4, name: 'David', categoryParticipation: {});
+
+      final deposits = [
+        KittyDeposit(id: 1, tripId: 1, memberId: 1, amountInCents: 10000, paidAt: DateTime(2026, 8, 15)),
+        KittyDeposit(id: 2, tripId: 1, memberId: 2, amountInCents: 10000, paidAt: DateTime(2026, 8, 15)),
+        KittyDeposit(id: 3, tripId: 1, memberId: 3, amountInCents: 10000, paidAt: DateTime(2026, 8, 15)),
+        KittyDeposit(id: 4, tripId: 1, memberId: 4, amountInCents: 10000, paidAt: DateTime(2026, 8, 15)),
+      ];
+
+      final expenses = [
+        KittyExpense(id: 1, tripId: 1, title: 'Proviant', amountInCents: 20000, category: ExpenseCategory.provisions, isPaidFromKitty: true, createdAt: DateTime(2026, 8, 15)),
+        KittyExpense(id: 2, tripId: 1, title: 'Restaurant', amountInCents: 12000, category: ExpenseCategory.restaurant, paidByMemberId: 1, isPaidFromKitty: false, createdAt: DateTime(2026, 8, 15)),
+      ];
+
+      const engine = KittyEngine();
+      final sharedResult = engine.calculateSharedKitty(
+        members: const [member1, member2, member3, member4],
+        deposits: deposits,
+        expenses: expenses,
+        treasurerMemberId: 1,
+      );
+
+      final data = TripKittyData(
+        trip: trip,
+        model: KittyModel.sharedKitty,
+        members: const [member1, member2, member3, member4],
+        expenses: expenses,
+        deposits: deposits,
+        sharedResult: sharedResult,
+      );
+
+      final summary = SettlementPdfSummary.fromTripKittyData(data);
+      expect(summary.totalExpensesCents, equals(32000));
+      expect(summary.totalDepositsCents, equals(40000));
+      expect(summary.kittyCashCents, equals(20000));
+
+      final Uint8List pdfBytes = await pdfService.generateSettlementPdf(data: data);
+      expect(pdfBytes, isNotEmpty);
+      expect(ascii.decode(pdfBytes.sublist(0, 5)), equals('%PDF-'));
+    });
+
+    test('FIX-B Finding E: SettlementPdfSummary individual mode person-paid only does not fabricate negative cash', () async {
+      final trip = createTestTrip().copyWith(kittyModel: KittyModel.individualSettlement);
+      const member1 = KittyMember(id: 1, name: 'Anna', categoryParticipation: {});
+      const member2 = KittyMember(id: 2, name: 'Ben', categoryParticipation: {});
+
+      final expenses = [
+        KittyExpense(id: 1, tripId: 1, title: 'Proviant', amountInCents: 10000, category: ExpenseCategory.provisions, paidByMemberId: 1, isPaidFromKitty: false, createdAt: DateTime(2026, 8, 15)),
+      ];
+
+      const engine = KittyEngine();
+      final indResult = engine.calculateIndividualSettlement(
+        members: const [member1, member2],
+        deposits: const [],
+        expenses: expenses,
+      );
+
+      final data = TripKittyData(
+        trip: trip,
+        model: KittyModel.individualSettlement,
+        members: const [member1, member2],
+        expenses: expenses,
+        deposits: const [],
+        individualResult: indResult,
+      );
+
+      final summary = SettlementPdfSummary.fromTripKittyData(data);
+      expect(summary.totalExpensesCents, equals(10000));
+      expect(summary.totalDepositsCents, equals(0));
+      expect(summary.kittyCashCents, isNull);
+
+      final Uint8List pdfBytes = await pdfService.generateSettlementPdf(data: data);
+      expect(pdfBytes, isNotEmpty);
+      expect(ascii.decode(pdfBytes.sublist(0, 5)), equals('%PDF-'));
+    });
   });
 }

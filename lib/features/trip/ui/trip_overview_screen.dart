@@ -18,6 +18,7 @@ import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_config
 import 'package:proviantplaner/features/shopping_list/ui/widgets/order_preview_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/delivery_received_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import 'package:proviantplaner/features/trip/ui/widgets/crew_member_dialog.dart';
@@ -1100,10 +1101,23 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       );
       return;
     }
-    final db = ref.read(databaseProvider);
-    await db.tripDao.deleteCrewMember(member.id);
-    await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
-    if (mounted) _loadTripDetails();
+    final tripService = ref.read(tripServiceProvider);
+    try {
+      await tripService.deleteCrewMemberSafely(member.id);
+      if (mounted) _loadTripDetails();
+    } on CrewMemberHasFinancialHistoryException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.cannotDeleteCrewMemberFinancialHistory)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.cannotDeleteCrewMemberFinancialHistory)),
+        );
+      }
+    }
   }
 
   Future<void> _showEditTripDialog(BuildContext context, AppLocalizations l10n) async {

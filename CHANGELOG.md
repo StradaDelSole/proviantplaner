@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-06 – FIX-B Review Amendment Completed
+
+- **FIX-B Review Amendment (Issue #27) vollständig umgesetzt.**
+- **Finding A / S1 (Crew Deletion Guard)**: `TripService.deleteCrewMemberSafely` und `hasFinancialHistory` verhindern die Löschung von Crew-Mitgliedern mit finanzieller Historie (Ausgaben, Einzahlungen, Custom-Split-Beteiligung, Kassenwart). Fehlermeldung in allen 6 Sprachen lokalisiert.
+- **Finding B / S2 (Custom Split Validierung)**: `_validateLedgerInputs` prüft Custom-Split-Beteiligte strikt gegen Törn-Crew, verbietet negative Anteile und erzwingt exakte Cent-Summengleichheit (`customSplitTotalMismatch`, `negativeCustomSplitShare`, `unknownCustomSplitMember`).
+- **Finding C / S2 (Backup Custom Split Remapping)**: `BackupCoordinator._restoreTripsV2` mappt Custom-Split-Member-IDs transaktionssicher über `crewIdMap` auf die neu vergebenen IDs um; ungültige oder verwaiste IDs scheitern deterministisch mit `StateError`.
+- **Finding D / S4 (Single Currency Guardrail)**: `_validateLedgerInputs` und `KittyService` erzwingen strikt einheitliche Währung pro Törn (`currencyMismatch`); Törn-Währung wird bei Anlage, Bearbeitung und Wiederherstellung von Ausgaben bewahrt.
+- **Finding E / S5 (Settlement PDF Unified Ledger)**: `SettlementPdfSummary.fromTripKittyData` bindet das PDF an den Unified Ledger an; Kassenstand wird aus physischem Kassenbestand bezogen (im Individual-Person-Paid-Modus `null`, keine fingierten negativen Kassenstände mehr); Beträge formatieren mit Törn-Währung.
+- **Finding F / UI (Ledger Error State)**: `KittyScreen` und `SettlementScreen` fangen `LedgerValidationException` ab und zeigen dedizierte Fehleransicht ("Abrechnung prüfen") statt "Törn nicht gefunden".
+- **Findings G & H (Treasurer Resolution & Routing)**: Deterministische Auflösung über `_resolveTreasurer` verifiziert; Kassenwart-zentriertes Routing in Shared Kitty und Schuldenminimierung in Individual Settlement bestätigt.
+- 28 neue Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`; alle 349 Tests im Gesamtprojekt grün; `flutter analyze` 0 Warnungen.
+- STOP für Re-Review und Owner Acceptance.
+
 ## 2026-10-06 – FIX-B Independent Review: Amendment Required
 
 - Reviewed implementation HEAD: `e8290f2d43fbf60ce375bca162d4b6aa95af532e`.

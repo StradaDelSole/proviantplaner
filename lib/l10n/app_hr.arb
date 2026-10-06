@@ -986,7 +986,8 @@
   "resyncBoatProfile": "Ažuriraj iz profila broda",
   "resyncBoatProfileConfirm": "Želite li stvarno ažurirati podatke o brodu iz profila broda? Ručne izmjene na ovom putovanju bit će prebrisane.",
   "resyncSuccess": "Podaci o brodu uspješno ažurirani iz profila.",
-  "saveAsBoatProfile": "Spremi kao profil broda",
-  "boatProfileSaved": "Profil broda spremljen.",
-  "boatSectionTitle": "Brod i oprema"
+  "boatSectionTitle": "Brod i oprema",
+  "cannotDeleteCrewMemberFinancialHistory": "Ovaj član posade ne može se obrisati jer je zabilježen u troškovima ili blagajni.",
+  "ledgerDataInvalidTitle": "Provjeri obračun",
+  "ledgerDataInvalidMessage": "Obračun sadrži nevažeće ili proturječne zapise. Molimo provjerite troškove i uplate."
 }

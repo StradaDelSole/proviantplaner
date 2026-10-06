@@ -385,3 +385,37 @@ class EpcQrPayload {
     ].join('\n');
   }
 }
+
+/// Ursache für einen Ledger-Validierungsfehler (FIX-B Finding F).
+enum LedgerValidationReason {
+  missingPayer,
+  unknownPayer,
+  unknownDepositMember,
+  unknownCustomSplitMember,
+  customSplitTotalMismatch,
+  negativeCustomSplitShare,
+  currencyMismatch,
+}
+
+/// Strukturierte Exception für fehlerhafte oder inkonsistente Finanzdaten im Ledger (FIX-B Finding F).
+class LedgerValidationException implements Exception {
+  final LedgerValidationReason reason;
+  final String message;
+
+  const LedgerValidationException({
+    required this.reason,
+    required this.message,
+  });
+
+  @override
+  String toString() => 'LedgerValidationException($reason): $message';
+}
+
+/// Exception, wenn ein Törn nicht existiert.
+class TripNotFoundException implements Exception {
+  final String message;
+  const TripNotFoundException(this.message);
+
+  @override
+  String toString() => 'TripNotFoundException: $message';
+}

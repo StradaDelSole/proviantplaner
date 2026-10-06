@@ -75,6 +75,74 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     final asyncData = ref.watch(tripKittyDataProvider(widget.tripId));
 
     if (asyncData.hasError) {
+      if (asyncData.error is LedgerValidationException) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.fundSettlementTitle),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: l10n.previousStep,
+              onPressed: () {
+                try {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/trips/${widget.tripId}');
+                  }
+                } catch (_) {
+                  Navigator.of(context).maybePop();
+                }
+              },
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.ledgerDataInvalidTitle,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.ledgerDataInvalidMessage,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      try {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/trips/${widget.tripId}');
+                        }
+                      } catch (_) {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                    label: Text(l10n.backToHome),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
       return NotFoundScreen(message: l10n.tripNotFound);
     }
 

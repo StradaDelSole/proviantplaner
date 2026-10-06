@@ -120,6 +120,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
     ));
   }
 
+  Future<CrewMember?> getCrewMemberById(int id) =>
+      (select(crewMembers)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
   Future<int> deleteCrewMember(int id) =>
       (delete(crewMembers)..where((tbl) => tbl.id.equals(id))).go();
 

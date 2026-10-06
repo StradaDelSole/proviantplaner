@@ -986,7 +986,8 @@
   "resyncBoatProfile": "Actualiser depuis le profil du bateau",
   "resyncBoatProfileConfirm": "Voulez-vous vraiment actualiser les données du bateau depuis le profil ? Les modifications manuelles du voyage seront écrasées.",
   "resyncSuccess": "Données du bateau actualisées avec succès depuis le profil.",
-  "saveAsBoatProfile": "Enregistrer comme profil de bateau",
-  "boatProfileSaved": "Profil du bateau enregistré.",
-  "boatSectionTitle": "Bateau & équipement"
+  "boatSectionTitle": "Bateau & équipement",
+  "cannotDeleteCrewMemberFinancialHistory": "Ce membre d'équipage ne peut pas être supprimé car il est enregistré dans les comptes ou la caisse de bord.",
+  "ledgerDataInvalidTitle": "Vérifier le décompte",
+  "ledgerDataInvalidMessage": "Le décompte contient des écritures non valides ou contradictoires. Veuillez vérifier les dépenses et les versements."
 }

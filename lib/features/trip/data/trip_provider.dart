@@ -22,6 +22,7 @@ final tripServiceProvider = Provider<TripService>((ref) {
     listItemDao: ref.watch(listItemDaoProvider),
     catalogRepository: ref.watch(catalogRepositoryProvider),
     boatProfileDao: ref.watch(boatProfileDaoProvider),
+    expenseDao: ref.watch(expenseDaoProvider),
   );
 });
 

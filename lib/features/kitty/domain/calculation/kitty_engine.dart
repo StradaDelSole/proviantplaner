@@ -80,8 +80,9 @@ class KittyEngine {
     required List<KittyDeposit> deposits,
     required List<KittyExpense> expenses,
     int? treasurerMemberId,
+    String currency = 'EUR',
   }) {
-    _validateLedgerInputs(members, deposits, expenses);
+    _validateLedgerInputs(members, deposits, expenses, currency);
 
     final kittyExpenses = expenses.where((e) => e.isPaidFromKitty).toList();
     final personExpenses = expenses.where((e) => !e.isPaidFromKitty).toList();
@@ -133,12 +134,14 @@ class KittyEngine {
     required List<KittyDeposit> deposits,
     required List<KittyExpense> expenses,
     int? treasurerMemberId,
+    String currency = 'EUR',
   }) {
     final ledger = calculateUnifiedLedger(
       members: members,
       deposits: deposits,
       expenses: expenses,
       treasurerMemberId: treasurerMemberId,
+      currency: currency,
     );
 
     final transfers = _generateSharedKittyTransfers(ledger.memberBalances, ledger.treasurer);
@@ -161,12 +164,14 @@ class KittyEngine {
     required List<KittyExpense> expenses,
     List<KittyDeposit> deposits = const [],
     int? treasurerMemberId,
+    String currency = 'EUR',
   }) {
     final ledger = calculateUnifiedLedger(
       members: members,
       deposits: deposits,
       expenses: expenses,
       treasurerMemberId: treasurerMemberId,
+      currency: currency,
     );
 
     final transfers = simplifyDebts(ledger.memberBalances);
@@ -187,29 +192,74 @@ class KittyEngine {
     List<KittyMember> members,
     List<KittyDeposit> deposits,
     List<KittyExpense> expenses,
+    String currency,
   ) {
     for (final exp in expenses) {
       if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
-        throw ArgumentError(
-          'Kassenausgabe "${exp.title}" darf keinen persönlichen Zahler haben.',
+        throw const LedgerValidationException(
+          reason: LedgerValidationReason.unknownPayer,
+          message: 'Kassenausgabe darf keinen persönlichen Zahler haben.',
         );
       }
       if (!exp.isPaidFromKitty && exp.paidByMemberId == null) {
-        throw ArgumentError(
-          'Personenausgabe "${exp.title}" muss ein Crew-Mitglied als Zahler haben.',
+        throw const LedgerValidationException(
+          reason: LedgerValidationReason.missingPayer,
+          message: 'Personenausgabe muss ein Crew-Mitglied als Zahler haben.',
         );
       }
       if (exp.paidByMemberId != null && !members.any((m) => m.id == exp.paidByMemberId)) {
-        throw ArgumentError(
-          'Zahler für Ausgabe "${exp.title}" (ID: ${exp.paidByMemberId}) ist nicht in den Crew-Mitgliedern enthalten.',
+        throw LedgerValidationException(
+          reason: LedgerValidationReason.unknownPayer,
+          message:
+              'Zahler für Ausgabe "${exp.title}" (ID: ${exp.paidByMemberId}) ist nicht in den Crew-Mitgliedern enthalten.',
         );
+      }
+
+      if (exp.currency != currency) {
+        throw LedgerValidationException(
+          reason: LedgerValidationReason.currencyMismatch,
+          message:
+              'Ausgabe "${exp.title}" hat Währung ${exp.currency}, erwartet wird $currency.',
+        );
+      }
+
+      if (exp.customSplitInCents != null && exp.customSplitInCents!.isNotEmpty) {
+        int splitSum = 0;
+        for (final entry in exp.customSplitInCents!.entries) {
+          final memberId = entry.key;
+          final share = entry.value;
+          if (!members.any((m) => m.id == memberId)) {
+            throw LedgerValidationException(
+              reason: LedgerValidationReason.unknownCustomSplitMember,
+              message:
+                  'CustomSplit für Ausgabe "${exp.title}" enthält unbekanntes Crew-Mitglied ID $memberId.',
+            );
+          }
+          if (share < 0) {
+            throw LedgerValidationException(
+              reason: LedgerValidationReason.negativeCustomSplitShare,
+              message:
+                  'CustomSplit für Ausgabe "${exp.title}" enthält negativen Anteil: $share Cent.',
+            );
+          }
+          splitSum += share;
+        }
+        if (splitSum != exp.amountInCents) {
+          throw LedgerValidationException(
+            reason: LedgerValidationReason.customSplitTotalMismatch,
+            message:
+                'CustomSplit-Summe ($splitSum Cent) entspricht nicht dem Ausgabenbetrag (${exp.amountInCents} Cent).',
+          );
+        }
       }
     }
 
     for (final dep in deposits) {
       if (!members.any((m) => m.id == dep.memberId)) {
-        throw ArgumentError(
-          'Einzahler mit ID ${dep.memberId} ist nicht in den Crew-Mitgliedern enthalten.',
+        throw LedgerValidationException(
+          reason: LedgerValidationReason.unknownDepositMember,
+          message:
+              'Einzahler mit ID ${dep.memberId} ist nicht in den Crew-Mitgliedern enthalten.',
         );
       }
     }

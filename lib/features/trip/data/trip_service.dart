@@ -1,6 +1,7 @@
 /// Service für Törn-Verwaltung, Restaurant-Toggles und reaktive Mengenberechnung (Slice S3).
 library;
 
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
@@ -9,17 +10,34 @@ import 'package:proviantplaner/features/shopping_list/domain/calculation/quantit
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
+/// Exception wenn ein Crew-Mitglied finanzielle Referenzen besitzt und nicht gelöscht werden darf (FIX-B Finding A).
+class CrewMemberHasFinancialHistoryException implements Exception {
+  final int crewMemberId;
+  final int tripId;
+
+  const CrewMemberHasFinancialHistoryException({
+    required this.crewMemberId,
+    required this.tripId,
+  });
+
+  @override
+  String toString() =>
+      'CrewMemberHasFinancialHistoryException: Crew-Mitglied $crewMemberId hat Finanzhistorie in Törn $tripId.';
+}
+
 class TripService {
   final TripDao tripDao;
   final ListItemDao listItemDao;
   final CatalogRepository catalogRepository;
   final BoatProfileDao? boatProfileDao;
+  final ExpenseDao? expenseDao;
 
   TripService({
     required this.tripDao,
     required this.listItemDao,
     required this.catalogRepository,
     this.boatProfileDao,
+    this.expenseDao,
   });
 
   /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
@@ -440,4 +458,75 @@ class TripService {
     await tripDao.updateTrip(updated);
     await recalculateTrip(tripId);
   }
+
+  /// Prüft, ob ein Crew-Mitglied finanzielle Referenzen im Törn besitzt (FIX-B Finding A / S1):
+  /// - als Zahler einer Ausgabe (paidByCrewMemberId)
+  /// - als Einzahler in KittyPayments (crewMemberId)
+  /// - in einem customSplit einer Ausgabe
+  /// - als aktiver Kassenwart (treasurerMemberId)
+  Future<bool> hasFinancialHistory(int crewMemberId) async {
+    final member = await tripDao.getCrewMemberById(crewMemberId);
+    if (member == null) return false;
+    final tripId = member.tripId;
+
+    // 1. Aktiver Kassenwart
+    final trip = await tripDao.getTripById(tripId);
+    if (trip != null && trip.treasurerMemberId == crewMemberId) {
+      return true;
+    }
+
+    final effectiveExpenseDao = expenseDao ?? tripDao.attachedDatabase.expenseDao;
+
+    // 2. Kassen-Einzahlungen
+    final payments = await effectiveExpenseDao.getKittyPaymentsForTrip(tripId);
+    if (payments.any((p) => p.crewMemberId == crewMemberId)) {
+      return true;
+    }
+
+    // 3. Ausgaben als Zahler oder im Custom Split
+    final expenses = await effectiveExpenseDao.getExpensesForTrip(tripId);
+    final memberIdStr = crewMemberId.toString();
+    for (final exp in expenses) {
+      if (exp.paidByCrewMemberId == crewMemberId) {
+        return true;
+      }
+      if (exp.customSplit != null && exp.customSplit!.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(exp.customSplit!);
+          if (decoded is Map &&
+              (decoded.containsKey(memberIdStr) || decoded.containsKey(crewMemberId))) {
+            return true;
+          }
+        } catch (_) {}
+      }
+    }
+
+    return false;
+  }
+
+  /// Löscht ein Crew-Mitglied sicher, sofern keine finanziellen Referenzen
+  /// vorhanden sind und mindestens ein Crew-Mitglied im Törn verbleibt.
+  /// Wirft [CrewMemberHasFinancialHistoryException], falls finanzielle Referenzen existieren.
+  /// Wirft [StateError], falls es das letzte verbleibende Crew-Mitglied ist.
+  Future<void> deleteCrewMemberSafely(int crewMemberId) async {
+    final member = await tripDao.getCrewMemberById(crewMemberId);
+    if (member == null) return;
+    final tripId = member.tripId;
+
+    final crew = await tripDao.getCrewForTrip(tripId);
+    if (crew.length <= 1) {
+      throw StateError('Cannot delete the last remaining crew member.');
+    }
+
+    if (await hasFinancialHistory(crewMemberId)) {
+      throw CrewMemberHasFinancialHistoryException(
+        crewMemberId: crewMemberId,
+        tripId: tripId,
+      );
+    }
+
+    await tripDao.deleteCrewMember(crewMemberId);
+    await recalculateTrip(tripId);
+  }
 }
+

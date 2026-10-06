@@ -60,6 +60,7 @@ class ExpenseInput {
   final bool isPaidFromKitty;
   final Map<int, int>? customSplitInCents;
   final DateTime? createdAt;
+  final String? currency;
 
   const ExpenseInput({
     required this.tripId,
@@ -70,6 +71,7 @@ class ExpenseInput {
     this.isPaidFromKitty = false,
     this.customSplitInCents,
     this.createdAt,
+    this.currency,
   });
 }
 
@@ -89,7 +91,7 @@ class KittyService {
   Future<TripKittyData> loadKittyData(int tripId) async {
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) {
-      throw ArgumentError('Törn $tripId nicht gefunden.');
+      throw TripNotFoundException('Törn $tripId nicht gefunden.');
     }
 
     final rawCrew = await tripDao.getCrewForTrip(tripId);
@@ -111,6 +113,7 @@ class KittyService {
         deposits: deposits,
         expenses: expenses,
         treasurerMemberId: trip.treasurerMemberId,
+        currency: trip.currency,
       );
     } else {
       indRes = engine.calculateIndividualSettlement(
@@ -118,6 +121,7 @@ class KittyService {
         expenses: expenses,
         deposits: deposits,
         treasurerMemberId: trip.treasurerMemberId,
+        currency: trip.currency,
       );
     }
 
@@ -192,7 +196,11 @@ class KittyService {
     );
   }
 
-  void _validateExpenseInput(ExpenseInput input) {
+  void _validateExpenseInput(
+    ExpenseInput input, [
+    List<CrewMember>? crewMembers,
+    String? tripCurrency,
+  ]) {
     if (input.isPaidFromKitty && input.paidByMemberId != null) {
       throw ArgumentError(
         'Ungültige Zahlungsquelle: Kassenausgaben dürfen keinen persönlichen Zahler haben (paidByMemberId muss null sein).',
@@ -203,11 +211,47 @@ class KittyService {
         'Ungültige Zahlungsquelle: Personenausgaben müssen ein Crew-Mitglied als Zahler haben (paidByMemberId darf nicht null sein).',
       );
     }
+    if (input.paidByMemberId != null && crewMembers != null) {
+      if (!crewMembers.any((c) => c.id == input.paidByMemberId)) {
+        throw ArgumentError(
+          'Zahler für Ausgabe (ID: ${input.paidByMemberId}) ist nicht in den Crew-Mitgliedern enthalten.',
+        );
+      }
+    }
+    if (input.currency != null && tripCurrency != null && input.currency != tripCurrency) {
+      throw ArgumentError(
+        'Währung der Ausgabe (${input.currency}) weicht von der Törn-Währung ($tripCurrency) ab.',
+      );
+    }
+    if (input.customSplitInCents != null && input.customSplitInCents!.isNotEmpty) {
+      int splitSum = 0;
+      for (final entry in input.customSplitInCents!.entries) {
+        if (entry.value < 0) {
+          throw ArgumentError(
+            'CustomSplit-Anteil darf nicht negativ sein (Mitglied ${entry.key}: ${entry.value} Cent).',
+          );
+        }
+        if (crewMembers != null && !crewMembers.any((c) => c.id == entry.key)) {
+          throw ArgumentError(
+            'CustomSplit enthält ungültiges/fremdes Mitglied ID ${entry.key}.',
+          );
+        }
+        splitSum += entry.value;
+      }
+      if (splitSum != input.amountInCents) {
+        throw ArgumentError(
+          'CustomSplit-Summe ($splitSum Cent) entspricht nicht dem Ausgabenbetrag (${input.amountInCents} Cent).',
+        );
+      }
+    }
   }
 
   /// Erfasst eine neue Ausgabe (SC-KAS-02).
-  Future<int> addExpense(ExpenseInput input) {
-    _validateExpenseInput(input);
+  Future<int> addExpense(ExpenseInput input) async {
+    final trip = await tripDao.getTripById(input.tripId);
+    final crew = await tripDao.getCrewForTrip(input.tripId);
+    _validateExpenseInput(input, crew, trip?.currency);
+    final effectiveCurrency = input.currency ?? trip?.currency ?? 'EUR';
     final euros = input.amountInCents / 100.0;
     String? splitJson;
     if (input.customSplitInCents != null) {
@@ -219,6 +263,7 @@ class KittyService {
       ExpensesCompanion.insert(
         tripId: input.tripId,
         amount: euros,
+        currency: Value(effectiveCurrency),
         category: input.category,
         note: Value(input.title),
         isPaidFromKitty: Value(input.isPaidFromKitty),
@@ -280,8 +325,13 @@ class KittyService {
   Future<bool> updateExpense({
     required int id,
     required ExpenseInput input,
-  }) {
-    _validateExpenseInput(input);
+  }) async {
+    final trip = await tripDao.getTripById(input.tripId);
+    final crew = await tripDao.getCrewForTrip(input.tripId);
+    final allExpenses = await expenseDao.getExpensesForTrip(input.tripId);
+    final existing = allExpenses.where((e) => e.id == id).firstOrNull;
+    _validateExpenseInput(input, crew, trip?.currency);
+    final effectiveCurrency = input.currency ?? existing?.currency ?? trip?.currency ?? 'EUR';
     final euros = input.amountInCents / 100.0;
     String? splitJson;
     if (input.customSplitInCents != null) {
@@ -294,13 +344,13 @@ class KittyService {
         id: id,
         tripId: input.tripId,
         amount: euros,
-        currency: 'EUR',
+        currency: effectiveCurrency,
         category: input.category,
         paidByCrewMemberId: input.paidByMemberId,
         isPaidFromKitty: input.isPaidFromKitty,
         customSplit: splitJson,
         note: input.title,
-        createdAt: input.createdAt ?? DateTime.now(),
+        createdAt: input.createdAt ?? existing?.createdAt ?? DateTime.now(),
       ),
     );
   }
@@ -322,6 +372,7 @@ class KittyService {
         id: Value(exp.id),
         tripId: exp.tripId,
         amount: exp.amountInCents / 100.0,
+        currency: Value(exp.currency),
         category: exp.category,
         note: Value(exp.title),
         isPaidFromKitty: Value(exp.isPaidFromKitty),

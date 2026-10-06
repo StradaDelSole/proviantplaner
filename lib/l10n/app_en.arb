@@ -986,7 +986,8 @@
   "resyncBoatProfile": "Resync from boat profile",
   "resyncBoatProfileConfirm": "Do you really want to update the trip boat data from the boat profile? Manual changes on this trip will be overwritten.",
   "resyncSuccess": "Boat data successfully updated from profile.",
-  "saveAsBoatProfile": "Save as boat profile",
-  "boatProfileSaved": "Boat profile saved.",
-  "boatSectionTitle": "Boat & Equipment"
+  "boatSectionTitle": "Boat & Equipment",
+  "cannotDeleteCrewMemberFinancialHistory": "This crew member cannot be deleted because they are part of the settlement or fund records.",
+  "ledgerDataInvalidTitle": "Check settlement",
+  "ledgerDataInvalidMessage": "The settlement contains invalid or conflicting records. Please review expenses and deposits."
 }

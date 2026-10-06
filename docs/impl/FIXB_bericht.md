@@ -225,3 +225,169 @@ Status der einzelnen Punkte:
 - Commit: `FIX-B: Unified settlement ledger (Issue #27)`
 - Push auf `main`: Nach Verifikation vorbereitet.
 - **STOP**: Bereit für unabhängigen Review und Owner Acceptance.
+
+---
+
+# Abschlussbericht: FIX-B Review Amendment
+
+Wiederaufnahme und Umsetzung am 06.10.2026.
+
+- Slice: **FIX-B Review Amendment**
+- GitHub Issue: **#27**
+- Review-Vorgaben: `docs/impl/FIXB_review_2026-10-06.md` & `docs/impl/FIXB_supplemental_review_requirements_2026-10-06.md`
+- Baseline-Commit: `e8290f2d43fbf60ce375bca162d4b6aa95af532e`
+
+---
+
+## 1. Umgesetzt
+
+- **Finding A / S1 – Crew-Löschung finanziell abgesichert**:
+  - `TripService.hasFinancialHistory(crewMemberId)` prüft, ob das Mitglied als Zahler einer Ausgabe, als Einzahler, in einem `customSplit` oder als Kassenwart erfasst ist.
+  - `TripService.deleteCrewMemberSafely(crewMemberId)` wirft `CrewMemberHasFinancialHistoryException`, falls eine Finanzhistorie vorliegt.
+  - `TripOverviewScreen._deleteCrewMember` fängt die Exception ab und zeigt einen SnackBar mit dem lokalisierten Text `cannotDeleteCrewMemberFinancialHistory`.
+  - Letztes verbleibendes Crew-Mitglied kann nicht gelöscht werden (wirft `StateError`).
+- **Finding B / S2 – Custom Split Validierung**:
+  - `KittyEngine._validateLedgerInputs` validiert Custom Splits: alle referenzierten IDs müssen zur Törn-Crew gehören (`unknownCustomSplitMember`), keine negativen Beträge (`negativeCustomSplitShare`), Cent-Summe muss exakt dem Ausgabenbetrag entsprechen (`customSplitTotalMismatch`).
+  - `KittyService._validateExpenseInput` validiert Custom Splits bereits an der Servicegrenze bei `addExpense` und `updateExpense`.
+- **Finding C / S2 – Backup Custom Split Remapping**:
+  - `BackupCoordinator._restoreTripsV2` parst `customSplit`, remappt alle Mitglieds-IDs über `crewIdMap` auf die neu vergebenen IDs.
+  - Scheitert transaktionssicher mit `StateError`, falls eine verwaiste ID vorliegt.
+- **Finding D / S4 – Single Currency Guardrail**:
+  - `KittyEngine._validateLedgerInputs` erzwingt strikt einheitliche Währung pro Törn (`currencyMismatch`).
+  - `KittyService` übernimmt bei `addExpense` die Törn-Währung, bewahrt bei `updateExpense` und `restoreExpense` die ursprüngliche Währung.
+- **Finding E / S5 – Settlement PDF Unified Ledger Integration**:
+  - `SettlementPdfSummary.fromTripKittyData` liest Gesamtausgaben, Einzahlungen, Kassenbestand und Transfers direkt aus dem Unified Ledger.
+  - Kassenstand wird im Individual-Modus nur angezeigt, falls physische Einzahlungen existieren (ansonsten `null`, kein fingierter negativer Kassenstand).
+  - Formatierung formatiert mit der Törn-Währung (`summary.currency`).
+- **Finding F / Punkt 10 – UI Error Handling bei ungültigem Ledger**:
+  - `KittyScreen` und `SettlementScreen` fangen `LedgerValidationException` ab und zeigen eine dedizierte Fehleransicht ("Abrechnung prüfen" / `ledgerDataInvalidTitle` und `ledgerDataInvalidMessage`) mit Warnsymbol und Zurück-Button statt "Törn nicht gefunden".
+- **Findings G & H / S3 & S6 – Treasurer Resolution & Routing**:
+  - Deterministische Kassenwart-Auflösung via `_resolveTreasurer` verifiziert.
+  - Kassenwart-zentrierte Shared Transfers und Debt-Simplification im Individual-Modus bestätigt.
+- **Lokalisierung**:
+  - 3 neue Keys (`cannotDeleteCrewMemberFinancialHistory`, `ledgerDataInvalidTitle`, `ledgerDataInvalidMessage`) in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) gepflegt.
+
+---
+
+## 2. Geänderte und neue Dateien
+
+- `lib/core/database/daos.dart`: `getCrewMemberById` ergänzt.
+- `lib/core/services/backup_coordinator.dart`: Custom Split Remapping und Payer/Deposit Member Validierung.
+- `lib/core/services/pdf_export_service.dart`: `SettlementPdfSummary` und Anbindung an `TripKittyData`.
+- `lib/features/kitty/domain/models/kitty_models.dart`: `LedgerValidationException`, `LedgerValidationReason`, `TripNotFoundException`.
+- `lib/features/kitty/domain/calculation/kitty_engine.dart`: Währungs- und Custom-Split-Validierung.
+- `lib/features/kitty/data/kitty_service.dart`: Servicegrenzen-Validierung, Währungserhalt, Trip-Prüfung.
+- `lib/features/kitty/ui/kitty_screen.dart`: Fehleransicht bei `LedgerValidationException`.
+- `lib/features/kitty/ui/settlement_screen.dart`: Fehleransicht bei `LedgerValidationException`.
+- `lib/features/trip/data/trip_service.dart`: `deleteCrewMemberSafely`, `hasFinancialHistory`, `CrewMemberHasFinancialHistoryException`.
+- `lib/features/trip/data/trip_provider.dart`: `expenseDao` an `TripService` übergeben.
+- `lib/features/trip/ui/trip_overview_screen.dart`: Sicheres Löschen mit SnackBar-Fehlermeldung.
+- `lib/l10n/app_*.arb`: DE, EN, ES, FR, HR, PT mit 3 neuen Keys.
+- `test/core/services/pdf_export_test.dart`: 2 neue Tests für `SettlementPdfSummary`.
+- `test/features/kitty/fix_b_supplemental_amendment_test.dart`: 28 neue Tests für Findings A–F, S1–S5.
+- `CHANGELOG.md`: FIX-B Amendment Eintrag ergänzt.
+- `docs/impl/FIXB_bericht.md`: Bericht aktualisiert.
+
+---
+
+## 3. Analyse & Tests
+
+- `flutter analyze`: **No issues found!** (0 Fehler, 0 Warnungen)
+- `flutter test test/features/kitty/fix_b_supplemental_amendment_test.dart`: **28/28 Tests bestanden**
+- `flutter test test/features/kitty/fix_b_unified_ledger_test.dart`: **17/17 Tests bestanden**
+- `test/core/services/pdf_export_test.dart`: **4/4 Tests bestanden**
+- `test/core/services/backup_coordinator_test.dart`: **7/7 Tests bestanden**
+- `test/features/kitty/`: **73/73 Tests bestanden**
+- `flutter test`: **349/349 Tests bestanden** (gesamte Suite grün)
+
+---
+
+## 4. Abnahmekriterien (Findings A–H & S1–S5)
+
+1. **Finding A / S1 (Crew Deletion Financial Guard)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen eines unreferenzierten Crew-Mitglieds ist erlaubt*
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen eines Mitglieds mit getätigter Ausgabe wird abgewiesen*
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen eines Mitglieds mit Einzahlung wird abgewiesen*
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen eines Mitglieds in Custom Split wird abgewiesen*
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen des aktiven Kassenwarts wird abgewiesen*
+     - *S1 & Finding A: Crew Deletion Financial Guard Löschen des letzten verbleibenden Crew-Mitglieds wirft StateError*
+     - *S1 & Finding A: Crew Deletion Financial Guard Engine wirft LedgerValidationException bei person-paid mit fehlendem Payer*
+     - *S1 & Finding A: Crew Deletion Financial Guard Engine wirft LedgerValidationException bei unbekanntem Einzahler*
+2. **Finding B / S2 (Custom Split Validierung)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *S2 & Finding B: Custom Split Validierung Custom Split mit verwaister Crew-ID wirft unknownCustomSplitMember*
+     - *S2 & Finding B: Custom Split Validierung Custom Split mit Summen-Abweichung zu gering wirft customSplitTotalMismatch*
+     - *S2 & Finding B: Custom Split Validierung Custom Split mit Summen-Abweichung zu hoch wirft customSplitTotalMismatch*
+     - *S2 & Finding B: Custom Split Validierung Custom Split mit negativem Anteil wirft negativeCustomSplitShare*
+     - *S2 & Finding B: Custom Split Validierung Valider ungerader Custom Split (Odd Cents) summiert exakt*
+     - *S2 & Finding B: Custom Split Validierung KittyService weist Anlage von Custom Split mit fehlerhafter Summe ab*
+3. **Finding C / S2 (Backup Custom Split Remapping)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *S2 & Finding C: Backup Custom Split Remapping v2 Backup mappt Custom Split Member-IDs transaktionssicher auf neue IDs um*
+     - *S2 & Finding C: Backup Custom Split Remapping v2 Backup scheitert explizit, wenn Custom Split ein nicht-vorhandenes Mitglied referenziert*
+4. **Finding D / S4 (Währungsintegrität & Single Currency Guardrail)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) Reiner EUR-Törn rechnet normal*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) Einzelner Nicht-EUR Törn (z.B. USD) rechnet in seiner eigenen Währung*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) Gemischte Währungen werfen typed LedgerValidationException (currencyMismatch)*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) KittyService addExpense übernimmt Törn-Währung*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) KittyService updateExpense bewahrt bestehende Währung*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) KittyService restoreExpense bewahrt Währung bei Undo*
+5. **Finding E / S5 (Settlement PDF Unified Ledger Integration)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/core/services/pdf_export_test.dart`:
+     - *FIX-B Finding E: SettlementPdfSummary canonical mixed case (320 EUR Ausgaben, 200 EUR Kassenstand)*
+     - *FIX-B Finding E: SettlementPdfSummary individual mode person-paid only does not fabricate negative cash*
+6. **Finding F / Punkt 10 (UI-Fehlerdarstellung)**:
+   - *Erfüllt* – Nachweis: automatische Widget-Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Finding F: UI-Fehlerdarstellung bei ungültigem Ledger KittyScreen zeigt dedizierte Fehleransicht bei LedgerValidationException*
+     - *Finding F: UI-Fehlerdarstellung bei ungültigem Ledger SettlementScreen zeigt dedizierte Fehleransicht bei LedgerValidationException*
+7. **Findings G & H / S3 & S6 (Treasurer Resolution & Routing)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *S3 & Finding G: Deterministic Treasurer Resolution Expliziter valider Kassenwart wird in beiden Modi identisch aufgelöst*
+     - *S3 & Finding G: Deterministic Treasurer Resolution Fehlender Kassenwart greift deterministisch auf denselben Fallback (Skipper) zurück*
+     - *S3 & Finding G: Deterministic Treasurer Resolution Verwaister (dangling) Kassenwart greift deterministisch auf denselben Fallback zurück*
+     - *S3 & Finding G: Deterministic Treasurer Resolution Modellwechsel Shared -> Individual -> Shared bewahrt Netto-Salden cent-exakt*
+
+---
+
+## 5. Offen / Risiken
+
+- Keine im freigegebenen FIX-B Review-Amendment Scope.
+- Alle weiteren post-Pivot Slices (PIVOT2, DATA1, Watermaker Reserve Amendment etc.) bleiben planmäßig auf HOLD bzw. ungated.
+
+---
+
+## 6. Annahmen / Abweichungen vom PRD
+
+- Keine.
+
+---
+
+## 7. Selbstprüfung Programmierregeln 1–10
+
+1. **Feste Typen**: Eingehalten. `LedgerValidationReason`, `LedgerValidationException`, `CrewMemberHasFinancialHistoryException`.
+2. **Keine versteckten Platzhalter**: Eingehalten. Keine Stubs, keine `TODO`s.
+3. **Ehrliche Berichte**: Eingehalten. Alle genannten Tests sind real ausgeführt und im Repo vorhanden.
+4. **Alles datengetrieben**: Eingehalten.
+5. **Rechnen mit Kommazahlen**: Eingehalten. Alle Beträge in Cent als `int`.
+6. **Struktur**: Eingehalten.
+7. **Tests**: Eingehalten. 28 neue Tests für das Amendment, plus bestehende 17 FIX-B Core-Tests unangetastet grün.
+8. **Keine Eigenbauten von Standards**: Eingehalten.
+9. **Nur berichten, was tatsächlich geschehen ist**: Eingehalten. 349/349 reale grüne Tests.
+10. **Nichts aus späteren Versionen sichtbar gebaut**: Eingehalten.
+
+---
+
+## 8. Vorschläge für das PRD
+
+- Keine.
+
+---
+
+## 9. Commit & Push
+
+- Commit: `FIX-B: Review amendment`
+- Push auf `main`: Nach Verifikation vorbereitet.
+- **STOP**: Bereit für Re-Review und Owner Acceptance.
+

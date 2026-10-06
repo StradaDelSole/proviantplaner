@@ -33,6 +33,65 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     final theme = Theme.of(context);
 
     if (asyncData.hasError) {
+      if (asyncData.error is LedgerValidationException) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.ledgerDataInvalidTitle),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: l10n.previousStep,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/trips/${widget.tripId}');
+                }
+              },
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 64,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.ledgerDataInvalidTitle,
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.ledgerDataInvalidMessage,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/trips/${widget.tripId}');
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                    label: Text(l10n.backToHome),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
       return NotFoundScreen(message: l10n.tripNotFound);
     }
 
