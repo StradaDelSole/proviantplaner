@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-07 – FIX-B Amendment Re-Review: Final Narrow Amendment
+
+- Re-reviewed amendment HEAD: `317550e454c7fc9bed978e1ade66dde0476f2fb2`.
+- Canonical re-review: `docs/impl/FIXB_amendment_review_2026-10-07.md`.
+- S1–S5 production fixes are verified closed.
+- Remaining blocker: unexpected technical provider errors still render as "Trip not found".
+- Remaining blocker: non-EUR Bordkasse/Settlement presentation and EPC QR still hard-code EUR/€.
+- Required proof additions: real blocked Crew delete UI journey, update custom-split rejection, non-EUR backup/restore.
+- Only the final narrow FIX-B amendment is released. PIVOT2 remains ON HOLD.
+
+
 ## 2026-10-06 – FIX-B Review Amendment Completed
 
 - **FIX-B Review Amendment (Issue #27) vollständig umgesetzt.**
