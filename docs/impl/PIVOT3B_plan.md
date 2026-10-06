@@ -1,7 +1,7 @@
 # PIVOT3-B – Setup Integration & Water Logic – Implementierungsplan
 
 Stand: 06.10.2026  
-Status: **OWNER-ACCEPTED SCOPE / NOT RELEASED**
+Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
 
 Grundlagen:
 - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
@@ -18,11 +18,12 @@ Nach akzeptierter PIVOT3-A-Foundation die Bootsprofil-Semantik in den sichtbaren
 
 ## Start-Gate
 
-PIVOT3-B darf erst beginnen, wenn:
-1. PIVOT3-A vollständig implementiert ist.
-2. unabhängiger Review PIVOT3-A akzeptabel bewertet.
-3. PIVOT3-A ausdrücklich owner-accepted ist.
-4. README PIVOT3-B ausdrücklich freigibt.
+Alle Start-Gates sind am 06.10.2026 erfüllt.
+
+Verbindliche Release-Reconciliation:
+`docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
+
+Diese spätere Reconciliation konkretisiert insbesondere Crew-Minimum, Watermaker-Semantik und die Wasserformel und hat bei Widerspruch innerhalb des PIVOT3-B-Scopes Vorrang.
 
 ## Geplanter Pflicht-Scope
 
@@ -49,7 +50,7 @@ Keine neue permanente Hauptnavigation.
 - keine harte Clamp auf 5
 - bestehende namentliche Crewverwaltung nicht unnötig ersetzen
 
-Die genaue minimale zulässige Crewgröße vor Implementierung aus dem dann aktuellen owner-accepted Produkt-/UX-Stand reconciliieren. Keine neue Crew-Identity-Architektur nur zur Behebung dieses Bugs erfinden.
+Reconciliert: minimale Crewgröße ist **1**. Der Wizard startet nicht mehr mit fünf festen Platzhaltern. Keine neue Crew-Identity-Architektur und kein neues `crewCount`-DB-Feld nur für diesen Fix; bestehendes CrewMember-Modell beibehalten.
 
 ### C. Watermaker / Issue #5
 
@@ -60,7 +61,7 @@ Im Bootsprofil und Trip-Snapshot sichtbar nutzbar:
 - beim Profil-Snapshot übernommen
 - Trip-Override möglich
 
-Keine zusätzliche Watermaker-Leistungsangabe einführen, solange die fachliche Wasserlogik ohne sie robust lösbar ist. Falls sie zwingend benötigt wird: STOP und Decision erforderlich.
+Keine zusätzliche Watermaker-Leistungsangabe einführen. Reconciliert: `hasWatermaker=true` ist in v1 die explizite Nutzerangabe einer betriebsbereiten laufenden Trinkwasserquelle; die UI muss diese Annahme transparent machen. Keine Leistungsrate erfinden.
 
 ### D. Wasserlogik
 
@@ -79,7 +80,7 @@ Verbindlich:
 - keine versteckte Sicherheitsbehauptung
 - keine unrealistischen Nullmengen
 
-Die konkrete Formel ist vor Implementierung gegen `data/quantities_v0.6.json` und die dann aktuelle Quantity Engine zu reconciliieren und im Implementierungsbericht transparent zu dokumentieren.
+Die konkrete Formel ist reconciliert und verbindlich in `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md` dokumentiert: ohne Watermaker bleibt die bestehende Tanklogik; mit Watermaker wird nur bis zur bereits konfigurierten Flaschen-Notreserve reduziert, niemals auf 0. Keine Änderung an `data/quantities_v0.6.json` erforderlich.
 
 ### E. UX / Localization
 
