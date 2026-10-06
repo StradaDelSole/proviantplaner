@@ -258,15 +258,17 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Aktions- / Mengen-Spalte
+                // Aktions- / Mengen-Spalte (PIVOT1: Kein direkter Adopt-Bypass, immer über AddOrEditItemSheet)
                 if (!isOnList) ...[
                   FilledButton.tonal(
-                    onPressed: () async {
-                      await ref.read(shoppingListServiceProvider).adoptItem(
-                            tripId: widget.data.trip.id,
-                            listItemId: item.item.id,
-                          );
-                      ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
+                    key: ValueKey('item_add_btn_${item.item.id}'),
+                    onPressed: () {
+                      AddOrEditItemSheet.show(
+                        context,
+                        data: widget.data,
+                        item: item,
+                        isAdding: true,
+                      );
                     },
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(90, 48),

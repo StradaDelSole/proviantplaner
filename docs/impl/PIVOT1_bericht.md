@@ -1,8 +1,8 @@
-# Abschlussbericht PIVOT1 – Assisted List Core
+# Abschlussbericht PIVOT1 – Assisted List Core (inkl. Review-Amendment)
 
-Slice: PIVOT1 – Assisted List Core  
+Slice: PIVOT1 – Assisted List Core (Issue #10)  
 Datum: 06.10.2026  
-Status: Abgeschlossen  
+Status: Implementiert, Review-Amendment abgeschlossen, wartet auf unabhängige Abnahme / Owner Acceptance  
 
 ---
 
@@ -13,7 +13,7 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 ### A. Automatische Generierung im Altsystem
 - **ListItem-Erstellung:** In `TripService.createTripWithCrew` und `QuantityEngine` wurden beim Anlegen eines Törns bereits Einträge für Katalogartikel angelegt.
 - **Katalogkandidaten vs. Übernommene Artikel:** Die Datenbank unterscheidet bereits über `isAdopted: bool` und `isCustom: bool` zwischen reinen Kandidaten (`isAdopted = false`, `isCustom = false`) und tatsächlich vom Nutzer gewählten Artikeln.
-- **Listenkriterium:** Ein Artikel gehört zur tatsächlichen Vorrats- und Einkaufsliste (`isOnList`), wenn `isAdopted || isCustom` wahr ist.
+- **Listenkriterium:** Ein Artikel gehört zur tatsächlichen Vorrats- und Einkaufsliste (`isOnList`), wenn `isCustom || (isAdopted && effectivePackages > 0)` wahr ist.
 - **Mengen-Neuberechnung:** Bei Crew- oder Dauer-Änderungen dürfen übernommene Artikel (`isAdopted: true`) in ihren Packungszahlen (`overriddenPackages` bzw. vom Nutzer gewählte Mengen) nicht stillschweigend überschrieben werden.
 - **Einkaufsmodus:** Der Einkaufsmodus (`ShoppingModeScreen`) filtert strikt nach `it.isOnList && it.effectivePackages > 0` für den jeweiligen Stopp.
 
@@ -26,8 +26,9 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 ---
 
-## 2. Umgesetzte PIVOT1-Funktionen
+## 2. Umgesetzte PIVOT1-Funktionen & Review-Amendment
 
+### A. Kern-Pivot (Erstfassung)
 - **Neuer Törn ist leer (Search-First):**
   - Ein frisch angelegter Törn hat 0 übernommene Artikel auf der Liste.
   - Anstelle einer ungefragt vorbefüllten Speisekarte präsentiert die Vorratsliste (`ShoppingView` und `PlanningView`) einen prominenten, einladenden Search-First Empty State (`EmptyShoppingListView`).
@@ -39,18 +40,38 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
   - `AddOrEditItemSheet`: Modales Bottom Sheet für Variante → Packungsgrößen-Chips → Stepper (− / Zahl / +) mit Pickwheel/Direkteingabe → Hinzufügen / Speichern / Entfernen.
   - Taktiles Feedback bei Mengenänderung (`HapticFeedback.selectionClick()`).
   - Zeilen-Tap auf bestehende Vorratspositionen öffnet dasselbe Bottom Sheet zum Bearbeiten oder Entfernen.
-- **Klassifikation & Entkopplung von Präferenz-Produkten:**
-  - Neues Modell `AssistType` (`needsBased`, `guided`, `preferenceBased`) und `AssistClassifier`.
-  - Preference-basierte Produkte wie Pesto, Tofu, Snacks, Süßigkeiten und Spezial-Saucen erhalten in der Berechnungs-Engine `calculatedNeedAmount = 0.0` und `calculatedPackages = 0`. Keine automatischen 14-Gläser-Pesto-Vorschläge mehr.
-  - Needs-based Produkte wie Trinkwasser berechnen einen objektiven Richtwert, der als Orientierung dient, während der Skipper Gebinde und Menge bestimmt.
-  - Guided-Produkte (Grundnahrungsmittel) bieten Plausibilitäts-Richtwerte ohne Zwangsübernahme.
 - **Standard-Sortierung:**
-  - Standardansicht ist nun Supermarkt-Abteilung (Decision 16); Kategorie bleibt als Umschaltmöglichkeit verfügbar.
-- **Einkaufsmodus-Isolation:**
-  - Nur tatsächlich übernommene Positionen des Stopps erscheinen im Einkaufsmodus.
+  - Standardansicht ist Supermarkt-Abteilung (Decision 16); Kategorie bleibt als Umschaltmöglichkeit verfügbar.
 - **Vollständige Lokalisierung:**
-  - Alle neuen Keys (`addToList`, `removeFromList`, `packageSize`, `customPackageSize`, `totalQuantity`, `provyGuideline`, `provyGuidelineNotice`, `itemAddedNotice`, `itemRemovedNotice`, `emptyListTitle`, `emptyListSubtitle`, `searchProducts`, `onListStatus`, `holdsDays`) in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) gepflegt.
-  - Keine "kitty"-Begriffe verwendet (UX-C-Konformität).
+  - Alle neuen Keys (`addToList`, `removeFromList`, `packageSize`, `customPackageSize`, `totalQuantity`, `provyGuideline`, `provyGuidelineNotice`, `itemAddedNotice`, `itemRemovedNotice`, `emptyListTitle`, `emptyListSubtitle`, `searchProducts`, `onListStatus`, `holdsDays`) in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) gepflegt. Keine "kitty"-Begriffe verwendet (UX-C-Konformität).
+
+### B. Schließung der Befunde aus dem Independent Review (06.10.2026)
+
+- **Finding A – Assist-Klassifikation gegen kanonischen Katalog v0.10 gehärtet:**
+  - Nicht-existierende Dummy-Gruppen-IDs (`snacks`, `sauces_special`) entfernt.
+  - Kanonische Gruppen-IDs aus `data/catalog_v0.10.json` als Preference-Gruppen hinterlegt: `savory_snacks`, `sweets`, `spread_sweet`, `spread_savory`, `spirits`.
+  - Kanonische Varianten-IDs innerhalb sonst geführter Gruppen als Preference-Varianten hinterlegt: `pesto`, `sauce_jar`, `tofu`, `bbq_sauce`, `sweet_chili`, `tabasco`, `soy_sauce`, `brie`, `feta`, `mozzarella`, `parmesan`.
+  - Spirituosen (`spirits`) als Genussmittelpreference deklariert (0 Richtwert); Bier und Wein verbleiben als `guided`, da sie durch Konsumprofil-Formeln (`crewDrinking`, Erwachsenen-Kopfzahl, Urlaubsaufschlag) berechnet werden (im Code und Bericht dokumentiert).
+  - Automatischer Katalog-Validierungstest hinzugefügt: 100% aller in `AssistClassifier` konfigurierten IDs existieren nachweislich im Katalog.
+  - Regressionstests für Snacks (`chips`), Spezialsaucen (`bbq_sauce`), Käse (`feta`), Spirituosen (`rum`) und Abgrenzung zu Bier (`beer_can`).
+
+- **Finding B – Beseitigung des UI-Bypass bei „Übernehmen“:**
+  - In `ShoppingListItemRow` wurde der direkte Aufruf von `shoppingListService.adoptItem(...)` auf dem Aktions-Button entfernt.
+  - Sowohl Zeilen-Tap (`item_tap_${item.item.id}`) als auch der sichtbare Aktions-Button (`item_add_btn_${item.item.id}`) öffnen nun ausnahmslos das `AddOrEditItemSheet(isAdding: true)`.
+  - Beide Pfade erzwingen die bewusste Festlegung von Packungsgröße und Stückzahl durch den Skipper, bevor Daten in SQLite persistiert werden.
+
+- **Finding C – Reale Search/Add UI-Journey:**
+  - End-to-End-Widget-Journey über den echten `ShoppingListScreen` implementiert: Empty State Button (`empty_search_btn`) tippen → `showSearch` mit `CatalogSearchDelegate` → Texteingabe `'pesto'` → Treffer in `ListTile` antippen → modales `AddOrEditItemSheet` → Stepper auf 2 Gläser → "Auf die Liste" tippen → SnackBar & Liste aktualisiert → Pesto sichtbar mit 2 Gläsern → SQLite-Persistenz verifiziert.
+  - `CatalogSearchDelegate` verwendet `parentContext` und `addPostFrameCallback`, um modale Sheets nach dem Schließen der Suchroute sauber im Navigator-Stack des aufrufenden Screens zu öffnen.
+
+- **Finding D – Mengen-Stabilität bei echter Neuberechnung:**
+  - Test gegen den echten Produktionspfad `tripService.updateTripDetails(tripId, daysCount: 14)` und `tripService.recalculateTrip(tripId)` gehärtet.
+  - Nachgewiesen für: (1) Preference-Item mit Nutzerwunschmenge (Pesto: 2 Gläser), (2) Guided-Item mit manuellem Override (Toastbrot: 5 Packungen) und (3) Custom-Item (Bio-Kaffee: 3 Packungen). Alle drei behalten nach Dauer- und Crew-Änderung exakt ihre gewählten Stückzahlen.
+
+- **Finding E – Einkaufsmodus-Isolation auf echtem Screen:**
+  - Dedizierter Widget-Test auf dem echten `ShoppingModeScreen(tripId, stopId)`:
+  - Übernommener Katalogartikel (`spaghetti`) und eigene Position (`Bord-Gin Flasche`) werden angezeigt.
+  - Unübernommene Katalogkandidaten (wie Butter, Salz, Milch) werden auf dem Screen nicht angezeigt.
 
 ---
 
@@ -68,6 +89,7 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 - `lib/features/shopping_list/domain/calculation/calculation_result.dart`
 - `lib/features/shopping_list/domain/calculation/quantity_engine.dart`
 - `lib/features/shopping_list/domain/models/shopping_list_models.dart`
+- `lib/features/shopping_list/ui/shopping_list_screen.dart`
 - `lib/features/shopping_list/ui/widgets/catalog_search_delegate.dart`
 - `lib/features/shopping_list/ui/widgets/item_row_widget.dart`
 - `lib/features/shopping_list/ui/widgets/planning_view.dart`
@@ -90,11 +112,11 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
   No issues found! (0 Fehler, 0 Warnungen, 0 Lints)
 
 - **flutter test:**
-  255/255 Tests bestanden (100% grün).
+  261/261 Tests bestanden (100% grün, alle Test-Suiten grün).
 
 ---
 
-## 5. Abnahmekriterien (SLICES_v0.19.md & PIVOT1_plan.md)
+## 5. Abnahmekriterien (SLICES_v0.19.md, PIVOT1_plan.md & PIVOT1_review_2026-10-06.md)
 
 1. **Neuer Törn ist leer (Search-First):**
    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 1. Neuer Törn ist leer (Search-First): 0 übernommene Posten & Leerstadium angezeigt` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
@@ -117,11 +139,29 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 7. **Trinkwasser Needs-Based: Richtwert berechnet, angezeigt und vom Nutzer gewählt:**
    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 7. Trinkwasser Needs-Based: Richtwert wird berechnet, angezeigt und vom Nutzer gewählt` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
-8. **Mengen-Stabilität: Crew- und Dauer-Änderungen überschreiben übernommene Posten nicht:**
+8. **Mengen-Stabilität bei Dauer- und Crew-Änderungen:**
    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 8. Mengen-Stabilität: Crew- und Dauer-Änderungen überschreiben übernommene Posten nicht` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
-9. **Einkaufsmodus-Isolation: Nur tatsächlich übernommene Positionen des Stopps erscheinen:**
+9. **Einkaufsmodus-Isolation (Modell-Ebene):**
    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 9. Einkaufsmodus-Isolation: Nur tatsächlich übernommene Positionen des Stopps erscheinen` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+10. **Finding A: Katalog-Validierung des AssistClassifiers:**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 10. AssistClassifier: Alle konfigurierten Gruppen & Varianten existieren im Katalog v0.10` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+11. **Finding A: Preference-Regressionen (Snacks, Spezialsaucen, Käse, Spirituosen) vs. Guided (Bier/Wein):**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 11. Preference-Regressionen: Snacks, Saucen, Käse & Spirituosen berechnen 0 Richtwert; Bier/Wein bleiben guided` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+12. **Finding B: Ausschluss des UI-Bypass (Zeilen-Tap & Add-Button):**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 12. Kein UI-Bypass: Sowohl Zeilen-Tap als auch Add-Button öffnen AddOrEditItemSheet und adoptieren nicht still` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+13. **Finding C: Reale Search/Add UI-Journey:**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 13. Reale Search/Add UI-Journey: Suche -> Treffer -> Sheet -> Packung & Stepper -> Liste -> DB-Persistenz` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+14. **Finding D: Mengen-Stabilität bei echter TripService-Neuberechnung:**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 14. Mengen-Stabilität bei echter Neuberechnung (TripService): Preference, Custom & Overridden Guided überleben Dauer & Crew-Änderung` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
+
+15. **Finding E: Reale ShoppingModeScreen Bildschirm-Isolation:**
+    - *erfüllt* – Nachweis: automatischer Test (`PIVOT1: Assisted List Core Abnahmetests 15. ShoppingModeScreen: Reale Bildschirm-Isolation zeigt nur übernommene & eigene Artikel` in `test/features/shopping_list/pivot1_assisted_list_test.dart`)
 
 ---
 
@@ -145,15 +185,15 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 ## 8. Selbstprüfung Programmierregeln 1–10
 
-- **Regel 1 (Feste Typen):** eingehalten. `AssistType` als striktes Enum definiert; keine Magic Strings in der Klassifikation.
+- **Regel 1 (Feste Typen):** eingehalten. `AssistType` als striktes Enum definiert; `AssistClassifier` arbeitet auf typisierten IDs und Datenstrukturen; keine Magic Strings in der Rechenlogik.
 - **Regel 2 (Keine versteckten Platzhalter):** eingehalten. Keine leeren Funktionen, Stubs oder `TODO`s.
-- **Regel 3 (Ehrliche Berichte):** eingehalten. Jedes Kriterium ist mit dem exakten Testnamen belegt.
-- **Regel 4 (Alles datengetrieben):** eingehalten. Katalogdaten, Gebinde und Faktoren stammen aus den Katalogen; Mengenumrechnungen respektieren die physikalischen Einheiten.
+- **Regel 3 (Ehrliche Berichte):** eingehalten. Alle 15 Kriterien sind mit exakten, bestehenden Testnamen belegt.
+- **Regel 4 (Alles datengetrieben):** eingehalten. Alle konfigurierten IDs validiert gegen `catalog_v0.10.json`; Mengenumrechnungen respektieren die physikalischen Einheiten.
 - **Regel 5 (Rechnen mit Kommazahlen):** eingehalten. Epsilon-Arithmetik und Cent-Beträge als ganze Zahlen (`int`).
 - **Regel 6 (Struktur):** eingehalten. Schlanke Widgets und modulare Methoden (≤ 40 Zeilen).
-- **Regel 7 (Tests):** eingehalten. 9 dedizierte PIVOT1-Akzeptanztests in `pivot1_assisted_list_test.dart`; Anpassung in `ux_b_shopping_and_delivery_test.dart` dokumentiert (Umschalten auf Kategorie-Sicht aufgrund von Decision 16 Abteilungs-Default).
+- **Regel 7 (Tests):** eingehalten. 15 dedizierte Akzeptanztests in `pivot1_assisted_list_test.dart`, Gesamttestsuite mit 261 Tests 100% grün.
 - **Regel 8 (Keine Eigenbauten von Standards):** eingehalten. Etablierte Flutter-Material-Komponenten und Standard-Haptik.
-- **Regel 9 (Nur berichten, was tatsächlich geschehen ist):** eingehalten. Alle Testergebnisse und Analysen beruhen auf echten Durchläufen.
+- **Regel 9 (Nur berichten, was tatsächlich geschehen ist):** eingehalten. Alle Testergebnisse und Analysen beruhen auf echten Durchläufen (`flutter analyze`: 0 issues; `flutter test`: 261/261 passed).
 - **Regel 10 (Nichts aus späteren Versionen sichtbar bauen):** eingehalten. Keine sichtbaren Fragmente aus UX-D, GUEST1, RECEIPT1 oder B3–B5.
 
 ---
@@ -164,4 +204,5 @@ Vor Umsetzung des PIVOT1-Slices wurde der bestehende Daten- und UI-Stand systema
 
 ---
 
-Commit: `PIVOT1: Assisted List Core – skipper builds, Provy assists`
+Commit: `PIVOT1: Address review findings A-E (catalog classification, UI bypass, real journey & stability tests)`
+

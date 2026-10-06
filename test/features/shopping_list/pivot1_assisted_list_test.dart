@@ -37,6 +37,8 @@ import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.da
 import 'package:proviantplaner/features/shopping_list/ui/widgets/add_or_edit_item_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/catalog_search_delegate.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/empty_shopping_list_view.dart';
+import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/item_row_widget.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
@@ -459,6 +461,274 @@ void main() {
       expect(updatedStopItems.length, 2, reason: 'Exakt die 2 übernommenen Artikel müssen im Einkaufsmodus sein');
       expect(updatedStopItems.any((i) => i.id == butter.id), isTrue);
       expect(updatedStopItems.any((i) => i.id == salt.id), isTrue);
+    });
+
+    test('10. AssistClassifier: Alle konfigurierten Gruppen & Varianten existieren im Katalog v0.10', () {
+      final catalog = catalogRepo.catalog!;
+      final allGroupIds = catalog.groups.map((g) => g.id).toSet();
+      final allVariantIds = catalog.variants.map((v) => v.id).toSet();
+
+      expect(AssistClassifier.preferenceGroupIds, isNotEmpty);
+      expect(AssistClassifier.preferenceVariantIds, isNotEmpty);
+
+      for (final groupId in AssistClassifier.preferenceGroupIds) {
+        expect(allGroupIds.contains(groupId), isTrue,
+            reason: 'Gruppe "$groupId" in AssistClassifier.preferenceGroupIds existiert nicht im Katalog');
+      }
+
+      for (final variantId in AssistClassifier.preferenceVariantIds) {
+        expect(allVariantIds.contains(variantId), isTrue,
+            reason: 'Variante "$variantId" in AssistClassifier.preferenceVariantIds existiert nicht im Katalog');
+      }
+    });
+
+    test('11. Preference-Regressionen: Snacks, Saucen, Käse & Spirituosen berechnen 0 Richtwert; Bier/Wein bleiben guided', () async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+
+      // Savory snack: chips
+      final chips = data.allItems.firstWhere((i) => i.id == 'chips');
+      expect(chips.assistType, equals(AssistType.preferenceBased));
+      expect(chips.calculatedPackages, 0, reason: 'Snacks dürfen keine automatische Bedarfsmenge haben');
+      expect(chips.calculatedQuantity, 0.0);
+
+      // Spezielle Würzsauce: bbq_sauce oder sweet_chili
+      final bbqSauce = data.allItems.firstWhere((i) => i.id == 'bbq_sauce');
+      expect(bbqSauce.assistType, equals(AssistType.preferenceBased));
+      expect(bbqSauce.calculatedPackages, 0, reason: 'Spezialsaucen dürfen keine automatische Bedarfsmenge haben');
+      expect(bbqSauce.calculatedQuantity, 0.0);
+
+      // Käse-Präferenzartikel: feta oder parmesan
+      final feta = data.allItems.firstWhere((i) => i.id == 'feta');
+      expect(feta.assistType, equals(AssistType.preferenceBased));
+      expect(feta.calculatedPackages, 0, reason: 'Präferenzkäse darf keine automatische Bedarfsmenge haben');
+      expect(feta.calculatedQuantity, 0.0);
+
+      // Spirituosen / Genussmittel: rum oder gin
+      final rum = data.allItems.firstWhere((i) => i.id == 'rum');
+      expect(rum.assistType, equals(AssistType.preferenceBased));
+      expect(rum.calculatedPackages, 0, reason: 'Spirituosen als Genussmittel dürfen keine automatische Bedarfsmenge haben');
+      expect(rum.calculatedQuantity, 0.0);
+
+      // Abgrenzung Guided: Bier & Wein bleiben guided, da Bedarfsformel nach Trinkgewohnheiten (crewDrinking) greift
+      final beer = data.allItems.firstWhere((i) => i.id.contains('beer'));
+      expect(beer.assistType, equals(AssistType.guided),
+          reason: 'Bier bleibt guided, da über Crew-Trinkgewohnheiten Richtwerte berechnet werden');
+      expect(beer.calculatedPackages, greaterThan(0));
+    });
+
+    testWidgets('12. Kein UI-Bypass: Sowohl Zeilen-Tap als auch Add-Button öffnen AddOrEditItemSheet und adoptieren nicht still', (tester) async {
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final oatsItem = data.allItems.firstWhere((i) => i.id == 'oats_rolled' || i.id.contains('oats'));
+      expect(oatsItem.isOnList, isFalse);
+      expect(oatsItem.isAdopted, isFalse);
+
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // Render die Item-Row isoliert im Navigator
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: Scaffold(
+          body: ShoppingListItemRow(
+            data: data,
+            item: oatsItem,
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // 1. Klick auf den sichtbaren Add-Button ("+")
+      final addBtnFinder = find.byKey(ValueKey('item_add_btn_${oatsItem.item.id}'));
+      expect(addBtnFinder, findsOneWidget);
+      await tester.tap(addBtnFinder);
+      await tester.pumpAndSettle();
+
+      // Öffnet das AddOrEditItemSheet (isAdding: true)
+      expect(find.byType(AddOrEditItemSheet), findsOneWidget);
+      expect(find.byKey(const ValueKey('sheet_primary_action_btn')), findsOneWidget);
+
+      // In der DB wurde der Posten noch NICHT übernommen (kein stiller Bypass!)
+      var dbItem = (await db.listItemDao.getListItemsForTrip(defaultTripId))
+          .firstWhere((it) => it.id == oatsItem.item.id);
+      expect(dbItem.isAdopted, isFalse, reason: 'Tippen auf Add-Button darf nicht sofort still adoptieren');
+
+      // Schließe das Sheet ohne Speichern
+      Navigator.of(tester.element(find.byType(AddOrEditItemSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(find.byType(AddOrEditItemSheet), findsNothing);
+
+      // 2. Klick auf die gesamte Zeile
+      final rowTapFinder = find.byKey(ValueKey('item_tap_${oatsItem.item.id}'));
+      expect(rowTapFinder, findsOneWidget);
+      await tester.tap(rowTapFinder);
+      await tester.pumpAndSettle();
+
+      // Öffnet ebenfalls das AddOrEditItemSheet
+      expect(find.byType(AddOrEditItemSheet), findsOneWidget);
+
+      // In der DB weiterhin nicht übernommen
+      dbItem = (await db.listItemDao.getListItemsForTrip(defaultTripId))
+          .firstWhere((it) => it.id == oatsItem.item.id);
+      expect(dbItem.isAdopted, isFalse, reason: 'Tippen auf Zeile darf nicht sofort still adoptieren');
+    });
+
+    testWidgets('13. Reale Search/Add UI-Journey: Suche -> Treffer -> Sheet -> Packung & Stepper -> Liste -> DB-Persistenz', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // Starte auf dem echten ShoppingListScreen
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: ShoppingListScreen(tripId: defaultTripId),
+      ));
+      await tester.pumpAndSettle();
+
+      // Im Empty State ist der Suchbutton sichtbar
+      final searchBtn = find.byKey(const ValueKey('empty_search_btn'));
+      expect(searchBtn, findsOneWidget);
+      await tester.tap(searchBtn);
+      await tester.pumpAndSettle();
+
+      // Suchleiste ist aktiv
+      final searchInput = find.byType(TextField);
+      expect(searchInput, findsOneWidget);
+      await tester.enterText(searchInput, 'pesto');
+      await tester.pumpAndSettle();
+
+      // Ergebnis "Pesto" in der Suchliste antippen
+      final pestoResult = find.widgetWithText(ListTile, 'Pesto');
+      expect(pestoResult, findsOneWidget);
+      await tester.tap(pestoResult);
+      await tester.pumpAndSettle();
+
+      // AddOrEditItemSheet hat sich geöffnet
+      expect(find.byType(AddOrEditItemSheet), findsOneWidget);
+
+      // Stepper: 2 Gläser wählen (bei Preference startet Menge bei 1)
+      final plusBtn = find.widgetWithIcon(IconButton, Icons.add);
+      expect(plusBtn, findsOneWidget);
+      await tester.tap(plusBtn);
+      await tester.pumpAndSettle();
+
+      // "Auf die Liste" tippen
+      final saveBtn = find.byKey(const ValueKey('sheet_primary_action_btn'));
+      await tester.ensureVisible(saveBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      // Zurück auf dem ShoppingListScreen: Empty State ist verschwunden
+      expect(find.byType(EmptyShoppingListView), findsNothing);
+      // Pesto ist auf der Liste sichtbar
+      expect(find.text('Pesto'), findsOneWidget);
+      expect(find.byType(ShoppingListItemRow), findsOneWidget);
+
+      // DB-Persistenz prüfen
+      final refreshed = await shoppingListService.loadShoppingList(defaultTripId);
+      final persistedPesto = refreshed.allItems.firstWhere((i) => i.id == 'pesto');
+      expect(persistedPesto.isOnList, isTrue);
+      expect(persistedPesto.isAdopted, isTrue);
+      expect(persistedPesto.effectivePackages, 2);
+    });
+
+    test('14. Mengen-Stabilität bei echter Neuberechnung (TripService): Preference, Custom & Overridden Guided überleben Dauer & Crew-Änderung', () async {
+      // 1. Preference item mit expliziter Menge adoptieren (Pesto: 2 Gläser)
+      final initialData = await shoppingListService.loadShoppingList(defaultTripId);
+      final pesto = initialData.allItems.firstWhere((i) => i.id == 'pesto');
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: pesto.item.id, packages: 2);
+
+      // 2. Guided item mit manuellem Override adoptieren (Toastbrot: 5 Packungen)
+      final bread = initialData.allItems.firstWhere((i) => i.id == 'toast_bread' || i.id.contains('bread'));
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: bread.item.id, packages: 5);
+
+      // 3. Custom item anlegen (Bio-Kaffee: 3 Packungen)
+      await shoppingListService.addCustomItem(
+        CustomItemInput(
+          tripId: defaultTripId,
+          name: 'Bio-Kaffee Crema',
+          department: 'getraenke',
+          quantity: 3,
+          unit: 'Pkg',
+        ),
+      );
+
+      // Daten vor Neuberechnung prüfen
+      var beforeRecalc = await shoppingListService.loadShoppingList(defaultTripId);
+      expect(beforeRecalc.allItems.firstWhere((i) => i.id == 'pesto').effectivePackages, 2);
+      expect(beforeRecalc.allItems.firstWhere((i) => i.id == bread.id).effectivePackages, 5);
+      expect(beforeRecalc.allItems.firstWhere((i) => i.name == 'Bio-Kaffee Crema').effectivePackages, 3);
+
+      // 4. Dauer ändern über den echten Produktionspfad `tripService.updateTripDetails()` (führt recalculateTrip aus)
+      await tripService.updateTripDetails(
+        tripId: defaultTripId,
+        daysCount: 14,
+      );
+
+      // 5. Crew erweitern (+2 Personen) und Neuberechnung ausführen
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: defaultTripId,
+        name: 'Zusatz 1',
+        isChild: const Value(false),
+      ));
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: defaultTripId,
+        name: 'Zusatz 2',
+        isChild: const Value(false),
+      ));
+      await tripService.recalculateTrip(defaultTripId);
+
+      // 6. Nach echter Neuberechnung prüfen: Alle 3 Positionen behalten exakt ihre Nutzerwunschmengen!
+      final afterRecalc = await shoppingListService.loadShoppingList(defaultTripId);
+
+      final pestoAfter = afterRecalc.allItems.firstWhere((i) => i.id == 'pesto');
+      expect(pestoAfter.isOnList, isTrue);
+      expect(pestoAfter.effectivePackages, 2, reason: 'Preference-Menge (Pesto 2 Gläser) muss Neuberechnung überleben');
+
+      final breadAfter = afterRecalc.allItems.firstWhere((i) => i.id == bread.id);
+      expect(breadAfter.isOnList, isTrue);
+      expect(breadAfter.effectivePackages, 5, reason: 'Überschriebene Guided-Menge (Brot 5 Pkg) muss Neuberechnung überleben');
+
+      final coffeeAfter = afterRecalc.allItems.firstWhere((i) => i.name == 'Bio-Kaffee Crema');
+      expect(coffeeAfter.isOnList, isTrue);
+      expect(coffeeAfter.effectivePackages, 3, reason: 'Custom Item (Kaffee 3 Pkg) muss Neuberechnung überleben');
+    });
+
+    testWidgets('15. ShoppingModeScreen: Reale Bildschirm-Isolation zeigt nur übernommene & eigene Artikel', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // 1. Posten vorbereiten: 1 Katalog-Posten übernommen, 1 Custom Item angelegt, Rest unadoptiert
+      final initialData = await shoppingListService.loadShoppingList(defaultTripId);
+      final spaghetti = initialData.allItems.firstWhere((i) => i.id == 'spaghetti');
+      await shoppingListService.adoptItem(tripId: defaultTripId, listItemId: spaghetti.item.id, packages: 2);
+
+      await shoppingListService.addCustomItem(
+        CustomItemInput(
+          tripId: defaultTripId,
+          name: 'Bord-Gin Flasche',
+          department: 'getraenke',
+          quantity: 1,
+          unit: 'Flasche',
+        ),
+      );
+
+      final stopId = initialData.stops.first.id;
+
+      // 2. Rendere den echten ShoppingModeScreen
+      await tester.pumpWidget(buildAppWithOverrides(
+        home: ShoppingModeScreen(tripId: defaultTripId, stopId: stopId),
+      ));
+      await tester.pumpAndSettle();
+
+      // 3. Übernommener Katalogartikel & Custom Item sind sichtbar
+      expect(find.textContaining('Spaghetti'), findsOneWidget);
+      expect(find.textContaining('Bord-Gin Flasche'), findsOneWidget);
+
+      // 4. Nicht übernommene Katalog-Kandidaten (z. B. Butter, Salz, Milch) sind NICHT im Einkaufsmodus sichtbar
+      expect(find.textContaining('Butter'), findsNothing);
+      expect(find.textContaining('Salz'), findsNothing);
+      expect(find.textContaining('Vollmilch'), findsNothing);
     });
   });
 }

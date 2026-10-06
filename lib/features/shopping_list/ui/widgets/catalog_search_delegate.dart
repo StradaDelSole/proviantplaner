@@ -11,10 +11,14 @@ import 'custom_item_sheet.dart';
 
 class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
   final TripShoppingListData data;
+  final BuildContext? parentContext;
   final String? _customSearchFieldLabel;
 
-  CatalogSearchDelegate({required this.data, String? searchFieldLabel})
-      : _customSearchFieldLabel = searchFieldLabel;
+  CatalogSearchDelegate({
+    required this.data,
+    this.parentContext,
+    String? searchFieldLabel,
+  }) : _customSearchFieldLabel = searchFieldLabel;
 
   @override
   String? get searchFieldLabel => _customSearchFieldLabel;
@@ -145,13 +149,18 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500),
             ),
             onTap: () {
+              final targetContext = parentContext ?? context;
               close(context, null);
-              CustomItemSheet.show(
-                context,
-                tripId: data.trip.id,
-                stops: data.stops,
-                initialName: query.trim(),
-              );
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (targetContext.mounted) {
+                  CustomItemSheet.show(
+                    targetContext,
+                    tripId: data.trip.id,
+                    stops: data.stops,
+                    initialName: query.trim(),
+                  );
+                }
+              });
             },
           );
         }
@@ -175,13 +184,18 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 22)
               : Icon(Icons.add_circle_outline, color: theme.colorScheme.primary, size: 22),
           onTap: () {
+            final targetContext = parentContext ?? context;
             close(context, it);
-            AddOrEditItemSheet.show(
-              context,
-              data: data,
-              item: it,
-              isAdding: !it.isOnList,
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (targetContext.mounted) {
+                AddOrEditItemSheet.show(
+                  targetContext,
+                  data: data,
+                  item: it,
+                  isAdding: !it.isOnList,
+                );
+              }
+            });
           },
         );
       },

@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-06 – Slice PIVOT1: Review Amendment (Findings A–E / Issue #10)
+
+- **Finding A (Katalog-Validierung & Härtung AssistClassifier):**
+  - Alle nicht im Katalog existierenden Dummy-Gruppen (`snacks`, `sauces_special`) entfernt.
+  - Reale Gruppen-IDs (`savory_snacks`, `sweets`, `spread_sweet`, `spread_savory`, `spirits`) und Varianten-IDs (`pesto`, `sauce_jar`, `tofu`, `bbq_sauce`, `sweet_chili`, `tabasco`, `soy_sauce`, `brie`, `feta`, `mozzarella`, `parmesan`) kanonisch gemappt.
+  - Spirituosen als reine Genussmittel-Preference deklariert (0 Richtwert); Bier und Wein verbleiben als guided mit profilbasierten Richtwerten nach Trinkgewohnheiten (`crewDrinking`).
+  - Automatischer Katalog-Validierungstest hinzugefügt (100% aller konfigurierten IDs existieren im Katalog).
+  - Umfassende Regressionstests für Snacks, Saucen, Käse und Spirituosen hinzugefügt.
+- **Finding B (Beseitigung UI-Bypass):**
+  - Direkter `adoptItem`-Aufruf aus dem sichtbaren Aktionsbutton in `ShoppingListItemRow` entfernt.
+  - Sowohl Zeilen-Tap als auch Add-Button öffnen nun zwingend `AddOrEditItemSheet(isAdding: true)` für bewusste Packungs- und Mengenauswahl vor DB-Persistenz.
+- **Finding C (Reale Search/Add UI-Journey):**
+  - Vollständige End-to-End-UI-Journey über `ShoppingListScreen` Empty State Button -> Suche -> Auswahl -> Sheet -> Packungs-/Mengenauswahl -> Übernahme -> DB-Persistenz verifiziert.
+  - `CatalogSearchDelegate` verwendet `parentContext` und `addPostFrameCallback` für saubere Sheet-Öffnung nach Route-Pop.
+- **Finding D (Mengen-Stabilität bei echter Neuberechnung):**
+  - Härtung des Stabilitäts-Tests gegen realen Produktionspfad `tripService.updateTripDetails()` (Dauer-Änderung) und `tripService.recalculateTrip()` (Crew-Erweiterung) für Preference-Items, Custom-Items und manuell überschriebene Guided-Items.
+- **Finding E (Echte ShoppingModeScreen Bildschirm-Isolation):**
+  - Dedizierter Widget-Test auf dem realen `ShoppingModeScreen` beweist, dass nur übernommene Artikel und Custom-Items sichtbar sind, während nicht übernommene Kandidaten ausgeblendet bleiben.
+- **Qualitätsprüfung:**
+  - `flutter analyze`: 0 Fehler, 0 Warnungen, 0 Lints.
+  - `flutter test`: 261/261 Tests bestanden (100% grün).
+
 ## 2026-10-06 – Slice PIVOT1: Assisted List Core (Issue #10)
 
 - **Search-First Empty State:**

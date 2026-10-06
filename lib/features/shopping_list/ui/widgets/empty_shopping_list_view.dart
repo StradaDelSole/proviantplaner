@@ -47,11 +47,13 @@ class EmptyShoppingListView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton.icon(
+              key: const ValueKey('empty_search_btn'),
               onPressed: () {
                 showSearch(
                   context: context,
                   delegate: CatalogSearchDelegate(
                     data: data,
+                    parentContext: context,
                     searchFieldLabel: l10n.searchCatalogPlaceholder,
                   ),
                 );

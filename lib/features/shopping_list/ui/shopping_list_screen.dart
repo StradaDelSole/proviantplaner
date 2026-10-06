@@ -76,6 +76,7 @@ class ShoppingListScreen extends ConsumerWidget {
                   context: context,
                   delegate: CatalogSearchDelegate(
                     data: data,
+                    parentContext: context,
                     searchFieldLabel: l10n.searchCatalogPlaceholder,
                   ),
                 );
@@ -246,6 +247,7 @@ class ShoppingListScreen extends ConsumerWidget {
               context: context,
               delegate: CatalogSearchDelegate(
                 data: data,
+                parentContext: context,
                 searchFieldLabel: l10n.searchCatalogPlaceholder,
               ),
             );

@@ -130,6 +130,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                                 context: context,
                                 delegate: CatalogSearchDelegate(
                                   data: widget.data,
+                                  parentContext: context,
                                   searchFieldLabel: l10n.searchCatalogPlaceholder,
                                 ),
                               );
