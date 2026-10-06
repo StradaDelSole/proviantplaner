@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-A Owner Acceptance
+
+- PIVOT3-A – Boat/Profile Foundation ausdrücklich vom Product Owner abgenommen.
+- Verifizierter Implementierungs-/Amendment-HEAD: `7cb1eca06ad12617e091adcd62fdfb212acf0293`.
+- Finaler unabhängiger Review: `docs/impl/PIVOT3A_acceptance_review_2026-10-06.md`.
+- Owner-Acceptance-Dokument: `docs/impl/PIVOT3A_owner_acceptance_2026-10-06.md`.
+- Findings A–D aus dem ersten Review gelten als geschlossen.
+- Verifizierter QA-Stand: 13 reale PIVOT3-A-Akzeptanztests; reale v6→v7-Migration; Backup-v2-ID-Remapping; v1→v7-Restore; GitHub Actions Flutter + Backend grün; dokumentierte Flutter-Suite 279/279.
+- Issue #24 wird als abgeschlossen geführt.
+- Diese Acceptance gibt PIVOT3-B oder einen anderen Folgeslice nicht automatisch frei.
+
+
 ## 2026-10-06 – PIVOT3-A Final Independent Acceptance Review
 
 - Reviewed amendment HEAD: `7cb1eca06ad12617e091adcd62fdfb212acf0293`.
