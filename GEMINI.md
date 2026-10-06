@@ -11,23 +11,51 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.5 | 25.09.2026 | Regel 8: keine Eigenbauten von Standards; freigegebene Pakete; Abnahme nur mit echtem Nachweis |
 | v0.6 | 25.09.2026 | Regel 9: keine Behauptung von Handlungen, die Gemini nicht selbst ausführt; Art des Nachweises je Kriterium; Regel 10: nichts aus späteren Versionen sichtbar bauen |
 | v0.7 | 26.09.2026 | Backend-Regeln (TypeScript, Cloudflare, Geheimnisse, kein Deployment); Freigabe B0–B5 |
+| v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; aktuell nur PIVOT3-A freigegeben; Review-STOP nach Slice; Bootsprofil-Scope ausdrücklich erlaubt |
 
 ## Aktueller Status
 
-Nur Slices bearbeiten, die im README unter "Freigegeben für Gemini" stehen. Aktuell: FB2-A, FB2-B, B0, B1, B2, S9, S10-T (Reihenfolge laut README). B3–B5 nicht umsetzen. FEEDBACK_R2 v0.3 hat Vorrang vor PRD, UX-Konzept und Design-Brief. Das UX-Konzept hat Vorrang vor dem Design-Brief bei Informationsarchitektur, Bildschirmen, Bedienmustern und Begriffen; Tokens, Farben, Schriften, Nachtwache und Barrierefreiheit aus dem Design-Brief bleiben gültig. Rechenlogik, Datenmodell (außer ausdrücklich genannt) und Bordkassen-Logik nicht verändern. Nach jedem Slice muss `git status` sauber sein. Für alle Oberflächen gelten docs/design/DESIGN_BRIEF_v0.5.md und die Mockups.
-Mengen sind vorläufig (nur aus den JSON-Dateien lesen), die Oberfläche ist vorläufig bis zu den Mockups.
+Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
+
+Aktuell ist ausschließlich freigegeben:
+- **PIVOT3-A – Boat/Profile Foundation**, Issue #24
+- Plan: `docs/impl/PIVOT3A_plan.md`
+- Reconciliation/Release: `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
+
+Nach Abschluss von PIVOT3-A: **STOP für unabhängigen Review / Owner Acceptance.**
+
+Nicht freigegeben:
+- PIVOT3-B (#25)
+- PIVOT2
+- UX-D (#21)
+- GUEST1 (#22)
+- RECEIPT1 (#23)
+- CAT1
+- B3/B4/B5
+- Store-Publikation
+
+Ältere Statusangaben in historischen PRD-/SLICES-Dokumenten sind keine aktuelle Implementierungsfreigabe. Die aktuelle Release-/Gate-Wahrheit steht in README + den neuesten ausdrücklich owner-accepted Reconciliation-/Acceptance-Dokumenten.
+
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
 ## Quelle der Wahrheit
 
-Es gilt jeweils die Datei mit der HÖCHSTEN Versionsnummer:
+Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 
-1. `docs/PRD_vX.Y.md` – WAS gebaut wird
-2. `docs/SLICES_vX.Y.md` – Reihenfolge, Umfang und Abnahmekriterien je Slice
-3. `data/catalog_vX.Y.json` und `data/quantities_vX.Y.json` – alle Mengen, Profile, Regeln
-4. `docs/design/DESIGN_BRIEF_vX.Y.md` (verbindliche Designregeln) und `docs/design/mockups/` (Vorlage für Layout; Texte daraus nie wörtlich übernehmen) – Gestaltung
+1. `README.md` – aktueller Release-/Gate-Status.
+2. Neueste ausdrücklich **OWNER-ACCEPTED** Reconciliation-, Product- und UX-Dokumente, insbesondere aktuell:
+   - `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
+   - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
+   - `docs/design/PROVY_UX_DIRECTION_v0.5.md`
+   - `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`
+   - `docs/design/PROVY_UX_WIREFRAMES_v0.2.md`
+3. Der aktuelle freigegebene Slice-Plan in `docs/impl/`.
+4. `docs/PRD_vX.Y.md` als historische Produkt-Baseline, soweit nicht durch neuere Owner-Entscheidungen supersediert.
+5. `docs/SLICES_vX.Y.md` soweit seine Reihenfolge/Scope nicht durch neuere Reconciliation supersediert wurde.
+6. `data/catalog_vX.Y.json` und `data/quantities_vX.Y.json` für datengetriebene Mengen/Profile/Regeln.
+7. Design-Brief/Mockups für nicht durch neuere UX-Entscheidungen ersetzte visuelle Details.
 
-Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind unklar oder widersprüchlich? Dann NICHT raten, sondern stoppen und nachfragen.
+Code und Dokumente widersprechen sich? Zuerst gegen diese Hierarchie reconciliieren. Dokumente sind innerhalb derselben Prioritätsstufe unklar oder widersprüchlich? Dann NICHT raten, sondern Stoppregel anwenden.
 
 ## Wiederaufnahme nach Unterbrechung (Kontingent, Absturz, neue Sitzung)
 
@@ -36,20 +64,18 @@ Code und Dokumente widersprechen sich? Dann gelten die Dokumente. Dokumente sind
 3. Der nächste Slice ist der erste in der Freigabe-Reihenfolge des README, für den es noch keinen `docs/impl/<Slice>_bericht.md` gibt.
 4. Im Bericht vermerken: "Wiederaufnahme nach Unterbrechung am <Datum>".
 
-## Pflichtablauf: Durchlauf-Modus
+## Pflichtablauf: Review-gated Post-Pivot-Slices
 
-Alle freigegebenen Slices werden der Reihe nach abgearbeitet (S0, S1, S2 …), ohne auf eine Freigabe pro Plan zu warten. Das Review erfolgt am Ende gesammelt; Korrekturen kommen danach als Nachtrag.
+Für aktuell und künftig explizit review-gegatete Slices gilt:
 
-Pro Slice:
+1. `git status` prüfen, `git pull --rebase`, dann README, GEMINI.md, Reconciliation und den freigegebenen Slice-Plan vollständig lesen.
+2. Nur den **einen ausdrücklich freigegebenen Slice** umsetzen.
+3. Prüfen: `flutter analyze` ohne Fehler und vollständige relevante `flutter test`-Suite grün.
+4. `CHANGELOG.md` ergänzen und Abschlussbericht in `docs/impl/<Slice>_bericht.md` ablegen.
+5. Nur bei grünem Stand: vor Push erneut `git pull --rebase`, dann committen und auf `main` pushen.
+6. Danach **STOP**. Kein Folgeslice wird automatisch freigegeben. Erst unabhängiger Review + ausdrückliche Owner Acceptance + README-Release erlauben den nächsten Slice.
 
-1. Den Abschnitt des Slices im Slice-Plan lesen, Plan kurz in `docs/impl/S<Nr>_plan.md` festhalten (betroffene Dateien, Vorgehen, Prüfung der Abnahmekriterien). Nur dieser Ordner `docs/impl/` darf unter `docs/` beschrieben werden.
-2. Umsetzen – ausschließlich diesen Slice.
-3. Prüfen: `flutter analyze` ohne Fehler, `flutter test` grün.
-4. `CHANGELOG.md` ergänzen und den Abschlussbericht (Format unten) in `docs/impl/S<Nr>_bericht.md` ablegen.
-5. Nur wenn Analyse und Tests grün sind: committen mit `S<Nr>: <kurze Beschreibung>` und `git push` auf `main`.
-6. Mit dem nächsten freigegebenen Slice weitermachen.
-
-Greift eine Stoppregel, wird der Durchlauf beendet: Stand committen und pushen nur, wenn Analyse und Tests grün sind; sonst nichts pushen und berichten.
+Historische Durchlauf-Modus-Anweisungen in älteren Session-Prompts gelten für diese post-Pivot-Slices nicht mehr.
 
 ## Darf
 
@@ -67,7 +93,7 @@ Greift eine Stoppregel, wird der Durchlauf beendet: Stand committen und pushen n
 - Keine Pakete außerhalb der Leitplanken ohne ausdrückliche Freigabe hinzufügen
 - Keine bestehenden Dateien löschen oder umbenennen, die nicht zum aktuellen Slice gehören
 - Keine Mengen, Faktoren oder Texte hart in den Code schreiben: Mengen aus den JSON-Dateien, Texte über die Sprachdateien (ARB), Farben/Abstände/Schriften aus dem zentralen Theme
-- Keine Bootsinhalte, keine Push-Nachrichten, keine Werbung, keine Analyse- oder Tracking-SDKs
+- Keine allgemeinen Bootsinhalte/Marketplace-/Logbuch-/Wartungsfeatures, keine Push-Nachrichten, keine Werbung, keine Analyse- oder Tracking-SDKs. **Ausdrücklich freigegebene Provy-relevante Bootsprofil-Daten im PIVOT3-Scope sind erlaubt.**
 - Keine vorausgewählte Einwilligungs-Checkbox
 - Keine Zahlungsabwicklung (nur QR-Codes und Links)
 - Keine Zugangsdaten, API-Schlüssel, Tokens oder IBANs in Code oder Repo
