@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B Final Independent Acceptance Review
+
+- Reviewed amendment HEAD: `b19e1736a2d5c7fa26836bb35d014ff46a6706e1`.
+- Canonical review: `docs/impl/PIVOT3B_acceptance_review_2026-10-06.md`.
+- Result: **READY FOR OWNER ACCEPTANCE**.
+- Findings A–D from the first PIVOT3-B review are verified closed.
+- Nullable Trip boat snapshot fields are explicitly clearable without mutating the linked BoatProfile.
+- Real UI-path tests verified for Watermaker toggle and explicit BoatProfile resync.
+- Deterministic crew-size recalculation and PIVOT1 override/adoption stability are verified.
+- Canonical water cases now assert fixed expected values.
+- GitHub Actions on amendment HEAD: **Flutter Analyze & Test SUCCESS** and **Backend Typecheck & Vitest SUCCESS**.
+- Implementation report records **302/302** Flutter tests green, including **23** dedicated PIVOT3-B tests.
+- PIVOT3-B remains not owner-accepted until explicit Product Owner acceptance; no later slice is released.
+
+
 ## 2026-10-06 – PIVOT3-B Review Amendment (Issues #25, #4, #5, #6)
 
 - **Finding A (Löschbare Trip-Bootsfelder im Trip-Edit):**
