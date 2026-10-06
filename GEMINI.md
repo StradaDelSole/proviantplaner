@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.7
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.9
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -11,21 +11,23 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.5 | 25.09.2026 | Regel 8: keine Eigenbauten von Standards; freigegebene Pakete; Abnahme nur mit echtem Nachweis |
 | v0.6 | 25.09.2026 | Regel 9: keine Behauptung von Handlungen, die Gemini nicht selbst ausführt; Art des Nachweises je Kriterium; Regel 10: nichts aus späteren Versionen sichtbar bauen |
 | v0.7 | 26.09.2026 | Backend-Regeln (TypeScript, Cloudflare, Geheimnisse, kein Deployment); Freigabe B0–B5 |
-| v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; aktuell nur PIVOT3-A freigegeben; Review-STOP nach Slice; Bootsprofil-Scope ausdrücklich erlaubt |
+| v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; PIVOT3-A Review-Gate; Bootsprofil-Scope ausdrücklich erlaubt |
+| v0.9 | 06.10.2026 | PIVOT3-A owner-accepted; aktuell ausschließlich PIVOT3-B freigegeben; verbindliche Crew-/Watermaker-Reconciliation |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
 Aktuell ist ausschließlich freigegeben:
-- **PIVOT3-A – Boat/Profile Foundation**, Issue #24
-- Plan: `docs/impl/PIVOT3A_plan.md`
-- Reconciliation/Release: `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
+- **PIVOT3-B – Setup Integration & Water Logic**, Issue #25
+- Plan: `docs/impl/PIVOT3B_plan.md`
+- Release/Reconciliation: `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
 
-Nach Abschluss von PIVOT3-A: **STOP für unabhängigen Review / Owner Acceptance.**
+PIVOT3-A ist **OWNER-ACCEPTED / COMPLETE**.
+
+Nach Abschluss von PIVOT3-B: **STOP für unabhängigen Review / Owner Acceptance.**
 
 Nicht freigegeben:
-- PIVOT3-B (#25)
 - PIVOT2
 - UX-D (#21)
 - GUEST1 (#22)
@@ -45,6 +47,7 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 1. `README.md` – aktueller Release-/Gate-Status.
 2. Neueste ausdrücklich **OWNER-ACCEPTED** Reconciliation-, Product- und UX-Dokumente, insbesondere aktuell:
    - `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
+   - `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
    - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
    - `docs/design/PROVY_UX_DIRECTION_v0.5.md`
    - `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`
