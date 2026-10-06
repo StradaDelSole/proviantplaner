@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3 Reconciliation / PIVOT3-A Release
+
+- Owner-accepted Rebase der Implementierungsreihenfolge: **PIVOT3-A → PIVOT3-B → PIVOT2**.
+- Begründung: PIVOT2 benötigt stabile Boot-/Tank-/Watermaker-Semantik; diese Grundlage fehlt vor PIVOT3.
+- PIVOT3 wurde risikokontrolliert geteilt:
+  - **PIVOT3-A – Boat/Profile Foundation**: Datenmodell, Trip-Snapshot-Semantik, Drift-Migration, CRUD/Services, Backup/Restore.
+  - **PIVOT3-B – Setup Integration & Water Logic**: sichtbare Profil-UX, Crew-Bug #4, Watermaker #5 und Quantity-Integration.
+- Canonical decision: `docs/impl/PIVOT3_reconciliation_2026-10-06.md`.
+- PIVOT3-A Plan: `docs/impl/PIVOT3A_plan.md`; Issue #24.
+- PIVOT3-B Plan: `docs/impl/PIVOT3B_plan.md`; Issue #25.
+- **Nur PIVOT3-A ist zur Implementierung freigegeben.**
+- PIVOT3-B, PIVOT2, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 und Store-Publikation bleiben gegatet.
+
+
 ## 2026-10-06 – PIVOT1 Owner Acceptance
 
 - PIVOT1 – Assisted List Core ausdrücklich vom Product Owner abgenommen.
