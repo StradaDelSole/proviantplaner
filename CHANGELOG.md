@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B Release
+
+- PIVOT3-A ist OWNER-ACCEPTED / COMPLETE; alle PIVOT3-B Start-Gates sind erfüllt.
+- **PIVOT3-B – Setup Integration & Water Logic (Issue #25) ist der einzige aktuell freigegebene Implementierungsslice.**
+- Canonical release reconciliation: `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`.
+- PIVOT3-B Plan auf `OWNER-ACCEPTED / IMPLEMENTATION RELEASED` aktualisiert.
+- Crew-Reconciliation:
+  - Minimum 1 Person.
+  - Wizard startet nicht mehr mit fünf festen Platzhaltern.
+  - kein neues `crewCount`-DB-Feld / kein Schema v8 nur für den Bugfix.
+- Watermaker-Reconciliation:
+  - kein erfundenes l/Tag-Leistungsfeld.
+  - Boolean bedeutet im v1-Scope explizit bestätigte betriebsbereite laufende Trinkwasserquelle.
+  - bei Watermaker bleibt die bestehende datengetriebene Flaschen-Notreserve von 1,5 l pro Person bestehen; Ergebnis nie 0.
+  - ohne Watermaker bleibt die bestehende Tanklogik unverändert.
+  - `data/quantities_v0.6.json` bleibt unverändert.
+- Issues #4, #5 und #6 auf den freigegebenen PIVOT3-B-Scope verknüpft.
+- `GEMINI.md` auf v0.9 / PIVOT3-B-Gating umgestellt.
+- neuer Session-Startprompt: `docs/PROMPT_SESSION_START_v0.4.md`.
+- PIVOT2, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 und Store-Publikation bleiben gegatet.
+
+
 ## 2026-10-06 – PIVOT3-A Owner Acceptance
 
 - PIVOT3-A – Boat/Profile Foundation ausdrücklich vom Product Owner abgenommen.
