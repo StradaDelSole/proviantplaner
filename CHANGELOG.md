@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-06 – FIX-B Independent Review: Amendment Required
+
+- Reviewed implementation HEAD: `e8290f2d43fbf60ce375bca162d4b6aa95af532e`.
+- Canonical review: `docs/impl/FIXB_review_2026-10-06.md`.
+- Core Unified Ledger is retained and mathematically verified for the canonical mixed case.
+- **Blocking:** Crew deletion can still mutate/delete financial history through FK behavior.
+- **Blocking:** custom-split member IDs/sum/sign are not fully validated.
+- **Blocking:** backup restore does not remap custom-split CrewMember IDs.
+- **Blocking:** mixed currencies can still be silently summed/coerced; FIX-B remains single-currency only.
+- **Blocking:** Settlement PDF still computes cash as deposits minus all expenses instead of unified-ledger kitty cash.
+- **Blocking UX:** ledger validation failures currently render as "Trip not found".
+- Treasurer resolution/routing are accepted; no redesign required.
+- Only the narrow FIX-B review amendment is released. PIVOT2 remains ON HOLD.
+
+
 ## 2026-10-06 – FIX-B Unified Settlement Ledger Implementation Completed
 
 - **FIX-B – Unified Settlement Ledger (Issue #27) vollständig implementiert.**
