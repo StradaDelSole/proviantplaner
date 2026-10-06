@@ -1108,6 +1108,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
 
   Future<void> _showEditTripDialog(BuildContext context, AppLocalizations l10n) async {
     final nameCtrl = TextEditingController(text: _trip!.name);
+    final boatNameCtrl = TextEditingController(text: _trip!.boatName ?? '');
+    final boatManufacturerCtrl = TextEditingController(text: _trip!.boatManufacturer ?? '');
+    final boatModelCtrl = TextEditingController(text: _trip!.boatModel ?? '');
     DateTime selectedDate = _trip!.startDate;
     int daysCount = _trip!.daysCount;
     int lunchCount = _days.where((d) => d.lunchRestaurant).length;
@@ -1117,6 +1120,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     int freezerCapacity = _trip!.freezerCapacity;
     int waterTankLiters = _trip!.waterTankLiters;
     bool isWaterTankDrinkable = _trip!.isWaterTankDrinkable;
+    bool hasWatermaker = _trip!.hasWatermaker;
 
     final fridgeCtrl = TextEditingController(text: fridgeCapacity.toString());
     final freezerCtrl = TextEditingController(text: freezerCapacity.toString());
@@ -1126,24 +1130,26 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) {
-          final theme = Theme.of(ctx);
-          return DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.85,
-            maxChildSize: 0.95,
-            minChildSize: 0.5,
-            builder: (ctx, scrollController) => Padding(
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.95,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (ctx, scrollController) => StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final theme = Theme.of(ctx);
+            return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(ctx).viewInsets.bottom,
                 left: 16,
                 right: 16,
                 top: 16,
               ),
-              child: ListView(
+              child: SingleChildScrollView(
                 controller: scrollController,
-                children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1264,10 +1270,108 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   ),
                   const Divider(),
                   Text(
-                    l10n.coolingAndWaterCapacities,
+                    l10n.boatSectionTitle,
                     style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary),
                   ),
                   const SizedBox(height: 8),
+                  if (_trip!.boatProfileId != null) ...[
+                    Card(
+                      elevation: 0,
+                      color: theme.colorScheme.surfaceContainerLowest,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: theme.colorScheme.outlineVariant),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.directions_boat_outlined, color: theme.colorScheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l10n.linkedBoatProfile,
+                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.sync, size: 16),
+                              label: Text(l10n.resyncBoatProfile),
+                              onPressed: () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: ctx,
+                                  builder: (c) => AlertDialog(
+                                    title: Text(l10n.resyncBoatProfile),
+                                    content: Text(l10n.resyncBoatProfileConfirm),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(c).pop(false),
+                                        child: Text(l10n.cancel),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.of(c).pop(true),
+                                        child: Text(l10n.save),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed == true) {
+                                  final ok = await ref.read(tripServiceProvider).resyncTripBoatProfile(widget.tripId);
+                                  if (ok) {
+                                    await _loadTripDetails();
+                                    setSheetState(() {
+                                      boatNameCtrl.text = _trip!.boatName ?? '';
+                                      boatManufacturerCtrl.text = _trip!.boatManufacturer ?? '';
+                                      boatModelCtrl.text = _trip!.boatModel ?? '';
+                                      fridgeCapacity = _trip!.fridgeCapacity;
+                                      fridgeCtrl.text = fridgeCapacity.toString();
+                                      hasFreezer = _trip!.hasFreezer;
+                                      freezerCapacity = _trip!.freezerCapacity;
+                                      freezerCtrl.text = freezerCapacity.toString();
+                                      waterTankLiters = _trip!.waterTankLiters;
+                                      waterCtrl.text = waterTankLiters.toString();
+                                      isWaterTankDrinkable = _trip!.isWaterTankDrinkable;
+                                      hasWatermaker = _trip!.hasWatermaker;
+                                    });
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text(l10n.resyncSuccess)),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextField(
+                    controller: boatNameCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.boatName,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: boatManufacturerCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.boatManufacturer,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: boatModelCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.boatModel,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: fridgeCtrl,
                     keyboardType: TextInputType.number,
@@ -1310,6 +1414,14 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     subtitle: Text(l10n.waterTankDrinkableSubtitle),
                     value: isWaterTankDrinkable,
                     onChanged: (val) => setSheetState(() => isWaterTankDrinkable = val),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.hasWatermaker),
+                    subtitle: Text(l10n.hasWatermakerSubtitle),
+                    value: hasWatermaker,
+                    onChanged: (val) => setSheetState(() => hasWatermaker = val),
                   ),
                   const Divider(),
                   Row(
@@ -1369,6 +1481,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   FilledButton(
                     onPressed: () async {
                       final newName = nameCtrl.text.trim();
+                      final newBoatName = boatNameCtrl.text.trim();
+                      final newBoatManufacturer = boatManufacturerCtrl.text.trim();
+                      final newBoatModel = boatModelCtrl.text.trim();
                       final parsedFridge = int.tryParse(fridgeCtrl.text.trim()) ?? fridgeCapacity;
                       final parsedFreezer = int.tryParse(freezerCtrl.text.trim()) ?? freezerCapacity;
                       final parsedWater = int.tryParse(waterCtrl.text.trim()) ?? waterTankLiters;
@@ -1386,6 +1501,10 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         isWaterTankDrinkable: isWaterTankDrinkable,
                         restaurantLunches: lunchCount,
                         restaurantDinners: dinnerCount,
+                        boatName: newBoatName.isNotEmpty ? newBoatName : null,
+                        boatManufacturer: newBoatManufacturer.isNotEmpty ? newBoatManufacturer : null,
+                        boatModel: newBoatModel.isNotEmpty ? newBoatModel : null,
+                        hasWatermaker: hasWatermaker,
                       );
                       if (ctx.mounted) Navigator.of(ctx).pop();
                       if (mounted) _loadTripDetails();
@@ -1393,11 +1512,12 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     child: Text(l10n.save),
                   ),
                   const SizedBox(height: 16),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

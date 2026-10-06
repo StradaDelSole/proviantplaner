@@ -190,8 +190,9 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('1. Törn'), findsOneWidget);
-        expect(find.text('2. Crew (5)'), findsOneWidget);
-        expect(find.text('3. Essen an Bord'), findsOneWidget);
+        expect(find.text('2. Boot'), findsOneWidget);
+        expect(find.text('3. Crew (1)'), findsOneWidget);
+        expect(find.text('4. Essen an Bord'), findsOneWidget);
 
         // Prüfe Tippflächen von '+ Person hinzufügen' >= 48 dp
         final addPersonBtnFinder = find.ancestor(

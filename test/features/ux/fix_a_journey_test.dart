@@ -202,7 +202,8 @@ void main() {
 
       // Verify wizard title and sections
       expect(find.text('1. Törn'), findsOneWidget);
-      expect(find.text('2. Crew (5)'), findsOneWidget);
+      expect(find.text('2. Boot'), findsOneWidget);
+      expect(find.text('3. Crew (1)'), findsOneWidget);
 
       // Tap submit button to create trip
       final createButton = find.byKey(const Key('wizard_submit_trip_button'));
@@ -625,8 +626,9 @@ void main() {
       // English titles must be present
       expect(find.text('New Trip'), findsOneWidget);
       expect(find.text('1. Trip'), findsOneWidget);
-      expect(find.text('2. Crew (5)'), findsOneWidget);
-      expect(find.text('3. Food on Board'), findsOneWidget);
+      expect(find.text('2. Boat'), findsOneWidget);
+      expect(find.text('3. Crew (1)'), findsOneWidget);
+      expect(find.text('4. Food on Board'), findsOneWidget);
       expect(find.text('Create Trip'), findsOneWidget);
 
       // German residue strings must be absent

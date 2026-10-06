@@ -146,6 +146,7 @@ class QuantityCalculationInput {
   final double? freezerCapacityLiters;
   final double? waterTankLiters;
   final bool isWaterTankDrinkable;
+  final bool hasWatermaker;
   final int? daysUntilNextStop;
   final int currentStopDayNumber;
   final CrewAppetite crewAppetite;
@@ -164,6 +165,7 @@ class QuantityCalculationInput {
     this.freezerCapacityLiters,
     this.waterTankLiters,
     this.isWaterTankDrinkable = false,
+    this.hasWatermaker = false,
     this.daysUntilNextStop,
     this.currentStopDayNumber = 1,
     required this.crewAppetite,
@@ -483,11 +485,14 @@ class QuantityEngine {
         final dailyAmount = waterConfig?.defaultValue ?? need.amount;
         rawAmount = dailyAmount * effectiveDays * factorSum;
 
-        // Bordtank Trinkwasser (FEEDBACK_R2 v0.3 Punkt 6):
-        if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
+        // Bordtank Trinkwasser & Watermaker (PIVOT3-B, FEEDBACK_R2 v0.3 Punkt 6):
+        final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
+        final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
+
+        if (input.hasWatermaker) {
+          rawAmount = minReserve;
+        } else if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
           final tankLiters = input.waterTankLiters!;
-          final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
-          final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
           final afterTank = rawAmount - tankLiters;
           rawAmount = afterTank > minReserve ? afterTank : minReserve;
         }

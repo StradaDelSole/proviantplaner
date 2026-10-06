@@ -173,6 +173,7 @@ class ShoppingListService {
           freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
           waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
           isWaterTankDrinkable: trip.isWaterTankDrinkable,
+          hasWatermaker: trip.hasWatermaker,
           crewAppetite: trip.appetite,
           crewReserve: trip.reserveDays == 'all_anchoring_days',
           crewDrinking: trip.drinkingHabit,

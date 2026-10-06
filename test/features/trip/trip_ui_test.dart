@@ -72,12 +72,14 @@ void main() {
       expect(find.text('Törn Kroatien'), findsOneWidget);
 
       // Sektion 2
-      expect(find.text('2. Crew (5)'), findsOneWidget);
-      expect(find.text('Skipper'), findsOneWidget);
-      expect(find.text('Gast 2'), findsOneWidget);
+      expect(find.text('2. Boot'), findsOneWidget);
 
       // Sektion 3
-      expect(find.text('3. Essen an Bord'), findsOneWidget);
+      expect(find.text('3. Crew (1)'), findsOneWidget);
+      expect(find.text('Skipper'), findsOneWidget);
+
+      // Sektion 4
+      expect(find.text('4. Essen an Bord'), findsOneWidget);
       expect(find.text('Wie isst eure Crew?'), findsOneWidget);
 
       // Aktions-Button unten

@@ -1,4 +1,4 @@
-/// Einzelschirm mit drei aufklappenden Abschnitten zum Anlegen eines Törns (UX-A, UX-Konzept 2.2).
+/// Einzelschirm mit vier aufklappenden Abschnitten zum Anlegen eines Törns (PIVOT3-B, UX-Konzept 2.2).
 library;
 
 import 'package:flutter/cupertino.dart';
@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import '../data/trip_provider.dart';
 import 'widgets/crew_member_dialog.dart';
+import 'widgets/boat_profile_dialog.dart';
 
 class TripWizardScreen extends ConsumerStatefulWidget {
   const TripWizardScreen({super.key});
@@ -27,14 +29,36 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   bool _isCharter = true;
   bool _initializedDefaults = false;
 
-  // Sektion 2: Crew (ohne Zahlungsdaten)
+  // Sektion 2: Boot (PIVOT3-B, Issue #6)
+  int? _boatProfileId;
+  final _boatNameController = TextEditingController();
+  final _boatManufacturerController = TextEditingController();
+  final _boatModelController = TextEditingController();
+  double _fridgeCapacity = 100.0;
+  bool _hasNoFridge = false;
+  bool _hasFreezer = false;
+  double _freezerCapacity = 20.0;
+  double _waterTankLiters = 0.0;
+  bool _isWaterTankDrinkable = false;
+  bool _hasWatermaker = false;
+
+  late final TextEditingController _fridgeCapacityController;
+  late final TextEditingController _freezerCapacityController;
+  late final TextEditingController _waterTankController;
+
+  // Sektion 3: Crew (Issue #4: Standard 1 Person, Minimum 1)
   final List<CrewMemberInput> _crewMembers = [
     const CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
-    const CrewMemberInput(id: '2', name: 'Co-Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
-    const CrewMemberInput(id: '3', name: 'Guest 1', isAdult: true, isVegetarian: false, noAlcohol: false),
-    const CrewMemberInput(id: '4', name: 'Guest 2', isAdult: true, isVegetarian: true, noAlcohol: false),
-    const CrewMemberInput(id: '5', name: 'Guest 3', isAdult: true, isVegetarian: false, noAlcohol: true),
   ];
+
+  // Sektion 4: Essen an Bord
+  CrewAppetite _crewAppetite = CrewAppetite.normal;
+  bool _eatOut = false;
+  int _restaurantDinners = 2;
+  int _restaurantLunches = 1;
+  bool _crewReserve = false;
+
+  bool _isSaving = false;
 
   @override
   void didChangeDependencies() {
@@ -42,35 +66,11 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     if (!_initializedDefaults) {
       _initializedDefaults = true;
       final l10n = AppLocalizations.of(context);
-      if (l10n != null) {
-        if (_nameController.text.isEmpty) {
-          _nameController.text = l10n.defaultTripName;
-        }
-        _crewMembers[2] = CrewMemberInput(id: '3', name: l10n.guestMember(1), isAdult: true, isVegetarian: false, noAlcohol: false);
-        _crewMembers[3] = CrewMemberInput(id: '4', name: l10n.guestMember(2), isAdult: true, isVegetarian: true, noAlcohol: false);
-        _crewMembers[4] = CrewMemberInput(id: '5', name: l10n.guestMember(3), isAdult: true, isVegetarian: false, noAlcohol: true);
+      if (l10n != null && _nameController.text.isEmpty) {
+        _nameController.text = l10n.defaultTripName;
       }
     }
   }
-
-  // Sektion 3: Essen an Bord
-  CrewAppetite _crewAppetite = CrewAppetite.normal;
-  bool _eatOut = false;
-  int _restaurantDinners = 2;
-  int _restaurantLunches = 1;
-  double _fridgeCapacity = 100.0;
-  bool _hasNoFridge = false;
-  bool _hasFreezer = false;
-  double _freezerCapacity = 20.0;
-  double _waterTankLiters = 0.0;
-  bool _isWaterTankDrinkable = false;
-  bool _crewReserve = false;
-
-  late final TextEditingController _fridgeCapacityController;
-  late final TextEditingController _freezerCapacityController;
-  late final TextEditingController _waterTankController;
-
-  bool _isSaving = false;
 
   @override
   void initState() {
@@ -85,10 +85,54 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   void dispose() {
     _nameController.dispose();
     _daysController.dispose();
+    _boatNameController.dispose();
+    _boatManufacturerController.dispose();
+    _boatModelController.dispose();
     _fridgeCapacityController.dispose();
     _freezerCapacityController.dispose();
     _waterTankController.dispose();
     super.dispose();
+  }
+
+  void _applyBoatProfile(BoatProfile profile) {
+    setState(() {
+      _boatProfileId = profile.id;
+      _boatNameController.text = profile.name;
+      _boatManufacturerController.text = profile.manufacturer ?? '';
+      _boatModelController.text = profile.model ?? '';
+      _fridgeCapacity = profile.fridgeCapacity.toDouble();
+      _fridgeCapacityController.text = profile.fridgeCapacity.toString();
+      _hasNoFridge = profile.fridgeCapacity == 0;
+      _hasFreezer = profile.hasFreezer;
+      _freezerCapacity = profile.freezerCapacity.toDouble();
+      _freezerCapacityController.text = profile.freezerCapacity.toString();
+      _waterTankLiters = profile.waterTankLiters.toDouble();
+      _waterTankController.text = profile.waterTankLiters.toString();
+      _isWaterTankDrinkable = profile.isWaterTankDrinkable;
+      _hasWatermaker = profile.hasWatermaker;
+    });
+  }
+
+  Future<void> _openCreateBoatProfileDialog() async {
+    final created = await showDialog<BoatProfile>(
+      context: context,
+      builder: (_) => const BoatProfileDialog(),
+    );
+    if (created != null) {
+      ref.invalidate(activeBoatProfilesProvider);
+      _applyBoatProfile(created);
+    }
+  }
+
+  Future<void> _openEditBoatProfileDialog(BoatProfile profile) async {
+    final updated = await showDialog<BoatProfile>(
+      context: context,
+      builder: (_) => BoatProfileDialog(initialProfile: profile),
+    );
+    if (updated != null) {
+      ref.invalidate(activeBoatProfilesProvider);
+      _applyBoatProfile(updated);
+    }
   }
 
   void _addPerson() async {
@@ -112,6 +156,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   }
 
   void _removePerson(int index) {
+    if (_crewMembers.length <= 1) return;
     setState(() => _crewMembers.removeAt(index));
   }
 
@@ -188,11 +233,16 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         boatType: 'monohull',
         climate: 'warm',
         region: 'warm',
+        boatProfileId: _boatProfileId,
+        boatName: _boatNameController.text.trim().isNotEmpty ? _boatNameController.text.trim() : null,
+        boatManufacturer: _boatManufacturerController.text.trim().isNotEmpty ? _boatManufacturerController.text.trim() : null,
+        boatModel: _boatModelController.text.trim().isNotEmpty ? _boatModelController.text.trim() : null,
         fridgeCapacityLiters: _hasNoFridge ? 0.0 : _fridgeCapacity,
         hasFreezer: _hasFreezer,
         freezerCapacityLiters: _hasFreezer ? _freezerCapacity : null,
         waterTankLiters: _waterTankLiters > 0 ? _waterTankLiters : null,
         isWaterTankDrinkable: _isWaterTankDrinkable,
+        hasWatermaker: _hasWatermaker,
         crewAppetite: _crewAppetite,
         crewReserve: _crewReserve,
         crewDrinking: CrewDrinking.normal,
@@ -253,9 +303,11 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                       children: [
                         _buildSection1Trip(l10n, theme),
                         const SizedBox(height: 16),
-                        _buildSection2Crew(l10n, theme),
+                        _buildSection2Boat(l10n, theme),
                         const SizedBox(height: 16),
-                        _buildSection3Food(l10n, theme),
+                        _buildSection3Crew(l10n, theme),
+                        const SizedBox(height: 16),
+                        _buildSection4Food(l10n, theme),
                         const SizedBox(height: 24),
                       ],
                     ),
@@ -433,7 +485,11 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     );
   }
 
-  Widget _buildSection2Crew(AppLocalizations l10n, ThemeData theme) {
+  Widget _buildSection2Boat(AppLocalizations l10n, ThemeData theme) {
+    final boatProfilesAsync = ref.watch(activeBoatProfilesProvider);
+    final activeProfiles = boatProfilesAsync.valueOrNull ?? [];
+    final selectedProfile = activeProfiles.where((p) => p.id == _boatProfileId).firstOrNull;
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -444,7 +500,339 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          title: Text('2. ${l10n.wizardStepCrew} (${_crewMembers.length})', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text(
+            '2. ${l10n.wizardStepBoat}',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            DropdownButtonFormField<int?>(
+              isExpanded: true,
+              value: _boatProfileId,
+              decoration: InputDecoration(
+                labelText: l10n.selectBoatProfile,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text(l10n.noBoatProfile),
+                ),
+                ...activeProfiles.map(
+                  (p) => DropdownMenuItem<int?>(
+                    value: p.id,
+                    child: Text(
+                      p.model != null && p.model!.isNotEmpty ? '${p.name} (${p.model})' : p.name,
+                    ),
+                  ),
+                ),
+                if (_boatProfileId != null && !activeProfiles.any((p) => p.id == _boatProfileId))
+                  DropdownMenuItem<int?>(
+                    value: _boatProfileId,
+                    child: Text(
+                      _boatModelController.text.isNotEmpty
+                          ? '${_boatNameController.text} (${_boatModelController.text})'
+                          : _boatNameController.text.isNotEmpty
+                              ? _boatNameController.text
+                              : 'Boot',
+                    ),
+                  ),
+              ],
+              onChanged: (id) {
+                if (id == null) {
+                  setState(() => _boatProfileId = null);
+                } else {
+                  final profile = activeProfiles.where((p) => p.id == id).firstOrNull;
+                  if (profile != null) {
+                    _applyBoatProfile(profile);
+                  }
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.createNewBoatProfile),
+                  onPressed: _openCreateBoatProfileDialog,
+                ),
+                if (selectedProfile != null)
+                  TextButton.icon(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(l10n.editBoatProfile),
+                    onPressed: () => _openEditBoatProfileDialog(selectedProfile),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _boatNameController,
+              decoration: InputDecoration(
+                labelText: l10n.boatName,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _boatManufacturerController,
+              decoration: InputDecoration(
+                labelText: l10n.boatManufacturer,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _boatModelController,
+              decoration: InputDecoration(
+                labelText: l10n.boatModel,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Kühlschrank
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.noFridgeSwitch),
+              value: _hasNoFridge,
+              onChanged: (val) {
+                setState(() {
+                  _hasNoFridge = val;
+                  if (val) {
+                    _fridgeCapacity = 0.0;
+                    _fridgeCapacityController.text = '0';
+                  } else if (_fridgeCapacity == 0) {
+                    _fridgeCapacity = 100.0;
+                    _fridgeCapacityController.text = '100';
+                  }
+                });
+              },
+            ),
+            if (!_hasNoFridge)
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerLowest,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: _fridgeCapacity >= 10
+                                ? () => setState(() {
+                                      _fridgeCapacity -= 10;
+                                      _fridgeCapacityController.text = _fridgeCapacity.round().toString();
+                                    })
+                                : null,
+                          ),
+                          SizedBox(
+                            width: 60,
+                            child: TextField(
+                              controller: _fridgeCapacityController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final parsed = double.tryParse(val.trim());
+                                if (parsed != null && parsed >= 0) {
+                                  setState(() => _fridgeCapacity = parsed);
+                                }
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => setState(() {
+                              _fridgeCapacity += 10;
+                              _fridgeCapacityController.text = _fridgeCapacity.round().toString();
+                            }),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            // Tiefkühlfach
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.freezerAvailable),
+              value: _hasFreezer,
+              onChanged: (val) => setState(() => _hasFreezer = val),
+            ),
+            if (_hasFreezer)
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.surfaceContainerLowest,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.freezerCapacityLiters,
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: _freezerCapacity >= 5
+                                ? () => setState(() {
+                                      _freezerCapacity -= 5;
+                                      _freezerCapacityController.text = _freezerCapacity.round().toString();
+                                    })
+                                : null,
+                          ),
+                          SizedBox(
+                            width: 60,
+                            child: TextField(
+                              controller: _freezerCapacityController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final parsed = double.tryParse(val.trim());
+                                if (parsed != null && parsed >= 0) {
+                                  setState(() => _freezerCapacity = parsed);
+                                }
+                              },
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => setState(() {
+                              _freezerCapacity += 5;
+                              _freezerCapacityController.text = _freezerCapacity.round().toString();
+                            }),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 12),
+            // Wassertank
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerLowest,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.waterTankLiters,
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove),
+                          onPressed: _waterTankLiters >= 50
+                              ? () => setState(() {
+                                    _waterTankLiters -= 50;
+                                    _waterTankController.text = _waterTankLiters.round().toString();
+                                  })
+                              : null,
+                        ),
+                        SizedBox(
+                          width: 60,
+                          child: TextField(
+                            controller: _waterTankController,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final parsed = double.tryParse(val.trim());
+                              if (parsed != null && parsed >= 0) {
+                                setState(() => _waterTankLiters = parsed);
+                              }
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () => setState(() {
+                            _waterTankLiters += 50;
+                            _waterTankController.text = _waterTankLiters.round().toString();
+                          }),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.waterTankDrinkable),
+              subtitle: Text(l10n.waterTankDrinkableSubtitle),
+              value: _isWaterTankDrinkable,
+              onChanged: (val) => setState(() => _isWaterTankDrinkable = val),
+            ),
+            const SizedBox(height: 8),
+            // Watermaker
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.hasWatermaker),
+              subtitle: Text(l10n.hasWatermakerSubtitle),
+              value: _hasWatermaker,
+              onChanged: (val) => setState(() => _hasWatermaker = val),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection3Crew(AppLocalizations l10n, ThemeData theme) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          title: Text(
+            '3. ${l10n.wizardStepCrew} (${_crewMembers.length})',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             ..._crewMembers.asMap().entries.map((entry) {
@@ -512,7 +900,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 20),
                         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                        onPressed: () => _removePerson(idx),
+                        onPressed: _crewMembers.length > 1 ? () => _removePerson(idx) : null,
                       ),
                     ],
                   ),
@@ -534,7 +922,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     );
   }
 
-  Widget _buildSection3Food(AppLocalizations l10n, ThemeData theme) {
+  Widget _buildSection4Food(AppLocalizations l10n, ThemeData theme) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -545,7 +933,10 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: true,
-          title: Text('3. ${l10n.wizardStepFood}', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          title: Text(
+            '4. ${l10n.wizardStepFood}',
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             // Appetit
@@ -674,220 +1065,6 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-            // Kühlschrank
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.noFridgeSwitch),
-              value: _hasNoFridge,
-              onChanged: (val) {
-                setState(() {
-                  _hasNoFridge = val;
-                  if (val) {
-                    _fridgeCapacity = 0.0;
-                    _fridgeCapacityController.text = '0';
-                  } else if (_fridgeCapacity == 0) {
-                    _fridgeCapacity = 100.0;
-                    _fridgeCapacityController.text = '100';
-                  }
-                });
-              },
-            ),
-            if (!_hasNoFridge) ...[
-              Card(
-                elevation: 0,
-                color: theme.colorScheme.surfaceContainerLowest,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: theme.colorScheme.outlineVariant),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${l10n.fridgeCapacity}: ${_fridgeCapacity.round()} l',
-                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: _fridgeCapacity >= 10
-                                ? () => setState(() {
-                                      _fridgeCapacity -= 10;
-                                      _fridgeCapacityController.text = _fridgeCapacity.round().toString();
-                                    })
-                                : null,
-                          ),
-                          SizedBox(
-                            width: 60,
-                            child: TextField(
-                              controller: _fridgeCapacityController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
-                              onChanged: (val) {
-                                final parsed = double.tryParse(val.trim());
-                                if (parsed != null && parsed >= 0) {
-                                  setState(() => _fridgeCapacity = parsed);
-                                }
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => setState(() {
-                              _fridgeCapacity += 10;
-                              _fridgeCapacityController.text = _fridgeCapacity.round().toString();
-                            }),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            // Tiefkühlfach
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.freezerAvailable),
-              value: _hasFreezer,
-              onChanged: (val) => setState(() => _hasFreezer = val),
-            ),
-            if (_hasFreezer) ...[
-              Card(
-                elevation: 0,
-                color: theme.colorScheme.surfaceContainerLowest,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(color: theme.colorScheme.outlineVariant),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.freezerCapacityLiters,
-                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: _freezerCapacity >= 5
-                                ? () => setState(() {
-                                      _freezerCapacity -= 5;
-                                      _freezerCapacityController.text = _freezerCapacity.round().toString();
-                                    })
-                                : null,
-                          ),
-                          SizedBox(
-                            width: 60,
-                            child: TextField(
-                              controller: _freezerCapacityController,
-                              keyboardType: TextInputType.number,
-                              textAlign: TextAlign.center,
-                              decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
-                              onChanged: (val) {
-                                final parsed = double.tryParse(val.trim());
-                                if (parsed != null && parsed >= 0) {
-                                  setState(() => _freezerCapacity = parsed);
-                                }
-                              },
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => setState(() {
-                              _freezerCapacity += 5;
-                              _freezerCapacityController.text = _freezerCapacity.round().toString();
-                            }),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            // Wassertank an Bord
-            Card(
-              elevation: 0,
-              color: theme.colorScheme.surfaceContainerLowest,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        l10n.waterTankLiters,
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove),
-                          onPressed: _waterTankLiters >= 50
-                              ? () => setState(() {
-                                    _waterTankLiters -= 50;
-                                    _waterTankController.text = _waterTankLiters.round().toString();
-                                  })
-                              : null,
-                        ),
-                        SizedBox(
-                          width: 60,
-                          child: TextField(
-                            controller: _waterTankController,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            decoration: const InputDecoration(isDense: true, border: OutlineInputBorder()),
-                            onChanged: (val) {
-                              final parsed = double.tryParse(val.trim());
-                              if (parsed != null && parsed >= 0) {
-                                setState(() => _waterTankLiters = parsed);
-                              }
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () => setState(() {
-                            _waterTankLiters += 50;
-                            _waterTankController.text = _waterTankLiters.round().toString();
-                          }),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.waterTankDrinkable),
-              subtitle: Text(l10n.waterTankDrinkableSubtitle),
-              value: _isWaterTankDrinkable,
-              onChanged: (val) => setState(() => _isWaterTankDrinkable = val),
-            ),
             const SizedBox(height: 16),
             // Reserve Ankertage
             Card(

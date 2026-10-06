@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B: Setup Integration & Water Logic (Issues #25, #4, #5, #6)
+
+- **Issue #4 (Crew-Größe & Schutzuntergrenze):**
+  - TripWizardScreen startet standardmäßig mit 1 Crew-Mitglied ("Skipper") statt 5 Platzhaltern.
+  - Lösch-Button im Wizard bei Crewgröße `<= 1` deaktiviert (`onPressed: null`).
+  - Schutzuntergrenze in TripOverviewScreen: `_deleteCrewMember` verhindert Löschen des letzten Crew-Mitglieds und zeigt Hinweis-SnackBar (`atLeastOnePersonRequired`).
+  - Beliebige Crewgrößen (1, 2, 4, 5, 8+) ohne Clamp auf 5 unterstützt und persistiert.
+  - Kein neues `crewCount`-DB-Feld; Beibehaltung des bewährten CrewMember-Modells und Drift Schema v7.
+- **Issue #5 (Watermaker-Logik & Formel):**
+  - In `QuantityEngine` die Watermaker-Formel implementiert: Wenn `hasWatermaker == true`, deckt der Watermaker den Routinebedarf ab, während die Mindestreserve `minReserve` (1,5 L/Person laut `data/quantities_v0.6.json`) als Schutzuntergrenze bestehen bleibt (Ergebnis nie 0).
+  - Wenn `!hasWatermaker` und Tank trinkbar: `rawAmount = max(rawAmount - tankLiters, minReserve)`.
+  - Wenn Tank nicht trinkbar und kein Watermaker: Tank reduziert Bedarf nicht.
+  - `hasWatermaker` in `QuantityCalculationInput`, `TripService.recalculateTrip` und `ShoppingListService.recalculateTrip` integriert.
+  - Watermaker-Toggle im Wizard und im Törn-Bearbeiten-Dialog mit transparenter Beschreibung/Subtitle bereitgestellt.
+- **Issue #6 (Setup-Integration & Bootsprofil-Lifecycle):**
+  - Im Wizard Sektion 2 "Boot" vor Sektion 3 "Crew" platziert (1. Törn, 2. Boot, 3. Crew, 4. Verpflegung).
+  - Bootsprofil-Auswahl aus aktiven Profilen via Dropdown mit Fallback-Handling und Invalidation.
+  - "Neues Bootsprofil anlegen" Dialog (`BoatProfileDialog`) und "Profil bearbeiten" Dialog integriert.
+  - One-Off Bootsangaben ohne Profilzuweisung als eigenständiger Snapshot mit `boatProfileId = null` unterstützt.
+  - Snapshot-Autonomie: Törn-Overrides mutieren Bootsprofile in der DB nicht; nachträgliche Profiländerungen mutieren bestehende Törns nicht.
+  - Törn-Bearbeiten-Dialog im TripOverview um Bootsdaten, Watermaker-Schalter und explizite "Aus Bootsprofil neu synchronisieren"-Aktion erweitert.
+- **Lokalisierung:**
+  - 18 neue Strings in allen 6 unterstützten Sprachen (DE, EN, ES, FR, HR, PT) gepflegt.
+- **Qualitätssicherung & Tests:**
+  - 18 dedizierte Akzeptanztests in `test/features/boat/pivot3b_water_and_setup_test.dart` hinzugefügt und verifiziert.
+  - `flutter analyze`: 0 Issues.
+  - Gesamte `flutter test`-Suite (297 Tests) erfolgreich grün.
+
 ## 2026-10-06 – PIVOT3-B Release
 
 - PIVOT3-A ist OWNER-ACCEPTED / COMPLETE; alle PIVOT3-B Start-Gates sind erfüllt.

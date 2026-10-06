@@ -33,11 +33,11 @@ class TripService {
     String boatType = 'monohull',
     String? climate,
     String? region,
-    double fridgeCapacityLiters = 100.0,
-    bool hasFreezer = false,
+    double? fridgeCapacityLiters,
+    bool? hasFreezer,
     double? freezerCapacityLiters,
     double? waterTankLiters,
-    bool isWaterTankDrinkable = false,
+    bool? isWaterTankDrinkable,
     CrewAppetite crewAppetite = CrewAppetite.normal,
     bool crewReserve = false,
     CrewDrinking crewDrinking = CrewDrinking.normal,
@@ -68,21 +68,18 @@ class TripService {
     final effectiveBoatName = boatName ?? profile?.name;
     final effectiveBoatManufacturer = boatManufacturer ?? profile?.manufacturer;
     final effectiveBoatModel = boatModel ?? profile?.model;
-    final effectiveFridgeCapacity = profile != null
-        ? profile.fridgeCapacity
-        : fridgeCapacityLiters.round();
-    final effectiveHasFreezer = profile != null
-        ? profile.hasFreezer
-        : hasFreezer;
-    final effectiveFreezerCapacity = profile != null
-        ? profile.freezerCapacity
-        : (freezerCapacityLiters?.round() ?? 0);
-    final effectiveWaterTankLiters = profile != null
-        ? profile.waterTankLiters
-        : (waterTankLiters?.round() ?? 0);
-    final effectiveIsWaterTankDrinkable = profile != null
-        ? profile.isWaterTankDrinkable
-        : isWaterTankDrinkable;
+    final effectiveFridgeCapacity = fridgeCapacityLiters != null
+        ? fridgeCapacityLiters.round()
+        : (profile != null ? profile.fridgeCapacity : 100);
+    final effectiveHasFreezer = hasFreezer ?? (profile != null ? profile.hasFreezer : false);
+    final effectiveFreezerCapacity = freezerCapacityLiters != null
+        ? freezerCapacityLiters.round()
+        : (profile != null ? profile.freezerCapacity : 0);
+    final effectiveWaterTankLiters = waterTankLiters != null
+        ? waterTankLiters.round()
+        : (profile != null ? profile.waterTankLiters : 0);
+    final effectiveIsWaterTankDrinkable = isWaterTankDrinkable ??
+        (profile != null ? profile.isWaterTankDrinkable : false);
     final effectiveHasWatermaker = hasWatermaker ?? (profile?.hasWatermaker ?? false);
 
     // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
@@ -214,6 +211,7 @@ class TripService {
         freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
         waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
         isWaterTankDrinkable: trip.isWaterTankDrinkable,
+        hasWatermaker: trip.hasWatermaker,
         crewAppetite: trip.appetite,
         crewReserve: trip.reserveDays == 'all_anchoring_days',
         crewDrinking: trip.drinkingHabit,
