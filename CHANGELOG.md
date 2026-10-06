@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-06 – PIVOT1 Owner Acceptance
+
+- PIVOT1 – Assisted List Core ausdrücklich vom Product Owner abgenommen.
+- Verifizierter Implementierungs-HEAD: `86eab66336e6fa231acac44c90b2eed4a6a3f429`.
+- Unabhängiger Abschlussreview: `docs/impl/PIVOT1_acceptance_review_2026-10-06.md`.
+- Owner-Acceptance-Dokument: `docs/impl/PIVOT1_owner_acceptance_2026-10-06.md`.
+- Alle Findings A–E sowie beide Micro-Findings aus Review 2 gelten als geschlossen.
+- Dokumentierter QA-Stand: `flutter analyze` clean; `flutter test` 262/262 grün.
+- Issue #10 wird als abgeschlossen geführt.
+- Diese Acceptance gibt keinen Folgeslice automatisch frei; PIVOT2, PIVOT3, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 und Store-Publikation bleiben separat gegatet.
+
+
 ## 2026-10-06 – Slice PIVOT1: Review Amendment (Findings A–E / Issue #10)
 
 - **Finding A (Katalog-Validierung & Härtung AssistClassifier):**
