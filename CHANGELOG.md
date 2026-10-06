@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B Independent Review: Amendment Required
+
+- Reviewed implementation HEAD: `15acc5c88dcb65788991e4a8e6947283320d3511`.
+- Canonical review: `docs/impl/PIVOT3B_review_2026-10-06.md`.
+- **Blocking:** existing-Trip Boat identity snapshot fields cannot be cleared because null currently means "keep existing" in `TripService.updateTripDetails`.
+- **Blocking:** visible Watermaker-toggle and explicit Resync actions are not yet proven through their actual UI paths.
+- **Blocking:** crew-size persistence is proven, but the released criterion that recalculation changes correctly with smaller/larger crew is not.
+- Water case 1 / reserve assertions must be strengthened to fixed expected values.
+- Core PIVOT3-B production direction is retained; CI on the implementation HEAD is green.
+- PIVOT2, UX-D, GUEST1, RECEIPT1, CAT1, B3/B4/B5 and Store publication remain gated.
+
+
 ## 2026-10-06 – PIVOT3-B: Setup Integration & Water Logic (Issues #25, #4, #5, #6)
 
 - **Issue #4 (Crew-Größe & Schutzuntergrenze):**
