@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.12
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.13
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -16,34 +16,36 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.10 | 06.10.2026 | PIVOT3-B owner-accepted; PIVOT3-A/B abgeschlossen; kein Folgeslice freigegeben |
 | v0.11 | 06.10.2026 | PIVOT2 Provisioning Review freigegeben |
 | v0.12 | 06.10.2026 | Externe Zweitprüfung: PIVOT2 HOLD; vorgezogen werden FIX-B, DATA1 und Watermaker-Reserve-Reconciliation |
+| v0.13 | 06.10.2026 | FIX-B – Unified Settlement Ledger als einziger Implementierungsslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist **kein Implementierungsslice freigegeben**, bis die externe Zweitprüfung reconciliert ist.
+Aktuell ist ausschließlich freigegeben:
+- **FIX-B – Unified Settlement Ledger**, Issue #27
+- Plan: `docs/impl/FIXB_plan.md`
+- Release/Reconciliation: `docs/impl/FIXB_release_reconciliation_2026-10-06.md`
 
-Verbindlich:
-- `docs/impl/EXTERNAL_REVIEW_RECONCILIATION_2026-10-06.md`
+PIVOT2 (#26) bleibt **ON HOLD**.
 
-PIVOT2 (#26) ist **ON HOLD**.
-
-Vorgesehene Reihenfolge:
-1. FIX-B – Unified Settlement Ledger
-2. DATA1 – Catalog-driven Assist Classification
-3. Watermaker-Reserve-Entscheidung + schmaler PIVOT3-B-Water-Amendment
-4. PIVOT2 – Provisioning Review
+Nach FIX-B vorgesehen, aber noch nicht freigegeben:
+- DATA1 – Catalog-driven Assist Classification
+- Watermaker-Reserve-Reconciliation / schmaler PIVOT3-B-Water-Amendment
+- danach PIVOT2
 
 Nicht freigegeben:
 - PIVOT2
+- DATA1
+- Watermaker-Amendment
+- RECEIPT1
 - UX-D (#21)
 - GUEST1 (#22)
-- RECEIPT1 (#23)
 - CAT1
 - B3/B4/B5
 - Store-Publikation
 
-Bis zu einer neuen ausdrücklichen Owner-Release-Entscheidung gilt: **STOP – keinen Slice implementieren.**
+Nach FIX-B: **STOP für unabhängigen Review / Owner Acceptance.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
@@ -56,6 +58,8 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
    - `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
    - `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
    - `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`
+   - `docs/impl/EXTERNAL_REVIEW_RECONCILIATION_2026-10-06.md`
+   - `docs/impl/FIXB_release_reconciliation_2026-10-06.md`
    - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
    - `docs/design/PROVY_UX_DIRECTION_v0.5.md`
    - `docs/design/PROVY_UX_DECISIONS_2026-10-05.md`
