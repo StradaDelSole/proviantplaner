@@ -375,10 +375,10 @@ class TripService {
     bool? isWaterTankDrinkable,
     int? restaurantLunches,
     int? restaurantDinners,
-    int? boatProfileId,
-    String? boatName,
-    String? boatManufacturer,
-    String? boatModel,
+    Value<int?> boatProfileId = const Value.absent(),
+    Value<String?> boatName = const Value.absent(),
+    Value<String?> boatManufacturer = const Value.absent(),
+    Value<String?> boatModel = const Value.absent(),
     bool? hasWatermaker,
   }) async {
     final trip = await tripDao.getTripById(tripId);
@@ -431,10 +431,10 @@ class TripService {
       freezerCapacity: freezerCapacity ?? trip.freezerCapacity,
       waterTankLiters: waterTankLiters ?? trip.waterTankLiters,
       isWaterTankDrinkable: isWaterTankDrinkable ?? trip.isWaterTankDrinkable,
-      boatProfileId: boatProfileId != null ? Value(boatProfileId) : Value(trip.boatProfileId),
-      boatName: boatName != null ? Value(boatName) : Value(trip.boatName),
-      boatManufacturer: boatManufacturer != null ? Value(boatManufacturer) : Value(trip.boatManufacturer),
-      boatModel: boatModel != null ? Value(boatModel) : Value(trip.boatModel),
+      boatProfileId: boatProfileId,
+      boatName: boatName,
+      boatManufacturer: boatManufacturer,
+      boatModel: boatModel,
       hasWatermaker: hasWatermaker ?? trip.hasWatermaker,
     );
     await tripDao.updateTrip(updated);

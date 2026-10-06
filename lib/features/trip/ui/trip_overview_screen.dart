@@ -1284,15 +1284,22 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Row(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Icon(Icons.directions_boat_outlined, color: theme.colorScheme.primary, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                l10n.linkedBoatProfile,
-                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.directions_boat_outlined, color: theme.colorScheme.primary, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.linkedBoatProfile,
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
                             OutlinedButton.icon(
                               icon: const Icon(Icons.sync, size: 16),
@@ -1501,9 +1508,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         isWaterTankDrinkable: isWaterTankDrinkable,
                         restaurantLunches: lunchCount,
                         restaurantDinners: dinnerCount,
-                        boatName: newBoatName.isNotEmpty ? newBoatName : null,
-                        boatManufacturer: newBoatManufacturer.isNotEmpty ? newBoatManufacturer : null,
-                        boatModel: newBoatModel.isNotEmpty ? newBoatModel : null,
+                        boatName: Value(newBoatName.isNotEmpty ? newBoatName : null),
+                        boatManufacturer: Value(newBoatManufacturer.isNotEmpty ? newBoatManufacturer : null),
+                        boatModel: Value(newBoatModel.isNotEmpty ? newBoatModel : null),
                         hasWatermaker: hasWatermaker,
                       );
                       if (ctx.mounted) Navigator.of(ctx).pop();

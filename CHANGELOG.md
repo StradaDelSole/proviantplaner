@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B Review Amendment (Issues #25, #4, #5, #6)
+
+- **Finding A (Löschbare Trip-Bootsfelder im Trip-Edit):**
+  - `TripService.updateTripDetails` auf Drift `Value<T>` für `boatProfileId`, `boatName`, `boatManufacturer`, `boatModel` umgestellt.
+  - Ermöglicht das explizite Leeren (`Value(null)`) von Hersteller, Modell oder Bootsname im Törn-Snapshot, ohne das verknüpfte `BoatProfile` zu mutieren.
+  - Neuer Real-UI-Journey-Test: Hersteller und Modell über Dialog-Textfelder leeren, in Drift persistieren und Autonomie des Bootsprofils nachweisen.
+- **Finding B (Real UI Journey für Watermaker-Switch und expliziten Profil-Resync):**
+  - Neuer Real-UI-Journey-Test: Betätigung des Watermaker-Schalters im Törn-Edit-Dialog (`SwitchListTile`) speichert `hasWatermaker: true` und führt zur Neuberechnung der Trinkwassermenge auf die geschützte Notreserve.
+  - Neuer Real-UI-Journey-Test: Betätigung von „Aus Bootsprofil aktualisieren“ öffnet den Bestätigungsdialog; nach Bestätigung wird der Snapshot im Drift-Trip mit den geänderten Profilwerten synchronisiert.
+- **Finding C (Deterministische Crew-Recalculation mit festen Erwartungswerten):**
+  - Neuer Integrationstest: Törn mit 1 Person startet mit 17,5 L (5L: 8,75 L / 2 Pack, 1,5L: 8,75 L / 5 Pack mit Gruppenausgleich); Vergrößern der Crew auf 4 Personen erhöht Bedarf deterministisch auf 70,0 L (7x 5L, 24x 1,5L); Verkleinern auf 3 Personen reduziert Bedarf auf 52,5 L (6x 5L, 15x 1,5L).
+  - Neuer Integrationstest: Manuelle Mengenanpassungen (`overriddenPackages`) und Übernahme-Status (`isAdopted`) überleben Crew-Recalculation vollständig stabil.
+- **Finding D (Gehärtete Wasser-Erwartungswerte in QuantityEngine):**
+  - Fall 1 prüft exakt `35.0 L` für warmes Klima, 2 Erwachsene, 7 Tage (`2.5 L * 2 * 7`) und 14 Packungen mit Gruppenausgleich.
+  - Fälle 2–4 prüfen exakt `3.0 L` für Notreserve bei 2 Personen (`1.5 L * 2`) und 1 Packung (5L) mit Gruppenausgleich.
+  - Schleifentest prüft Notreserve `1.5 L * crewSize` für alle Crewgrößen.
+- **Qualitätssicherung & Tests:**
+  - 23 von 23 Tests in `test/features/boat/pivot3b_water_and_setup_test.dart` grün.
+  - Gesamte Testsuite (302 von 302 Tests) grün.
+  - `flutter analyze`: 0 Issues.
+
 ## 2026-10-06 – PIVOT3-B Independent Review: Amendment Required
 
 - Reviewed implementation HEAD: `15acc5c88dcb65788991e4a8e6947283320d3511`.

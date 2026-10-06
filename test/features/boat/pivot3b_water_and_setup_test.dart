@@ -9,6 +9,7 @@ library;
 
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -169,9 +170,11 @@ void main() {
 
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterGroup.rawGroupNeed, greaterThan(0));
+      // Warmes Klima, 2 Erwachsene, 7 Tage: 2.5 L * 2 Personen * 7 Tage = 35.0 L
+      expect(waterGroup.rawGroupNeed, closeTo(35.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      expect(totalPackages, greaterThan(0));
+      // 35.0 L split 50/50: 17.5 L (5L -> 4 Pack = 20.0 L) + 17.5 L (1.5L -> 10 Pack = 15.0 L mit Gruppenausgleich) = 14 Packungen
+      expect(totalPackages, equals(14));
     });
 
     test('Fall 2: Trinkbarer Tank, kein Watermaker -> Tank reduziert Bedarf bis Notreserve', () {
@@ -190,9 +193,10 @@ void main() {
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
       // minReserve in quantities_v0.6 für still_water ist 1.5 L/Person total = 3.0 L für 2 Personen
-      expect(waterGroup.rawGroupNeed, equals(3.0));
+      expect(waterGroup.rawGroupNeed, closeTo(3.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      expect(totalPackages, greaterThan(0));
+      // 3.0 L wird durch Gruppenausgleich mit 1x 5L (5.0 L >= 3.0 L) vollständig abgedeckt -> 1 Packung
+      expect(totalPackages, equals(1));
     });
 
     test('Fall 3: Nicht trinkbarer Tank + Watermaker -> Routinebedarf ersetzt, Notreserve bleibt', () {
@@ -210,9 +214,9 @@ void main() {
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
       // Notreserve bleibt geschützt: 2 Personen * 1.5 L = 3.0 L
-      expect(waterGroup.rawGroupNeed, equals(3.0));
+      expect(waterGroup.rawGroupNeed, closeTo(3.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      expect(totalPackages, greaterThan(0));
+      expect(totalPackages, equals(1));
     });
 
     test('Fall 4: Trinkbarer Tank + Watermaker -> Routinebedarf ersetzt, Notreserve bleibt', () {
@@ -229,9 +233,9 @@ void main() {
 
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterGroup.rawGroupNeed, equals(3.0));
+      expect(waterGroup.rawGroupNeed, closeTo(3.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      expect(totalPackages, greaterThan(0));
+      expect(totalPackages, equals(1));
     });
 
     test('Fall 5: Nicht trinkbarer Tank allein reduziert Trinkwasserbedarf NICHT', () {
@@ -260,7 +264,8 @@ void main() {
       final waterNoTank = resultNoTank.groupResults.firstWhere((g) => g.groupId == 'water');
       final waterNonDrinkable = resultNonDrinkable.groupResults.firstWhere((g) => g.groupId == 'water');
 
-      expect(waterNonDrinkable.rawGroupNeed, equals(waterNoTank.rawGroupNeed));
+      expect(waterNoTank.rawGroupNeed, closeTo(35.0, 1e-6));
+      expect(waterNonDrinkable.rawGroupNeed, closeTo(35.0, 1e-6));
     });
 
     test('Reservewasser ist NIE 0 durch Watermaker allein', () {
@@ -278,7 +283,9 @@ void main() {
           );
           final result = engine.calculateTrip(input);
           final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-          expect(waterGroup.rawGroupNeed, greaterThan(0), reason: 'Reserve darf nie 0 sein für $crewSize Crew, $days Tage');
+          final expectedReserve = 1.5 * crewSize;
+          expect(waterGroup.rawGroupNeed, closeTo(expectedReserve, 1e-6),
+              reason: 'Reserve muss 1.5 L * $crewSize = $expectedReserve L sein für $crewSize Crew, $days Tage');
           final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
           expect(totalPackages, greaterThan(0));
         }
@@ -386,6 +393,150 @@ void main() {
       // Member still exists in DB
       final crew = await db.tripDao.getCrewForTrip(tripId);
       expect(crew.length, equals(1));
+    });
+
+    test('Deterministische Crew-Recalculation: Vergrößern und Verkleinern der Crew verändert persistierte Mengen auf feste Erwartungswerte', () async {
+      // 1. Ausgangszustand: Trip mit 1 Person ('Alice'), 7 Tage, warmes Klima, kein Tank, kein Watermaker
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Crew Recalc Trip',
+        startDate: DateTime(2026, 7, 1),
+        daysCount: 7,
+        crewMembers: [testMember('Alice')],
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+      );
+
+      // Erwartungswert bei 1 Person:
+      // Wasserbedarf: 2.5 L * 1 Person * 7 Tage = 17.5 L
+      // Bei 50/50 Split auf water_5l (Pack 5L) und water_15 (Pack 1.5L):
+      // water_5l: 8.75 L -> ceil(8.75 / 5.0) = 2 Packungen
+      // water_15: 8.75 L -> ceil(8.75 / 1.5) = 6 Packungen
+      var items = await db.listItemDao.getListItemsForTrip(tripId);
+      var item5l = items.firstWhere((i) => i.catalogId == 'water_5l');
+      var item15 = items.firstWhere((i) => i.catalogId == 'water_15');
+      expect(item5l.calculatedQuantity, closeTo(8.75, 1e-6));
+      expect(item5l.calculatedPackages, equals(2));
+      expect(item15.calculatedQuantity, closeTo(8.75, 1e-6));
+      // Mit Gruppenausgleich: 2x 5L (10.0L) + 5x 1.5L (7.5L) = exakt 17.5L Bedarf gedeckt
+      expect(item15.calculatedPackages, equals(5));
+
+      // 2. Crew vergrößern: 3 Mitglieder über den echten Produktionspfad hinzufügen (Alice + Bob, Charlie, Dana -> 4 Personen)
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: tripId,
+        name: 'Bob',
+      ));
+      await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: tripId,
+        name: 'Charlie',
+      ));
+      final danaId = await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+        tripId: tripId,
+        name: 'Dana',
+      ));
+
+      // Reale Recalculation über TripService
+      await tripService.recalculateTrip(tripId);
+
+      // Erwartungswert bei 4 Personen:
+      // Wasserbedarf: 2.5 L * 4 Personen * 7 Tage = 70.0 L
+      // water_5l (50%): 35.0 L -> ceil(35.0 / 5.0) = 7 Packungen
+      // water_15 (50%): 35.0 L -> ceil(35.0 / 1.5) = 24 Packungen
+      items = await db.listItemDao.getListItemsForTrip(tripId);
+      item5l = items.firstWhere((i) => i.catalogId == 'water_5l');
+      item15 = items.firstWhere((i) => i.catalogId == 'water_15');
+      expect(item5l.calculatedQuantity, closeTo(35.0, 1e-6));
+      expect(item5l.calculatedPackages, equals(7));
+      expect(item15.calculatedQuantity, closeTo(35.0, 1e-6));
+      expect(item15.calculatedPackages, equals(24));
+
+      // 3. Crew wieder verkleinern: Dana löschen (-> 3 Personen)
+      await db.tripDao.deleteCrewMember(danaId);
+      await tripService.recalculateTrip(tripId);
+
+      // Erwartungswert bei 3 Personen:
+      // Wasserbedarf: 2.5 L * 3 Personen * 7 Tage = 52.5 L
+      // water_5l (50%): 26.25 L -> ceil(26.25 / 5.0) = 6 Packungen
+      // water_15 (50%): 26.25 L -> mit Gruppenausgleich (6x 5L = 30L + 15x 1.5L = 22.5L -> 52.5L exakt) = 15 Packungen
+      items = await db.listItemDao.getListItemsForTrip(tripId);
+      item5l = items.firstWhere((i) => i.catalogId == 'water_5l');
+      item15 = items.firstWhere((i) => i.catalogId == 'water_15');
+      expect(item5l.calculatedQuantity, closeTo(26.25, 1e-6));
+      expect(item5l.calculatedPackages, equals(6));
+      expect(item15.calculatedQuantity, closeTo(26.25, 1e-6));
+      expect(item15.calculatedPackages, equals(15));
+    });
+
+    test('PIVOT1-Stabilität: Manuelle User-Overrides und isAdopted-Status überleben Crew-Recalculation stabil', () async {
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Stability Trip',
+        startDate: DateTime(2026, 7, 1),
+        daysCount: 7,
+        crewMembers: [testMember('Alice'), testMember('Bob')],
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+      );
+
+      // Vorräte laden
+      var items = await db.listItemDao.getListItemsForTrip(tripId);
+      final waterItem = items.firstWhere((i) => i.catalogId == 'water_5l');
+      final pestoItem = items.firstWhere((i) => i.catalogId == 'pesto');
+
+      // Nutzer-Zustände setzen (PIVOT1):
+      // 1. water_5l manuell auf 10 Packungen überschreiben
+      await db.listItemDao.updateListItem(waterItem.copyWith(
+        overriddenPackages: const Value(10),
+      ));
+      // 2. pesto auf isAdopted = true und 3 Packungen setzen
+      await db.listItemDao.updateListItem(pestoItem.copyWith(
+        isAdopted: true,
+        overriddenPackages: const Value(3),
+      ));
+
+      // Crew vergrößern von 2 auf 5 Personen über echten Produktionspfad
+      for (final name in ['Charlie', 'Dana', 'Eve']) {
+        await db.tripDao.addCrewMember(CrewMembersCompanion.insert(
+          tripId: tripId,
+          name: name,
+        ));
+      }
+
+      // Recalculation über echten Produktionspfad
+      await tripService.recalculateTrip(tripId);
+
+      // Verifizieren:
+      items = await db.listItemDao.getListItemsForTrip(tripId);
+      final updatedWater = items.firstWhere((i) => i.catalogId == 'water_5l');
+      final updatedPesto = items.firstWhere((i) => i.catalogId == 'pesto');
+
+      // water_5l: calculatedQuantity stieg (5 Personen * 2.5 L * 7 * 0.5 = 43.75 L)
+      expect(updatedWater.calculatedQuantity, closeTo(43.75, 1e-6));
+      // ABER overriddenPackages bleibt strikt 10!
+      expect(updatedWater.overriddenPackages, equals(10));
+
+      // pesto: isAdopted bleibt strikt true und overriddenPackages bleibt 3!
+      expect(updatedPesto.isAdopted, isTrue);
+      expect(updatedPesto.overriddenPackages, equals(3));
+
+      // Crew wieder reduzieren auf 1 Person
+      final allCrew = await db.tripDao.getCrewForTrip(tripId);
+      for (final m in allCrew.skip(1)) {
+        await db.tripDao.deleteCrewMember(m.id);
+      }
+      await tripService.recalculateTrip(tripId);
+
+      items = await db.listItemDao.getListItemsForTrip(tripId);
+      final finalWater = items.firstWhere((i) => i.catalogId == 'water_5l');
+      final finalPesto = items.firstWhere((i) => i.catalogId == 'pesto');
+
+      // calculatedQuantity sank wieder auf 8.75 L
+      expect(finalWater.calculatedQuantity, closeTo(8.75, 1e-6));
+      // overriddenPackages bleibt weiterhin strikt 10!
+      expect(finalWater.overriddenPackages, equals(10));
+      // pesto bleibt weiterhin isAdopted mit 3 Packungen!
+      expect(finalPesto.isAdopted, isTrue);
+      expect(finalPesto.overriddenPackages, equals(3));
     });
   });
 
@@ -701,6 +852,235 @@ void main() {
       expect(waterItems, isNotEmpty);
       final totalPackages = waterItems.fold<int>(0, (sum, i) => sum + i.calculatedPackages);
       expect(totalPackages, greaterThan(0));
+    });
+
+    testWidgets('Real UI Journey: Trip-Snapshot Hersteller und Modell leeren leert Snapshot in Drift und mutiert BoatProfile NICHT', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // 1. BoatProfile anlegen
+      final profileId = await boatProfileService.createProfile(
+        name: 'Oceanis 40.1',
+        manufacturer: 'Beneteau',
+        model: '40.1',
+        fridgeCapacity: 120,
+        waterTankLiters: 350,
+      );
+
+      // 2. Trip mit verknüpftem Profil anlegen
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Sommertörn',
+        startDate: DateTime(2026, 7, 1),
+        daysCount: 7,
+        crewMembers: [testMember('Skipper')],
+        boatProfileId: profileId,
+      );
+
+      // Vorab prüfen: Snapshot enthält Hersteller & Modell
+      final initialTrip = await db.tripDao.getTripById(tripId);
+      expect(initialTrip!.boatManufacturer, equals('Beneteau'));
+      expect(initialTrip.boatModel, equals('40.1'));
+
+      final router = GoRouter(
+        initialLocation: '/trips/$tripId',
+        routes: [
+          GoRoute(
+            path: '/trips/:id',
+            builder: (_, state) => TripOverviewScreen(tripId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildTestApp(home: const SizedBox(), router: router));
+      await tester.pumpAndSettle();
+
+      // 3. TripOverview öffnen -> Törn bearbeiten öffnen
+      final editIcon = find.byTooltip('Törn bearbeiten');
+      expect(editIcon, findsOneWidget);
+      await tester.tap(editIcon);
+      await tester.pumpAndSettle();
+
+      // 4. Hersteller und Modell über die tatsächlichen Textfelder leeren
+      final manufacturerField = find.widgetWithText(TextField, 'Beneteau');
+      await tester.ensureVisible(manufacturerField);
+      await tester.pumpAndSettle();
+      expect(manufacturerField, findsOneWidget);
+      await tester.enterText(manufacturerField, '');
+
+      final modelField = find.widgetWithText(TextField, '40.1');
+      await tester.ensureVisible(modelField);
+      await tester.pumpAndSettle();
+      expect(modelField, findsOneWidget);
+      await tester.enterText(modelField, '');
+
+      // 5. Speichern
+      final saveBtn = find.widgetWithText(FilledButton, 'Speichern');
+      await tester.ensureVisible(saveBtn);
+      await tester.pumpAndSettle();
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      // 6. Trip aus Drift neu laden und beweisen, dass die Trip-Snapshot-Felder geleert wurden
+      final updatedTrip = await db.tripDao.getTripById(tripId);
+      expect(updatedTrip!.boatManufacturer, isNull);
+      expect(updatedTrip.boatModel, isNull);
+      // Profilverknüpfung bleibt intakt
+      expect(updatedTrip.boatProfileId, equals(profileId));
+
+      // 7. BoatProfile aus Drift laden und beweisen, dass dessen Hersteller/Modell unverändert geblieben sind
+      final sourceProfile = await boatProfileService.getProfileById(profileId);
+      expect(sourceProfile!.manufacturer, equals('Beneteau'));
+      expect(sourceProfile.model, equals('40.1'));
+    });
+
+    testWidgets('Real UI Journey: Watermaker-Switch im Törn-Edit betätigen -> hasWatermaker true & Trinkwasser entspricht Notreserve', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Trip mit 2 Personen, 7 Tage, warmes Klima, OHNE Tank, OHNE Watermaker
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Watermaker UI Trip',
+        startDate: DateTime(2026, 7, 1),
+        daysCount: 7,
+        crewMembers: [testMember('Alice'), testMember('Bob')],
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+      );
+
+      // Vorab: 35.0 L Trinkwasser (16 Packungen)
+      var items = await db.listItemDao.getListItemsForTrip(tripId);
+      var waterItems = items.where((i) => i.catalogId == 'water_5l' || i.catalogId == 'water_15' || i.catalogId == 'sparkling');
+      var totalQuantity = waterItems.fold<double>(0.0, (sum, i) => sum + i.calculatedQuantity);
+      expect(totalQuantity, closeTo(35.0, 1e-6));
+
+      final router = GoRouter(
+        initialLocation: '/trips/$tripId',
+        routes: [
+          GoRoute(
+            path: '/trips/:id',
+            builder: (_, state) => TripOverviewScreen(tripId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildTestApp(home: const SizedBox(), router: router));
+      await tester.pumpAndSettle();
+
+      // TripOverview öffnen -> Törn bearbeiten öffnen
+      final editIcon = find.byTooltip('Törn bearbeiten');
+      expect(editIcon, findsOneWidget);
+      await tester.tap(editIcon);
+      await tester.pumpAndSettle();
+
+      // Watermaker-Switch über die tatsächliche UI betätigen
+      final watermakerSwitch = find.widgetWithText(SwitchListTile, 'Watermaker an Bord vorhanden', skipOffstage: false);
+      await tester.scrollUntilVisible(watermakerSwitch, 50, scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
+      expect(watermakerSwitch, findsOneWidget);
+      await tester.tap(watermakerSwitch);
+      await tester.pumpAndSettle();
+
+      // Speichern
+      final saveBtn = find.widgetWithText(FilledButton, 'Speichern', skipOffstage: false);
+      await tester.scrollUntilVisible(saveBtn, 50, scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      // Trip aus Drift neu laden
+      final reloadedTrip = await db.tripDao.getTripById(tripId);
+      expect(reloadedTrip!.hasWatermaker, isTrue);
+
+      // Beweisen: neu berechnete Trinkwassermenge entspricht Notreserve (1.5 L * 2 Personen = 3.0 L)
+      items = await db.listItemDao.getListItemsForTrip(tripId);
+      waterItems = items.where((i) => i.catalogId == 'water_5l' || i.catalogId == 'water_15' || i.catalogId == 'sparkling');
+      totalQuantity = waterItems.fold<double>(0.0, (sum, i) => sum + i.calculatedQuantity);
+      expect(totalQuantity, closeTo(3.0, 1e-6));
+      final totalPackages = waterItems.fold<int>(0, (sum, i) => sum + i.calculatedPackages);
+      // 3.0 L Notreserve wird durch Gruppenausgleich mit 1x 5L gedeckt
+      expect(totalPackages, equals(1));
+    });
+
+    testWidgets('Real UI Journey: Aus Bootsprofil aktualisieren über Button & Bestätigungsdialog synchronisiert Snapshot', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // 1. BoatProfile anlegen
+      final profileId = await boatProfileService.createProfile(
+        name: 'Hanse 418',
+        manufacturer: 'Hanse',
+        model: '418',
+        fridgeCapacity: 100,
+        waterTankLiters: 300,
+        hasWatermaker: false,
+      );
+
+      // 2. Verknüpften Trip anlegen
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Hanse Trip',
+        startDate: DateTime(2026, 9, 1),
+        daysCount: 7,
+        crewMembers: [testMember('Skipper')],
+        boatProfileId: profileId,
+      );
+
+      // 3. BoatProfile nachträglich ändern (Kühlschrank und Watermaker)
+      final profile = await boatProfileService.getProfileById(profileId);
+      await boatProfileService.updateProfile(profile!.copyWith(
+        fridgeCapacity: 160,
+        hasWatermaker: true,
+      ));
+
+      // 4. Zuerst beweisen, dass der Trip-Snapshot dadurch NICHT automatisch geändert wurde
+      final tripBefore = await db.tripDao.getTripById(tripId);
+      expect(tripBefore!.fridgeCapacity, equals(100));
+      expect(tripBefore.hasWatermaker, isFalse);
+
+      final router = GoRouter(
+        initialLocation: '/trips/$tripId',
+        routes: [
+          GoRoute(
+            path: '/trips/:id',
+            builder: (_, state) => TripOverviewScreen(tripId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildTestApp(home: const SizedBox(), router: router));
+      await tester.pumpAndSettle();
+
+      // 5. TripOverview öffnen -> Törn bearbeiten öffnen
+      final editIcon = find.byTooltip('Törn bearbeiten');
+      expect(editIcon, findsOneWidget);
+      await tester.tap(editIcon);
+      await tester.pumpAndSettle();
+
+      // 6. Die tatsächliche sichtbare Aktion 'Aus Bootsprofil aktualisieren' antippen
+      final resyncBtn = find.text('Aus Bootsprofil aktualisieren');
+      await tester.scrollUntilVisible(resyncBtn, 50, scrollable: find.byType(Scrollable).last);
+      await tester.pumpAndSettle();
+      expect(resyncBtn, findsOneWidget);
+      await tester.tap(resyncBtn);
+      await tester.pumpAndSettle();
+
+      // 7. Bestätigungsdialog über die UI bestätigen
+      expect(find.text('Möchtest du die Bootsdaten des Törns wirklich aus dem Bootsprofil aktualisieren? Manuelle Änderungen am Törn werden überschrieben.'), findsOneWidget);
+      final confirmBtn = find.descendant(of: find.byType(AlertDialog), matching: find.text('Speichern'));
+      expect(confirmBtn, findsOneWidget);
+      await tester.tap(confirmBtn);
+      await tester.pumpAndSettle();
+
+      // 8. Trip aus Drift neu laden und beweisen, dass der Snapshot jetzt die neuen Profilwerte enthält
+      final resyncedTrip = await db.tripDao.getTripById(tripId);
+      expect(resyncedTrip!.fridgeCapacity, equals(160));
+      expect(resyncedTrip.hasWatermaker, isTrue);
     });
   });
 }
