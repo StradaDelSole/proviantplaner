@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.14
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.15
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -18,18 +18,24 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.12 | 06.10.2026 | Externe Zweitprüfung: PIVOT2 HOLD; vorgezogen werden FIX-B, DATA1 und Watermaker-Reserve-Reconciliation |
 | v0.13 | 06.10.2026 | FIX-B – Unified Settlement Ledger als einziger Implementierungsslice freigegeben |
 | v0.14 | 06.10.2026 | FIX-B independent review: enger Review-Amendment freigegeben |
+| v0.15 | 07.10.2026 | FIX-B Amendment Re-Review: letzter enger Amendment |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
 Aktuell ist ausschließlich freigegeben:
-- **FIX-B Review Amendment**, Issue #27
-- Canonical review: `docs/impl/FIXB_review_2026-10-06.md`
-- Supplemental requirements: `docs/impl/FIXB_supplemental_review_requirements_2026-10-06.md`
-- Core implementation baseline: `e8290f2d43fbf60ce375bca162d4b6aa95af532e`
+- **FIX-B Final Narrow Amendment**, Issue #27
+- Canonical re-review: `docs/impl/FIXB_amendment_review_2026-10-07.md`
+- Amendment baseline: `317550e454c7fc9bed978e1ade66dde0476f2fb2`
 
-PIVOT2 (#26) bleibt **ON HOLD**.
+Nur:
+- technical-error state != Trip not found;
+- non-EUR UI amount formatting;
+- EPC QR nur bei EUR;
+- Crew-delete UI proof;
+- update custom-split proof;
+- non-EUR backup/restore proof.
 
 Nicht freigegeben:
 - DATA1
@@ -37,12 +43,12 @@ Nicht freigegeben:
 - PIVOT2
 - RECEIPT1
 - GUEST1
-- UX-D (#21)
+- UX-D
 - CAT1
 - B3/B4/B5
 - Store-Publikation
 
-Nach dem FIX-B Review-Amendment: **STOP für unabhängigen Re-Review / Owner Acceptance.**
+Nach dem Amendment: **STOP für finalen unabhängigen Re-Review / Owner Acceptance.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
