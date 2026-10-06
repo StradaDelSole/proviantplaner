@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-06 – External Review Reconciliation / PIVOT2 Hold
+
+- External independent review reconciled against current production code.
+- Canonical reconciliation: `docs/impl/EXTERNAL_REVIEW_RECONCILIATION_2026-10-06.md`.
+- **Confirmed high-severity:** shared-kitty settlement ignores personally paid expenses.
+- **Confirmed direct PIVOT2 dependency:** AssistType classification is hard-coded in Dart instead of catalog data.
+- **Owner decision required:** Watermaker bottled-water contingency reserve is currently only 1.5 l/person and must be re-evaluated before PIVOT2 water review.
+- Auth/backend finding partially confirmed: active provider uses `Auth0HullqAuthService`, but real Auth0 token acquisition/deployment is not end-to-end complete.
+- PIVOT2 #26 put on HOLD before implementation.
+- Recommended sequence: FIX-B → DATA1 → Watermaker amendment → PIVOT2.
+- No later slice released.
+
+
 ## 2026-10-06 – PIVOT2 Provisioning Review Release
 
 - PIVOT3-A und PIVOT3-B sind OWNER-ACCEPTED / COMPLETE.
