@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-B Owner Acceptance
+
+- PIVOT3-B – Setup Integration & Water Logic ausdrücklich vom Product Owner abgenommen.
+- Verifizierter Implementierungs-/Review-Amendment-HEAD: `b19e1736a2d5c7fa26836bb35d014ff46a6706e1`.
+- Finaler unabhängiger Review: `docs/impl/PIVOT3B_acceptance_review_2026-10-06.md`.
+- Owner-Acceptance-Dokument: `docs/impl/PIVOT3B_owner_acceptance_2026-10-06.md`.
+- Findings A–D aus dem ersten PIVOT3-B Review gelten als geschlossen.
+- Verifizierter QA-Stand: 23 dedizierte PIVOT3-B-Tests; 302/302 Flutter-Tests grün; GitHub Actions Flutter + Backend grün.
+- Issues #25, #4, #5 und #6 werden als abgeschlossen geführt.
+- PIVOT3-A und PIVOT3-B sind damit vollständig abgeschlossen.
+- Diese Acceptance gibt PIVOT2 oder einen anderen Folgeslice nicht automatisch frei.
+- `GEMINI.md` auf v0.10 und `docs/PROMPT_SESSION_START_v0.5.md` auf "kein Slice freigegeben" gegatet.
+
+
 ## 2026-10-06 – PIVOT3-B Final Independent Acceptance Review
 
 - Reviewed amendment HEAD: `b19e1736a2d5c7fa26836bb35d014ff46a6706e1`.
