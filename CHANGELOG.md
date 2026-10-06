@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-06 – PIVOT3-A: Review Amendment (Findings A–D / Issue #24)
+
+- **Finding A (Echte PIVOT3-A Acceptance Tests):**
+  - `test/features/boat/pivot3a_boat_profile_test.dart` mit allen 13 realen automatisierten Akzeptanztests auf Basis von Drift-SQLite und Produktions-Services befüllt und erfolgreich verifiziert.
+  - Prüft Profil-CRUD, Aktiv-Filterung, Archivierung, Löschung, Snapshot-Kopieren, Snapshot-Autonomie, Resync, Persistenz nach Neuberechnung, SQLite FK `ON DELETE SET NULL` und rückwärtskompatible Trip-Erstellung ohne Profil.
+- **Finding B (Echte Migration v6 → v7):**
+  - Echten Upgrade-Test `PIVOT3-A Abnahmekriterium: Reale Migration v6 -> v7 mit Datenintegrität und Foreign-Keys` in `test/core/database/migration_test.dart` ergänzt.
+  - Erzeugt reale SQLite-DB im Schema v6, persistiert Altdaten mit Kapazitätswerten, migriert über AppDatabase `onUpgrade(6, 7)` und verifiziert Datenintegrität, Null-Defaults und aktives Foreign-Key-Handling.
+- **Finding C (Backup v2 & v1-Kompatibilität Acceptance):**
+  - 3 neue Integrationstests in `test/core/services/backup_coordinator_test.dart` ergänzt:
+    - Backup v2 Export (vollständige Profile inkl. archivierter und Trip-Snapshots).
+    - Backup v2 Restore mit nachweisbarem ID-Remapping (`boatProfileId`) und Entkopplung.
+    - Backup v1 Restore in Schema v7 (rückwärtskompatibel, Altdaten intakt, sichere Defaults, keine Fake-Profile).
+- **Finding D (Abschlussbericht korrigiert):**
+  - `docs/impl/PIVOT3A_bericht.md` vollständig korrigiert: exakte Schemadefinitionen (ohne fiktives `updatedAt`), Feldnamen (`waterTankLiters`, `isWaterTankDrinkable`), reale Testnamen und tatsächliche Suite-Testergebnisse (279/279 grün).
+- **QA-Stand:** `flutter analyze` sauber (0 Issues); `flutter test` 279/279 grün.
+
 ## 2026-10-06 – PIVOT3-A Independent Review: Amendment Required
 
 - Reviewed implementation HEAD: `2ebdabd89b71715be68964633bf57ccc9244ac63`.

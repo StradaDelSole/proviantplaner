@@ -253,5 +253,286 @@ void main() {
       expect(restoredPayments.first.amount, equals(100.0));
       expect(restoredPayments.first.crewMemberId, equals(restoredMember.id));
     });
+
+    test('PIVOT3-A Abnahmetest: Backup v2 Export enthält vollständige BoatProfiles und Trip-Snapshots', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Profil 1 anlegen (aktiv, nicht-default Werte)
+      final p1Id = await db.boatProfileDao.createProfile(
+        BoatProfilesCompanion.insert(
+          name: 'Bavaria C45 Custom',
+          manufacturer: const Value('Bavaria Yachts'),
+          model: const Value('C45 Style'),
+          fridgeCapacity: const Value(160),
+          hasFreezer: const Value(true),
+          freezerCapacity: const Value(35),
+          waterTankLiters: const Value(480),
+          isWaterTankDrinkable: const Value(true),
+          hasWatermaker: const Value(true),
+        ),
+      );
+
+      // Profil 2 anlegen (archiviert)
+      final p2Id = await db.boatProfileDao.createProfile(
+        BoatProfilesCompanion.insert(
+          name: 'Altes Archivboot',
+          isArchived: const Value(true),
+        ),
+      );
+
+      // Trip mit Verknüpfung und Snapshots anlegen
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(
+          name: 'Sommer 2026',
+          startDate: DateTime(2026, 7, 1),
+          boatProfileId: Value(p1Id),
+          boatName: const Value('Bavaria C45 Custom'),
+          boatManufacturer: const Value('Bavaria Yachts'),
+          boatModel: const Value('C45 Style'),
+          fridgeCapacity: const Value(160),
+          hasFreezer: const Value(true),
+          freezerCapacity: const Value(35),
+          waterTankLiters: const Value(480),
+          isWaterTankDrinkable: const Value(true),
+          hasWatermaker: const Value(true),
+        ),
+      );
+
+      final success = await coordinator.createBackup();
+      expect(success, isTrue);
+
+      final rawData = await backupService.restoreData();
+      expect(rawData, isNotNull);
+
+      final decoded = jsonDecode(rawData!) as Map<String, dynamic>;
+      expect(decoded['version'], equals(2));
+
+      // Bootsprofile prüfen (beide Profile inklusive des archivierten müssen vorhanden sein)
+      final profiles = decoded['boatProfiles'] as List<dynamic>;
+      expect(profiles.length, equals(2));
+
+      final p1Map = profiles.firstWhere((p) => p['name'] == 'Bavaria C45 Custom') as Map<String, dynamic>;
+      expect(p1Map['id'], equals(p1Id));
+      expect(p1Map['manufacturer'], equals('Bavaria Yachts'));
+      expect(p1Map['model'], equals('C45 Style'));
+      expect(p1Map['fridgeCapacity'], equals(160));
+      expect(p1Map['hasFreezer'], isTrue);
+      expect(p1Map['freezerCapacity'], equals(35));
+      expect(p1Map['waterTankLiters'], equals(480));
+      expect(p1Map['isWaterTankDrinkable'], isTrue);
+      expect(p1Map['hasWatermaker'], isTrue);
+      expect(p1Map['isArchived'], isFalse);
+
+      final p2Map = profiles.firstWhere((p) => p['name'] == 'Altes Archivboot') as Map<String, dynamic>;
+      expect(p2Map['id'], equals(p2Id));
+      expect(p2Map['isArchived'], isTrue);
+
+      // Trip-Snapshot prüfen
+      final trips = decoded['trips'] as List<dynamic>;
+      expect(trips.length, equals(1));
+      final tripMap = (trips.first as Map<String, dynamic>)['trip'] as Map<String, dynamic>;
+      expect(tripMap['id'], equals(tripId));
+      expect(tripMap['boatProfileId'], equals(p1Id));
+      expect(tripMap['boatName'], equals('Bavaria C45 Custom'));
+      expect(tripMap['boatManufacturer'], equals('Bavaria Yachts'));
+      expect(tripMap['boatModel'], equals('C45 Style'));
+      expect(tripMap['fridgeCapacity'], equals(160));
+      expect(tripMap['hasFreezer'], isTrue);
+      expect(tripMap['freezerCapacity'], equals(35));
+      expect(tripMap['waterTankLiters'], equals(480));
+      expect(tripMap['isWaterTankDrinkable'], isTrue);
+      expect(tripMap['hasWatermaker'], isTrue);
+    });
+
+    test('PIVOT3-A Abnahmetest: Backup v2 Restore mit nachweisbarem ID-Remapping und Entkopplung', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Konstruiere einen v2-Payload, bei dem das Profil die alte ID 999 hat und der Trip boatProfileId 999 referenziert
+      final v2Payload = jsonEncode({
+        'version': 2,
+        'exportedAt': '2026-10-06T12:00:00.000Z',
+        'boatProfiles': [
+          {
+            'id': 999,
+            'name': 'Swan 48 Remap',
+            'manufacturer': 'Nautor Swan',
+            'model': 'Swan 48',
+            'fridgeCapacity': 170,
+            'hasFreezer': true,
+            'freezerCapacity': 40,
+            'waterTankLiters': 500,
+            'isWaterTankDrinkable': true,
+            'hasWatermaker': true,
+            'isArchived': false,
+            'createdAt': '2026-10-06T10:00:00.000Z',
+          }
+        ],
+        'trips': [
+          {
+            'trip': {
+              'id': 777,
+              'name': 'Swan Cup 2026',
+              'startDate': '2026-09-01T00:00:00.000Z',
+              'daysCount': 7,
+              'region': 'mediterranean',
+              'climate': 'warm',
+              'isCharter': true,
+              'boatProfileId': 999, // Referenziert alte Profil-ID 999
+              'boatName': 'Swan 48 Remap',
+              'boatManufacturer': 'Nautor Swan',
+              'boatModel': 'Swan 48',
+              'boatType': 'mono',
+              'fridgeCapacity': 170,
+              'hasFreezer': true,
+              'freezerCapacity': 40,
+              'waterTankLiters': 500,
+              'isWaterTankDrinkable': true,
+              'hasWatermaker': true,
+              'appetite': 'normal',
+              'reserveDays': 'few_days',
+              'drinkingHabit': 'normal',
+              'hasStorageChecklist': true,
+              'phase': 'plan',
+              'isArchived': false,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+              'createdAt': '2026-10-06T10:00:00.000Z',
+            },
+            'days': [],
+            'crew': [],
+            'stops': [],
+            'items': [],
+            'allocations': [],
+            'expenses': [],
+            'payments': [],
+          }
+        ],
+      });
+
+      await backupService.backupData(v2Payload);
+
+      // Neue Datenbank für sauberen Restore
+      final newDeviceDb = AppDatabase(NativeDatabase.memory());
+      addTearDown(() async => newDeviceDb.close());
+
+      final newCoordinator = BackupCoordinator(
+        db: newDeviceDb,
+        backupService: backupService,
+        authService: authService,
+      );
+
+      final restoreOk = await newCoordinator.restoreBackup();
+      expect(restoreOk, isTrue);
+
+      // 1. Profil in neuer Datenbank prüfen
+      final restoredProfiles = await newDeviceDb.boatProfileDao.getAllProfiles();
+      expect(restoredProfiles.length, equals(1));
+      final restoredProfile = restoredProfiles.first;
+      expect(restoredProfile.name, equals('Swan 48 Remap'));
+      // Die neue ID ist eine lokale SQLite-ID (1) und NICHT die alte 999
+      expect(restoredProfile.id, isNot(equals(999)));
+
+      // 2. Trip in neuer Datenbank prüfen
+      final restoredTrips = await newDeviceDb.tripDao.getAllTrips();
+      expect(restoredTrips.length, equals(1));
+      final restoredTrip = restoredTrips.first;
+      expect(restoredTrip.name, equals('Swan Cup 2026'));
+      // Echtes ID-Remapping: boatProfileId zeigt auf die NEUE Profil-ID, nicht 999!
+      expect(restoredTrip.boatProfileId, equals(restoredProfile.id));
+      expect(restoredTrip.boatProfileId, isNot(equals(999)));
+
+      // Snapshot-Werte sind identisch zum Backup
+      expect(restoredTrip.boatName, equals('Swan 48 Remap'));
+      expect(restoredTrip.fridgeCapacity, equals(170));
+      expect(restoredTrip.freezerCapacity, equals(40));
+      expect(restoredTrip.waterTankLiters, equals(500));
+      expect(restoredTrip.hasWatermaker, isTrue);
+
+      // 3. Entkopplung verifizieren: Profiländerung mutiert Trip nicht
+      await newDeviceDb.boatProfileDao.updateProfile(
+        restoredProfile.copyWith(
+          fridgeCapacity: 300,
+          hasWatermaker: false,
+        ),
+      );
+
+      final tripAfterProfileUpdate = await (newDeviceDb.select(newDeviceDb.trips)
+            ..where((t) => t.id.equals(restoredTrip.id)))
+          .getSingle();
+      expect(tripAfterProfileUpdate.fridgeCapacity, equals(170)); // Snapshot bleibt intakt!
+      expect(tripAfterProfileUpdate.hasWatermaker, isTrue);
+    });
+
+    test('PIVOT3-A Abnahmetest: Backup v1 Restore in Schema v7 ist abwärtskompatibel mit sicheren Defaults', () async {
+      await authService.loginWithEmail('legacy@provy.app', newsletterOptIn: false);
+
+      // Echtes v1-JSON-Payload ohne 'boatProfiles' und ohne neue v7-Felder
+      final v1Payload = jsonEncode({
+        'version': 1,
+        'exportedAt': '2026-09-01T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 101,
+              'name': 'Klassischer v1 Törn',
+              'startDate': '2026-09-01T00:00:00.000Z',
+              'daysCount': 7,
+              'region': 'mediterranean',
+              'climate': 'warm',
+              'isCharter': true,
+              'boatType': 'mono',
+              'fridgeCapacity': 85,
+              'hasFreezer': true,
+              'freezerCapacity': 12,
+              'waterTankLiters': 180,
+              'isWaterTankDrinkable': true,
+              'appetite': 'normal',
+              'reserveDays': 'few_days',
+              'drinkingHabit': 'normal',
+              'hasStorageChecklist': true,
+              'phase': 'plan',
+              'isArchived': false,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+              'createdAt': '2026-09-01T12:00:00.000Z',
+            },
+            'days': [],
+            'crew': [],
+            'stops': [],
+            'items': [],
+            'allocations': [],
+            'expenses': [],
+            'payments': [],
+          }
+        ],
+      });
+
+      await backupService.backupData(v1Payload);
+
+      final restoreOk = await coordinator.restoreBackup();
+      expect(restoreOk, isTrue);
+
+      // Verifizieren: Trip wurde sauber importiert
+      final restoredTrips = await db.tripDao.getAllTrips();
+      expect(restoredTrips.length, equals(1));
+      final trip = restoredTrips.first;
+      expect(trip.name, equals('Klassischer v1 Törn'));
+      expect(trip.fridgeCapacity, equals(85));
+      expect(trip.hasFreezer, isTrue);
+      expect(trip.freezerCapacity, equals(12));
+      expect(trip.waterTankLiters, equals(180));
+      expect(trip.isWaterTankDrinkable, isTrue);
+
+      // Sichere Defaults für neue PIVOT3-A Felder
+      expect(trip.boatProfileId, isNull);
+      expect(trip.boatName, isNull);
+      expect(trip.boatManufacturer, isNull);
+      expect(trip.boatModel, isNull);
+      expect(trip.hasWatermaker, isFalse);
+
+      // Keine BoatProfiles erzeugt
+      final profiles = await db.boatProfileDao.getAllProfiles(includeArchived: true);
+      expect(profiles, isEmpty);
+    });
   });
 }
