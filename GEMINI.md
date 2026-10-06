@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.9
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.10
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -12,20 +12,19 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.6 | 25.09.2026 | Regel 9: keine Behauptung von Handlungen, die Gemini nicht selbst ausführt; Art des Nachweises je Kriterium; Regel 10: nichts aus späteren Versionen sichtbar bauen |
 | v0.7 | 26.09.2026 | Backend-Regeln (TypeScript, Cloudflare, Geheimnisse, kein Deployment); Freigabe B0–B5 |
 | v0.8 | 06.10.2026 | Post-Pivot-Gating: Owner-accepted Specs/Reconciliations vor älterem PRD/SLICES; PIVOT3-A Review-Gate; Bootsprofil-Scope ausdrücklich erlaubt |
-| v0.9 | 06.10.2026 | PIVOT3-A owner-accepted; aktuell ausschließlich PIVOT3-B freigegeben; verbindliche Crew-/Watermaker-Reconciliation |
+| v0.9 | 06.10.2026 | PIVOT3-A owner-accepted; ausschließlich PIVOT3-B freigegeben; verbindliche Crew-/Watermaker-Reconciliation |
+| v0.10 | 06.10.2026 | PIVOT3-B owner-accepted; PIVOT3-A/B abgeschlossen; aktuell kein Implementierungsslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist ausschließlich freigegeben:
-- **PIVOT3-B – Setup Integration & Water Logic**, Issue #25
-- Plan: `docs/impl/PIVOT3B_plan.md`
-- Release/Reconciliation: `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
+Aktuell ist **kein Implementierungsslice freigegeben**.
 
-PIVOT3-A ist **OWNER-ACCEPTED / COMPLETE**.
-
-Nach Abschluss von PIVOT3-B: **STOP für unabhängigen Review / Owner Acceptance.**
+Abgeschlossen:
+- **PIVOT3-A – Boat/Profile Foundation: OWNER-ACCEPTED / COMPLETE**
+- **PIVOT3-B – Setup Integration & Water Logic: OWNER-ACCEPTED / COMPLETE**
+- PIVOT3-B Owner Acceptance: `docs/impl/PIVOT3B_owner_acceptance_2026-10-06.md`
 
 Nicht freigegeben:
 - PIVOT2
@@ -36,7 +35,9 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Ältere Statusangaben in historischen PRD-/SLICES-Dokumenten sind keine aktuelle Implementierungsfreigabe. Die aktuelle Release-/Gate-Wahrheit steht in README + den neuesten ausdrücklich owner-accepted Reconciliation-/Acceptance-Dokumenten.
+Bis zu einer neuen ausdrücklich owner-accepted Reconciliation/Release-Entscheidung gilt: **STOP – keinen neuen Slice implementieren.**
+
+Ältere Statusangaben in historischen PRD-/SLICES-/Session-Prompt-Dokumenten sind keine aktuelle Implementierungsfreigabe. Die aktuelle Release-/Gate-Wahrheit steht in README + den neuesten ausdrücklich owner-accepted Reconciliation-/Acceptance-Dokumenten.
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
