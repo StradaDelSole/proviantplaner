@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-07 – DATA1 Release
+
+- FIX-B is OWNER-ACCEPTED / COMPLETE; Issue #27 closed.
+- DATA1 – Catalog-driven Assist Classification is **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**.
+- Issue #28 opened.
+- Canonical reconciliation: `docs/impl/DATA1_release_reconciliation_2026-10-07.md`.
+- Plan: `docs/impl/DATA1_plan.md`.
+- DATA1 is the only released implementation slice.
+- PIVOT2 remains ON HOLD.
+- Watermaker reserve reconciliation remains unreleased.
+- Explicit narrow data exception: create `data/catalog_v0.11.json`; do not alter v0.10 or unrelated catalog semantics.
+
+
 ## 2026-10-07 – FIX-B Owner Acceptance
 
 - Owner explicitly accepted FIX-B.
