@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-07 – FIX-B Final Acceptance Review: Currency Entry Amendment Required
+
+- Final-review implementation HEAD: `dcf273f37faa4d3b621054d3894a72d0543d3e73`.
+- Canonical review: `docs/impl/FIXB_final_acceptance_review_2026-10-07.md`.
+- All prior ledger/accounting/integrity findings verified closed.
+- Remaining blocker: ExpenseSheet still shows hard-coded EUR/€ on Trip amounts and custom splits.
+- Remaining blocker: PaymentSheet still shows hard-coded EUR/€ on deposits.
+- Remaining guardrail: non-EUR generated PayPal fallback must not attach an ambiguous numeric amount.
+- Only this narrow amendment is released. PIVOT2 remains ON HOLD.
+
+
 ## 2026-10-07 – FIX-B Final Narrow Amendment Completed
 
 - **Finding I (Error Integrity)**: `KittyScreen` und `SettlementScreen` unterscheiden jetzt strikt zwischen `LedgerValidationException` (dedizierter "Abrechnung prüfen"-State), `TripNotFoundException` (NotFoundScreen) und unerwarteten technischen Fehlern (Scaffold mit lokalisierter technischer Fehlermeldung, Retry- und Zurück-Aktion; kein irreführendes "Törn nicht gefunden" mehr).
