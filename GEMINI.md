@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.16
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.17
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -20,21 +20,19 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.14 | 06.10.2026 | FIX-B independent review: enger Review-Amendment freigegeben |
 | v0.15 | 07.10.2026 | FIX-B Amendment Re-Review: letzter enger Amendment |
 | v0.16 | 07.10.2026 | FIX-B final acceptance review: Currency-Entry-Amendment |
+| v0.17 | 07.10.2026 | FIX-B final unabhängig geprüft: READY FOR OWNER ACCEPTANCE |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist ausschließlich freigegeben:
-- **FIX-B Currency Entry Amendment**, Issue #27
-- Canonical review: `docs/impl/FIXB_final_acceptance_review_2026-10-07.md`
-- implementation baseline: `dcf273f37faa4d3b621054d3894a72d0543d3e73`
+Aktuell ist **kein neuer Implementierungsslice freigegeben**.
 
-Nur:
-- ExpenseSheet Trip-currency-aware;
-- PaymentSheet Trip-currency-aware;
-- non-EUR PayPal fallback must not carry ambiguous amount;
-- targeted widget/regression tests.
+FIX-B – Unified Settlement Ledger:
+- Status: **READY FOR OWNER ACCEPTANCE**
+- Verified implementation HEAD: `af8ee33ad206e04d22b1097a1a11675a45863314`
+- Final independent review: `docs/impl/FIXB_acceptance_review_2026-10-07.md`
+- Issue #27 bleibt bis zur expliziten Owner Acceptance offen.
 
 Nicht freigegeben:
 - DATA1
@@ -47,7 +45,7 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Nach dem Amendment: **STOP für unabhängigen finalen Re-Review / Owner Acceptance.**
+Nach ausdrücklicher Owner Acceptance von FIX-B: Dokumentation/Closure aktualisieren und anschließend **STOP**. Keinen Folgeslice automatisch freigeben.
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
