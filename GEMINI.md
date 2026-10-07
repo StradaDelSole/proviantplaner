@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.17
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.18
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -21,6 +21,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.15 | 07.10.2026 | FIX-B Amendment Re-Review: letzter enger Amendment |
 | v0.16 | 07.10.2026 | FIX-B final acceptance review: Currency-Entry-Amendment |
 | v0.17 | 07.10.2026 | FIX-B final unabhängig geprüft: READY FOR OWNER ACCEPTANCE |
+| v0.18 | 07.10.2026 | FIX-B Owner Acceptance: COMPLETE; kein Folgeslice freigegeben |
 
 ## Aktueller Status
 
@@ -29,10 +30,11 @@ Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historis
 Aktuell ist **kein neuer Implementierungsslice freigegeben**.
 
 FIX-B – Unified Settlement Ledger:
-- Status: **READY FOR OWNER ACCEPTANCE**
+- Status: **OWNER-ACCEPTED / COMPLETE**
 - Verified implementation HEAD: `af8ee33ad206e04d22b1097a1a11675a45863314`
 - Final independent review: `docs/impl/FIXB_acceptance_review_2026-10-07.md`
-- Issue #27 bleibt bis zur expliziten Owner Acceptance offen.
+- Owner Acceptance: `docs/impl/FIXB_owner_acceptance_2026-10-07.md`
+- Issue #27: CLOSED
 
 Nicht freigegeben:
 - DATA1
@@ -45,7 +47,9 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Nach ausdrücklicher Owner Acceptance von FIX-B: Dokumentation/Closure aktualisieren und anschließend **STOP**. Keinen Folgeslice automatisch freigeben.
+Vor jeder neuen materiellen Slice-Freigabe zuerst den aktuellen Repo-Stand reconciliieren und die relevanten Punkte als DECIDED_AND_IMPLEMENTED / DECIDED_NOT_IMPLEMENTED / SUPERSEDED / UNDECIDED klassifizieren.
+
+Nach dieser Owner Acceptance: **STOP. Keinen Folgeslice automatisch freigeben.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
