@@ -11,71 +11,46 @@
 ///   Keine automatische Mengenempfehlung aus Crew × Tagen als Listenvorschlag.
 library;
 
+import 'catalog_models.dart';
+
 enum AssistType {
-  needsBased,
-  guided,
-  preferenceBased;
+  needsBased('needs_based'),
+  guided('guided'),
+  preferenceBased('preference_based');
+
+  final String rawValue;
+  const AssistType(this.rawValue);
 
   bool get isNeedsBased => this == AssistType.needsBased;
   bool get isGuided => this == AssistType.guided;
   bool get isPreferenceBased => this == AssistType.preferenceBased;
-}
 
-/// Deterministischer Klassifizierer für Gruppen und Varianten anhand des Katalogs.
-class AssistClassifier {
-  /// Kanonische Gruppen-IDs aus `data/catalog_v0.10.json`, die reine Präferenzartikel darstellen.
-  static const Set<String> preferenceGroupIds = {
-    'savory_snacks', // Chips, Nüsse, Salzstangen, Cracker
-    'sweets',        // Schokolade, Kekse, Gummibärchen, Müsliriegel
-    'spread_sweet',  // Marmelade, Honig, Nutella, Erdnussbutter
-    'spread_savory', // Frischkäse, Hummus, Streichwurst
-    'spirits',       // Rum, Gin, Aperol, lokale Spezialitäten (Genussmittel)
-  };
-
-  /// Kanonische Varianten-IDs aus `data/catalog_v0.10.json`, die innerhalb sonst geführter Gruppen
-  /// (z. B. condiments, sauces_pasta, cheese, veg_protein) reine Präferenzartikel darstellen.
-  static const Set<String> preferenceVariantIds = {
-    'pesto',        // sauces_pasta: Pesto
-    'sauce_jar',    // sauces_pasta: Fertigsauce im Glas
-    'tofu',         // veg_protein: Tofu
-    'bbq_sauce',    // condiments: Grillsauce
-    'sweet_chili',  // condiments: Sweet-Chili-Sauce
-    'tabasco',      // condiments: Tabasco / scharfe Sauce
-    'soy_sauce',    // condiments: Sojasauce
-    'brie',         // cheese: Brie / Camembert
-    'feta',         // cheese: Feta
-    'mozzarella',   // cheese: Mozzarella
-    'parmesan',     // cheese: Parmesan / Hartkäse am Stück
-  };
-
-  /// Ermittelt die Assistenzklasse anhand der Gruppen-ID.
-  static AssistType classifyGroup(String groupId) {
-    // 1. Needs-based: Trinkwasser / Sicherheitsreserve
-    if (groupId == 'water' || groupId.startsWith('water_')) {
-      return AssistType.needsBased;
+  /// Parst einen Assist-Typ-String aus den Katalogdaten strikt gemäß Programmierregel 1.
+  /// Wirft eine [FormatException] bei unbekannten Werten oder fehlerhaftem Input.
+  static AssistType fromString(String val, {required String id, required String field}) {
+    for (final a in values) {
+      if (a.rawValue == val) return a;
     }
-
-    // 2. Preference-based: reine Vorlieben / Genuss / Snacks / Aufstriche / Spirituosen
-    if (preferenceGroupIds.contains(groupId)) {
-      return AssistType.preferenceBased;
-    }
-
-    // 3. Guided: Standardvorräte, Grundnahrungsmittel und profilgestützte Getränke (Bier/Wein),
-    // bei denen Richtwerte sinnvoll unterstützen.
-    return AssistType.guided;
+    throw FormatException(
+      'catalog_v0.11.json: Unbekannter Assist-Typ "$val" in $field für ID "$id"',
+    );
   }
 
-  /// Ermittelt die Assistenzklasse für eine konkrete Variante.
-  static AssistType classifyVariant({required String variantId, required String groupId}) {
-    if (variantId.contains('water') || groupId == 'water' || groupId.startsWith('water_')) {
-      return AssistType.needsBased;
-    }
-    if (preferenceVariantIds.contains(variantId) ||
-        variantId.contains('pesto') ||
-        variantId.contains('tofu')) {
-      return AssistType.preferenceBased;
-    }
-    return classifyGroup(groupId);
+  /// Alias für fromString zur konsistenten Deserialisierung.
+  static AssistType fromJson(String val, {String id = 'unknown', String field = 'assist'}) {
+    return fromString(val, id: id, field: field);
+  }
+}
+
+/// Kleine getypte Fassade für die Assistenzklassifikation (DATA1).
+/// Verwendet ausschließlich strikt typisierte Katalogmodelle, keine String-/ID-Heuristiken.
+class AssistClassifier {
+  /// Ermittelt die effektive Assistenzklasse für eine Kombination aus Gruppe und Variante.
+  static AssistType effectiveFor({
+    required CatalogGroup group,
+    required CatalogVariant variant,
+  }) {
+    return variant.assistOverride ?? group.assist;
   }
 }
 

@@ -23,7 +23,7 @@ void main() {
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
-    final catFile = File('data/catalog_v0.8.json');
+    final catFile = File('data/catalog_v0.11.json');
     final quantFile = File('data/quantities_v0.4.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catFile.readAsStringSync(),

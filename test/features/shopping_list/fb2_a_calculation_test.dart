@@ -12,7 +12,7 @@ void main() {
   late QuantityEngine engine;
 
   setUpAll(() {
-    final catalogFile = File('data/catalog_v0.10.json');
+    final catalogFile = File('data/catalog_v0.11.json');
     final quantitiesFile = File('data/quantities_v0.6.json');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;

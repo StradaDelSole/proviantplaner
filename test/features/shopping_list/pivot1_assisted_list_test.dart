@@ -56,7 +56,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
 
-    final catFile = File('data/catalog_v0.10.json');
+    final catFile = File('data/catalog_v0.11.json');
     final quantFile = File('data/quantities_v0.6.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catFile.readAsStringSync(),
@@ -464,57 +464,84 @@ void main() {
       expect(updatedStopItems.any((i) => i.id == salt.id), isTrue);
     });
 
-    test('10. AssistClassifier: Alle konfigurierten Gruppen & Varianten existieren im Katalog v0.10', () {
+    test('10. Kataloggetriebene Assist-Klassifikation (DATA1): Alle 47 Gruppen und 232 Varianten besitzen getypten AssistType', () {
       final catalog = catalogRepo.catalog!;
-      final allGroupIds = catalog.groups.map((g) => g.id).toSet();
-      final allVariantIds = catalog.variants.map((v) => v.id).toSet();
+      expect(catalog.version, '0.11');
+      expect(catalog.groups.length, 47);
+      expect(catalog.variants.length, 232);
 
-      expect(AssistClassifier.preferenceGroupIds, isNotEmpty);
-      expect(AssistClassifier.preferenceVariantIds, isNotEmpty);
-
-      for (final groupId in AssistClassifier.preferenceGroupIds) {
-        expect(allGroupIds.contains(groupId), isTrue,
-            reason: 'Gruppe "$groupId" in AssistClassifier.preferenceGroupIds existiert nicht im Katalog');
+      // Alle 47 Gruppen besitzen strikt getypten AssistType
+      for (final g in catalog.groups) {
+        expect([AssistType.needsBased, AssistType.guided, AssistType.preferenceBased], contains(g.assist));
       }
 
-      for (final variantId in AssistClassifier.preferenceVariantIds) {
-        expect(allVariantIds.contains(variantId), isTrue,
-            reason: 'Variante "$variantId" in AssistClassifier.preferenceVariantIds existiert nicht im Katalog');
+      // Alle 232 Varianten besitzen auflösbaren effektiven AssistType
+      for (final v in catalog.variants) {
+        final eff = catalog.getEffectiveAssist(v);
+        expect([AssistType.needsBased, AssistType.guided, AssistType.preferenceBased], contains(eff));
       }
     });
 
-    test('11. Preference-Regressionen: Snacks, Saucen, Käse & Spirituosen berechnen 0 Richtwert; Bier/Wein bleiben guided', () async {
+    test('11. Preference- & Guided-Regressionen: Snacks, Aufstriche, Pesto, Tofu, Saucen, Käse & Spirituosen berechnen 0 Richtwert; Bier/Wein & Wasser bleiben erhalten', () async {
       final data = await shoppingListService.loadShoppingList(defaultTripId);
 
-      // Savory snack: chips
+      // 1. Water: needsBased mit positivem Richtwert
+      final water = data.allItems.firstWhere((i) => i.id == 'water_15' || i.id.contains('water'));
+      expect(water.assistType, equals(AssistType.needsBased));
+      expect(water.calculatedPackages, greaterThan(0), reason: 'Trinkwasser muss needs-based berechnet werden');
+
+      // 2. Savory snack: chips -> preferenceBased (0 Richtwert)
       final chips = data.allItems.firstWhere((i) => i.id == 'chips');
       expect(chips.assistType, equals(AssistType.preferenceBased));
       expect(chips.calculatedPackages, 0, reason: 'Snacks dürfen keine automatische Bedarfsmenge haben');
       expect(chips.calculatedQuantity, 0.0);
 
-      // Spezielle Würzsauce: bbq_sauce oder sweet_chili
-      final bbqSauce = data.allItems.firstWhere((i) => i.id == 'bbq_sauce');
-      expect(bbqSauce.assistType, equals(AssistType.preferenceBased));
-      expect(bbqSauce.calculatedPackages, 0, reason: 'Spezialsaucen dürfen keine automatische Bedarfsmenge haben');
-      expect(bbqSauce.calculatedQuantity, 0.0);
+      // 3. Sweet spread: jam_strawberry -> preferenceBased (0 Richtwert)
+      final jam = data.allItems.firstWhere((i) => i.id == 'jam_strawberry');
+      expect(jam.assistType, equals(AssistType.preferenceBased));
+      expect(jam.calculatedPackages, 0, reason: 'Süße Aufstriche dürfen keine automatische Bedarfsmenge haben');
+      expect(jam.calculatedQuantity, 0.0);
 
-      // Käse-Präferenzartikel: feta oder parmesan
+      // 4. Spirituosen: rum -> preferenceBased (0 Richtwert)
+      final rum = data.allItems.firstWhere((i) => i.id == 'rum');
+      expect(rum.assistType, equals(AssistType.preferenceBased));
+      expect(rum.calculatedPackages, 0, reason: 'Spirituosen dürfen keine automatische Bedarfsmenge haben');
+      expect(rum.calculatedQuantity, 0.0);
+
+      // 5. Pesto: sauces_pasta Variant Override -> preferenceBased (0 Richtwert)
+      final pesto = data.allItems.firstWhere((i) => i.id == 'pesto');
+      expect(pesto.assistType, equals(AssistType.preferenceBased));
+      expect(pesto.calculatedPackages, 0, reason: 'Pesto darf keine automatische Bedarfsmenge haben');
+      expect(pesto.calculatedQuantity, 0.0);
+
+      // 6. Tofu: veg_protein Variant Override -> preferenceBased (0 Richtwert)
+      final tofu = data.allItems.firstWhere((i) => i.id == 'tofu');
+      expect(tofu.assistType, equals(AssistType.preferenceBased));
+      expect(tofu.calculatedPackages, 0, reason: 'Tofu darf keine automatische Bedarfsmenge haben');
+      expect(tofu.calculatedQuantity, 0.0);
+
+      // 7. Käse-Präferenzartikel: feta -> preferenceBased (0 Richtwert)
       final feta = data.allItems.firstWhere((i) => i.id == 'feta');
       expect(feta.assistType, equals(AssistType.preferenceBased));
       expect(feta.calculatedPackages, 0, reason: 'Präferenzkäse darf keine automatische Bedarfsmenge haben');
       expect(feta.calculatedQuantity, 0.0);
 
-      // Spirituosen / Genussmittel: rum oder gin
-      final rum = data.allItems.firstWhere((i) => i.id == 'rum');
-      expect(rum.assistType, equals(AssistType.preferenceBased));
-      expect(rum.calculatedPackages, 0, reason: 'Spirituosen als Genussmittel dürfen keine automatische Bedarfsmenge haben');
-      expect(rum.calculatedQuantity, 0.0);
+      // 8. Spezielle Würzsauce: bbq_sauce -> preferenceBased (0 Richtwert)
+      final bbqSauce = data.allItems.firstWhere((i) => i.id == 'bbq_sauce');
+      expect(bbqSauce.assistType, equals(AssistType.preferenceBased));
+      expect(bbqSauce.calculatedPackages, 0, reason: 'Spezialsaucen dürfen keine automatische Bedarfsmenge haben');
+      expect(bbqSauce.calculatedQuantity, 0.0);
 
-      // Abgrenzung Guided: Bier & Wein bleiben guided, da Bedarfsformel nach Trinkgewohnheiten (crewDrinking) greift
+      // 9. Abgrenzung Guided: Bier & Wein bleiben guided, da Bedarfsformel nach Trinkgewohnheiten (crewDrinking) greift
       final beer = data.allItems.firstWhere((i) => i.id.contains('beer'));
       expect(beer.assistType, equals(AssistType.guided),
           reason: 'Bier bleibt guided, da über Crew-Trinkgewohnheiten Richtwerte berechnet werden');
       expect(beer.calculatedPackages, greaterThan(0));
+
+      final wine = data.allItems.firstWhere((i) => i.id.contains('wine'));
+      expect(wine.assistType, equals(AssistType.guided),
+          reason: 'Wein bleibt guided, da über Crew-Trinkgewohnheiten Richtwerte berechnet werden');
+      expect(wine.calculatedPackages, greaterThan(0));
     });
 
     testWidgets('12. Kein UI-Bypass: Sowohl Zeilen-Tap als auch Add-Button öffnen AddOrEditItemSheet und adoptieren nicht still', (tester) async {

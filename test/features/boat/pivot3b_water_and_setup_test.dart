@@ -80,7 +80,7 @@ void main() {
     boatProfileService = BoatProfileService(boatProfileDao: db.boatProfileDao);
 
     catalogRepo = CatalogRepository();
-    final catFile = File('data/catalog_v0.10.json');
+    final catFile = File('data/catalog_v0.11.json');
     final quantFile = File('data/quantities_v0.6.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catFile.readAsStringSync(),

@@ -10,7 +10,6 @@
 /// - Modularisierte Funktionen (≤ 40 Zeilen) und Eingabeobjekt
 library;
 
-import '../models/assist_type.dart';
 import '../models/catalog_models.dart';
 import '../models/quantities_models.dart';
 import 'calculation_result.dart';
@@ -624,7 +623,7 @@ class QuantityEngine {
       final state = input.userItemStates[v.id];
       final isSel = (state?.isSelected ?? v.defaultSelected) &&
           !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
-      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
+      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
       if (isSel && !isPref) selectedVariants.add(v);
     }
 
@@ -662,7 +661,7 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
-      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
+      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
 
       if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
@@ -721,7 +720,7 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
-      final isPref = AssistClassifier.classifyVariant(variantId: v.id, groupId: group.id).isPreferenceBased;
+      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
 
       if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
@@ -819,10 +818,7 @@ class QuantityEngine {
     required String? storageNotice,
     String? shelfRemainderNotice,
   }) {
-    final assistType = AssistClassifier.classifyVariant(
-      variantId: variant.id,
-      groupId: group.id,
-    );
+    final assistType = variant.assistOverride ?? group.assist;
     if (assistType.isPreferenceBased) {
       return _VariantComputation(
         variant: variant,
@@ -965,9 +961,7 @@ class QuantityEngine {
     required List<_VariantComputation> variants,
   }) {
     final activeVariants = variants
-        .where((v) => !AssistClassifier.classifyVariant(
-                variantId: v.variant.id, groupId: v.variant.group)
-            .isPreferenceBased)
+        .where((v) => !catalog.getEffectiveAssist(v.variant).isPreferenceBased)
         .toList();
     if (activeVariants.isEmpty) return;
     final targetNeed = activeVariants.fold(0.0, (sum, v) => sum + v.allocatedNeed);
@@ -1016,7 +1010,7 @@ class QuantityEngine {
   VariantCalculationResult _buildVariantResult(_VariantComputation c) {
     final v = c.variant;
     final effPacks = c.overriddenPackages ?? c.packages;
-    final assistType = AssistClassifier.classifyVariant(variantId: v.id, groupId: v.group);
+    final assistType = catalog.getEffectiveAssist(v);
 
     return VariantCalculationResult(
       variantId: v.id,

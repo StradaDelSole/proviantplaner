@@ -1,6 +1,8 @@
-/// Datenmodelle für den Vorratskatalog (data/catalog_v0.7.json).
+/// Datenmodelle für den Vorratskatalog (data/catalog_v0.11.json).
 /// Strikte Typisierung mit Enums gemäß GEMINI.md v0.4 Programmierregel 1.
 library;
+
+import 'assist_type.dart';
 
 /// Rechenbasis für Bedarfsmengen aus dem Vorratskatalog.
 enum CalculationBasis {
@@ -255,6 +257,7 @@ class CatalogGroup {
   final String id;
   final String category;
   final String nameDe;
+  final AssistType assist;
   final CatalogNeed? need;
   final GroupProfile profile;
   final AppliesTo appliesTo;
@@ -268,6 +271,7 @@ class CatalogGroup {
     required this.id,
     required this.category,
     required this.nameDe,
+    required this.assist,
     this.need,
     required this.profile,
     required this.appliesTo,
@@ -281,13 +285,18 @@ class CatalogGroup {
   factory CatalogGroup.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     if (id.isEmpty) {
-      throw const FormatException('catalog_v0.7.json: Fehlende ID in Gruppe');
+      throw const FormatException('catalog_v0.11.json: Fehlende ID in Gruppe');
+    }
+    final assistVal = json['assist'];
+    if (assistVal == null || assistVal is! String || assistVal.isEmpty) {
+      throw FormatException('catalog_v0.11.json: Fehlender oder ungültiger Assist-Typ in Gruppe "$id"');
     }
 
     return CatalogGroup(
       id: id,
       category: json['category'] as String? ?? '',
       nameDe: json['name_de'] as String? ?? '',
+      assist: AssistType.fromString(assistVal, id: id, field: 'assist'),
       need: json['need'] != null
           ? CatalogNeed.fromJson(json['need'] as Map<String, dynamic>, id: id)
           : null,
@@ -319,6 +328,7 @@ class CatalogVariant {
   final CatalogNeed? need;
   final ChillRequirement chill;
   final int? shelfLifeFrozenDays;
+  final AssistType? assistOverride;
 
   const CatalogVariant({
     required this.id,
@@ -336,20 +346,32 @@ class CatalogVariant {
     this.need,
     this.chill = ChillRequirement.none,
     this.shelfLifeFrozenDays,
+    this.assistOverride,
   });
 
   factory CatalogVariant.fromJson(Map<String, dynamic> json) {
     final id = json['id'] as String? ?? '';
     if (id.isEmpty) {
-      throw const FormatException('catalog_v0.7.json: Fehlende ID in Variante');
+      throw const FormatException('catalog_v0.11.json: Fehlende ID in Variante');
     }
     final packJson = json['pack'];
     if (packJson == null || packJson is! Map<String, dynamic>) {
-      throw FormatException('catalog_v0.7.json: Fehlendes pack-Objekt in Variante "$id"');
+      throw FormatException('catalog_v0.11.json: Fehlendes pack-Objekt in Variante "$id"');
     }
     final deptStr = json['department'] as String? ?? '';
     final chillStr = json['chill'] as String? ?? 'none';
     final shelfLifeFrozen = json['shelf_life_frozen_days'] as int?;
+
+    final rawAssist = json['assist'];
+    final AssistType? assistOverride;
+    if (rawAssist != null) {
+      if (rawAssist is! String || rawAssist.isEmpty) {
+        throw FormatException('catalog_v0.11.json: Ungültiger Assist-Typ in Variante "$id": $rawAssist');
+      }
+      assistOverride = AssistType.fromString(rawAssist, id: id, field: 'assist');
+    } else {
+      assistOverride = null;
+    }
 
     return CatalogVariant(
       id: id,
@@ -367,6 +389,7 @@ class CatalogVariant {
       need: json['need'] != null ? CatalogNeed.fromJson(json['need'] as Map<String, dynamic>, id: id) : null,
       chill: ChillRequirement.fromString(chillStr, id: id, field: 'chill'),
       shelfLifeFrozenDays: shelfLifeFrozen,
+      assistOverride: assistOverride,
     );
   }
 }
@@ -427,7 +450,7 @@ class CatalogData {
     }
 
     return CatalogData(
-      version: json['version'] as String? ?? '0.10',
+      version: json['version'] as String? ?? '0.11',
       categories: categoriesList,
       groups: groupsList,
       variants: variantsList,
@@ -450,5 +473,29 @@ class CatalogData {
       if (v.id == variantId) return v;
     }
     return null;
+  }
+
+  /// Liefert den effektiven [AssistType] für eine Variante anhand ihrer ID.
+  /// Wirft eine [FormatException], falls die Variante oder ihre Gruppe im Katalog fehlt.
+  AssistType getAssistTypeForVariant(String variantId) {
+    final variant = getVariant(variantId);
+    if (variant == null) {
+      throw FormatException('catalog_v0.11.json: Variante "$variantId" nicht im Katalog gefunden');
+    }
+    return getEffectiveAssist(variant);
+  }
+
+  /// Liefert den effektiven [AssistType] für ein [CatalogVariant]-Objekt:
+  /// `variant.assistOverride ?? group.assist`.
+  /// Wirft eine [FormatException], falls die zugehörige Gruppe im Katalog fehlt.
+  AssistType getEffectiveAssist(CatalogVariant variant) {
+    if (variant.assistOverride != null) {
+      return variant.assistOverride!;
+    }
+    final group = getGroup(variant.group);
+    if (group == null) {
+      throw FormatException('catalog_v0.11.json: Gruppe "${variant.group}" für Variante "${variant.id}" nicht im Katalog gefunden');
+    }
+    return group.assist;
   }
 }

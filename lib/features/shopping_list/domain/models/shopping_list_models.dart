@@ -34,6 +34,7 @@ class ShoppingListItemView {
   final CheckItemState checkState;
   final bool isAdopted;
   final Map<int, ListItemAllocation> allocationsByStop;
+  final AssistType assistType;
 
   const ShoppingListItemView({
     required this.item,
@@ -57,6 +58,7 @@ class ShoppingListItemView {
     this.checkState = CheckItemState.available,
     this.isAdopted = false,
     required this.allocationsByStop,
+    this.assistType = AssistType.guided,
   });
 
   ShoppingListItemView copyWith({
@@ -81,6 +83,7 @@ class ShoppingListItemView {
     CheckItemState? checkState,
     bool? isAdopted,
     Map<int, ListItemAllocation>? allocationsByStop,
+    AssistType? assistType,
   }) {
     return ShoppingListItemView(
       item: item ?? this.item,
@@ -104,17 +107,12 @@ class ShoppingListItemView {
       checkState: checkState ?? this.checkState,
       isAdopted: isAdopted ?? this.isAdopted,
       allocationsByStop: allocationsByStop ?? this.allocationsByStop,
+      assistType: assistType ?? this.assistType,
     );
   }
 
   /// Gibt an, ob dieser Artikel auf der Einkaufsliste steht (übernommen mit Menge > 0 oder eigene Position).
   bool get isOnList => isCustom || (isAdopted && effectivePackages > 0);
-
-  /// Assistenzklasse gemäß PIVOT1 (needsBased, guided, preferenceBased).
-  AssistType get assistType => AssistClassifier.classifyVariant(
-        variantId: id,
-        groupId: variant?.group ?? categoryId,
-      );
 
   /// Effektive Packungsanzahl (überschrieben oder berechnet, wenn übernommen).
   int get effectivePackages {

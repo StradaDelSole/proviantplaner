@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
@@ -10,10 +11,10 @@ void main() {
   late QuantitiesData quantities;
 
   setUpAll(() {
-    final catalogFile = File('data/catalog_v0.10.json');
+    final catalogFile = File('data/catalog_v0.11.json');
     final quantitiesFile = File('data/quantities_v0.6.json');
 
-    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.10.json existiert');
+    expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.11.json existiert');
     expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.6.json existiert');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;
@@ -23,9 +24,9 @@ void main() {
     quantities = QuantitiesData.fromJson(quantitiesMap);
   });
 
-  group('Slice S2a: Katalog-Validierungstest über alle Einträge (Programmierregel 7)', () {
+  group('DATA1: Katalog-Validierungstest v0.11 und Assistenzklassifikation (Programmierregel 7)', () {
     test('Katalog- und Mengendateien haben korrekte Versionen', () {
-      expect(catalog.version, '0.10');
+      expect(catalog.version, '0.11');
       expect(quantities.version, '0.6');
     });
 
@@ -66,10 +67,8 @@ void main() {
           if (needUnit == null) continue;
 
           if (needUnit == 'Packung') {
-            // Packung ist direkt als Stückzahl zulässig
             expect(needUnit, 'Packung');
           } else if (needUnit == 'Portion') {
-            // Bei Bedarf in Portionen MUSS variant.portion vorhanden sein
             expect(v.portion, isNotNull,
                 reason: 'Variante ${v.id} in Gruppe ${group.id} hat Bedarf in Portionen, aber kein portion-Feld');
             expect(
@@ -79,7 +78,6 @@ void main() {
                   'Portionseinheit ${v.portion!.unit} in ${v.id} ist inkompatibel zu Packungseinheit ${v.pack.unit}',
             );
           } else {
-            // Bedarfseinheit und Packungseinheit müssen kompatibel sein (g<->kg, ml<->l oder identisch)
             final compatible = UnitConverter.areCompatible(needUnit, v.pack.unit);
             expect(
               compatible,
@@ -121,6 +119,150 @@ void main() {
       expect(quantities.waterLiters['hot']!.defaultValue, 3.5);
 
       expect(quantities.waterTankReserveLitersPerPerson, 1.5);
+    });
+
+    // --- DATA1 Parser- & Validierungstests (Abschnitt 15) ---
+
+    test('1. gültige Group-Assist-Werte werden strikt geparst', () {
+      final g1 = CatalogGroup.fromJson({
+        'id': 'g1', 'category': 'c', 'name_de': 'N', 'assist': 'needs_based',
+        'profile': 'none', 'applies_to': 'all', 'split': 'equal', 'visibility': 'all', 'mode': 'quantity'
+      });
+      expect(g1.assist, AssistType.needsBased);
+
+      final g2 = CatalogGroup.fromJson({
+        'id': 'g2', 'category': 'c', 'name_de': 'N', 'assist': 'guided',
+        'profile': 'none', 'applies_to': 'all', 'split': 'equal', 'visibility': 'all', 'mode': 'quantity'
+      });
+      expect(g2.assist, AssistType.guided);
+
+      final g3 = CatalogGroup.fromJson({
+        'id': 'g3', 'category': 'c', 'name_de': 'N', 'assist': 'preference_based',
+        'profile': 'none', 'applies_to': 'all', 'split': 'equal', 'visibility': 'all', 'mode': 'quantity'
+      });
+      expect(g3.assist, AssistType.preferenceBased);
+    });
+
+    test('2. fehlendes Group-assist wirft FormatException', () {
+      expect(
+        () => CatalogGroup.fromJson({
+          'id': 'g_missing', 'category': 'c', 'name_de': 'N',
+          'profile': 'none', 'applies_to': 'all', 'split': 'equal', 'visibility': 'all', 'mode': 'quantity'
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('3. unbekanntes Group-assist wirft FormatException', () {
+      expect(
+        () => CatalogGroup.fromJson({
+          'id': 'g_unknown', 'category': 'c', 'name_de': 'N', 'assist': 'invalid_type',
+          'profile': 'none', 'applies_to': 'all', 'split': 'equal', 'visibility': 'all', 'mode': 'quantity'
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('4. Variant ohne Override erbt Gruppenwert', () {
+      final v = CatalogVariant.fromJson({
+        'id': 'v1', 'group': 'bread', 'name_de': 'Brot',
+        'pack': {'size': 500, 'unit': 'g'}, 'department': 'backwaren',
+      });
+      expect(v.assistOverride, isNull);
+      final group = catalog.getGroup('bread')!;
+      expect(catalog.getEffectiveAssist(v), group.assist);
+    });
+
+    test('5. gültiger Variant Override wird geparst', () {
+      final v = CatalogVariant.fromJson({
+        'id': 'v_pesto', 'group': 'sauces_pasta', 'name_de': 'Pesto',
+        'assist': 'preference_based',
+        'pack': {'size': 190, 'unit': 'g'}, 'department': 'konserven',
+      });
+      expect(v.assistOverride, AssistType.preferenceBased);
+      expect(catalog.getEffectiveAssist(v), AssistType.preferenceBased);
+    });
+
+    test('6. unbekannter Variant Override wirft FormatException', () {
+      expect(
+        () => CatalogVariant.fromJson({
+          'id': 'v_invalid', 'group': 'sauces_pasta', 'name_de': 'Pesto',
+          'assist': 'invalid_assist',
+          'pack': {'size': 190, 'unit': 'g'}, 'department': 'konserven',
+        }),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('7. alle 47 Gruppen besitzen gültiges Assist (1 needs_based, 5 preference_based, 41 guided)', () {
+      expect(catalog.groups.length, 47);
+      final needsBased = catalog.groups.where((g) => g.assist == AssistType.needsBased).toList();
+      final prefBased = catalog.groups.where((g) => g.assist == AssistType.preferenceBased).toList();
+      final guided = catalog.groups.where((g) => g.assist == AssistType.guided).toList();
+
+      expect(needsBased.length, 1);
+      expect(needsBased.first.id, 'water');
+
+      expect(prefBased.length, 5);
+      final prefIds = prefBased.map((g) => g.id).toSet();
+      expect(prefIds, equals({'spread_sweet', 'spread_savory', 'sweets', 'savory_snacks', 'spirits'}));
+
+      expect(guided.length, 41);
+    });
+
+    test('8. alle 232 Varianten besitzen einen auflösbaren effektiven AssistType', () {
+      expect(catalog.variants.length, 232);
+      for (final v in catalog.variants) {
+        final effective = catalog.getEffectiveAssist(v);
+        expect([AssistType.needsBased, AssistType.guided, AssistType.preferenceBased], contains(effective));
+        expect(catalog.getAssistTypeForVariant(v.id), equals(effective));
+      }
+    });
+
+    test('9. exakt 11 Varianten besitzen einen preference_based Override', () {
+      final overridden = catalog.variants.where((v) => v.assistOverride != null).toList();
+      expect(overridden.length, 11);
+      final overriddenIds = overridden.map((v) => v.id).toSet();
+      expect(overriddenIds, equals({
+        'brie', 'feta', 'mozzarella', 'parmesan',
+        'sauce_jar', 'pesto', 'soy_sauce', 'bbq_sauce',
+        'sweet_chili', 'tabasco', 'tofu'
+      }));
+      for (final v in overridden) {
+        expect(v.assistOverride, AssistType.preferenceBased);
+      }
+    });
+
+    // --- DATA1 Semantik-Regressionscheck (Abschnitt 18) ---
+
+    test('10. DATA1 Semantik-Regressionscheck: v0.11 ist semantisch identisch zum vor DATA1 akzeptierten Mapping', () {
+      const expectedPrefGroups = {'spread_sweet', 'spread_savory', 'sweets', 'savory_snacks', 'spirits'};
+      const expectedPrefVariants = {
+        'brie', 'feta', 'mozzarella', 'parmesan',
+        'sauce_jar', 'pesto', 'soy_sauce', 'bbq_sauce',
+        'sweet_chili', 'tabasco', 'tofu'
+      };
+
+      for (final g in catalog.groups) {
+        if (g.id == 'water') {
+          expect(g.assist, AssistType.needsBased, reason: 'water muss needsBased sein');
+        } else if (expectedPrefGroups.contains(g.id)) {
+          expect(g.assist, AssistType.preferenceBased, reason: '${g.id} muss preferenceBased sein');
+        } else {
+          expect(g.assist, AssistType.guided, reason: '${g.id} muss guided sein');
+        }
+      }
+
+      for (final v in catalog.variants) {
+        final effective = catalog.getEffectiveAssist(v);
+        if (v.group == 'water') {
+          expect(effective, AssistType.needsBased);
+        } else if (expectedPrefGroups.contains(v.group) || expectedPrefVariants.contains(v.id)) {
+          expect(effective, AssistType.preferenceBased, reason: '${v.id} muss preferenceBased sein');
+        } else {
+          expect(effective, AssistType.guided, reason: '${v.id} muss guided sein');
+        }
+      }
     });
   });
 }

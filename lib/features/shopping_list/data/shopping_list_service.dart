@@ -50,6 +50,7 @@ class TripShoppingListData {
               buyFreshUnderway: false,
               storage: it.storageHints,
               tags: it.variant?.tags ?? [],
+              assistType: it.assistType,
             ))
         .toList();
     return QuantityEngine.calculateWeightAndVolume(adoptedVariants);
@@ -261,6 +262,7 @@ class ShoppingListService {
   ) {
     final group = catalog.getGroup(variant.group);
     final vr = calcResult?.getVariantResult(variant.id);
+    final assistType = vr?.assistType ?? catalog.getEffectiveAssist(variant);
     return ShoppingListItemView(
       item: raw,
       variant: variant,
@@ -283,6 +285,7 @@ class ShoppingListService {
       checkState: raw.checkState,
       isAdopted: raw.isAdopted,
       allocationsByStop: allocations,
+      assistType: assistType,
     );
   }
 

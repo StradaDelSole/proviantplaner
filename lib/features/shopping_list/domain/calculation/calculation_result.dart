@@ -48,11 +48,9 @@ class VariantCalculationResult {
   final String? storageNotice;
   final List<String> storage;
   final List<String> tags;
-  final AssistType? assistType;
+  final AssistType assistType;
 
-  AssistType get effectiveAssistType =>
-      assistType ??
-      AssistClassifier.classifyVariant(variantId: variantId, groupId: groupId);
+  AssistType get effectiveAssistType => assistType;
 
   const VariantCalculationResult({
     required this.variantId,
@@ -76,7 +74,7 @@ class VariantCalculationResult {
     this.storageNotice,
     required this.storage,
     required this.tags,
-    this.assistType,
+    this.assistType = AssistType.guided,
   });
 }
 

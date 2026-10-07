@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-07 – DATA1 Implementation (Catalog-driven Assist Classification, Issue #28)
+
+- Neue Datei `data/catalog_v0.11.json` (aus v0.10; v0.10 unverändert): `version` 0.11, Schema-Doku `assist`, Pflichtfeld `assist` je Gruppe (47 Gruppen: 1 needs_based, 5 preference_based, 41 guided), 11 Varianten-Overrides `preference_based`; 232 Varianten.
+- `AssistType` mit striktem Parsing (`fromString`/`fromJson`, `FormatException`); `CatalogGroup.assist` (Pflicht), `CatalogVariant.assistOverride`; zentrale Auflösung `CatalogData.getEffectiveAssist` / `getAssistTypeForVariant` (`variant.assistOverride ?? group.assist`, kein stiller Default).
+- `AssistClassifier`-Heuristik (ID-Sets, `contains`/`startsWith`) entfernt; `AssistClassifier.effectiveFor` nur noch dünne Fassade über Catalog-Modelle.
+- `QuantityEngine`, `VariantCalculationResult`, `ShoppingListItemView` nutzen katalogbasierte Werte; keine Quantity-Formel geändert.
+- `CatalogRepository` lädt `catalog_v0.11.json`; `pubspec.yaml` Asset ergänzt; Tests auf v0.11 umgestellt.
+- Vorschlag für das PRD: `item_row_widget.dart` enthält noch eine UI-Wasser-Namensheuristik (`isWater`), nicht Teil der Assist-Klassifikation; separat bereinigen.
+
 ## 2026-10-07 – DATA1 Release
 
 - FIX-B is OWNER-ACCEPTED / COMPLETE; Issue #27 closed.
