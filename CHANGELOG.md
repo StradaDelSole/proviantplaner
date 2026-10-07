@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-07 – FIX-B Owner Acceptance
+
+- Owner explicitly accepted FIX-B.
+- Status: **OWNER-ACCEPTED / COMPLETE**.
+- Verified implementation HEAD: `af8ee33ad206e04d22b1097a1a11675a45863314`.
+- Final independent review: `docs/impl/FIXB_acceptance_review_2026-10-07.md`.
+- Owner Acceptance: `docs/impl/FIXB_owner_acceptance_2026-10-07.md`.
+- Issue #27 closed as completed.
+- No next implementation slice released automatically.
+
+
 ## 2026-10-07 – FIX-B Final Independent Acceptance Review
 
 - Reviewed implementation HEAD: `af8ee33ad206e04d22b1097a1a11675a45863314`.
