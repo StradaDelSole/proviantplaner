@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.18
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.19
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -22,22 +22,29 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.16 | 07.10.2026 | FIX-B final acceptance review: Currency-Entry-Amendment |
 | v0.17 | 07.10.2026 | FIX-B final unabhängig geprüft: READY FOR OWNER ACCEPTANCE |
 | v0.18 | 07.10.2026 | FIX-B Owner Acceptance: COMPLETE; kein Folgeslice freigegeben |
+| v0.19 | 07.10.2026 | DATA1 als einziger Implementierungsslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist **kein neuer Implementierungsslice freigegeben**.
+Aktuell ist ausschließlich freigegeben:
+- **DATA1 – Catalog-driven Assist Classification**, Issue #28
+- Canonical reconciliation: `docs/impl/DATA1_release_reconciliation_2026-10-07.md`
+- Plan: `docs/impl/DATA1_plan.md`
 
-FIX-B – Unified Settlement Ledger:
-- Status: **OWNER-ACCEPTED / COMPLETE**
-- Verified implementation HEAD: `af8ee33ad206e04d22b1097a1a11675a45863314`
-- Final independent review: `docs/impl/FIXB_acceptance_review_2026-10-07.md`
-- Owner Acceptance: `docs/impl/FIXB_owner_acceptance_2026-10-07.md`
-- Issue #27: CLOSED
+FIX-B:
+- **OWNER-ACCEPTED / COMPLETE**
+- Issue #27 CLOSED
+
+Für DATA1 gilt ausdrücklich:
+- neue Datei `data/catalog_v0.11.json` ist erlaubt;
+- `data/catalog_v0.10.json` bleibt unverändert;
+- keine anderen Produktdaten/Mengen/Packungen/Shelf-Life/Chill-Werte ändern;
+- AssistType nur aus Catalog Models;
+- keine Produkt-ID- oder Substring-Heuristik.
 
 Nicht freigegeben:
-- DATA1
 - Watermaker-Amendment
 - PIVOT2
 - RECEIPT1
@@ -47,9 +54,7 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Vor jeder neuen materiellen Slice-Freigabe zuerst den aktuellen Repo-Stand reconciliieren und die relevanten Punkte als DECIDED_AND_IMPLEMENTED / DECIDED_NOT_IMPLEMENTED / SUPERSEDED / UNDECIDED klassifizieren.
-
-Nach dieser Owner Acceptance: **STOP. Keinen Folgeslice automatisch freigeben.**
+Nach DATA1-Implementation: **STOP für unabhängigen Review / Owner Acceptance. Keinen Folgeslice automatisch freigeben.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
