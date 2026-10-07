@@ -264,6 +264,27 @@ class PaymentTransfer {
   }
 }
 
+/// Ermittelt die PayPal-URL für einen Transfer.
+///
+/// Bei EUR-Törns wird ohne hinterlegten Link ein Betrags-Fallback
+/// `https://paypal.me/<name>/<amount>` erzeugt.
+/// Bei Nicht-EUR-Törns wird ohne hinterlegten Link kein Betrags-Fallback erzeugt,
+/// um unklare Fremdwährungsbeträge bei PayPal zu vermeiden (liefert `null`).
+String? resolvePaypalUrl({
+  required PaymentTransfer transfer,
+  required String currency,
+}) {
+  final explicitLink = transfer.toMember.paypalLink?.trim();
+  if (explicitLink != null && explicitLink.isNotEmpty) {
+    return explicitLink;
+  }
+  if (currency == 'EUR') {
+    final amountStr = (transfer.amountInCents / 100.0).toStringAsFixed(2);
+    return 'https://paypal.me/${transfer.toMember.name}/$amountStr';
+  }
+  return null;
+}
+
 /// Exception bei ungültigen Feldern im EPC-QR-Code (GiroCode).
 class EpcValidationException implements Exception {
   final String field;

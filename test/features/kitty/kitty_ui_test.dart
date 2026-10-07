@@ -167,6 +167,7 @@ void main() {
             tripId: tripId,
             kittyModel: KittyModel.sharedKitty,
             members: members,
+            currency: 'EUR',
           ),
         ),
       ),
@@ -213,6 +214,7 @@ void main() {
           body: PaymentSheet(
             tripId: tripId,
             members: members,
+            currency: 'EUR',
           ),
         ),
       ),

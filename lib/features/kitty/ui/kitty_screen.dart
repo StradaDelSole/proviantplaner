@@ -249,6 +249,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               tripId: widget.tripId,
               kittyModel: data.model,
               members: data.members,
+              currency: data.trip.currency,
             );
           }
         },
@@ -266,7 +267,12 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
   ) {
     if (data == null) return;
     if (action == 'deposit') {
-      PaymentSheet.show(context, tripId: widget.tripId, members: data.members);
+      PaymentSheet.show(
+        context,
+        tripId: widget.tripId,
+        members: data.members,
+        currency: data.trip.currency,
+      );
     } else if (action == 'treasurer') {
       _showTreasurerDialog(context, ref, data);
     } else if (action == 'settlement') {
@@ -360,6 +366,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
                 context,
                 tripId: widget.tripId,
                 members: data.members,
+                currency: data.trip.currency,
                 initialAmountInCents: 5000,
               );
             },
@@ -923,6 +930,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
             tripId: widget.tripId,
             kittyModel: data.model,
             members: data.members,
+            currency: data.trip.currency,
             expenseToEdit: exp,
           );
           if (res == 'delete' && context.mounted) {

@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-07 – FIX-B Currency Entry Amendment Completed
+
+- **Finding N (Currency-Aware ExpenseSheet)**:
+  - `ExpenseSheet` und `ExpenseSheet.show(...)` erfordern jetzt zwingend `String currency`.
+  - Alle Callers (`KittyScreen` für Add/Edit Expense, `ShoppingModeScreen` und `TripOverviewScreen`) übergeben `data.trip.currency`.
+  - Betragsfeld und Custom-Split-Felder zeigen `€` nur bei EUR und bei Nicht-EUR den ISO-Code (z.B. `USD`).
+  - Interne Variablen auf neutrale Bezeichnungen (`amountUnits`, `memberUnits`) bereinigt.
+- **Finding O (Currency-Aware PaymentSheet)**:
+  - `PaymentSheet` und `PaymentSheet.show(...)` erfordern jetzt zwingend `String currency`.
+  - Alle Callers (`KittyScreen` für Quick Deposit & Menü, `TripOverviewScreen`) übergeben `data.trip.currency`.
+  - Eingabefeld und Suffixe zeigen `€` nur bei EUR, sonst ISO-Code (z.B. `USD`). Gesamtsumme wird über `formatMoneyCents(totalCents, currency)` formatiert.
+- **Finding P (Secure Non-EUR PayPal Fallback)**:
+  - `resolvePaypalUrl(transfer, currency)` in `kitty_models.dart`:
+    - Expliziter PayPal-Link eines Mitglieds wird in EUR und Nicht-EUR unverändert verwendet.
+    - Bei EUR ohne hinterlegten Link wird der amount-bearing Standard-Link `https://paypal.me/<name>/<amount>` erzeugt.
+    - Bei Nicht-EUR ohne hinterlegten Link liefert die Funktion strikt `null`, wodurch der PayPal-Button in `SettlementScreen` deaktiviert wird, um Fehlinterpretationen unpassender Währungen durch externe Provider zu verhindern.
+  - Sichere manuelle Banküberweisungsdaten (`Überweisungsdaten kopieren`) und Teilen (`Revolut-Link teilen`) bleiben voll funktionsfähig und nutzen die Törn-Währung.
+- 10 neue Tests (insgesamt 48 Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`); alle 369 Tests im Gesamtprojekt grün; `flutter analyze` 0 Warnungen.
+- STOP für finalen unabhängigen Re-Review und Owner Acceptance.
+
 ## 2026-10-07 – FIX-B Final Acceptance Review: Currency Entry Amendment Required
 
 - Final-review implementation HEAD: `dcf273f37faa4d3b621054d3894a72d0543d3e73`.

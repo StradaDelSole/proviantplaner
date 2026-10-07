@@ -843,6 +843,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       tripId: widget.tripId,
       kittyModel: kittyData.model,
       members: kittyData.members,
+      currency: kittyData.trip.currency,
     );
     ref.invalidate(tripKittyDataProvider(widget.tripId));
   }
@@ -852,6 +853,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       context,
       tripId: widget.tripId,
       members: kittyData.members,
+      currency: kittyData.trip.currency,
     );
     ref.invalidate(tripKittyDataProvider(widget.tripId));
   }

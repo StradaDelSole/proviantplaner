@@ -544,4 +544,132 @@ Wiederaufnahme und Umsetzung am 07.10.2026.
 - Push auf `main`: Nach Verifikation vorbereitet.
 - **STOP**: Bereit für finalen unabhängigen Re-Review und Owner Acceptance.
 
+---
+
+# Abschlussbericht: FIX-B Currency Entry Amendment
+
+Wiederaufnahme und Umsetzung am 07.10.2026.
+
+- Slice: **FIX-B Currency Entry Amendment**
+- GitHub Issue: **#27**
+- Re-Review Vorgaben: `docs/impl/FIXB_final_acceptance_review_2026-10-07.md`
+- Implementation-Baseline: `dcf273f37faa4d3b621054d3894a72d0543d3e73`
+
+---
+
+## 1. Umgesetzt
+
+- **Finding N – ExpenseSheet Trip-Currency-Awareness**:
+  - `ExpenseSheet` und `ExpenseSheet.show(...)` verlangen zwingend `String currency`.
+  - Suffix im Hauptbetragsfeld und in den Custom-Split-Feldern zeigt `€` für EUR und den Währungscode (z. B. `USD`) für Nicht-EUR.
+  - Variablen auf neutrale Namen (`amountUnits`, `memberUnits`) umbenannt.
+  - Alle Callers (`KittyScreen` für Add/Edit Expense, `ShoppingModeScreen`, `TripOverviewScreen`) übergeben die tatsächliche Törn-Währung `data.trip.currency`.
+  - Kein Schema-Change, keine Fremdwährungsumrechnung (FX).
+
+- **Finding O – PaymentSheet Trip-Currency-Awareness**:
+  - `PaymentSheet` und `PaymentSheet.show(...)` verlangen zwingend `String currency`.
+  - Suffix im Eingabefeld zeigt `€` für EUR und den Währungscode für Nicht-EUR.
+  - Gesamtsummenanzeige nutzt `formatMoneyCents(totalCents, currency)` statt hart codiertem `€`.
+  - Alle Callers (`KittyScreen` für Quick Deposit und Menü, `TripOverviewScreen`) übergeben die tatsächliche Törn-Währung.
+
+- **Finding P – Sicherer PayPal-Fallback für Nicht-EUR-Törns**:
+  - Hilfsfunktion `resolvePaypalUrl(transfer, currency)` in `kitty_models.dart`:
+    - Expliziter PayPal-Link eines Mitglieds: unverändert zurückgegeben (EUR und Nicht-EUR).
+    - EUR ohne Link: generiert `https://paypal.me/<name>/<amount>`.
+    - Nicht-EUR ohne Link: gibt `null` zurück.
+  - `SettlementScreen` setzt bei `null` den PayPal-Button auf deaktiviert (`onPressed: null`), um Fehlinterpretationen unpassender Währungen durch externe Provider zu verhindern.
+  - Manuelle Bankdaten (`Überweisungsdaten kopieren`) und Teilen (`Revolut-Link teilen`) bleiben uneingeschränkt aktiv und formatieren Beträge in der Törn-Währung.
+
+---
+
+## 2. Geänderte und neue Dateien
+
+- `lib/features/kitty/domain/models/kitty_models.dart`: `resolvePaypalUrl` Helper hinzugefügt.
+- `lib/features/kitty/ui/widgets/expense_sheet.dart`: Pflichtparameter `currency`, dynamischer Währungssuffix, Umbenennung `amountUnits`/`memberUnits`.
+- `lib/features/kitty/ui/widgets/payment_sheet.dart`: Pflichtparameter `currency`, dynamischer Währungssuffix, `formatMoneyCents` für Gesamtsumme.
+- `lib/features/kitty/ui/settlement_screen.dart`: `resolvePaypalUrl` Guard für PayPal-Button.
+- `lib/features/kitty/ui/kitty_screen.dart`: Alle Aufrufe von `ExpenseSheet` und `PaymentSheet` mit `data.trip.currency` versorgt.
+- `lib/features/shopping_list/ui/shopping_mode_screen.dart`: `ExpenseSheet.show` mit `kittyData.trip.currency` versorgt.
+- `lib/features/trip/ui/trip_overview_screen.dart`: `ExpenseSheet.show` und `PaymentSheet.show` mit `kittyData.trip.currency` versorgt.
+- `test/features/kitty/fix_b_supplemental_amendment_test.dart`: 10 neue Tests für Findings N–P (insgesamt 48 Tests in der Datei).
+- `test/features/kitty/fix_b_unified_ledger_test.dart`: Test-Aufrufe mit `currency: 'EUR'` aktualisiert.
+- `test/features/kitty/kitty_ui_test.dart`: Test-Aufrufe mit `currency: 'EUR'` aktualisiert.
+- `CHANGELOG.md`: FIX-B Currency Entry Amendment dokumentiert.
+- `README.md`: Status aktualisiert.
+- `docs/impl/FIXB_bericht.md`: Dieser Abschlussbericht.
+
+---
+
+## 3. Analyse & Tests
+
+- `flutter analyze`: **No issues found!** (0 Fehler, 0 Warnungen)
+- `flutter test test/features/kitty/fix_b_supplemental_amendment_test.dart`: **48/48 Tests bestanden**
+- `flutter test test/features/kitty/fix_b_unified_ledger_test.dart`: **17/17 Tests bestanden**
+- `flutter test test/features/kitty/kitty_ui_test.dart`: **6/6 Tests bestanden**
+- `flutter test`: **369/369 Tests bestanden** (gesamte Suite grün)
+
+---
+
+## 4. Abnahmekriterien (Final Acceptance Review Findings N–P)
+
+1. **Finding N (ExpenseSheet Currency-Awareness)**:
+   - *Erfüllt* – Nachweis: automatische Widget-Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Finding N: USD ExpenseSheet Add zeigt USD, kein €, Custom Split in USD und speichert USD in DB*
+     - *Finding N: USD Expense Edit Sheet zeigt USD, kein €, speichert neuen Betrag und bewahrt USD*
+     - *EUR Regression: ExpenseSheet und PaymentSheet zeigen weiterhin € für normale EUR-Törns*
+2. **Finding O (PaymentSheet Currency-Awareness)**:
+   - *Erfüllt* – Nachweis: automatischer Widget-Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Finding O: USD PaymentSheet zeigt USD, kein €, formatiert Gesamtsumme in USD und persistiert*
+     - *EUR Regression: ExpenseSheet und PaymentSheet zeigen weiterhin € für normale EUR-Törns*
+3. **Finding P (Nicht-EUR PayPal-Fallback Guard)**:
+   - *Erfüllt* – Nachweis: automatische Unit- und Widget-Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *PayPal URL Resolver Helper Unit Tests EUR ohne expliziten Link erzeugt amount-bearing Link*
+     - *PayPal URL Resolver Helper Unit Tests EUR mit explizitem Link liefert gespeicherten Link unverändert*
+     - *PayPal URL Resolver Helper Unit Tests USD ohne expliziten Link liefert null (kein ambivalenter Betrags-Link)*
+     - *PayPal URL Resolver Helper Unit Tests USD mit explizitem Link liefert gespeicherten Link unverändert*
+     - *Finding P: USD Settlement deaktiviert PayPal-Fallback ohne hinterlegten Link und hält Share in USD*
+     - *Finding P: EUR Settlement behält funktionierenden PayPal-Fallback ohne hinterlegten Link*
+
+---
+
+## 5. Offen / Risiken
+
+- Keine im freigegebenen FIX-B Scope.
+- Alle weiteren post-Pivot Slices (PIVOT2, DATA1, Watermaker Reserve Amendment, etc.) bleiben unverändert auf HOLD bzw. ungated.
+
+---
+
+## 6. Annahmen / Abweichungen vom PRD
+
+- Keine.
+
+---
+
+## 7. Selbstprüfung Programmierregeln 1–10
+
+1. **Feste Typen**: Eingehalten. `resolvePaypalUrl`, `currency` als `String`, `cents` als `int`.
+2. **Keine versteckten Platzhalter**: Eingehalten. Keine Stubs, keine `TODO`s.
+3. **Ehrliche Berichte**: Eingehalten. Alle genannten Tests sind real ausgeführt und im Repo vorhanden.
+4. **Alles datengetrieben**: Eingehalten. Währung kommt aus `trip.currency`.
+5. **Rechnen mit Kommazahlen**: Eingehalten. Alle Beträge in Cent als `int`.
+6. **Struktur**: Eingehalten.
+7. **Tests**: Eingehalten. 10 neue Tests für das Currency Entry Amendment, plus bestehende 38 Amendment-Tests und 17 Core-Tests unangetastet grün.
+8. **Keine Eigenbauten von Standards**: Eingehalten.
+9. **Nur berichten, was tatsächlich geschehen ist**: Eingehalten. 369/369 reale grüne Tests.
+10. **Nichts aus späteren Versionen sichtbar gebaut**: Eingehalten.
+
+---
+
+## 8. Vorschläge für das PRD
+
+- Keine.
+
+---
+
+## 9. Commit & Push
+
+- Commit: `FIX-B: Currency entry amendment`
+- Push auf `main`: Nach Verifikation vorbereitet.
+- **STOP**: Bereit für finalen unabhängigen Re-Review und Owner Acceptance.
+
 

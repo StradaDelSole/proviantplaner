@@ -776,6 +776,7 @@ void main() {
               tripId: tripId,
               kittyModel: KittyModel.sharedKitty,
               members: members,
+              currency: 'EUR',
             ),
           ),
         ),
@@ -870,6 +871,7 @@ void main() {
                         tripId: tripId,
                         kittyModel: KittyModel.sharedKitty,
                         members: members,
+                        currency: 'EUR',
                         expenseToEdit: exp,
                       ),
                     );

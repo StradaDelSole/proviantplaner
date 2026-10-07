@@ -39,6 +39,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       tripId: widget.tripId,
       kittyModel: kittyData.model,
       members: kittyData.members,
+      currency: kittyData.trip.currency,
       initialTitle: '${l10n.shoppingModeTitle} ${stop.name}',
     );
   }

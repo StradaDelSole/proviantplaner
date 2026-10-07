@@ -13,6 +13,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
   final int tripId;
   final KittyModel kittyModel;
   final List<KittyMember> members;
+  final String currency;
   final KittyExpense? expenseToEdit;
   final String? initialTitle;
 
@@ -21,6 +22,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
     required this.tripId,
     required this.kittyModel,
     required this.members,
+    required this.currency,
     this.expenseToEdit,
     this.initialTitle,
   });
@@ -31,6 +33,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
     required int tripId,
     required KittyModel kittyModel,
     required List<KittyMember> members,
+    required String currency,
     KittyExpense? expenseToEdit,
     String? initialTitle,
   }) {
@@ -42,6 +45,7 @@ class ExpenseSheet extends ConsumerStatefulWidget {
         tripId: tripId,
         kittyModel: kittyModel,
         members: members,
+        currency: currency,
         expenseToEdit: expenseToEdit,
         initialTitle: initialTitle,
       ),
@@ -96,12 +100,14 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     super.dispose();
   }
 
+  String get _currencySuffix => widget.currency == 'EUR' ? '€' : widget.currency;
+
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
 
     final amountStr = _amountController.text.trim().replaceAll(',', '.');
-    final amountEuros = double.tryParse(amountStr) ?? 0.0;
-    final amountInCents = (amountEuros * 100).round();
+    final amountUnits = double.tryParse(amountStr) ?? 0.0;
+    final amountInCents = (amountUnits * 100).round();
     if (amountInCents <= 0) return;
 
     Map<int, int>? customSplit;
@@ -109,8 +115,8 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       customSplit = {};
       for (final m in widget.members) {
         final valStr = _splitControllers[m.id]?.text.trim().replaceAll(',', '.') ?? '';
-        final memberEuros = double.tryParse(valStr) ?? 0.0;
-        customSplit[m.id] = (memberEuros * 100).round();
+        final memberUnits = double.tryParse(valStr) ?? 0.0;
+        customSplit[m.id] = (memberUnits * 100).round();
       }
     }
 
@@ -221,7 +227,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       autofocus: widget.expenseToEdit == null,
       decoration: InputDecoration(
         labelText: '${l10n.fundAmount} *',
-        suffixText: '€',
+        suffixText: _currencySuffix,
         border: const OutlineInputBorder(),
       ),
       validator: (val) {
@@ -381,10 +387,10 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
                 child: TextField(
                   controller: _splitControllers[m.id],
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    suffixText: '€',
+                  decoration: InputDecoration(
+                    suffixText: _currencySuffix,
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),

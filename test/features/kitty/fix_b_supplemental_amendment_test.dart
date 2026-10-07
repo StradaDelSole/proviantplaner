@@ -59,7 +59,11 @@ void main() {
     await db.close();
   });
 
-  Future<int> createStandardTrip({String currency = 'EUR', KittyModel kittyModel = KittyModel.sharedKitty}) async {
+  Future<int> createStandardTrip({
+    String currency = 'EUR',
+    KittyModel kittyModel = KittyModel.sharedKitty,
+    bool setTreasurer = false,
+  }) async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(
         name: 'Test Törn',
@@ -69,8 +73,11 @@ void main() {
         kittyModel: Value(kittyModel),
       ),
     );
-    await db.tripDao.addCrewMember(CrewMembersCompanion.insert(tripId: tripId, name: 'Alice'));
+    final aId = await db.tripDao.addCrewMember(CrewMembersCompanion.insert(tripId: tripId, name: 'Alice'));
     await db.tripDao.addCrewMember(CrewMembersCompanion.insert(tripId: tripId, name: 'Bob'));
+    if (setTreasurer) {
+      await db.tripDao.setTripTreasurer(tripId, aId);
+    }
     return tripId;
   }
 
@@ -1337,6 +1344,423 @@ void main() {
       expect(restoredData.sharedResult!.totalExpensesInCents, equals(6500));
       expect(restoredData.sharedResult!.currentBalanceInCents, equals(500)); // 2000 eingezahlt - 1500 gezahlt = 500
       expect(restoredData.transfers, isNotEmpty);
+    });
+  });
+
+  group('Findings N–P: Currency Entry Surfaces & PayPal Fallback Guard', () {
+    group('PayPal URL Resolver Helper Unit Tests', () {
+      test('EUR ohne expliziten Link erzeugt amount-bearing Link', () {
+        const from = KittyMember(id: 1, name: 'Bob', categoryParticipation: {});
+        const to = KittyMember(id: 2, name: 'Alice', categoryParticipation: {});
+        const transfer = PaymentTransfer(fromMember: from, toMember: to, amountInCents: 1500);
+
+        final url = resolvePaypalUrl(transfer: transfer, currency: 'EUR');
+        expect(url, equals('https://paypal.me/Alice/15.00'));
+      });
+
+      test('EUR mit explizitem Link liefert gespeicherten Link unverändert', () {
+        const from = KittyMember(id: 1, name: 'Bob', categoryParticipation: {});
+        const to = KittyMember(id: 2, name: 'Alice', categoryParticipation: {}, paypalLink: 'https://paypal.me/alice_custom');
+        const transfer = PaymentTransfer(fromMember: from, toMember: to, amountInCents: 1500);
+
+        final url = resolvePaypalUrl(transfer: transfer, currency: 'EUR');
+        expect(url, equals('https://paypal.me/alice_custom'));
+      });
+
+      test('USD ohne expliziten Link liefert null (kein ambivalenter Betrags-Link)', () {
+        const from = KittyMember(id: 1, name: 'Bob', categoryParticipation: {});
+        const to = KittyMember(id: 2, name: 'Alice', categoryParticipation: {});
+        const transfer = PaymentTransfer(fromMember: from, toMember: to, amountInCents: 1500);
+
+        final url = resolvePaypalUrl(transfer: transfer, currency: 'USD');
+        expect(url, isNull);
+      });
+
+      test('USD mit explizitem Link liefert gespeicherten Link unverändert', () {
+        const from = KittyMember(id: 1, name: 'Bob', categoryParticipation: {});
+        const to = KittyMember(id: 2, name: 'Alice', categoryParticipation: {}, paypalLink: 'https://paypal.me/alice_usd');
+        const transfer = PaymentTransfer(fromMember: from, toMember: to, amountInCents: 1500);
+
+        final url = resolvePaypalUrl(transfer: transfer, currency: 'USD');
+        expect(url, equals('https://paypal.me/alice_usd'));
+      });
+    });
+
+    testWidgets('Finding N: USD ExpenseSheet Add zeigt USD, kein €, Custom Split in USD und speichert USD in DB', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createStandardTrip(currency: 'USD', setTreasurer: true);
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // FAB antippen -> ExpenseSheet öffnet sich
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Hauptbetrag zeigt USD Suffix und kein €
+      expect(find.text('USD'), findsWidgets);
+      expect(find.text('€'), findsNothing);
+
+      // Custom Split aktivieren unter "Mehr Optionen"
+      final moreOptionsFinder = find.text('Mehr Optionen');
+      await tester.ensureVisible(moreOptionsFinder);
+      await tester.tap(moreOptionsFinder);
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.widgetWithText(SwitchListTile, 'Individuelle Betragsaufteilung');
+      await tester.ensureVisible(switchFinder);
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      // Beide Crew-Mitglieder (Alice und Bob) und Hauptfeld zeigen USD Suffix, kein €
+      expect(find.text('USD'), findsNWidgets(3));
+      expect(find.text('€'), findsNothing);
+
+      // Beträge eingeben: Gesamt 60.00 USD, Alice 40.00, Bob 20.00
+      final amountField = find.widgetWithText(TextFormField, 'Betrag *');
+      await tester.ensureVisible(amountField);
+      await tester.enterText(amountField, '60.00');
+
+      // Split Textfelder ausfüllen (Index 0 ist Betrag, Index 1 ist Titel, Index 2 & 3 sind die Split-Felder)
+      await tester.enterText(find.byType(TextField).at(2), '40.00');
+      await tester.enterText(find.byType(TextField).at(3), '20.00');
+      await tester.pumpAndSettle();
+
+      // Speichern
+      final saveFinder = find.text('Ausgabe speichern');
+      await tester.ensureVisible(saveFinder);
+      await tester.tap(saveFinder);
+      await tester.pumpAndSettle();
+
+      // In der DB prüfen
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      expect(expenses.length, equals(1));
+      expect(expenses.first.amount, equals(60.0));
+      expect(expenses.first.currency, equals('USD'));
+      expect(expenses.first.customSplit, isNotNull);
+    });
+
+    testWidgets('Finding N: USD Expense Edit Sheet zeigt USD, kein €, speichert neuen Betrag und bewahrt USD', (tester) async {
+      final tripId = await createStandardTrip(currency: 'USD', setTreasurer: true);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+
+      // Vorhandene USD-Expense anlegen
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'Dinner USD',
+        amountInCents: 5000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: crew.first.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Expense antippen zum Bearbeiten
+      final expFinder = find.text('Dinner USD');
+      await tester.ensureVisible(expFinder);
+      await tester.tap(expFinder);
+      await tester.pumpAndSettle();
+
+      // Edit Sheet prüft USD Suffix und Abwesenheit von €
+      expect(find.text('Bearbeiten'), findsOneWidget);
+      expect(find.text('USD'), findsWidgets);
+      expect(find.text('€'), findsNothing);
+
+      // Betrag auf 75.00 ändern
+      final amountField = find.widgetWithText(TextFormField, 'Betrag *');
+      await tester.enterText(amountField, '75.00');
+      await tester.pumpAndSettle();
+
+      // Speichern
+      final saveFinder = find.text('Ausgabe speichern');
+      await tester.ensureVisible(saveFinder);
+      await tester.tap(saveFinder);
+      await tester.pumpAndSettle();
+
+      // DB prüfen: neuer Betrag 75.00, currency USD
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      expect(expenses.length, equals(1));
+      expect(expenses.first.amount, equals(75.0));
+      expect(expenses.first.currency, equals('USD'));
+    });
+
+    testWidgets('Finding O: USD PaymentSheet zeigt USD, kein €, formatiert Gesamtsumme in USD und persistiert', (tester) async {
+      final tripId = await createStandardTrip(currency: 'USD', kittyModel: KittyModel.sharedKitty, setTreasurer: true);
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Popup-Menü öffnen und "Einzahlung erfassen" wählen
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Einzahlung erfassen'));
+      await tester.pumpAndSettle();
+
+      // PaymentSheet zeigt "Wie viel zahlt jeder ein? (USD)", Suffix "USD", kein "€"
+      expect(find.text('Einzahlung erfassen'), findsOneWidget);
+      expect(find.textContaining('Wie viel zahlt jeder ein? (USD)'), findsOneWidget);
+      expect(find.text('USD'), findsWidgets);
+      expect(find.text('€'), findsNothing);
+
+      // Betrag 50.00 eingeben
+      final amountField = find.widgetWithText(TextFormField, 'Wie viel zahlt jeder ein? (USD)');
+      await tester.enterText(amountField, '50.00');
+      await tester.pumpAndSettle();
+
+      // 2 Personen vorausgewählt -> Gesamtsumme 100,00 USD
+      expect(find.text('Einzahlungen speichern (100,00 USD)'), findsOneWidget);
+      expect(find.textContaining('€'), findsNothing);
+
+      // Speichern
+      await tester.tap(find.text('Einzahlungen speichern (100,00 USD)'));
+      await tester.pumpAndSettle();
+
+      // In DB und Ledger prüfen
+      final payments = await db.expenseDao.getKittyPaymentsForTrip(tripId);
+      expect(payments.length, equals(2));
+      for (final p in payments) {
+        expect(p.amount, equals(50.0));
+      }
+
+      final kittyData = await kittyService.loadKittyData(tripId);
+      expect(kittyData.sharedResult!.totalDepositsInCents, equals(10000));
+      expect(kittyData.trip.currency, equals('USD'));
+    });
+
+    testWidgets('EUR Regression: ExpenseSheet und PaymentSheet zeigen weiterhin € für normale EUR-Törns', (tester) async {
+      final tripId = await createStandardTrip(currency: 'EUR', setTreasurer: true);
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // ExpenseSheet öffnen -> € sichtbar
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('€'), findsWidgets);
+      expect(find.text('EUR'), findsNothing);
+
+      // Schließen
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      // PaymentSheet öffnen -> € sichtbar
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Einzahlung erfassen'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Wie viel zahlt jeder ein? (€)'), findsOneWidget);
+      expect(find.text('€'), findsWidgets);
+      expect(find.text('EUR'), findsNothing);
+    });
+
+    testWidgets('Finding P: USD Settlement deaktiviert PayPal-Fallback ohne hinterlegten Link und hält Share in USD', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createStandardTrip(currency: 'USD', kittyModel: KittyModel.individualSettlement);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      // Beide haben IBAN, aber KEINEN PayPal-Link
+      await db.tripDao.updateCrewMember(alice.copyWith(iban: const Value('DE89370400440532013000')));
+      await db.tripDao.updateCrewMember(bob.copyWith(iban: const Value('DE89370400440532013000')));
+
+      // Alice zahlt 40 USD -> Bob schuldet Alice 20 USD
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'Groceries USD',
+        amountInCents: 4000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Transfer Betrag zeigt USD
+      expect(find.text('20,00 USD'), findsOneWidget);
+      expect(find.textContaining('€'), findsNothing);
+
+      // Transfer-Karte ausklappen falls noch nicht ausgeklappt
+      if (find.text('PayPal-Link teilen').evaluate().isEmpty) {
+        await tester.tap(find.text('Bezahlen').first);
+        await tester.pumpAndSettle();
+      }
+
+      // PayPal Button finden
+      expect(find.text('PayPal-Link teilen'), findsOneWidget);
+      final paypalButtonFinder = find.ancestor(
+        of: find.text('PayPal-Link teilen'),
+        matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+      );
+      expect(paypalButtonFinder, findsOneWidget);
+
+      final paypalButton = tester.widget<OutlinedButton>(paypalButtonFinder);
+      // Ohne expliziten PayPal-Link in USD MUSS der Button deaktiviert sein
+      expect(paypalButton.onPressed, isNull);
+
+      // Manuelle Zahlungsdaten und Teilen sind weiterhin aktiv
+      expect(find.text('Überweisungsdaten kopieren'), findsOneWidget);
+      expect(find.text('Revolut-Link teilen'), findsOneWidget);
+    });
+
+    testWidgets('Finding P: EUR Settlement behält funktionierenden PayPal-Fallback ohne hinterlegten Link', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createStandardTrip(currency: 'EUR', kittyModel: KittyModel.individualSettlement);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      await db.tripDao.updateCrewMember(alice.copyWith(iban: const Value('DE89370400440532013000')));
+      await db.tripDao.updateCrewMember(bob.copyWith(iban: const Value('DE89370400440532013000')));
+
+      // Alice zahlt 40 EUR -> Bob schuldet Alice 20 EUR
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'Groceries EUR',
+        amountInCents: 4000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Transfer-Karte ausklappen falls noch nicht ausgeklappt
+      if (find.text('PayPal-Link teilen').evaluate().isEmpty) {
+        await tester.tap(find.text('Bezahlen').first);
+        await tester.pumpAndSettle();
+      }
+
+      expect(find.text('PayPal-Link teilen'), findsOneWidget);
+      final paypalButtonFinder = find.ancestor(
+        of: find.text('PayPal-Link teilen'),
+        matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+      );
+      expect(paypalButtonFinder, findsOneWidget);
+
+      final paypalButton = tester.widget<OutlinedButton>(paypalButtonFinder);
+      // In EUR ist der Button aktiv
+      expect(paypalButton.onPressed, isNotNull);
     });
   });
 }

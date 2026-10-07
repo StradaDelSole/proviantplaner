@@ -11,12 +11,14 @@ import '../../domain/models/kitty_models.dart';
 class PaymentSheet extends ConsumerStatefulWidget {
   final int tripId;
   final List<KittyMember> members;
+  final String currency;
   final int? initialAmountInCents;
 
   const PaymentSheet({
     super.key,
     required this.tripId,
     required this.members,
+    required this.currency,
     this.initialAmountInCents,
   });
 
@@ -25,6 +27,7 @@ class PaymentSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required int tripId,
     required List<KittyMember> members,
+    required String currency,
     int? initialAmountInCents,
   }) {
     return showModalBottomSheet(
@@ -34,6 +37,7 @@ class PaymentSheet extends ConsumerStatefulWidget {
       builder: (ctx) => PaymentSheet(
         tripId: tripId,
         members: members,
+        currency: currency,
         initialAmountInCents: initialAmountInCents,
       ),
     );
@@ -65,10 +69,12 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     super.dispose();
   }
 
+  String get _currencySuffix => widget.currency == 'EUR' ? '€' : widget.currency;
+
   int? _parseAmountInCents() {
     final str = _amountController.text.trim().replaceAll(',', '.');
-    final euros = double.tryParse(str) ?? 0.0;
-    final cents = (euros * 100).round();
+    final units = double.tryParse(str) ?? 0.0;
+    final cents = (units * 100).round();
     return cents > 0 ? cents : null;
   }
 
@@ -102,7 +108,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     final theme = Theme.of(context);
     final cents = _parseAmountInCents();
     final totalCents = (cents ?? 0) * _selectedMemberIds.length;
-    final totalEuros = (totalCents / 100.0).toStringAsFixed(2).replaceAll('.', ',');
+    final formattedTotal = formatMoneyCents(totalCents, widget.currency);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -124,7 +130,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               const SizedBox(height: 16),
               _buildMembersChecklist(theme),
               const SizedBox(height: 20),
-              _buildSubmitButton(theme, l10n, totalEuros),
+              _buildSubmitButton(theme, l10n, formattedTotal),
               const SizedBox(height: 24),
             ],
           ),
@@ -161,8 +167,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         fontWeight: FontWeight.bold,
       ),
       decoration: InputDecoration(
-        labelText: 'Wie viel zahlt jeder ein? (€)',
-        suffixText: '€',
+        labelText: 'Wie viel zahlt jeder ein? ($_currencySuffix)',
+        suffixText: _currencySuffix,
         suffixStyle: theme.textTheme.headlineSmall?.copyWith(
           fontFamily: 'JetBrains Mono',
         ),
@@ -246,11 +252,11 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
     );
   }
 
-  Widget _buildSubmitButton(ThemeData theme, AppLocalizations l10n, String totalEuros) {
+  Widget _buildSubmitButton(ThemeData theme, AppLocalizations l10n, String formattedTotal) {
     final hasSelection = _selectedMemberIds.isNotEmpty;
     final cents = _parseAmountInCents();
     final buttonText = (cents != null && hasSelection)
-        ? 'Einzahlungen speichern ($totalEuros €)'
+        ? 'Einzahlungen speichern ($formattedTotal)'
         : l10n.fundSaveDeposit;
 
     return FilledButton(

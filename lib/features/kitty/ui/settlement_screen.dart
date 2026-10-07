@@ -816,26 +816,26 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () async {
-              final link = transfer.toMember.paypalLink?.trim().isNotEmpty == true
-                  ? transfer.toMember.paypalLink!.trim()
-                  : 'https://paypal.me/${transfer.toMember.name}/${(transfer.amountInCents / 100).toStringAsFixed(2)}';
-              final uri = Uri.parse(link);
-              try {
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                } else {
-                  await Clipboard.setData(ClipboardData(text: link));
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.paypalCopied)),
-                    );
-                  }
-                }
-              } catch (_) {
-                await Clipboard.setData(ClipboardData(text: link));
-              }
-            },
+            onPressed: resolvePaypalUrl(transfer: transfer, currency: currency) == null
+                ? null
+                : () async {
+                    final link = resolvePaypalUrl(transfer: transfer, currency: currency)!;
+                    final uri = Uri.parse(link);
+                    try {
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      } else {
+                        await Clipboard.setData(ClipboardData(text: link));
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.paypalCopied)),
+                          );
+                        }
+                      }
+                    } catch (_) {
+                      await Clipboard.setData(ClipboardData(text: link));
+                    }
+                  },
           ),
         ),
         const SizedBox(width: 8),
