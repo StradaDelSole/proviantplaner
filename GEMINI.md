@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.19
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.20
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -23,38 +23,35 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.17 | 07.10.2026 | FIX-B final unabhängig geprüft: READY FOR OWNER ACCEPTANCE |
 | v0.18 | 07.10.2026 | FIX-B Owner Acceptance: COMPLETE; kein Folgeslice freigegeben |
 | v0.19 | 07.10.2026 | DATA1 als einziger Implementierungsslice freigegeben |
+| v0.20 | 07.10.2026 | DATA1 independent review: enger Review Amendment freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
 Aktuell ist ausschließlich freigegeben:
-- **DATA1 – Catalog-driven Assist Classification**, Issue #28
-- Canonical reconciliation: `docs/impl/DATA1_release_reconciliation_2026-10-07.md`
+- **DATA1 Review Amendment**, Issue #28
+- Reviewed implementation HEAD: `73cfdecefe16721e11fa33878a18a751f092c330`
+- Review: `docs/impl/DATA1_review_2026-10-07.md`
+- Release reconciliation: `docs/impl/DATA1_release_reconciliation_2026-10-07.md`
 - Plan: `docs/impl/DATA1_plan.md`
 
-FIX-B:
-- **OWNER-ACCEPTED / COMPLETE**
-- Issue #27 CLOSED
+Der Amendment darf ausschließlich:
+- stille `AssistType.guided` Defaults entfernen;
+- AssistType explizit durch Production-Pfade propagieren;
+- effektive Assist-Auflösung zentralisieren;
+- ungenutzte AssistClassifier-Fassade / zyklischen Import entfernen, falls passend;
+- gezielte Tests und Bericht/Doku aktualisieren.
 
-Für DATA1 gilt ausdrücklich:
-- neue Datei `data/catalog_v0.11.json` ist erlaubt;
-- `data/catalog_v0.10.json` bleibt unverändert;
-- keine anderen Produktdaten/Mengen/Packungen/Shelf-Life/Chill-Werte ändern;
-- AssistType nur aus Catalog Models;
-- keine Produkt-ID- oder Substring-Heuristik.
+Nicht ändern:
+- `data/catalog_v0.11.json` Mapping;
+- `data/catalog_v0.10.json`;
+- Quantity-Formeln;
+- Water-Boost-UI;
+- Watermaker-Semantik;
+- PIVOT2 oder andere Slices.
 
-Nicht freigegeben:
-- Watermaker-Amendment
-- PIVOT2
-- RECEIPT1
-- GUEST1
-- UX-D
-- CAT1
-- B3/B4/B5
-- Store-Publikation
-
-Nach DATA1-Implementation: **STOP für unabhängigen Review / Owner Acceptance. Keinen Folgeslice automatisch freigeben.**
+Nach Amendment: **STOP für unabhängigen Re-Review / Owner Acceptance.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
