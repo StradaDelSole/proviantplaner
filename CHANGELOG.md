@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-07 – DATA1 Independent Review
+
+- Reviewed implementation HEAD: `73cfdecefe16721e11fa33878a18a751f092c330`.
+- Canonical review: `docs/impl/DATA1_review_2026-10-07.md`.
+- Result: **AMENDMENT REQUIRED**.
+- Core catalog migration is correct and behavior-preserving.
+- Narrow blockers:
+  - silent `AssistType.guided` fallback in `VariantCalculationResult`, used by check-mode production path;
+  - silent `AssistType.guided` fallback in `ShoppingListItemView`;
+  - effective assist resolution duplicated instead of using one central API.
+- Only this narrow DATA1 amendment is released.
+- PIVOT2 and Watermaker work remain blocked.
+
+
 ## 2026-10-07 – DATA1 Implementation (Catalog-driven Assist Classification, Issue #28)
 
 - Neue Datei `data/catalog_v0.11.json` (aus v0.10; v0.10 unverändert): `version` 0.11, Schema-Doku `assist`, Pflichtfeld `assist` je Gruppe (47 Gruppen: 1 needs_based, 5 preference_based, 41 guided), 11 Varianten-Overrides `preference_based`; 232 Varianten.
