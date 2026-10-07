@@ -13,7 +13,7 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `data/quantities_v0.6.json` | Mengen, Konsumprofile, Faktoren |
 | `docs/design/DESIGN_BRIEF_v0.5.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
-| `docs/PROMPT_SESSION_START_v0.7.md` | Aktueller Startprompt für FIX-B – Unified Settlement Ledger; review-gated, danach STOP |
+| `docs/PROMPT_SESSION_START_v0.8.md` | Aktueller Startprompt für DATA1 – Catalog-driven Assist Classification; review-gated, danach STOP |
 | `docs/design/UX_KONZEPT_v0.6.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
 | `docs/design/PROVY_UX_DIRECTION_v0.5.md` | Owner-accepted UX-Grundsätze inkl. Home-Launchpad, 4er-Command-Grid, Guest Shopping, Color/Motion/Haptics und psychologischer Klarheit |
 | `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` | Owner-accepted 40-Punkte-Entscheidungssatz; Verhalten/Hierarchie/Interaktion verbindlich |
