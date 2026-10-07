@@ -1175,5 +1175,9 @@
   "boatSectionTitle": "Boot & Technik",
   "cannotDeleteCrewMemberFinancialHistory": "Dieses Crew-Mitglied kann nicht gelöscht werden, da es in der Abrechnung oder Kassenführung erfasst ist.",
   "ledgerDataInvalidTitle": "Abrechnung prüfen",
-  "ledgerDataInvalidMessage": "Die Abrechnung enthält ungültige oder widersprüchliche Einträge. Bitte prüfe Ausgaben und Einzahlungen."
+  "ledgerDataInvalidMessage": "Die Abrechnung enthält ungültige oder widersprüchliche Einträge. Bitte prüfe Ausgaben und Einzahlungen.",
+  "technicalErrorTitle": "Technischer Fehler",
+  "technicalErrorMessage": "Ein unerwarteter technischer Fehler ist aufgetreten. Bitte versuche es erneut.",
+  "retry": "Erneut versuchen",
+  "epcQrEurOnly": "GiroCode (EPC-QR) ist nur für Zahlungen in Euro (EUR) verfügbar."
 }

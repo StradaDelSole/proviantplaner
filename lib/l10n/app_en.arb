@@ -989,5 +989,9 @@
   "boatSectionTitle": "Boat & Equipment",
   "cannotDeleteCrewMemberFinancialHistory": "This crew member cannot be deleted because they are part of the settlement or fund records.",
   "ledgerDataInvalidTitle": "Check settlement",
-  "ledgerDataInvalidMessage": "The settlement contains invalid or conflicting records. Please review expenses and deposits."
+  "ledgerDataInvalidMessage": "The settlement contains invalid or conflicting records. Please review expenses and deposits.",
+  "technicalErrorTitle": "Technical error",
+  "technicalErrorMessage": "An unexpected technical error occurred. Please try again.",
+  "retry": "Try again",
+  "epcQrEurOnly": "GiroCode (EPC QR) is only available for payments in Euro (EUR)."
 }

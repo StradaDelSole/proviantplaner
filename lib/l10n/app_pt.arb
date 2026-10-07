@@ -989,5 +989,9 @@
   "boatSectionTitle": "Barco e equipamento",
   "cannotDeleteCrewMemberFinancialHistory": "Este membro da tripulação não pode ser eliminado porque está registado nas contas ou no fundo comum.",
   "ledgerDataInvalidTitle": "Verificar liquidação",
-  "ledgerDataInvalidMessage": "A liquidação contém registos inválidos ou contraditórios. Por favor, reveja as despesas e os depósitos."
+  "ledgerDataInvalidMessage": "A liquidação contém registos inválidos ou contraditórios. Por favor, reveja as despesas e os depósitos.",
+  "technicalErrorTitle": "Erro técnico",
+  "technicalErrorMessage": "Ocorreu um erro técnico inesperado. Por favor, tente novamente.",
+  "retry": "Tentar novamente",
+  "epcQrEurOnly": "GiroCode (EPC QR) só está disponível para pagamentos em euros (EUR)."
 }

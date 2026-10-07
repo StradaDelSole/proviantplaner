@@ -389,5 +389,159 @@ Wiederaufnahme und Umsetzung am 06.10.2026.
 
 - Commit: `FIX-B: Review amendment`
 - Push auf `main`: Nach Verifikation vorbereitet.
-- **STOP**: Bereit für Re-Review und Owner Acceptance.
+- Status: Re-Review erforderlich (Findings I–J & Proof-Gaps K–M)
+
+---
+
+# Abschlussbericht: FIX-B Final Narrow Amendment
+
+Wiederaufnahme und Umsetzung am 07.10.2026.
+
+- Slice: **FIX-B Final Narrow Amendment**
+- GitHub Issue: **#27**
+- Re-Review Vorgaben: `docs/impl/FIXB_amendment_review_2026-10-07.md`
+- Baseline-Commit: `317550e454c7fc9bed978e1ade66dde0476f2fb2` / `5ca66b7dafedb3f567da21f3ffd17d8ffda21209`
+
+---
+
+## 1. Umgesetzt
+
+- **Finding I – Fehlerintegrität (Error Integrity)**:
+  - `KittyScreen` und `SettlementScreen` differenzieren Providerfehler jetzt exakt nach drei Kategorien:
+    1. `LedgerValidationException` → dedizierte Fehleransicht ("Abrechnung prüfen" / `ledgerDataInvalidTitle`, `ledgerDataInvalidMessage`) mit Warnsymbol und Zurück-Aktion;
+    2. `TripNotFoundException` → `NotFoundScreen` ("Törn nicht gefunden" / `tripNotFound`);
+    3. alle anderen technischen Fehler (z.B. `StateError`, `Exception`) → dedizierter technischer Fehlerzustand (`technicalErrorTitle`, `technicalErrorMessage`) mit Fehlersymbol, Wiederholen- (`retry`) und Zurück-Aktion.
+  - Technische Fehler werden ausdrücklich **nicht mehr** als "Törn nicht gefunden" deklariert.
+  - Roh-Exceptions werden nicht dem Endnutzer als Hauptmeldung angezeigt.
+
+- **Finding J – Währungskonsistente Single-Currency UI & EPC QR Guard**:
+  - `formatMoneyCents(int cents, String currency)` in `kitty_models.dart` formatiert Geldbeträge konsistent mit der echten Törn-Währung (z.B. `12.50 USD`, `12,50 €`).
+  - `MemberBalance.formatNetBalance(String currency)` und `PaymentTransfer.formatAmount(String currency)` nutzen die Törn-Währung.
+  - `KittyScreen`: Header zeigt keine hartcodierte `EUR (€) TABULAR`-Beschriftung mehr, sondern die echte Törn-Währung (z.B. `USD TABULAR`); alle Beträge (Bento-Karten, Ausgabenliste) nutzen `formatMoneyCents` mit Törn-Währung.
+  - `SettlementScreen`: Alle Transfers, Payout-Karten, Summen-Fußnoten, Kopier- und Teilen-Funktionen formatieren Beträge in der echten Törn-Währung.
+  - `EpcQrWidget` wird strikt nur noch erzeugt und angezeigt, wenn `trip.currency == 'EUR'`.
+  - Für Nicht-EUR-Törns wird ein ruhiger, lokalisierter Hinweiskasten (`epcQrEurOnly`) angezeigt. Es wird kein fehlerhafter EUR-QR-Code mit Fremdwährungsbeträgen erzeugt.
+  - Sichere alternative Zahlungswege (IBAN-Daten kopieren, Abrechnung teilen) bleiben voll funktionsfähig und nutzen die Törn-Währung.
+
+- **Proof Gap K – Crew-Löschung echte UI Journey**:
+  - Vollständiger Widget-Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart` simuliert den realen Benutzerablauf auf `TripOverviewScreen`:
+    - Öffnen von `TripOverviewScreen` mit Törn und Crew;
+    - Versuch, ein Crew-Mitglied mit persönlicher Ausgabe über das UI zu löschen;
+    - Verifikation des blockierenden SnackBars mit dem lokalisierten Text `cannotDeleteCrewMemberFinancialHistory`;
+    - Verifikation in der Drift-Datenbank: Crew-Mitglied, Törn und Ausgabe bleiben unverändert erhalten.
+
+- **Proof Gap L – Update Custom Split Servicegrenze**:
+  - Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart` verifiziert `KittyService.updateExpense`:
+    - Abweisung eines Custom Splits mit unbekanntem Crew-Mitglied via `ArgumentError`;
+    - Abweisung eines Custom Splits mit Summenabweichung via `ArgumentError`;
+    - Verifikation der Persistenz in der Drift-Datenbank: Die bestehende Ausgabe bleibt unverändert intakt.
+
+- **Proof Gap M – Backup & Restore Währungserhalt**:
+  - Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart` verifiziert den vollständigen Backup/Restore-Zyklus für einen Nicht-EUR-Törn (USD) mit USD-Ausgabe:
+    - Backup über `BackupCoordinator.createBackup()`;
+    - Restore über `BackupCoordinator.restoreBackup()`;
+    - Verifikation in Drift: Törn-Währung ist weiterhin `USD`, Expense-Währung ist weiterhin `USD`;
+    - `KittyService.loadKittyData` berechnet den Unified Ledger auf den wiederhergestellten Daten ohne `currencyMismatch` sauber durch.
+
+- **Lokalisierung**:
+  - Neue Keys `technicalErrorTitle`, `technicalErrorMessage`, `retry`, `epcQrEurOnly` in allen 6 Sprachen gepflegt (`de`, `en`, `es`, `fr`, `hr`, `pt`).
+
+---
+
+## 2. Geänderte und neue Dateien
+
+- `lib/l10n/app_de.arb`: Neue Strings für technischen Fehler, Retry und EPC EUR-only Hinweis.
+- `lib/l10n/app_en.arb`: Englische Lokalisierung.
+- `lib/l10n/app_es.arb`: Spanische Lokalisierung.
+- `lib/l10n/app_fr.arb`: Französische Lokalisierung.
+- `lib/l10n/app_hr.arb`: Kroatische Lokalisierung.
+- `lib/l10n/app_pt.arb`: Portugiesische Lokalisierung.
+- `lib/features/kitty/domain/models/kitty_models.dart`: `formatMoneyCents`, `formatNetBalance(currency)`, `formatAmount(currency)`.
+- `lib/features/kitty/ui/kitty_screen.dart`: Differenziertes Error-Handling (`LedgerValidationException`, `TripNotFoundException`, technischer Fehler); währungsbewusste Betragsanzeige.
+- `lib/features/kitty/ui/settlement_screen.dart`: Differenziertes Error-Handling; währungsbewusste Transfers und Summen; EPC QR nur bei EUR (`epcQrEurOnly` Hinweis für Nicht-EUR).
+- `test/features/kitty/fix_b_supplemental_amendment_test.dart`: 10 neue Tests hinzugefügt (jetzt insgesamt 38 Tests in der Datei).
+- `CHANGELOG.md`: FIX-B Final Narrow Amendment dokumentiert.
+- `docs/impl/FIXB_bericht.md`: Abschlussbericht aktualisiert.
+
+---
+
+## 3. Analyse & Tests
+
+- `flutter analyze`: **No issues found!** (0 Fehler, 0 Warnungen)
+- `flutter test test/features/kitty/fix_b_supplemental_amendment_test.dart`: **38/38 Tests bestanden**
+- `flutter test test/features/kitty/fix_b_unified_ledger_test.dart`: **17/17 Tests bestanden**
+- `test/core/services/pdf_export_test.dart`: **4/4 Tests bestanden**
+- `test/core/services/backup_coordinator_test.dart`: **7/7 Tests bestanden**
+- `test/features/kitty/`: **83/83 Tests bestanden**
+- `flutter test`: **359/359 Tests bestanden** (gesamte Suite grün)
+
+---
+
+## 4. Abnahmekriterien (Re-Review Findings I–J & Proof Gaps K–M)
+
+1. **Finding I (Error Integrity / Technische Fehler != Törn nicht gefunden)**:
+   - *Erfüllt* – Nachweis: automatische Widget-Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Finding I: Error Integrity KittyScreen unterscheidet LedgerValidationException, TripNotFoundException und technischen Fehler*
+     - *Finding I: Error Integrity SettlementScreen unterscheidet LedgerValidationException, TripNotFoundException und technischen Fehler*
+2. **Finding J (Währungskonsistente Single-Currency UI & EPC Guard)**:
+   - *Erfüllt* – Nachweis: automatische Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Finding J: Single-Currency UI & EPC Guard USD Trip KittyScreen zeigt USD und kein hart codiertes EUR / €*
+     - *Finding J: Single-Currency UI & EPC Guard USD SettlementScreen zeigt USD bei Transfers und Totals*
+     - *Finding J: Single-Currency UI & EPC Guard USD Trip rendert EpcQrWidget NICHT und zeigt stattdessen epcQrEurOnly Hinweis*
+     - *Finding J: Single-Currency UI & EPC Guard EUR Trip rendert EpcQrWidget und kodiert exakten EUR-Betrag*
+     - *S4 & Finding D: Währungsintegrität (Single Currency Guardrail) Einzelner Nicht-EUR Törn (z.B. USD) rechnet in seiner eigenen Währung*
+     - `test/core/services/pdf_export_test.dart`: *FIX-B Finding E: SettlementPdfSummary canonical mixed case*
+3. **Proof Gap K (Reale Crew-Löschung UI Journey)**:
+   - *Erfüllt* – Nachweis: automatischer Widget-Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Proof Gap K: Real Crew Delete UI Journey TripOverviewScreen blockiert Löschung von Crew-Mitglied mit Finanzhistorie und zeigt SnackBar*
+4. **Proof Gap L (Update Custom Split Servicegrenze)**:
+   - *Erfüllt* – Nachweis: automatischer Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Proof Gap L: Update Custom Split Service Boundary KittyService.updateExpense weist Custom Split mit unbekanntem Mitglied ab*
+     - *Proof Gap L: Update Custom Split Service Boundary KittyService.updateExpense weist Custom Split mit fehlerhafter Summe ab*
+5. **Proof Gap M (Backup & Restore Währungserhalt)**:
+   - *Erfüllt* – Nachweis: automatischer Test in `test/features/kitty/fix_b_supplemental_amendment_test.dart`:
+     - *Proof Gap M: Backup Currency Preservation Backup und Restore eines USD-Törns bewahrt Währung und rechnet sauber*
+
+---
+
+## 5. Offen / Risiken
+
+- Keine im freigegebenen FIX-B Scope.
+- Alle weiteren post-Pivot Slices (PIVOT2, DATA1, Watermaker Reserve Amendment, etc.) bleiben unverändert auf HOLD bzw. ungated.
+
+---
+
+## 6. Annahmen / Abweichungen vom PRD
+
+- Keine.
+
+---
+
+## 7. Selbstprüfung Programmierregeln 1–10
+
+1. **Feste Typen**: Eingehalten. `LedgerValidationException`, `TripNotFoundException`, `formatMoneyCents` mit getypten Parametern.
+2. **Keine versteckten Platzhalter**: Eingehalten. Keine Stubs, keine `TODO`s.
+3. **Ehrliche Berichte**: Eingehalten. Alle genannten Tests sind real ausgeführt und im Repo vorhanden.
+4. **Alles datengetrieben**: Eingehalten.
+5. **Rechnen mit Kommazahlen**: Eingehalten. Alle Beträge in Cent als `int`.
+6. **Struktur**: Eingehalten.
+7. **Tests**: Eingehalten. 10 neue Tests für das Amendment, plus bestehende 28 Amendment-Tests und 17 Core-Tests unangetastet grün.
+8. **Keine Eigenbauten von Standards**: Eingehalten.
+9. **Nur berichten, was tatsächlich geschehen ist**: Eingehalten. 359/359 reale grüne Tests.
+10. **Nichts aus späteren Versionen sichtbar gebaut**: Eingehalten.
+
+---
+
+## 8. Vorschläge für das PRD
+
+- Keine.
+
+---
+
+## 9. Commit & Push
+
+- Commit: `FIX-B: Final review amendment`
+- Push auf `main`: Nach Verifikation vorbereitet.
+- **STOP**: Bereit für finalen unabhängigen Re-Review und Owner Acceptance.
+
 

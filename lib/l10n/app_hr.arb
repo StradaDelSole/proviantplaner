@@ -989,5 +989,9 @@
   "boatSectionTitle": "Brod i oprema",
   "cannotDeleteCrewMemberFinancialHistory": "Ovaj član posade ne može se obrisati jer je zabilježen u troškovima ili blagajni.",
   "ledgerDataInvalidTitle": "Provjeri obračun",
-  "ledgerDataInvalidMessage": "Obračun sadrži nevažeće ili proturječne zapise. Molimo provjerite troškove i uplate."
+  "ledgerDataInvalidMessage": "Obračun sadrži nevažeće ili proturječne zapise. Molimo provjerite troškove i uplate.",
+  "technicalErrorTitle": "Tehnička pogreška",
+  "technicalErrorMessage": "Došlo je do neočekivane tehničke pogreške. Molimo pokušajte ponovno.",
+  "retry": "Pokušaj ponovno",
+  "epcQrEurOnly": "GiroCode (EPC QR) dostupan je samo za plaćanja u eurima (EUR)."
 }

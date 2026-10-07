@@ -17,10 +17,20 @@ import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/data/boat_profile_service.dart';
+import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/kitty/domain/calculation/kitty_engine.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/kitty/ui/kitty_screen.dart';
 import 'package:proviantplaner/features/kitty/ui/settlement_screen.dart';
+import 'package:proviantplaner/features/kitty/ui/widgets/epc_qr_widget.dart';
 
 void main() {
   late AppDatabase db;
@@ -736,8 +746,8 @@ void main() {
     });
   });
 
-  group('Finding F: UI-Fehlerdarstellung bei ungültigem Ledger', () {
-    testWidgets('KittyScreen zeigt dedizierte Fehleransicht bei LedgerValidationException', (tester) async {
+  group('Finding I: Error-State-Differenzierung (LedgerValidation vs TripNotFound vs Generic Error)', () {
+    testWidgets('KittyScreen: LedgerValidationException -> Abrechnung prüfen (nicht TripNotFound, nicht Technischer Fehler)', (tester) async {
       final container = ProviderContainer(
         overrides: [
           tripKittyDataProvider(1).overrideWith((ref) => throw const LedgerValidationException(
@@ -761,14 +771,68 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Es darf NICHT tripNotFound angezeigt werden
       expect(find.text('Abrechnung prüfen'), findsNWidgets(2));
       expect(find.text('Die Abrechnung enthält ungültige oder widersprüchliche Einträge. Bitte prüfe Ausgaben und Einzahlungen.'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.text('Törn nicht gefunden'), findsNothing);
+      expect(find.text('Technischer Fehler'), findsNothing);
     });
 
-    testWidgets('SettlementScreen zeigt dedizierte Fehleransicht bei LedgerValidationException', (tester) async {
+    testWidgets('KittyScreen: TripNotFoundException -> NotFoundScreen (Törn nicht gefunden)', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          tripKittyDataProvider(1).overrideWith((ref) => throw const TripNotFoundException('Törn 1 nicht gefunden')),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            locale: Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Törn nicht gefunden'), findsOneWidget);
+      expect(find.text('Abrechnung prüfen'), findsNothing);
+      expect(find.text('Technischer Fehler'), findsNothing);
+    });
+
+    testWidgets('KittyScreen: generic StateError -> Technischer Fehler und ausdrücklich NICHT Törn nicht gefunden', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          tripKittyDataProvider(1).overrideWith((ref) => throw StateError('DB connection failure')),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            locale: Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Technischer Fehler'), findsNWidgets(2));
+      expect(find.text('Ein unerwarteter technischer Fehler ist aufgetreten. Bitte versuche es erneut.'), findsOneWidget);
+      expect(find.text('Erneut versuchen'), findsOneWidget);
+      expect(find.text('Törn nicht gefunden'), findsNothing);
+      expect(find.text('Abrechnung prüfen'), findsNothing);
+    });
+
+    testWidgets('SettlementScreen: LedgerValidationException -> Abrechnung prüfen (nicht TripNotFound, nicht Technischer Fehler)', (tester) async {
       final container = ProviderContainer(
         overrides: [
           tripKittyDataProvider(1).overrideWith((ref) => throw const LedgerValidationException(
@@ -792,10 +856,487 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Es darf NICHT tripNotFound angezeigt werden
       expect(find.text('Abrechnung prüfen'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
       expect(find.text('Törn nicht gefunden'), findsNothing);
+      expect(find.text('Technischer Fehler'), findsNothing);
+    });
+
+    testWidgets('SettlementScreen: TripNotFoundException -> NotFoundScreen (Törn nicht gefunden)', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          tripKittyDataProvider(1).overrideWith((ref) => throw const TripNotFoundException('Törn 1 nicht gefunden')),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            locale: Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Törn nicht gefunden'), findsOneWidget);
+      expect(find.text('Abrechnung prüfen'), findsNothing);
+      expect(find.text('Technischer Fehler'), findsNothing);
+    });
+
+    testWidgets('SettlementScreen: generic Exception -> Technischer Fehler und ausdrücklich NICHT Törn nicht gefunden', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          tripKittyDataProvider(1).overrideWith((ref) => throw Exception('Fatal network/storage error')),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            locale: Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Technischer Fehler'), findsNWidgets(2));
+      expect(find.text('Ein unerwarteter technischer Fehler ist aufgetreten. Bitte versuche es erneut.'), findsOneWidget);
+      expect(find.text('Erneut versuchen'), findsOneWidget);
+      expect(find.text('Törn nicht gefunden'), findsNothing);
+      expect(find.text('Abrechnung prüfen'), findsNothing);
+    });
+  });
+
+  group('Finding J: Single-Currency-UI & EPC EUR-Only Guard', () {
+    testWidgets('USD Trip KittyScreen zeigt USD, nicht EUR (€) TABULAR und keine €-Zeichen', (tester) async {
+      final tripId = await createStandardTrip(currency: 'USD');
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'USD Dinner',
+        amountInCents: 5000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: crew.first.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: KittyScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('USD TABULAR'), findsOneWidget);
+      expect(find.text('EUR (€) TABULAR'), findsNothing);
+      expect(find.textContaining('€'), findsNothing);
+      expect(find.textContaining('50,00 USD'), findsWidgets);
+    });
+
+    testWidgets('USD Trip SettlementScreen: Transfer in USD, kein EPC QR, zeigt epcQrEurOnly Hinweis', (tester) async {
+      final tripId = await createStandardTrip(currency: 'USD', kittyModel: KittyModel.individualSettlement);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      // Alice und Bob bekommen gültige IBAN
+      await db.tripDao.updateCrewMember(alice.copyWith(iban: const Value('DE89370400440532013000')));
+      await db.tripDao.updateCrewMember(bob.copyWith(iban: const Value('DE89370400440532013000')));
+
+      // Alice zahlt 30 USD für beide -> Bob schuldet Alice 15 USD
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'USD Lunch',
+        amountInCents: 3000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Transfer Zeile enthält USD, kein €
+      expect(find.textContaining('15,00 USD'), findsWidgets);
+      expect(find.textContaining('€'), findsNothing);
+
+      // Transfer-Karte antippen zum Aufklappen
+      await tester.tap(find.text('Bezahlen').first);
+      await tester.pumpAndSettle();
+
+      // KEIN EPC QR Widget für USD Trip
+      expect(find.byType(EpcQrWidget), findsNothing);
+
+      // epcQrEurOnly Hinweis sichtbar
+      expect(find.text('GiroCode (EPC-QR) ist nur für Zahlungen in Euro (EUR) verfügbar.'), findsOneWidget);
+
+      // Sichere manuelle Zahlungsdetails mit USD vorhanden
+      expect(find.text('15,00 USD'), findsWidgets);
+      expect(find.text('Überweisungsdaten kopieren'), findsOneWidget);
+    });
+
+    testWidgets('EUR Trip SettlementScreen: rendert EPC QR mit exakter Cent-Summe in EUR', (tester) async {
+      final tripId = await createStandardTrip(currency: 'EUR', kittyModel: KittyModel.individualSettlement);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      // Alice und Bob bekommen gültige IBAN
+      await db.tripDao.updateCrewMember(alice.copyWith(iban: const Value('DE89370400440532013000')));
+      await db.tripDao.updateCrewMember(bob.copyWith(iban: const Value('DE89370400440532013000')));
+
+      // Alice zahlt 30 EUR -> Bob schuldet Alice 15 EUR (1500 Cents)
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'EUR Lunch',
+        amountInCents: 3000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      final container = ProviderContainer(
+        overrides: [
+          kittyServiceProvider.overrideWithValue(kittyService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SettlementScreen(tripId: tripId),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Transfer-Karte antippen zum Aufklappen
+      await tester.tap(find.text('Bezahlen').first);
+      await tester.pumpAndSettle();
+
+      // EpcQrWidget ist bei EUR Trip sichtbar
+      expect(find.byType(EpcQrWidget), findsOneWidget);
+      final qrWidget = tester.widget<EpcQrWidget>(find.byType(EpcQrWidget));
+      expect(qrWidget.payload.amountInCents, equals(1500));
+      expect(qrWidget.payload.iban, equals('DE89370400440532013000'));
+      expect(find.text('GiroCode / EPC-QR-Code steht nur für Überweisungen in Euro (EUR) zur Verfügung.'), findsNothing);
+    });
+  });
+
+  group('Proof Gap K: Real Crew Deletion UI Journey via TripOverviewScreen', () {
+    testWidgets('Löschversuch eines Mitglieds mit getätigter Ausgabe in TripOverview zeigt SnackBar und Datenbank bleibt unverändert', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final tripId = await createStandardTrip();
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew.firstWhere((m) => m.name == 'Alice');
+
+      // Alice zahlt eine persönliche Ausgabe
+      final expId = await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'Hafengebühr',
+        amountInCents: 4500,
+        category: ExpenseCategory.marinaBerth,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      final boatProfileService = BoatProfileService(boatProfileDao: db.boatProfileDao);
+      final shoppingListService = ShoppingListService(
+        listItemDao: db.listItemDao,
+        tripDao: db.tripDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final deliveryOrderService = DeliveryOrderService();
+
+      final router = GoRouter(
+        initialLocation: '/trips/$tripId',
+        routes: [
+          GoRoute(
+            path: '/trips/:id',
+            builder: (_, state) => TripOverviewScreen(tripId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            tripServiceProvider.overrideWithValue(tripService),
+            kittyServiceProvider.overrideWithValue(kittyService),
+            boatProfileServiceProvider.overrideWithValue(boatProfileService),
+            shoppingListServiceProvider.overrideWithValue(shoppingListService),
+            deliveryOrderServiceProvider.overrideWithValue(deliveryOrderService),
+          ],
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('de')],
+            locale: const Locale('de'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Edit Dialog öffnen
+      final editIcon = find.byTooltip('Törn bearbeiten');
+      expect(editIcon, findsOneWidget);
+      await tester.tap(editIcon);
+      await tester.pumpAndSettle();
+
+      // Scroll zum Crew-Bereich (Alice)
+      final aliceFinder = find.text('Alice');
+      await tester.scrollUntilVisible(aliceFinder, 100, scrollable: find.byType(Scrollable).last);
+      expect(aliceFinder, findsOneWidget);
+
+      // Delete-Icon für Alice in ihrem ListTile suchen
+      final aliceTile = find.ancestor(
+        of: aliceFinder,
+        matching: find.byType(ListTile),
+      );
+      final deleteAliceBtn = find.descendant(
+        of: aliceTile,
+        matching: find.byIcon(Icons.delete_outline),
+      );
+      expect(deleteAliceBtn, findsOneWidget);
+      await tester.tap(deleteAliceBtn);
+      await tester.pumpAndSettle();
+
+      // SnackBar mit lokalisiertem Text sichtbar
+      expect(
+        find.text('Dieses Crew-Mitglied kann nicht gelöscht werden, da es in der Abrechnung oder Kassenführung erfasst ist.'),
+        findsOneWidget,
+      );
+
+      // DB-Unveränderlichkeit prüfen
+      final currentCrew = await db.tripDao.getCrewForTrip(tripId);
+      expect(currentCrew.length, equals(2));
+      expect(currentCrew.any((m) => m.id == alice.id), isTrue);
+
+      final currentExpenses = await db.expenseDao.getExpensesForTrip(tripId);
+      expect(currentExpenses.length, equals(1));
+      expect(currentExpenses.first.id, equals(expId));
+      expect(currentExpenses.first.paidByCrewMemberId, equals(alice.id));
+    });
+  });
+
+  group('Proof Gap L: Update Custom-Split Service Boundary Validation', () {
+    test('KittyService.updateExpense weist Custom-Split mit fremdem Mitglied oder Summen-Mismatch ab und behält DB-Stand bei', () async {
+      final tripId = await createStandardTrip();
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      // Valide Ausgabe anlegen mit gleichmäßigem Custom Split (1000 Cents total = 500 Cents Alice + 500 Cents Bob)
+      final expId = await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'Original Ausgabe',
+        amountInCents: 1000,
+        category: ExpenseCategory.provisions,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+        customSplitInCents: {alice.id: 500, bob.id: 500},
+      ));
+
+      final initialExpenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final initialExp = initialExpenses.firstWhere((e) => e.id == expId);
+      expect(initialExp.note, equals('Original Ausgabe'));
+
+      // 1. Update-Versuch: Fremde Mitglieds-ID im Split (z. B. 999999)
+      expect(
+        () => kittyService.updateExpense(
+          id: expId,
+          input: ExpenseInput(
+            tripId: tripId,
+            title: 'Manipulierte Ausgabe',
+            amountInCents: 1000,
+            category: ExpenseCategory.provisions,
+            paidByMemberId: alice.id,
+            isPaidFromKitty: false,
+            customSplitInCents: {alice.id: 500, 999999: 500},
+          ),
+        ),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          contains('ungültiges/fremdes Mitglied'),
+        )),
+      );
+
+      // 2. Update-Versuch: Summen-Mismatch (600 + 500 != 1000)
+      expect(
+        () => kittyService.updateExpense(
+          id: expId,
+          input: ExpenseInput(
+            tripId: tripId,
+            title: 'Mismatch Ausgabe',
+            amountInCents: 1000,
+            category: ExpenseCategory.provisions,
+            paidByMemberId: alice.id,
+            isPaidFromKitty: false,
+            customSplitInCents: {alice.id: 600, bob.id: 500},
+          ),
+        ),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          contains('CustomSplit-Summe'),
+        )),
+      );
+
+      // DB-Unveränderlichkeit prüfen: Ausgabe muss unverändert erhalten bleiben
+      final afterExpenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final persisted = afterExpenses.firstWhere((e) => e.id == expId);
+      expect(persisted.note, equals('Original Ausgabe'));
+      expect((persisted.amount * 100).round(), equals(1000));
+      final decodedSplit = jsonDecode(persisted.customSplit!) as Map<String, dynamic>;
+      expect(decodedSplit[alice.id.toString()], equals(500));
+      expect(decodedSplit[bob.id.toString()], equals(500));
+    });
+  });
+
+  group('Proof Gap M: Backup & Restore Currency Preservation & Ledger Computation', () {
+    test('Non-EUR (USD) Törn und Ausgaben behalten Währung nach Backup/Restore, Ledger rechnet fehlerfrei', () async {
+      final tripId = await createStandardTrip(currency: 'USD', kittyModel: KittyModel.sharedKitty);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final alice = crew[0];
+      final bob = crew[1];
+
+      // USD Einzahlung in Kasse: Bob zahlt 20 USD (2000 Cents)
+      await kittyService.addDeposit(
+        tripId: tripId,
+        memberId: bob.id,
+        amountInCents: 2000,
+      );
+
+      // USD Gruppenausgabe aus Bordkasse: 15 USD (1500 Cents)
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'USD Proviant',
+        amountInCents: 1500,
+        category: ExpenseCategory.provisions,
+        isPaidFromKitty: true,
+      ));
+
+      // USD persönliche Ausgabe: Alice zahlt 50 USD (5000 Cents) persönlich
+      await kittyService.addExpense(ExpenseInput(
+        tripId: tripId,
+        title: 'USD Treibstoff',
+        amountInCents: 5000,
+        category: ExpenseCategory.fuel,
+        paidByMemberId: alice.id,
+        isPaidFromKitty: false,
+      ));
+
+      // Pre-Backup Prüfung: Ledger rechnet sauber in USD
+      final preBackupData = await kittyService.loadKittyData(tripId);
+      expect(preBackupData.trip.currency, equals('USD'));
+      expect(preBackupData.sharedResult!.totalExpensesInCents, equals(6500));
+
+      // Backup erstellen
+      final mockBackup = MockHullqBackupService();
+      final mockAuth = MockHullqAuthService();
+      await mockAuth.loginWithEmail('sailor@hullq.com', newsletterOptIn: false);
+      final coordinator = BackupCoordinator(
+        db: db,
+        backupService: mockBackup,
+        authService: mockAuth,
+      );
+      await coordinator.createBackup();
+      final backupJson = await mockBackup.restoreData();
+      expect(backupJson, isNotNull);
+      expect(backupJson!.contains('"currency":"USD"'), isTrue);
+
+      // In eine frische Datenbank wiederherstellen
+      final freshDb = AppDatabase(NativeDatabase.memory());
+      addTearDown(freshDb.close);
+
+      final freshCoordinator = BackupCoordinator(
+        db: freshDb,
+        backupService: mockBackup,
+        authService: mockAuth,
+      );
+      await freshCoordinator.restoreBackup();
+
+      // Restore prüfen
+      final restoredTrips = await freshDb.tripDao.getAllTrips();
+      expect(restoredTrips.length, equals(1));
+      final restoredTrip = restoredTrips.first;
+      expect(restoredTrip.currency, equals('USD'));
+
+      final restoredExpenses = await freshDb.expenseDao.getExpensesForTrip(restoredTrip.id);
+      expect(restoredExpenses.length, equals(2));
+      for (final exp in restoredExpenses) {
+        expect(exp.currency, equals('USD'));
+      }
+
+      // KittyService auf wiederhergestellter DB aufrufen
+      final freshKittyService = KittyService(
+        tripDao: freshDb.tripDao,
+        expenseDao: freshDb.expenseDao,
+      );
+      final restoredData = await freshKittyService.loadKittyData(restoredTrip.id);
+
+      // Ledger rechnet ohne currencyMismatch Exception
+      expect(restoredData.trip.currency, equals('USD'));
+      expect(restoredData.sharedResult!.totalExpensesInCents, equals(6500));
+      expect(restoredData.sharedResult!.currentBalanceInCents, equals(500)); // 2000 eingezahlt - 1500 gezahlt = 500
+      expect(restoredData.transfers, isNotEmpty);
     });
   });
 }

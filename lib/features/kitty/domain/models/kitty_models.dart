@@ -210,16 +210,28 @@ class MemberBalance {
   /// Für Kassenwart: grossContribution - costShare - cashHeldInCents.
   int get netBalanceInCents => paidInCents - costShareInCents - cashHeldInCents;
 
-  /// Formatierte Anzeige des Betrags in Euro (z. B. "18,00 €").
-  String get formattedNetBalance {
+  /// Formatierte Anzeige des Netto-Saldos mit Währung (z. B. "bekommt 18,00 €" oder "zahlt 18,00 USD").
+  String formatNetBalance([String currency = 'EUR']) {
     final absCents = netBalanceInCents.abs();
-    final euros = absCents ~/ 100;
-    final cents = absCents % 100;
-    final formatted = '$euros,${cents.toString().padLeft(2, '0')} €';
+    final formatted = formatMoneyCents(absCents, currency);
     if (netBalanceInCents > 0) return 'bekommt $formatted';
     if (netBalanceInCents < 0) return 'zahlt $formatted';
     return 'ausgeglichen';
   }
+
+  /// Formatierte Anzeige des Betrags in Euro (z. B. "18,00 €").
+  String get formattedNetBalance => formatNetBalance('EUR');
+}
+
+/// Formatiert einen Cent-Betrag mit Törn-Währung (z. B. "18,00 €" oder "18,00 USD").
+String formatMoneyCents(int cents, [String currency = 'EUR']) {
+  final isNegative = cents < 0;
+  final absCents = cents.abs();
+  final units = absCents ~/ 100;
+  final remainder = absCents % 100;
+  final symbol = currency == 'EUR' ? '€' : currency;
+  final formatted = '$units,${remainder.toString().padLeft(2, '0')} $symbol';
+  return isNegative ? '-$formatted' : formatted;
 }
 
 /// Ausgleichszahlung ("wer schuldet wem").
@@ -236,12 +248,11 @@ class PaymentTransfer {
     this.isSettled = false,
   });
 
+  /// Formatierter Betrag mit Währung (z. B. "42,10 €" oder "42,10 USD").
+  String formatAmount([String currency = 'EUR']) => formatMoneyCents(amountInCents, currency);
+
   /// Formatierter Euro-Betrag (z. B. "42,10 €").
-  String get formattedAmount {
-    final euros = amountInCents ~/ 100;
-    final cents = amountInCents % 100;
-    return '$euros,${cents.toString().padLeft(2, '0')} €';
-  }
+  String get formattedAmount => formatAmount('EUR');
 
   PaymentTransfer copyWith({bool? isSettled}) {
     return PaymentTransfer(

@@ -143,7 +143,90 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           ),
         );
       }
-      return NotFoundScreen(message: l10n.tripNotFound);
+
+      if (asyncData.error is TripNotFoundException) {
+        return NotFoundScreen(message: l10n.tripNotFound);
+      }
+
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.technicalErrorTitle),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: l10n.previousStep,
+            onPressed: () {
+              try {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/trips/${widget.tripId}');
+                }
+              } catch (_) {
+                Navigator.of(context).maybePop();
+              }
+            },
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.technicalErrorTitle,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.technicalErrorMessage,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(tripKittyDataProvider(widget.tripId));
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: Text(l10n.retry),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.icon(
+                      onPressed: () {
+                        try {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/trips/${widget.tripId}');
+                          }
+                        } catch (_) {
+                          Navigator.of(context).maybePop();
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                      label: Text(l10n.backToHome),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final theme = Theme.of(context);
@@ -181,7 +264,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
       ),
       body: asyncData.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(l10n.tripNotFound)),
+        error: (err, _) => Center(child: Text(l10n.technicalErrorMessage)),
         data: (data) => _buildContent(context, theme, l10n, data),
       ),
     );
@@ -215,7 +298,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             );
           }),
           const SizedBox(height: 16),
-          _buildFootnoteCard(theme, l10n, totalTransferCents),
+          _buildFootnoteCard(theme, l10n, totalTransferCents, data.trip.currency),
           const SizedBox(height: 12),
           _buildComplianceNotice(theme, l10n),
           const SizedBox(height: 24),
@@ -299,17 +382,17 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     final isExpanded = _expandedIndices.contains(index);
     final isSettled = _settledIndices.contains(index);
 
-    // Formatierte Zeile laut FEEDBACK_R1 Punkt 9:
-    // "bekommt 18,00 € von Anna" oder "zahlt 42,10 € an Anna"
+    // Formatierte Zeile: "bekommt 18,00 € von Anna" oder "zahlt 42,10 USD an Anna"
     final String personName;
     final String lineText;
     final isPayout = data.treasurer != null && transfer.fromMember.id == data.treasurer!.id;
+    final formattedAmount = formatMoneyCents(transfer.amountInCents, data.trip.currency);
     if (isPayout) {
       personName = transfer.toMember.name;
-      lineText = l10n.settlementReceivesFrom(transfer.formattedAmount, transfer.fromMember.name);
+      lineText = l10n.settlementReceivesFrom(formattedAmount, transfer.fromMember.name);
     } else {
       personName = transfer.fromMember.name;
-      lineText = l10n.settlementPaysTo(transfer.formattedAmount, transfer.toMember.name);
+      lineText = l10n.settlementPaysTo(formattedAmount, transfer.toMember.name);
     }
 
     return Card(
@@ -409,12 +492,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     }
 
     final remittance = l10n.settlementRemittance(data.trip.name, transfer.fromMember.name);
-    final payload = EpcQrPayload(
-      beneficiaryName: transfer.toMember.name,
-      iban: memberIban,
-      amountInCents: transfer.amountInCents,
-      remittanceInformation: remittance,
-    );
+    final formattedAmount = formatMoneyCents(transfer.amountInCents, data.trip.currency);
+    final isEur = data.trip.currency.toUpperCase() == 'EUR';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -422,9 +501,39 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
         children: [
           const Divider(),
           const SizedBox(height: 8),
-          EpcQrWidget(payload: payload),
+          if (isEur) ...[
+            EpcQrWidget(
+              payload: EpcQrPayload(
+                beneficiaryName: transfer.toMember.name,
+                iban: memberIban,
+                amountInCents: transfer.amountInCents,
+                remittanceInformation: remittance,
+              ),
+            ),
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.epcQrEurOnly,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
-          _buildTransferDetailsBox(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
+          _buildTransferDetailsBox(theme, l10n, transfer.toMember.name, memberIban, formattedAmount, remittance),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -450,9 +559,9 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          _buildCopyButton(theme, l10n, transfer.toMember.name, memberIban, transfer.formattedAmount, remittance),
+          _buildCopyButton(theme, l10n, transfer.toMember.name, memberIban, formattedAmount, remittance),
           const SizedBox(height: 8),
-          _buildShareRow(theme, l10n, transfer, memberIban, remittance),
+          _buildShareRow(theme, l10n, transfer, memberIban, remittance, currency: data.trip.currency),
           const SizedBox(height: 12),
           _buildMarkSettledRow(theme, l10n, index, isSettled),
         ],
@@ -694,8 +803,9 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     AppLocalizations l10n,
     PaymentTransfer transfer,
     String iban,
-    String remittance,
-  ) {
+    String remittance, {
+    required String currency,
+  }) {
     return Row(
       children: [
         Expanded(
@@ -741,9 +851,10 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
               final revolutUrl = transfer.toMember.revolutLink?.trim().isNotEmpty == true
                   ? transfer.toMember.revolutLink!.trim()
                   : 'https://revolut.me/${transfer.toMember.name}';
+              final formattedAmount = formatMoneyCents(transfer.amountInCents, currency);
               final text = l10n.settlementShareText(
                 transfer.fromMember.name,
-                transfer.formattedAmount,
+                formattedAmount,
                 transfer.toMember.name,
                 iban,
                 remittance,
@@ -776,10 +887,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     );
   }
 
-  Widget _buildFootnoteCard(ThemeData theme, AppLocalizations l10n, int totalCents) {
-    final euros = totalCents ~/ 100;
-    final cents = totalCents % 100;
-    final totalFormatted = '$euros,${cents.toString().padLeft(2, '0')} €';
+  Widget _buildFootnoteCard(ThemeData theme, AppLocalizations l10n, int totalCents, String currency) {
+    final totalFormatted = formatMoneyCents(totalCents, currency);
 
     return Container(
       padding: const EdgeInsets.all(12),

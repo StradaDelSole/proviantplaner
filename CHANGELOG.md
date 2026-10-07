@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-07 – FIX-B Final Narrow Amendment Completed
+
+- **Finding I (Error Integrity)**: `KittyScreen` und `SettlementScreen` unterscheiden jetzt strikt zwischen `LedgerValidationException` (dedizierter "Abrechnung prüfen"-State), `TripNotFoundException` (NotFoundScreen) und unerwarteten technischen Fehlern (Scaffold mit lokalisierter technischer Fehlermeldung, Retry- und Zurück-Aktion; kein irreführendes "Törn nicht gefunden" mehr).
+- **Finding J (Currency-Aware Single-Currency UI & EPC Guard)**:
+  - Zentrale Betragsformatierung `formatMoneyCents(cents, currency)` sowie `MemberBalance.formatNetBalance(currency)` und `PaymentTransfer.formatAmount(currency)` zeigen die tatsächliche Törn-Währung statt hart codiertem EUR/€.
+  - `SettlementScreen` EPC-QR-Pfad (`EpcQrWidget`) wird strikt nur noch bei `Trip.currency == 'EUR'` angezeigt.
+  - Für Nicht-EUR-Törns wird ein ruhiger lokalisierter Hinweiskasten (`epcQrEurOnly`) angezeigt; sichere Überweisungsdaten (Kopieren und Teilen) verwenden die tatsächliche Törn-Währung.
+- **Proof Gap K (Crew Deletion Real UI Journey)**: Echter Widget-Test auf `TripOverviewScreen` beweist, dass der Löschversuch eines Crew-Mitglieds mit finanzieller Historie blockiert wird, ein lokalisierter SnackBar angezeigt wird und die Datenbank unberührt bleibt.
+- **Proof Gap L (Update Custom Split Boundary)**: `KittyService.updateExpense` weist ungültige Custom Splits (fremdes Crew-Mitglied oder Summenabweichung) mit `ArgumentError` ab; persisted Expense bleibt in der DB unverändert.
+- **Proof Gap M (Non-EUR Backup & Restore)**: Backup & Restore eines Nicht-EUR-Törns (USD) bewahrt Währungen in Trip und Expenses verlustfrei; wiederhergestellter Ledger rechnet ohne `currencyMismatch`.
+- 10 neue Tests (insgesamt 38 Tests in `test/features/kitty/fix_b_supplemental_amendment_test.dart`); alle 359 Tests im Gesamtprojekt grün; `flutter analyze` 0 Warnungen.
+- STOP für finalen unabhängigen Re-Review und Owner Acceptance.
+
 ## 2026-10-07 – FIX-B Amendment Re-Review: Final Narrow Amendment
 
 - Re-reviewed amendment HEAD: `317550e454c7fc9bed978e1ade66dde0476f2fb2`.

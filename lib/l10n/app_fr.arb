@@ -989,5 +989,9 @@
   "boatSectionTitle": "Bateau & équipement",
   "cannotDeleteCrewMemberFinancialHistory": "Ce membre d'équipage ne peut pas être supprimé car il est enregistré dans les comptes ou la caisse de bord.",
   "ledgerDataInvalidTitle": "Vérifier le décompte",
-  "ledgerDataInvalidMessage": "Le décompte contient des écritures non valides ou contradictoires. Veuillez vérifier les dépenses et les versements."
+  "ledgerDataInvalidMessage": "Le décompte contient des écritures non valides ou contradictoires. Veuillez vérifier les dépenses et les versements.",
+  "technicalErrorTitle": "Erreur technique",
+  "technicalErrorMessage": "Une erreur technique inattendue est survenue. Veuillez réessayer.",
+  "retry": "Réessayer",
+  "epcQrEurOnly": "GiroCode (EPC QR) est uniquement disponible pour les paiements en euros (EUR)."
 }

@@ -92,7 +92,81 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           ),
         );
       }
-      return NotFoundScreen(message: l10n.tripNotFound);
+
+      if (asyncData.error is TripNotFoundException) {
+        return NotFoundScreen(message: l10n.tripNotFound);
+      }
+
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.technicalErrorTitle),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: l10n.previousStep,
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/trips/${widget.tripId}');
+              }
+            },
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 64,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.technicalErrorTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.technicalErrorMessage,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        ref.invalidate(tripKittyDataProvider(widget.tripId));
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: Text(l10n.retry),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.icon(
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/trips/${widget.tripId}');
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_back),
+                      label: Text(l10n.backToHome),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     // Kassenwart beim ersten Öffnen abfragen (FEEDBACK_R1 Punkt 9)
@@ -524,7 +598,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          'EUR (€) TABULAR',
+          _currencyHeaderLabel(data.trip.currency),
           style: theme.textTheme.labelSmall?.copyWith(
             fontFamily: 'JetBrains Mono',
             color: theme.colorScheme.outline,
@@ -532,6 +606,11 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         ),
       ],
     );
+  }
+
+  String _currencyHeaderLabel(String currency) {
+    if (currency == 'EUR') return 'EUR (€) TABULAR';
+    return '$currency TABULAR';
   }
 
   Widget _buildSharedKittyBento(
@@ -544,10 +623,11 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     final depositsCents = shared?.totalDepositsInCents ?? 0;
     final expensesCents = shared?.totalExpensesInCents ?? 0;
     final kittyPaidCents = shared?.kittyPaidExpensesInCents ?? expensesCents;
+    final currency = data.trip.currency;
 
-    final balanceFormatted = _formatCents(balanceCents);
-    final depositsFormatted = _formatCents(depositsCents);
-    final expensesFormatted = _formatCents(expensesCents);
+    final balanceFormatted = _formatCents(balanceCents, currency);
+    final depositsFormatted = _formatCents(depositsCents, currency);
+    final expensesFormatted = _formatCents(expensesCents, currency);
 
     final ratio = depositsCents > 0
         ? (kittyPaidCents / depositsCents).clamp(0.0, 1.0)
@@ -638,7 +718,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
   ) {
     final ind = data.individualResult;
     final totalExpensesCents = ind?.totalExpensesInCents ?? 0;
-    final totalFormatted = _formatCents(totalExpensesCents);
+    final totalFormatted = _formatCents(totalExpensesCents, data.trip.currency);
     final openCount = data.transfers.length;
 
     return Column(
@@ -866,7 +946,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
         trailing: Text(
-          '-${_formatCents(exp.amountInCents)}',
+          '-${_formatCents(exp.amountInCents, exp.currency)}',
           style: theme.textTheme.titleMedium?.copyWith(
             fontFamily: 'JetBrains Mono',
             fontWeight: FontWeight.bold,
@@ -927,7 +1007,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             trailing: Text(
-              b.formattedNetBalance,
+              b.formatNetBalance(data.trip.currency),
               style: theme.textTheme.titleSmall?.copyWith(
                 fontFamily: 'JetBrains Mono',
                 fontWeight: FontWeight.bold,
@@ -942,12 +1022,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     );
   }
 
-  String _formatCents(int cents) {
-    final isNegative = cents < 0;
-    final abs = cents.abs();
-    final euros = abs ~/ 100;
-    final c = abs % 100;
-    final prefix = isNegative ? '-' : '';
-    return '$prefix$euros,${c.toString().padLeft(2, '0')} €';
+  String _formatCents(int cents, [String currency = 'EUR']) {
+    return formatMoneyCents(cents, currency);
   }
 }
