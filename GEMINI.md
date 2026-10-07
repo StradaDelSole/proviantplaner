@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.15
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.16
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -19,23 +19,22 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.13 | 06.10.2026 | FIX-B – Unified Settlement Ledger als einziger Implementierungsslice freigegeben |
 | v0.14 | 06.10.2026 | FIX-B independent review: enger Review-Amendment freigegeben |
 | v0.15 | 07.10.2026 | FIX-B Amendment Re-Review: letzter enger Amendment |
+| v0.16 | 07.10.2026 | FIX-B final acceptance review: Currency-Entry-Amendment |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
 Aktuell ist ausschließlich freigegeben:
-- **FIX-B Final Narrow Amendment**, Issue #27
-- Canonical re-review: `docs/impl/FIXB_amendment_review_2026-10-07.md`
-- Amendment baseline: `317550e454c7fc9bed978e1ade66dde0476f2fb2`
+- **FIX-B Currency Entry Amendment**, Issue #27
+- Canonical review: `docs/impl/FIXB_final_acceptance_review_2026-10-07.md`
+- implementation baseline: `dcf273f37faa4d3b621054d3894a72d0543d3e73`
 
 Nur:
-- technical-error state != Trip not found;
-- non-EUR UI amount formatting;
-- EPC QR nur bei EUR;
-- Crew-delete UI proof;
-- update custom-split proof;
-- non-EUR backup/restore proof.
+- ExpenseSheet Trip-currency-aware;
+- PaymentSheet Trip-currency-aware;
+- non-EUR PayPal fallback must not carry ambiguous amount;
+- targeted widget/regression tests.
 
 Nicht freigegeben:
 - DATA1
@@ -48,7 +47,7 @@ Nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Nach dem Amendment: **STOP für finalen unabhängigen Re-Review / Owner Acceptance.**
+Nach dem Amendment: **STOP für unabhängigen finalen Re-Review / Owner Acceptance.**
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
