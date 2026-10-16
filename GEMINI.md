@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.24
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.25
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -28,6 +28,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.22 | 16.10.2026 | WATER1 als einziger Slice freigegeben; 3-Tage Watermaker-Ausfallreserve; quantities v0.7 Daten-Ausnahme |
 | v0.23 | 16.10.2026 | Owner-accepted B2B Provider-Assortment-Entscheidung dokumentiert; Pflicht-Reconciliation vor B4/B5/Charter-Provisioning |
 | v0.24 | 16.10.2026 | WATER1 simplifiziert: nur Mindest-Trinkwasser; Tank/Watermaker nur Kontext; PR #31 Amendment Required |
+| v0.25 | 16.10.2026 | UX Benchmark Strategy owner-accepted: Instacart/Airbnb North Stars; Benchmark Pass Pflicht vor UX-D |
 
 ## Aktueller Status
 
@@ -97,6 +98,24 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 
 Code und Dokumente widersprechen sich? Zuerst gegen diese Hierarchie reconciliieren. Dokumente sind innerhalb derselben Prioritätsstufe unklar oder widersprüchlich? Dann NICHT raten, sondern Stoppregel anwenden.
 
+
+
+## Verbindliches Zukunfts-Gate: UX Benchmark Strategy
+
+Owner-accepted Strategie:
+
+`docs/design/PROVY_UX_BENCHMARK_STRATEGY_v0.1.md`
+
+North Stars:
+- **Instacart** für Katalog, Suche, Artikel-/Listenzeilen, Mengensteuerung, Shopping Mode, Provider/Store-Verfügbarkeit und Substitution;
+- **Airbnb** für Home, Törn-/Context-Hierarchie, Status, progressive disclosure und Next Action;
+- **Material 3** als technische Komponenten-/Accessibility-Basis.
+
+Vor UX-D / Issue #21 ist ein dokumentierter Benchmark Pass Pflicht. Jeder Kernscreen wird mindestens als `KEEP`, `ADOPT_PATTERN`, `SIMPLIFY` oder `REMOVE` klassifiziert.
+
+Die eingefrorene Provy-IA aus `PROVY_UX_DIRECTION_v0.5.md`, `PROVY_UX_DECISIONS_2026-10-05.md` und `PROVY_UX_WIREFRAMES_v0.2.md` bleibt bindend. Benchmarking darf Hierarchie/Navigation nicht still ändern. Entdeckte IA-Verbesserungen sind als neue Owner-Decision vorzulegen.
+
+Kein Pixel-Kopieren fremder Markenidentität; übernommen werden bewährte Interaktions- und Informationsmuster, umgesetzt im eigenen Provy-Designsystem.
 
 ## Verbindliches Zukunfts-Gate: Charter Provisioning / Provider Assortment
 
