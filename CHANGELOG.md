@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Release
+
+- Product Owner explicitly released PIVOT2 with `pivot2 go`.
+- PIVOT2 is now the only released implementation slice.
+- Canonical release: `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`.
+- Canonical plan: `docs/impl/PIVOT2_plan_v0.2.md`.
+- Session prompt: `docs/PROMPT_SESSION_START_v0.12.md`.
+- Production data truth: catalog v0.11 + quantities v0.6 + DATA1 effective AssistType.
+- WATER1 semantics incorporated: Tank/Watermaker do not reduce the minimum drinking-water estimate.
+- Drinking water below the estimate produces `CHECK`, not `ACTION_NEEDED`.
+- Missing-basics config will be strict and data-driven through `data/provisioning_review_v0.1.json`.
+- Initial rules: durable bread, cooking oil, hygiene, cleaning/dishwashing, trash bags.
+- Freshness review remains advisory/read-only; no automatic ShoppingStop redistribution.
+- Hard fridge/freezer contradictions may produce `ACTION_NEEDED`.
+- PIVOT2 Review UI must first complete a scoped Instacart-oriented UX benchmark pass without reopening frozen global IA.
+- Expected review branch: `slice/pivot2-provisioning-review`.
+- After final green CI: STOP for independent review / Owner Acceptance; do not merge automatically.
+
+
 ## 2026-10-17 – WATER1 Owner Acceptance / Closure
 
 - Product Owner explicitly accepted WATER1.
