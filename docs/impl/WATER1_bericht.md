@@ -43,13 +43,14 @@ Geänderte/neue Dateien:
 
 Lokale Targeted Checks:
 - `flutter test test/features/shopping_list/domain/catalog_validation_test.dart`: grün (20 Tests bestanden)
-- `flutter test test/features/boat/pivot3b_water_and_setup_test.dart --plain-name "WATER1"`: grün (8 Tests bestanden)
+- `flutter test test/features/boat/pivot3b_water_and_setup_test.dart --plain-name "WATER1"`: grün (9 Tests bestanden)
 
 GitHub Actions Full-QA (authoritative PR-Suite):
 - Review-Branch: `slice/water1-watermaker-contingency-reserve`
-- PR: (wird nach Push und CI-Lauf eingetragen)
-- `Flutter Analyze & Test`: (wird nach CI-Lauf eingetragen)
-- `Backend Typecheck & Vitest`: (wird nach CI-Lauf eingetragen)
+- PR: #31 (`https://github.com/StradaDelSole/proviantplaner/pull/31`)
+- Implementation Commit: `f39bb559f7fca1c35858e7b442725e84ae87d3b8` (Run `38961272362`)
+- `Flutter Analyze & Test`: grün (`flutter analyze`: `No issues found!`; `flutter test`: `389 tests passed`, Job `117176652760`)
+- `Backend Typecheck & Vitest`: grün (`tsc --noEmit` sauber; `vitest`: `5 test files, 21 tests passed`, Job `117176653010`)
 
 Abnahmekriterien:
 1. `cool` + Watermaker + `>= 3` Tage -> `2.0 × crewFactorSum × 3`: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1: Klimabasierte Watermaker-Ausfallreserve (Issue #30) -> Punkte 1–3: Klimazonen cool (2.0), warm (2.5), hot (3.5) + Watermaker + >= 3 Tage -> climateDailyLiters * crewFactorSum * 3`)
@@ -95,6 +96,6 @@ Selbstprüfung Programmierregeln 1–10:
 Vorschläge für das PRD:
 - keine
 
-Commit: WATER1: Watermaker contingency reserve (gepusht auf Review-Branch `slice/water1-watermaker-contingency-reserve`: ausstehend)
+Commit: WATER1: Watermaker contingency reserve (`f39bb559f7fca1c35858e7b442725e84ae87d3b8`, gepusht auf Review-Branch `slice/water1-watermaker-contingency-reserve`: ja)
 ```
 
