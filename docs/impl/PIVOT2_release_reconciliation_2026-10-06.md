@@ -1,3 +1,5 @@
+> **SUPERSEDED FOR CURRENT IMPLEMENTATION – 17.10.2026:** Use `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`. Historical content below remains for audit only; conflicting water/catalog/release wording must not be implemented.
+
 # PIVOT2 Release Reconciliation – 06.10.2026
 
 Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
