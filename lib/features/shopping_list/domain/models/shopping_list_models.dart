@@ -58,7 +58,7 @@ class ShoppingListItemView {
     this.checkState = CheckItemState.available,
     this.isAdopted = false,
     required this.allocationsByStop,
-    this.assistType = AssistType.guided,
+    required this.assistType,
   });
 
   ShoppingListItemView copyWith({

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/calculation_result.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 
@@ -316,6 +317,7 @@ void main() {
           buyFreshUnderway: false,
           storage: [],
           tags: [],
+          assistType: AssistType.guided,
         ),
         const VariantCalculationResult(
           variantId: 'pasta_spaghetti',
@@ -335,6 +337,7 @@ void main() {
           buyFreshUnderway: false,
           storage: [],
           tags: [],
+          assistType: AssistType.guided,
         ),
         const VariantCalculationResult(
           variantId: 'flour_1kg',
@@ -354,6 +357,7 @@ void main() {
           buyFreshUnderway: false,
           storage: [],
           tags: [],
+          assistType: AssistType.guided,
         ),
         const VariantCalculationResult(
           variantId: 'cream_250ml',
@@ -373,6 +377,7 @@ void main() {
           buyFreshUnderway: false,
           storage: [],
           tags: [],
+          assistType: AssistType.guided,
         ),
         const VariantCalculationResult(
           variantId: 'eggs_10',
@@ -392,6 +397,7 @@ void main() {
           buyFreshUnderway: false,
           storage: [],
           tags: [],
+          assistType: AssistType.guided,
         ),
       ];
 

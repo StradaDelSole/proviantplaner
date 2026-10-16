@@ -74,7 +74,7 @@ class VariantCalculationResult {
     this.storageNotice,
     required this.storage,
     required this.tags,
-    this.assistType = AssistType.guided,
+    required this.assistType,
   });
 }
 

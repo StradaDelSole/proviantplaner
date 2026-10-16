@@ -39,3 +39,62 @@ Punkt 17: `git grep` auf verbotene Muster in `lib/` trifft nur `item_row_widget.
 ## Selbstprüfung Regeln 1–10
 Alle eingehalten; keine manuellen Tests behauptet. Vorschläge für das PRD: siehe CHANGELOG (isWater-UI).
 
+---
+
+## DATA1 Review Amendment
+
+- **Wiederaufnahme nach Unterbrechung am:** 16.10.2026
+- **Amendment-Ausgangsstand (`origin/main`):** `dc34970610a208cf78061a0f125f4163beb9dddf`
+- **Reviewed Core Implementation HEAD:** `73cfdecefe16721e11fa33878a18a751f092c330` (Korrektur zum Tippfehler `73cfdecefe16721e11fa33878a18aa751f092c330` in der früheren Chat-Meldung)
+- **Review-Grundlage:** `docs/impl/DATA1_review_2026-10-07.md` (Issue #28)
+- **Review-Branch:** `amend/data1-review`
+
+### Findings A–C und Umsetzung
+
+1. **Finding A – `VariantCalculationResult` stiller `AssistType.guided`-Default entfernt:**
+   - In `lib/features/shopping_list/domain/calculation/calculation_result.dart` wurde `this.assistType = AssistType.guided` in `required this.assistType` geändert.
+   - In `lib/features/shopping_list/domain/calculation/quantity_engine.dart` setzt `_processCheckGroup()` nun explizit `assistType: catalog.getEffectiveAssist(v)` für jede Check-Mode-Variante.
+   - Alle übrigen Production-Callsites (`QuantityEngine._buildVariantResult`, `TripShoppingListData.weightAndVolume` in `shopping_list_service.dart`) übergeben `assistType` explizit.
+   - Keine Mengenformel oder Check-Mode-Semantik wurde verändert.
+
+2. **Finding B – `ShoppingListItemView` stiller `AssistType.guided`-Default entfernt:**
+   - In `lib/features/shopping_list/domain/models/shopping_list_models.dart` wurde `this.assistType = AssistType.guided` in `required this.assistType` geändert.
+   - **Catalog Items (`_buildCatalogItemView` in `shopping_list_service.dart`):** Erhalten ihren `AssistType` weiterhin explizit kataloggetrieben (`vr?.assistType ?? catalog.getEffectiveAssist(variant)`).
+   - **Custom Items (`_buildCustomItemView` in `shopping_list_service.dart`):** Erhalten an der Konstruktionsgrenze explizit `assistType: AssistType.guided`, um das bestehende Verhalten ohne Erfindung einer neuen Produktklassifikation und ohne Namens-/ID-/Kategorie-Heuristik zu bewahren.
+
+3. **Finding C – Einzige kanonische Assist-Auflösung & Entfernung von `AssistClassifier`:**
+   - `CatalogData.getEffectiveAssist(CatalogVariant variant)` (bzw. `getAssistTypeForVariant`) in `lib/features/shopping_list/domain/models/catalog_models.dart` ist jetzt die **einzige** effektive Assist-Auflösung im gesamten Production-Code.
+   - In `lib/features/shopping_list/domain/calculation/quantity_engine.dart` wurden sämtliche verbliebenen direkten Vorkommen von `v.assistOverride ?? group.assist` / `variant.assistOverride ?? group.assist` (Equal-Split-Auswahl, Equal-Split-Computation, Each-Split-Computation, `_createSelectedComputation`, `_applyGroupBalancing`, `_buildVariantResult`, `_processCheckGroup`) vollständig auf `catalog.getEffectiveAssist(...)` umgestellt.
+   - Da `AssistClassifier` in `lib/features/shopping_list/domain/models/assist_type.dart` keinen Production-Caller besaß, wurde die Fassade samt dem Import von `catalog_models.dart` entfernt. Dadurch ist auch der zyklische Import `assist_type.dart <-> catalog_models.dart` vollständig beseitigt.
+   - Berichtskorrektur aus dem Review: `test/features/shopping_list/domain/catalog_validation_test.dart` wurde in DATA1 erweitert (nicht neu angelegt).
+
+### Geänderte Dateien im Amendment
+
+- **Production:**
+  - `lib/features/shopping_list/domain/models/assist_type.dart`
+  - `lib/features/shopping_list/domain/calculation/calculation_result.dart`
+  - `lib/features/shopping_list/domain/calculation/quantity_engine.dart`
+  - `lib/features/shopping_list/domain/models/shopping_list_models.dart`
+  - `lib/features/shopping_list/data/shopping_list_service.dart`
+- **Tests:**
+  - `test/features/shopping_list/domain/catalog_validation_test.dart` (Test 11: Check-Mode `VariantCalculationResult` übernimmt `catalog.getEffectiveAssist(v)` bei realen v0.11 Check-Gruppen sowie synthetischer `needsBased`-Check-Gruppe mit `preferenceBased`-Override ohne stillen `guided`-Fallback)
+  - `test/features/shopping_list/pivot1_assisted_list_test.dart` (Test 16 & 17: Alle 232 Catalog Items erhalten in `ShoppingListItemView` exakt `catalog.getEffectiveAssist(variant)`; Custom Items erhalten explizit `AssistType.guided` ohne Namens-/ID-Heuristik)
+  - `test/features/shopping_list/fb2_a_calculation_test.dart` (explizites `assistType: AssistType.guided` an direkten `VariantCalculationResult`-Test-Fixtures)
+  - `test/core/services/pdf_export_test.dart` (explizites `assistType: AssistType.guided` an direkten `ShoppingListItemView`-Test-Fixtures)
+- **Dokumentation:**
+  - `docs/impl/DATA1_bericht.md`
+  - `CHANGELOG.md`
+
+### Scope-Bestätigung
+
+- `data/catalog_v0.11.json` und `data/catalog_v0.10.json` wurden **nicht** verändert.
+- Keine Quantity-Formel, Packungsgröße, Shelf-Life-, Chill-, Watermaker- oder Reservewasser-Logik wurde verändert.
+- `item_row_widget.dart` (Water-Boost-UI) wurde **nicht** verändert.
+- Keine Arbeit an PIVOT2 oder späteren Slices begonnen.
+
+### QA & GitHub Actions Status
+
+- **Lokale QA:** Gemäß Vorgabe wurden lokal keine belastenden Voll-Läufe (`flutter test` / `flutter analyze`) gestartet; die vollständige QA erfolgt autoritativ über GitHub Actions auf dem Review-PR.
+- **GitHub Actions (wird nach PR-Lauf mit finalem SHA und exakten Ergebnissen aktualisiert):** _stehend bis Abschluss des CI-Runs auf dem PR_.
+
+

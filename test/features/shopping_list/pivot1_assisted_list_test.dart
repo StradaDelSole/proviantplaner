@@ -818,6 +818,56 @@ void main() {
       expect(customItem.isCustom, isTrue);
       expect(customItem.isOnList, isTrue);
       expect(customItem.effectivePackages, 1);
+      expect(customItem.assistType, equals(AssistType.guided));
+    });
+
+    test('17. DATA1 Amendment (Finding B & C): Catalog Items erhalten kataloggetriebenen AssistType; Custom Items erhalten explizit AssistType.guided ohne Namensheuristik', () async {
+      // Lege Custom Items mit Namen an, die früher Heuristiken ausgelöst hätten ("water", "pesto")
+      await shoppingListService.addCustomItem(
+        CustomItemInput(
+          tripId: defaultTripId,
+          name: 'water special reserve',
+          department: 'getraenke',
+          quantity: 2,
+          unit: 'Flaschen',
+        ),
+      );
+      await shoppingListService.addCustomItem(
+        CustomItemInput(
+          tripId: defaultTripId,
+          name: 'pesto genovese extra',
+          department: 'konserven',
+          quantity: 1,
+          unit: 'Glas',
+        ),
+      );
+
+      final data = await shoppingListService.loadShoppingList(defaultTripId);
+      final catalog = catalogRepo.catalog!;
+
+      // 1. Alle Katalog-Items in ShoppingListItemView stimmen exakt mit catalog.getEffectiveAssist(variant) überein
+      final catalogItems = data.allItems.where((i) => !i.isCustom).toList();
+      expect(catalogItems.length, equals(232));
+      for (final item in catalogItems) {
+        expect(item.variant, isNotNull);
+        expect(
+          item.assistType,
+          equals(catalog.getEffectiveAssist(item.variant!)),
+          reason: 'Katalog-Item ${item.id} muss exakt den kataloggetriebenen AssistType tragen',
+        );
+      }
+
+      // 2. Alle Custom-Items erhalten explizit AssistType.guided an der Konstruktionsgrenze (_buildCustomItemView),
+      // ohne Ableitung aus Name, ID oder Kategorie.
+      final customItems = data.allItems.where((i) => i.isCustom).toList();
+      expect(customItems.length, equals(2));
+      for (final custom in customItems) {
+        expect(
+          custom.assistType,
+          equals(AssistType.guided),
+          reason: 'Custom Item "${custom.name}" muss explizit AssistType.guided erhalten',
+        );
+      }
     });
   });
 }

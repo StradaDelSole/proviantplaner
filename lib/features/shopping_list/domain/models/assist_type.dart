@@ -11,8 +11,6 @@
 ///   Keine automatische Mengenempfehlung aus Crew × Tagen als Listenvorschlag.
 library;
 
-import 'catalog_models.dart';
-
 enum AssistType {
   needsBased('needs_based'),
   guided('guided'),
@@ -42,15 +40,4 @@ enum AssistType {
   }
 }
 
-/// Kleine getypte Fassade für die Assistenzklassifikation (DATA1).
-/// Verwendet ausschließlich strikt typisierte Katalogmodelle, keine String-/ID-Heuristiken.
-class AssistClassifier {
-  /// Ermittelt die effektive Assistenzklasse für eine Kombination aus Gruppe und Variante.
-  static AssistType effectiveFor({
-    required CatalogGroup group,
-    required CatalogVariant variant,
-  }) {
-    return variant.assistOverride ?? group.assist;
-  }
-}
 

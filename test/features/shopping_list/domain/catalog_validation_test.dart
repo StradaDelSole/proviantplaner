@@ -264,5 +264,89 @@ void main() {
         }
       }
     });
+
+    test('11. DATA1 Amendment (Finding A & C): Check-Mode VariantCalculationResult übernimmt kataloggetriebenen AssistType ohne stillen guided-Fallback', () {
+      // 1. Reale Check-Gruppen aus v0.11
+      final engine = QuantityEngine(catalog: catalog, quantities: quantities);
+      final input = QuantityCalculationInput(
+        daysCount: 7,
+        climate: ClimateZone.warm,
+        fridgeCapacityLiters: 80.0,
+        crewAppetite: CrewAppetite.normal,
+        crewReserve: false,
+        crewDrinking: CrewDrinking.normal,
+        tripDays: const [
+          TripDayInput(dayNumber: 1, isLunchRestaurant: false, isEveningRestaurant: false),
+        ],
+        crewMembers: const [
+          CrewMemberInput(id: '1', name: 'Skipper', isAdult: true, isVegetarian: false, noAlcohol: false),
+        ],
+      );
+      final realResult = engine.calculateTrip(input);
+      final checkGroups = realResult.groupResults.where((g) => g.mode == GroupMode.check).toList();
+      expect(checkGroups, isNotEmpty);
+      for (final cg in checkGroups) {
+        for (final vr in cg.variantResults) {
+          final catalogVariant = catalog.getVariant(vr.variantId)!;
+          expect(vr.assistType, equals(catalog.getEffectiveAssist(catalogVariant)));
+        }
+      }
+
+      // 2. Synthetischer Check-Mode-Test mit needsBased-Gruppe und preferenceBased-Override:
+      // Beweist, dass _processCheckGroup() nicht still auf AssistType.guided fällt, sondern catalog.getEffectiveAssist(v) nutzt.
+      final syntheticCatalog = CatalogData(
+        version: '0.11',
+        categories: const [CatalogCategory(id: 'cat_check', nameDe: 'Check')],
+        groups: const [
+          CatalogGroup(
+            id: 'check_group_needs',
+            category: 'cat_check',
+            nameDe: 'Check Needs',
+            assist: AssistType.needsBased,
+            profile: GroupProfile.none,
+            appliesTo: AppliesTo.all,
+            split: GroupSplit.each,
+            visibility: GroupVisibility.all,
+            mode: GroupMode.check,
+          ),
+        ],
+        variants: const [
+          CatalogVariant(
+            id: 'check_var_inherited',
+            group: 'check_group_needs',
+            nameDe: 'Check Inherited',
+            pack: PackInfo(size: 1, unit: 'Stück'),
+            shelfLifeDays: 365,
+            buyFreshUnderway: false,
+            department: CatalogDepartment.haushalt,
+            defaultSelected: true,
+          ),
+          CatalogVariant(
+            id: 'check_var_override',
+            group: 'check_group_needs',
+            nameDe: 'Check Override',
+            pack: PackInfo(size: 1, unit: 'Stück'),
+            shelfLifeDays: 365,
+            buyFreshUnderway: false,
+            department: CatalogDepartment.haushalt,
+            defaultSelected: true,
+            assistOverride: AssistType.preferenceBased,
+          ),
+        ],
+        storageHints: const {},
+      );
+
+      final syntheticEngine = QuantityEngine(catalog: syntheticCatalog, quantities: quantities);
+      final syntheticResult = syntheticEngine.calculateTrip(input);
+      final inheritedRes = syntheticResult.getVariantResult('check_var_inherited');
+      final overrideRes = syntheticResult.getVariantResult('check_var_override');
+
+      expect(inheritedRes, isNotNull);
+      expect(inheritedRes!.assistType, equals(AssistType.needsBased),
+          reason: 'Check-Variante ohne Override muss Gruppen-Assist (needsBased) übernehmen und darf nicht auf guided fallen');
+      expect(overrideRes, isNotNull);
+      expect(overrideRes!.assistType, equals(AssistType.preferenceBased),
+          reason: 'Check-Variante mit Override muss Override (preferenceBased) übernehmen und darf nicht auf guided fallen');
+    });
   });
 }
