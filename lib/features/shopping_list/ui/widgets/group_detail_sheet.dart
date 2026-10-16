@@ -173,20 +173,51 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              group.mode == GroupMode.check
-                  ? l10n.checklistHint
-                  : group.split == GroupSplit.each
-                      ? l10n.eachSplitHint
-                      : l10n.needSplitHint(
-                          AppFormatters.formatDecimal(context, (group.need?.amount ?? 0).toDouble()),
-                          group.need?.unit ?? '',
-                          group.split.rawValue,
+            child: group.mode == GroupMode.check
+                ? Text(
+                    l10n.checklistHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                : group.need?.basis == CalculationBasis.perPersonDayRegion
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.waterMinimumTotal(
+                              AppFormatters.formatDecimal(
+                                context,
+                                (currentGroupView.calculatedGroupNeed ?? group.need?.amount ?? 0).toDouble(),
+                              ),
+                              currentGroupView.calculatedGroupUnit ?? group.need?.unit ?? '',
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.waterPlanningNotice,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        group.split == GroupSplit.each
+                            ? l10n.eachSplitHint
+                            : l10n.needSplitHint(
+                                AppFormatters.formatDecimal(context, (group.need?.amount ?? 0).toDouble()),
+                                group.need?.unit ?? '',
+                                group.split.rawValue,
+                              ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+                      ),
           ),
         ),
         if (widget.isCharter && currentGroupView.isOwnerOnly)

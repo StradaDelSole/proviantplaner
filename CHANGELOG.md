@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-16 – WATER1 Simplification Amendment (Issue #30)
+
+- **Simplification der Trinkwasser-Rechenlogik:** `QuantityEngine._calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`) berechnet ausschließlich den reinen Mindest-Trinkwasserbedarf: `climateDailyLiters × crewFactorSum × effectiveDays` (`effectiveDays = daysUntilNextStop ?? daysCount`), mit bestehenden Klimawerten (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), bestehender Crew-/Kindergewichtung (`child = 0.6`), ohne Tankabzug, ohne Watermaker-Reduktion und ohne automatische Watermaker-Ausfallreserve.
+- **Rückkehr zu `data/quantities_v0.6.json`:** `data/quantities_v0.7.json` und `watermakerBackupDays` wurden vollständig entfernt; `data/quantities_v0.6.json` bleibt byte-identisch und unverändert kanonische Mengendatenbasis; `pubspec.yaml` und `CatalogRepository` referenzieren wieder `v0.6`.
+- **Anzeige des berechneten Gruppenbedarfs in der Wassergruppe:** `PlanningView` und `GroupDetailSheet` zeigen für die Wassergruppe (`CalculationBasis.perPersonDayRegion`) den berechneten dynamischen Gruppenbedarf (`calculatedGroupNeed` aus `TripCalculationResult`), z. B. `Mindest-Trinkwasser: ca. 35 l` statt des statischen Katalogwerts `2,5 l`.
+- **Verbindlicher Planungshinweis:** In `PlanningView` und `GroupDetailSheet` wird für die Wassergruppe ein klarer Hinweis gerendert, dass dieser Wert nur der geschätzte Mindest-Trinkwasserbedarf ist und Tank, Watermaker, Nachfüllmöglichkeiten sowie Frischwasser für Kochen, Spülen, Waschen und Körperpflege separat geplant werden müssen.
+- **Neutrale Bootsprofil-/Setup-Subtitles (6 Sprachen):** `waterTankDrinkableSubtitle` und `hasWatermakerSubtitle` in allen 6 Sprachen (`de`, `en`, `fr`, `es`, `pt`, `hr`) neutral formuliert; keine irreführenden Versprechen automatischer Flaschenwasser-Reduktion oder Notreserveberechnung mehr.
+- **Entfernung der Water-Boost-Chips:** Veraltete Buttons `+25 % warm` und `+50 % heiß/Tropen` in `ShoppingListItemRow` sowie zugehörige ARB-Schlüssel (`waterBoostWarm`, `waterBoostHot`, `waterIncreasedNotice`) ersatzlos entfernt.
+- **Tests & Qualitätssicherung:** Alle 24 Abnahmekriterien in `catalog_validation_test.dart`, `pivot3b_water_and_setup_test.dart`, `fb2_a_calculation_test.dart`, `fb2_b_ui_test.dart` und `s9_i18n_test.dart` abgedeckt und lokal verifiziert.
+
 ## 2026-10-16 – UX Benchmark Strategy
 
 - Owner accepted a benchmark-led UX strategy for Provy.
@@ -12,7 +22,6 @@
 - Benchmark findings that would alter frozen hierarchy/navigation require a separate explicit Owner Decision.
 - Foreign brand identity is not to be copied pixel-for-pixel; Provy adopts proven interaction patterns and implements them in its own visual system.
 - WATER1 remains the only currently released implementation slice.
-
 
 ## 2026-10-16 – WATER1 Simplification Decision
 
@@ -30,6 +39,13 @@
 - PR #31 converted to **DRAFT / AMENDMENT REQUIRED**.
 - PIVOT2 remains ON HOLD pending final WATER1 review and Owner Acceptance.
 
+
+## 2026-10-16 – WATER1 Implementation (Watermaker Contingency Reserve, Issue #30)
+
+- **Datenbasis (`data/quantities_v0.7.json`):** Aus `data/quantities_v0.6.json` abgeleitet (`data/quantities_v0.6.json` bleibt unverändert erhalten), `version` auf `"0.7"` gesetzt und Sektion `watermaker` mit `"backup_days": 3` ergänzt; in `pubspec.yaml` als Asset registriert und in `CatalogRepository.loadFromBundle()` auf `data/quantities_v0.7.json` umgestellt.
+- **Modell & Parser (`QuantitiesData`):** Pflichtfeld `watermakerBackupDays` (`int`) ergänzt; `QuantitiesData.fromJson` validiert `watermaker.backup_days` strikt als positive Ganzzahl (`int`, `> 0`) und wirft bei fehlenden, `<= 0` oder nicht-ganzzahligen Werten sofort `FormatException` ohne stillen Fallback.
+- **Rechenlogik (`QuantityEngine`):** Watermaker-Reserveformel in `_calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`) auf `dailyAmount * factorSum * min(effectiveDays, quantities.watermakerBackupDays)` umgestellt; bestehende Klimazonen (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), Kindergewichtung (`factorSum`, `child = 0.6`) und Etappenhorizont (`effectiveDays = daysUntilNextStop ?? daysCount`) werden wiederverwendet; ein trinkbarer Tank reduziert die Watermaker-Ausfallreserve nicht; ohne Watermaker bleiben Tankabzug und `1.5 l × crewCount`-Floor unverändert.
+- **Tests & Bericht:** Alle 17 Nachweise aus `PROMPT_SESSION_START_v0.10.md` Abschnitt 13 in `catalog_validation_test.dart` und `pivot3b_water_and_setup_test.dart` ergänzt; Abschlussbericht in `docs/impl/WATER1_bericht.md` abgelegt.
 
 ## 2026-10-16 – Charter Provider Assortment Product Decision (Issue #32)
 

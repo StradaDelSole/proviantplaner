@@ -472,30 +472,12 @@ class QuantityEngine {
         break;
 
       case CalculationBasis.perPersonDayRegion:
-        final key = input.climate.rawValue;
-        final legacyKey = switch (input.climate) {
-          ClimateZone.cool => 'temperate',
-          ClimateZone.warm => 'mediterranean_summer',
-          ClimateZone.hot => 'hot_or_remote',
-        };
-        final waterConfig = quantities.waterLiters[key] ??
-            quantities.waterLiters[legacyKey] ??
-            quantities.waterLiters['warm'] ??
-            quantities.waterLiters['mediterranean_summer'];
-        final dailyAmount = waterConfig?.defaultValue ?? need.amount;
-        rawAmount = dailyAmount * effectiveDays * factorSum;
-
-        // Bordtank Trinkwasser & Watermaker (PIVOT3-B, FEEDBACK_R2 v0.3 Punkt 6):
-        final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
-        final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
-
-        if (input.hasWatermaker) {
-          rawAmount = minReserve;
-        } else if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
-          final tankLiters = input.waterTankLiters!;
-          final afterTank = rawAmount - tankLiters;
-          rawAmount = afterTank > minReserve ? afterTank : minReserve;
-        }
+        rawAmount = _calculateRegionalWaterNeed(
+          need: need,
+          input: input,
+          effectiveDays: effectiveDays,
+          factorSum: factorSum,
+        );
         break;
 
       case CalculationBasis.perPersonWeek:
@@ -552,6 +534,30 @@ class QuantityEngine {
     }
 
     return rawAmount;
+  }
+
+  /// Berechnet den klimabasierten Mindest-Trinkwasserbedarf (WATER1 Simplification).
+  /// Formel: minimumDrinkingWater = dailyAmount * effectiveDays * factorSum.
+  /// Bordtank, Watermaker, Nachfüllmöglichkeiten und Brauchwasser werden nicht verrechnet.
+  double _calculateRegionalWaterNeed({
+    required CatalogNeed need,
+    required QuantityCalculationInput input,
+    required int effectiveDays,
+    required double factorSum,
+  }) {
+    final key = input.climate.rawValue;
+    final legacyKey = switch (input.climate) {
+      ClimateZone.cool => 'temperate',
+      ClimateZone.warm => 'mediterranean_summer',
+      ClimateZone.hot => 'hot_or_remote',
+    };
+    final waterConfig = quantities.waterLiters[key] ??
+        quantities.waterLiters[legacyKey] ??
+        quantities.waterLiters['warm'] ??
+        quantities.waterLiters['mediterranean_summer'];
+    final dailyAmount = waterConfig?.defaultValue ?? need.amount;
+
+    return dailyAmount * effectiveDays * factorSum;
   }
 
   int _determineEffectiveShelfLife(CatalogVariant v, QuantityCalculationInput input) {

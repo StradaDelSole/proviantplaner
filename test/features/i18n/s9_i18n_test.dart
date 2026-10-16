@@ -383,5 +383,42 @@ void main() {
 
       expect(find.text('Einkauf starten'), findsNothing);
     });
+
+    testWidgets('WATER1 Simplification (Punkte 20 & 23): Alle 6 Sprachen enthalten waterMinimumTotal, waterPlanningNotice, neutrale Tank/Watermaker-Subtitles und keine Water-Boost-Keys', (tester) async {
+      const langs = ['de', 'en', 'fr', 'es', 'pt', 'hr'];
+      for (final lang in langs) {
+        final file = File('lib/l10n/app_$lang.arb');
+        final content = json.decode(file.readAsStringSync()) as Map<String, dynamic>;
+
+        // Obsolete Water-Boost keys removed
+        expect(content.containsKey('waterBoostWarm'), isFalse, reason: 'waterBoostWarm must be removed in $lang');
+        expect(content.containsKey('waterBoostHot'), isFalse, reason: 'waterBoostHot must be removed in $lang');
+        expect(content.containsKey('waterIncreasedNotice'), isFalse, reason: 'waterIncreasedNotice must be removed in $lang');
+
+        // Required WATER1 Simplification keys present
+        expect(content.containsKey('waterMinimumTotal'), isTrue, reason: 'waterMinimumTotal must exist in $lang');
+        expect(content.containsKey('waterPlanningNotice'), isTrue, reason: 'waterPlanningNotice must exist in $lang');
+        expect(content.containsKey('waterTankDrinkableSubtitle'), isTrue, reason: 'waterTankDrinkableSubtitle must exist in $lang');
+        expect(content.containsKey('hasWatermakerSubtitle'), isTrue, reason: 'hasWatermakerSubtitle must exist in $lang');
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: Locale(lang),
+            home: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
+                expect(l10n.waterMinimumTotal('35', 'l'), contains('35 l'));
+                expect(l10n.waterPlanningNotice, isNotEmpty);
+                expect(l10n.waterTankDrinkableSubtitle, isNotEmpty);
+                expect(l10n.hasWatermakerSubtitle, isNotEmpty);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      }
+    });
   });
 }

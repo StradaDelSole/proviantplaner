@@ -27,6 +27,7 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_service
 import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/group_detail_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/item_row_widget.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/order_preview_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/planning_view.dart';
@@ -455,6 +456,92 @@ void main() {
 
       expect(whatsAppTop, lessThan(textShareTop));
       expect(whatsAppTop, lessThan(pdfShareTop));
+    });
+  });
+
+  group('WATER1 Simplification UI (Issue #30)', () {
+    testWidgets('Punkte 13 & 14: Wassergruppe zeigt berechneten Gesamtbedarf aus TripCalculationResult (nicht statische 2,5 l) und den verpflichtenden Planungshinweis', (tester) async {
+      final realData = await shoppingListService.loadShoppingList(defaultTripId);
+      final drinksCategory = realData.categories.firstWhere((c) => c.category.id == 'getraenke');
+      final waterGroup = drinksCategory.groups.firstWhere((g) => g.group.id == 'water');
+
+      // 2 Erwachsene, 7 Tage, warm (mediterranean) -> 2.5 * 2 * 7 = 35.0 l (nicht 2.5 l aus group.need.amount)
+      expect(waterGroup.calculatedGroupNeed, closeTo(35.0, 1e-6));
+      expect(waterGroup.calculatedGroupUnit, equals('l'));
+
+      // In GroupDetailSheet prüfen
+      await tester.pumpWidget(
+        buildAppWithOverrides(
+          home: Scaffold(
+            body: GroupDetailSheet(
+              tripId: defaultTripId,
+              groupView: waterGroup,
+              stops: realData.stops,
+              isCharter: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Berechneter Gesamtbedarf wird angezeigt, NICHT statischer Tageswert 2,5 l
+      expect(find.text('Mindest-Trinkwasser: ca. 35 l'), findsOneWidget);
+      expect(find.text('Bedarf: ca. 2,5 l'), findsNothing);
+      expect(find.text('Mindest-Trinkwasser: ca. 2,5 l'), findsNothing);
+
+      // Verpflichtender Planungshinweis wird angezeigt
+      expect(
+        find.text(
+          'Dieser Wert ist nur der geschätzte Mindest-Trinkwasserbedarf. Tank, Watermaker, Nachfüllmöglichkeiten sowie zusätzlicher Frischwasserverbrauch für Kochen, Spülen, Waschen und Körperpflege sind nicht eingerechnet und müssen separat geplant werden.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Punkte 15–17: Wasser-Artikelzeile rendert KEINEN +25 % warm und KEINEN +50 % heiß/Tropen Chip', (tester) async {
+      final realData = await shoppingListService.loadShoppingList(defaultTripId);
+      final waterItem = realData.allItems.firstWhere((i) => i.variant?.group == 'water');
+
+      await tester.pumpWidget(
+        buildAppWithOverrides(
+          home: Scaffold(
+            body: ShoppingListItemRow(
+              data: realData,
+              item: waterItem,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('+25 %'), findsNothing);
+      expect(find.textContaining('+50 %'), findsNothing);
+      expect(find.byType(ActionChip), findsNothing);
+    });
+
+    testWidgets('Punkte 18 & 19: Tankwasser- und Watermaker-Untertitel enthalten neutrale Planungshinweise und versprechen keine automatische Reduktion oder Notreserve', (tester) async {
+      await tester.pumpWidget(buildAppWithOverrides(home: const TripWizardScreen()));
+      await tester.pumpAndSettle();
+
+      final drinkableSwitch = find.widgetWithText(SwitchListTile, 'Tankwasser ist trinkbar');
+      await tester.ensureVisible(drinkableSwitch);
+      expect(drinkableSwitch, findsOneWidget);
+
+      final watermakerSwitch = find.widgetWithText(SwitchListTile, 'Watermaker an Bord vorhanden');
+      await tester.ensureVisible(watermakerSwitch);
+      expect(watermakerSwitch, findsOneWidget);
+
+      expect(
+        find.text(
+          'Technische Angabe für deine eigene Wasserplanung (reduziert nicht den Mindest-Trinkwasser-Richtwert)',
+        ),
+        findsNWidgets(2),
+      );
+
+      // Keine irreführenden alten Versprechen
+      expect(find.textContaining('reduziert Flaschenwasser'), findsNothing);
+      expect(find.textContaining('Routine-Trinkwasser'), findsNothing);
+      expect(find.textContaining('Notreserve'), findsNothing);
     });
   });
 }

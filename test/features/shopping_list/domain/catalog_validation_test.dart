@@ -348,5 +348,26 @@ void main() {
       expect(overrideRes!.assistType, equals(AssistType.preferenceBased),
           reason: 'Check-Variante mit Override muss Override (preferenceBased) übernehmen und darf nicht auf guided fallen');
     });
+
+    test('12. WATER1 Simplification (Punkte 21 & 22): data/quantities_v0.6.json ist unverändert und data/quantities_v0.7.json existiert nicht mehr', () {
+      final v06File = File('data/quantities_v0.6.json');
+      final v07File = File('data/quantities_v0.7.json');
+
+      expect(v06File.existsSync(), isTrue, reason: 'data/quantities_v0.6.json muss existieren');
+      expect(v07File.existsSync(), isFalse, reason: 'data/quantities_v0.7.json darf im Repo nicht mehr existieren');
+
+      final v06Map = json.decode(v06File.readAsStringSync()) as Map<String, dynamic>;
+      expect(v06Map['version'], equals('0.6'));
+      expect(v06Map.containsKey('watermaker'), isFalse);
+
+      final waterLiters = v06Map['water_liters_per_person_day'] as Map<String, dynamic>;
+      expect((waterLiters['cool'] as Map<String, dynamic>)['default'], equals(2.0));
+      expect((waterLiters['warm'] as Map<String, dynamic>)['default'], equals(2.5));
+      expect((waterLiters['hot'] as Map<String, dynamic>)['default'], equals(3.5));
+
+      final pubspecContent = File('pubspec.yaml').readAsStringSync();
+      expect(pubspecContent.contains('data/quantities_v0.6.json'), isTrue);
+      expect(pubspecContent.contains('data/quantities_v0.7.json'), isFalse);
+    });
   });
 }

@@ -58,23 +58,6 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
     }
   }
 
-  Future<void> _applyWaterBonus(double factor) async {
-    final current = widget.item.effectivePackages;
-    final bonus = (current * factor).ceil();
-    final newCount = current + (bonus > 0 ? bonus : 1);
-    await ref.read(shoppingListServiceProvider).setPackages(widget.item, newCount);
-    ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
-    if (mounted) {
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.waterIncreasedNotice(newCount, (factor * 100).toInt())),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-
   Future<void> _showStopSelection(BuildContext context) async {
     final stops = widget.data.stops;
     if (stops.isEmpty) return;
@@ -134,9 +117,6 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
     final theme = Theme.of(context);
     final item = widget.item;
     final isOnList = item.isOnList;
-    final isWater = item.id.contains('water') ||
-        item.name.toLowerCase().contains('wasser') ||
-        item.categoryId == 'wasser';
 
     return Dismissible(
       key: ValueKey('item_swipe_${item.item.id}'),
@@ -387,25 +367,6 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                     ),
                   ],
                 ),
-              ),
-            ],
-            // Wasser-Schnellwahl (UX-Konzept 2.4: "+25 % warm" und "+50 % heiß/Tropen")
-            if (isOnList && isWater) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.wb_sunny_outlined, size: 14),
-                    label: Text(l10n.waterBoostWarm, style: const TextStyle(fontSize: 12)),
-                    onPressed: () => _applyWaterBonus(0.25),
-                  ),
-                  const SizedBox(width: 8),
-                  ActionChip(
-                    avatar: const Icon(Icons.local_fire_department_outlined, size: 14),
-                    label: Text(l10n.waterBoostHot, style: const TextStyle(fontSize: 12)),
-                    onPressed: () => _applyWaterBonus(0.50),
-                  ),
-                ],
               ),
             ],
           ],
