@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-16 – UX Benchmark Strategy
+
+- Owner accepted a benchmark-led UX strategy for Provy.
+- Canonical strategy: `docs/design/PROVY_UX_BENCHMARK_STRATEGY_v0.1.md`.
+- **Instacart** is the primary North Star for catalog/search/product rows/quantity controls/shopping list/in-store shopping/provider availability/substitution.
+- **Airbnb** is the primary North Star for Home/trip context/status/progressive disclosure/Next Action.
+- **Material 3** remains the technical component and accessibility basis.
+- The strategy does not reopen the frozen Provy information architecture.
+- Before UX-D / Issue #21 implementation, a structured Benchmark Pass is mandatory for all core surfaces, classified as `KEEP`, `ADOPT_PATTERN`, `SIMPLIFY` or `REMOVE`.
+- Benchmark findings that would alter frozen hierarchy/navigation require a separate explicit Owner Decision.
+- Foreign brand identity is not to be copied pixel-for-pixel; Provy adopts proven interaction patterns and implements them in its own visual system.
+- WATER1 remains the only currently released implementation slice.
+
+
 ## 2026-10-16 – WATER1 Simplification Decision
 
 - Owner simplified WATER1 after product review.
