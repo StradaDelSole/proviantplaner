@@ -49,6 +49,7 @@ Alle eingehalten; keine manuellen Tests behauptet. Vorschläge für das PRD: sie
 - **Review-Grundlage:** `docs/impl/DATA1_review_2026-10-07.md` (Issue #28)
 - **Review-Branch:** `amend/data1-review`
 - **Pull Request:** #29 (`https://github.com/StradaDelSole/proviantplaner/pull/29`, **NICHT gemerged**)
+- **Verifizierter Amendment-Code-HEAD:** `f5e655db16457f5b37b1df24f1e005abdf4d063b` (finaler Branch-HEAD enthält diesen Berichtsabschluss; exakter Hash im PR/Chat-Bericht)
 
 ### Findings A–C und Umsetzung
 
@@ -97,10 +98,13 @@ Alle eingehalten; keine manuellen Tests behauptet. Vorschläge für das PRD: sie
 
 - **Gezielter lokaler Entwicklungscheck (gemäß Abschnitt 12 erlaubt):**
   - `flutter test test/features/shopping_list/domain/catalog_validation_test.dart` → **18/18 Tests grün** (inkl. Test 11 für Check-Mode `VariantCalculationResult` ohne stillen `guided`-Fallback).
-  - Vollständige Suite (`flutter test`) und Gesamt-Analyze (`flutter analyze`) wurden gemäß Anweisung lokal **nicht** ausgeführt.
-- **GitHub Actions auf PR #29:**
-  - `Flutter Analyze & Test`: **BLOCKED BY GITHUB BILLING** (`The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings`)
-  - `Backend Typecheck & Vitest`: **BLOCKED BY GITHUB GITHUB BILLING** (`The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings`)
+- **Authoritative Full-QA auf GitHub Actions (PR #29):**
+  - `Flutter Analyze & Test`: **SUCCESS**
+    - `flutter analyze`: `No issues found!`
+    - `flutter test`: **381 tests passed** (379 bisherige Tests + 2 neue DATA1-Amendment-Regressionstests)
+  - `Backend Typecheck & Vitest`: **SUCCESS** (`5 test files passed, 21 tests passed`)
+- **Offene Risiken / Abweichungen:** Keine innerhalb des DATA1-Scopes (`item_row_widget.dart` `isWater`-UI-Heuristik bleibt wie im Review bestätigt außerhalb von DATA1 unberührt).
+
 
 
 
