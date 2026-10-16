@@ -10,7 +10,7 @@ void main() {
 
   setUpAll(() {
     final catalogFile = File('data/catalog_v0.11.json');
-    final quantitiesFile = File('data/quantities_v0.7.json');
+    final quantitiesFile = File('data/quantities_v0.4.json');
 
     repository = CatalogRepository();
     repository.loadFromJsonStrings(

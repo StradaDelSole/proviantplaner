@@ -85,7 +85,7 @@ void main() {
 
     catalogRepo = CatalogRepository();
     final catFile = File('data/catalog_v0.11.json');
-    final quantFile = File('data/quantities_v0.7.json');
+    final quantFile = File('data/quantities_v0.6.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catFile.readAsStringSync(),
       quantitiesJson: quantFile.readAsStringSync(),
@@ -158,8 +158,8 @@ void main() {
     return scope;
   }
 
-  group('PIVOT3-B: 1. Wasserlogik & Watermaker-Formel (Quantity Engine)', () {
-    test('Fall 1: Kein Tank, kein Watermaker -> voller errechneter Bedarf', () {
+  group('PIVOT3-B: 1. Wasserlogik & Mindest-Trinkwasserbedarf (Quantity Engine / WATER1 Simplification)', () {
+    test('Fall 1: Kein Tank, kein Watermaker -> voller Mindest-Trinkwasserbedarf', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
       final crew = [testMember('Alice'), testMember('Bob')];
 
@@ -181,11 +181,10 @@ void main() {
       expect(totalPackages, equals(14));
     });
 
-    test('Fall 2: Trinkbarer Tank, kein Watermaker -> Tank reduziert Bedarf bis Notreserve', () {
+    test('Fall 2: Trinkbarer Tank, kein Watermaker -> reduziert Mindest-Trinkwasserschätzung NICHT (WATER1 Simplification)', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
       final crew = [testMember('Alice'), testMember('Bob')];
 
-      // Großer trinkbarer Tank deckt Routinebedarf ab
       final input = createWaterInput(
         daysCount: 7,
         crewMembers: crew,
@@ -196,14 +195,13 @@ void main() {
 
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-      // minReserve in quantities_v0.7 ohne Watermaker ist 1.5 L/Person total = 3.0 L für 2 Personen
-      expect(waterGroup.rawGroupNeed, closeTo(3.0, 1e-6));
+      // WATER1 Simplification: 2.5 L * 2 Personen * 7 Tage = 35.0 L
+      expect(waterGroup.rawGroupNeed, closeTo(35.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      // 3.0 L wird durch Gruppenausgleich mit 1x 5L (5.0 L >= 3.0 L) vollständig abgedeckt -> 1 Packung
-      expect(totalPackages, equals(1));
+      expect(totalPackages, equals(14));
     });
 
-    test('Fall 3: Nicht trinkbarer Tank + Watermaker -> Routinebedarf ersetzt, 3-Tage-Ausfallreserve (WATER1) bleibt', () {
+    test('Fall 3: Nicht trinkbarer Tank + Watermaker -> reduziert Mindest-Trinkwasserschätzung NICHT (WATER1 Simplification)', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
       final crew = [testMember('Alice'), testMember('Bob')];
 
@@ -217,14 +215,13 @@ void main() {
 
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-      // WATER1: 2.5 L/Tag (warm) * 2.0 (2 Erwachsene) * min(7, 3) = 15.0 L
-      expect(waterGroup.rawGroupNeed, closeTo(15.0, 1e-6));
+      // WATER1 Simplification: 2.5 L/Tag (warm) * 2.0 (2 Erwachsene) * 7 Tage = 35.0 L
+      expect(waterGroup.rawGroupNeed, closeTo(35.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      // 15.0 L split 50/50 -> 2x 5L (10.0 L) + 4x 1.5L (6.0 L) = 6 Packungen (16.0 L >= 15.0 L)
-      expect(totalPackages, equals(6));
+      expect(totalPackages, equals(14));
     });
 
-    test('Fall 4: Trinkbarer Tank + Watermaker -> Routinebedarf ersetzt, 3-Tage-Ausfallreserve (WATER1) wird durch Tank NICHT reduziert', () {
+    test('Fall 4: Trinkbarer Tank + Watermaker -> reduziert Mindest-Trinkwasserschätzung NICHT (WATER1 Simplification)', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
       final crew = [testMember('Alice'), testMember('Bob')];
 
@@ -238,10 +235,10 @@ void main() {
 
       final result = engine.calculateTrip(input);
       final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-      // WATER1: Trinkbarer Tank reduziert die Watermaker-Ausfallreserve nicht: 2.5 * 2.0 * min(7, 3) = 15.0 L
-      expect(waterGroup.rawGroupNeed, closeTo(15.0, 1e-6));
+      // WATER1 Simplification: 2.5 * 2.0 * 7 = 35.0 L
+      expect(waterGroup.rawGroupNeed, closeTo(35.0, 1e-6));
       final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
-      expect(totalPackages, equals(6));
+      expect(totalPackages, equals(14));
     });
 
     test('Fall 5: Nicht trinkbarer Tank allein reduziert Trinkwasserbedarf NICHT', () {
@@ -274,7 +271,7 @@ void main() {
       expect(waterNonDrinkable.rawGroupNeed, closeTo(35.0, 1e-6));
     });
 
-    test('Reservewasser ist NIE 0 durch Watermaker allein (WATER1: 2.5 L * crewSize * 3 bei >= 3 Tagen warm)', () {
+    test('Mindest-Trinkwasser ist NIE 0 durch Watermaker allein (WATER1 Simplification: 2.5 L * crewSize * days)', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
 
       for (final crewSize in [1, 2, 4, 8]) {
@@ -289,10 +286,10 @@ void main() {
           );
           final result = engine.calculateTrip(input);
           final waterGroup = result.groupResults.firstWhere((g) => g.groupId == 'water');
-          // WATER1: 2.5 L/Tag (warm) * crewSize * min(days, 3) = 7.5 * crewSize
-          final expectedReserve = 2.5 * crewSize * 3;
-          expect(waterGroup.rawGroupNeed, closeTo(expectedReserve, 1e-6),
-              reason: 'Reserve muss 2.5 L * $crewSize * 3 = $expectedReserve L sein für $crewSize Crew, $days Tage');
+          // WATER1 Simplification: 2.5 L/Tag (warm) * crewSize * days
+          final expectedMinimum = 2.5 * crewSize * days;
+          expect(waterGroup.rawGroupNeed, closeTo(expectedMinimum, 1e-6),
+              reason: 'Mindest-Trinkwasser muss 2.5 L * $crewSize * $days = $expectedMinimum L sein für $crewSize Crew, $days Tage');
           final totalPackages = waterGroup.variantResults.fold<int>(0, (sum, v) => sum + v.calculatedPackages);
           expect(totalPackages, greaterThan(0));
         }
@@ -942,7 +939,7 @@ void main() {
       expect(sourceProfile.model, equals('40.1'));
     });
 
-    testWidgets('Real UI Journey: Watermaker-Switch im Törn-Edit betätigen -> hasWatermaker true & Trinkwasser entspricht Notreserve', (tester) async {
+    testWidgets('Real UI Journey: Watermaker-Switch im Törn-Edit betätigen -> hasWatermaker true & Mindest-Trinkwasser bleibt unverändert (WATER1 Simplification)', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -959,7 +956,7 @@ void main() {
         hasWatermaker: false,
       );
 
-      // Vorab: 35.0 L Trinkwasser (16 Packungen)
+      // Vorab: 35.0 L Trinkwasser (14 Packungen)
       var items = await db.listItemDao.getListItemsForTrip(tripId);
       var waterItems = items.where((i) => i.catalogId == 'water_5l' || i.catalogId == 'water_15' || i.catalogId == 'sparkling');
       var totalQuantity = waterItems.fold<double>(0.0, (sum, i) => sum + i.calculatedQuantity);
@@ -1003,14 +1000,13 @@ void main() {
       final reloadedTrip = await db.tripDao.getTripById(tripId);
       expect(reloadedTrip!.hasWatermaker, isTrue);
 
-      // Beweisen: neu berechnete Trinkwassermenge entspricht WATER1-Ausfallreserve (2.5 L * 2 Personen * 3 Tage = 15.0 L)
+      // Beweisen: Mindest-Trinkwasserschätzung bleibt 35.0 L (2.5 L * 2 Personen * 7 Tage) und 14 Packungen
       items = await db.listItemDao.getListItemsForTrip(tripId);
       waterItems = items.where((i) => i.catalogId == 'water_5l' || i.catalogId == 'water_15' || i.catalogId == 'sparkling');
       totalQuantity = waterItems.fold<double>(0.0, (sum, i) => sum + i.calculatedQuantity);
-      expect(totalQuantity, closeTo(15.0, 1e-6));
+      expect(totalQuantity, closeTo(35.0, 1e-6));
       final totalPackages = waterItems.fold<int>(0, (sum, i) => sum + i.calculatedPackages);
-      // 15.0 L Ausfallreserve wird durch 2x 5L + 4x 1.5L = 6 Packungen (16.0 L) gedeckt
-      expect(totalPackages, equals(6));
+      expect(totalPackages, equals(14));
     });
 
     testWidgets('Real UI Journey: Aus Bootsprofil aktualisieren über Button & Bestätigungsdialog synchronisiert Snapshot', (tester) async {
@@ -1091,91 +1087,76 @@ void main() {
     });
   });
 
-  group('WATER1: Klimabasierte Watermaker-Ausfallreserve (Issue #30)', () {
-    test('Punkte 1–3: Klimazonen cool (2.0), warm (2.5), hot (3.5) + Watermaker + >= 3 Tage -> climateDailyLiters * crewFactorSum * 3', () {
+  group('WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30)', () {
+    test('Punkte 1–3: Klimazonen cool (2.0), warm (2.5), hot (3.5) -> climateDailyLiters * crewFactorSum * effectiveDays', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
-      final crew = [testMember('Alice'), testMember('Bob')]; // factorSum = 2.0
+      final crew = [testMember('Alice'), testMember('Bob')]; // factorSum = 2.0, 7 Tage
 
-      // 1. cool: 2.0 * 2.0 * 3 = 12.0 L
+      // 1. cool: 2.0 * 2.0 * 7 = 28.0 L
       final resCool = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         climate: ClimateZone.cool,
-        hasWatermaker: true,
       ));
       final waterCool = resCool.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterCool.rawGroupNeed, closeTo(12.0, 1e-6));
+      expect(waterCool.rawGroupNeed, closeTo(28.0, 1e-6));
 
-      // 2. warm: 2.5 * 2.0 * 3 = 15.0 L
+      // 2. warm: 2.5 * 2.0 * 7 = 35.0 L
       final resWarm = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         climate: ClimateZone.warm,
-        hasWatermaker: true,
       ));
       final waterWarm = resWarm.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterWarm.rawGroupNeed, closeTo(15.0, 1e-6));
+      expect(waterWarm.rawGroupNeed, closeTo(35.0, 1e-6));
 
-      // 3. hot: 3.5 * 2.0 * 3 = 21.0 L
+      // 3. hot: 3.5 * 2.0 * 7 = 49.0 L
       final resHot = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         climate: ClimateZone.hot,
-        hasWatermaker: true,
       ));
       final waterHot = resHot.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterHot.rawGroupNeed, closeTo(21.0, 1e-6));
+      expect(waterHot.rawGroupNeed, closeTo(49.0, 1e-6));
     });
 
-    test('Punkte 4–6: Törndauer / Etappenhorizont 1 Tag, 2 Tage, > 3 Tage (7, 14 Tage & daysUntilNextStop) mit Watermaker', () {
+    test('Punkte 4–5: Törndauer 1 Tag, 7 Tage, 14 Tage & Etappenhorizont daysUntilNextStop', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
-      final crew = [testMember('Alice'), testMember('Bob')]; // factorSum = 2.0, warm = 2.5 L/Tag
+      final crew = [testMember('Alice'), testMember('Bob')]; // factorSum = 2.0, warm = 2.5 L/Tag = 5.0 L/Tag
 
-      // 4. 1-Tages-Törn + Watermaker -> min(1, 3) = 1 Tag Reserve: 2.5 * 2.0 * 1 = 5.0 L
+      // 4. 1 Tag -> 5.0 L, 7 Tage -> 35.0 L, 14 Tage -> 70.0 L
       final res1 = engine.calculateTrip(createWaterInput(
         daysCount: 1,
         crewMembers: crew,
         climate: ClimateZone.warm,
-        hasWatermaker: true,
       ));
       expect(res1.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(5.0, 1e-6));
 
-      // 5. 2-Tages-Törn + Watermaker -> min(2, 3) = 2 Tage Reserve: 2.5 * 2.0 * 2 = 10.0 L
-      final res2 = engine.calculateTrip(createWaterInput(
-        daysCount: 2,
-        crewMembers: crew,
-        climate: ClimateZone.warm,
-        hasWatermaker: true,
-      ));
-      expect(res2.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(10.0, 1e-6));
-
-      // 6. > 3 Tage (7 und 14 Tage) + Watermaker -> gedeckelt auf 3 Tage Reserve: 2.5 * 2.0 * 3 = 15.0 L
-      for (final days in [3, 7, 14]) {
-        final res = engine.calculateTrip(createWaterInput(
-          daysCount: days,
-          crewMembers: crew,
-          climate: ClimateZone.warm,
-          hasWatermaker: true,
-        ));
-        expect(
-          res.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed,
-          closeTo(15.0, 1e-6),
-          reason: 'Bei $days Tagen muss Watermaker-Reserve auf 3 Tage (15.0 L) gedeckelt sein',
-        );
-      }
-
-      // Etappenhorizont daysUntilNextStop (z. B. 7 Tage Törn, aber nächster Stopp in 2 Tagen -> min(2, 3) = 2 Tage = 10.0 L)
-      final resStop2 = engine.calculateTrip(createWaterInput(
+      final res7 = engine.calculateTrip(createWaterInput(
         daysCount: 7,
-        daysUntilNextStop: 2,
         crewMembers: crew,
         climate: ClimateZone.warm,
-        hasWatermaker: true,
       ));
-      expect(resStop2.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(10.0, 1e-6));
+      expect(res7.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(35.0, 1e-6));
+
+      final res14 = engine.calculateTrip(createWaterInput(
+        daysCount: 14,
+        crewMembers: crew,
+        climate: ClimateZone.warm,
+      ));
+      expect(res14.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(70.0, 1e-6));
+
+      // 5. Etappenhorizont daysUntilNextStop (z. B. 14 Tage Törn, nächster Stopp in 4 Tagen -> 2.5 * 2.0 * 4 = 20.0 L)
+      final resStop4 = engine.calculateTrip(createWaterInput(
+        daysCount: 14,
+        daysUntilNextStop: 4,
+        crewMembers: crew,
+        climate: ClimateZone.warm,
+      ));
+      expect(resStop4.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(20.0, 1e-6));
     });
 
-    test('Punkt 7: Kindergewichtung (factorSum mit child = 0.6) fließt korrekt in die Watermaker-Reserve ein', () {
+    test('Punkt 6: Kindergewichtung (factorSum mit child = 0.6) fließt korrekt in den Mindest-Trinkwasserbedarf ein', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
 
       // 2 Erwachsene (2 * 1.0) + 1 Kind (0.6) => factorSum = 2.6
@@ -1191,16 +1172,15 @@ void main() {
         ),
       ];
 
-      // Warm (2.5 L/Tag) * 2.6 * min(7, 3) = 19.5 L
+      // Warm (2.5 L/Tag) * 2.6 * 7 Tage = 45.5 L
       final resMixed = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: mixedCrew,
         climate: ClimateZone.warm,
-        hasWatermaker: true,
       ));
-      expect(resMixed.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(19.5, 1e-6));
+      expect(resMixed.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(45.5, 1e-6));
 
-      // Randfall: nur Kinder (2 Kinder = 1.2), hot (3.5 L/Tag), 5 Tage -> 3.5 * 1.2 * 3 = 12.6 L
+      // Randfall: nur Kinder (2 Kinder = 1.2), hot (3.5 L/Tag), 5 Tage -> 3.5 * 1.2 * 5 = 21.0 L
       final childrenOnly = [
         const CrewMemberInput(id: 'c1', name: 'Kind 1', isAdult: false, isVegetarian: false, noAlcohol: true),
         const CrewMemberInput(id: 'c2', name: 'Kind 2', isAdult: false, isVegetarian: false, noAlcohol: true),
@@ -1209,33 +1189,53 @@ void main() {
         daysCount: 5,
         crewMembers: childrenOnly,
         climate: ClimateZone.hot,
-        hasWatermaker: true,
       ));
-      expect(resChildren.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(12.6, 1e-6));
+      expect(resChildren.groupResults.firstWhere((g) => g.groupId == 'water').rawGroupNeed, closeTo(21.0, 1e-6));
     });
 
-    test('Punkte 8–10: Kein Tank, nicht-trinkbarer Tank und trinkbarer Tank liefern mit Watermaker exakt dieselbe Ausfallreserve', () {
+    test('Punkte 7–11: Kein Tank, nicht-trinkbarer Tank, trinkbarer Tank, hasWatermaker == true und trinkbarer Tank + hasWatermaker == true liefern identisches Ergebnis', () {
       final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
       final crew = [testMember('Alice'), testMember('Bob'), testMember('Charlie'), testMember('Diana')]; // 4 Erwachsene
 
-      // 4 Erwachsene, warm (2.5 L), 7 Tage, Watermaker -> 2.5 * 4.0 * 3 = 30.0 L
+      // 4 Erwachsene, warm (2.5 L), 7 Tage -> 2.5 * 4.0 * 7 = 70.0 L
+      // 7. Kein Tank
       final noTank = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         waterTankLiters: 0,
         isWaterTankDrinkable: false,
-        hasWatermaker: true,
+        hasWatermaker: false,
       )).groupResults.firstWhere((g) => g.groupId == 'water');
 
+      // 8. Nicht-trinkbarer Tank
       final nonPotableTank = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         waterTankLiters: 600,
         isWaterTankDrinkable: false,
+        hasWatermaker: false,
+      )).groupResults.firstWhere((g) => g.groupId == 'water');
+
+      // 9. Trinkbarer Tank
+      final potableTank = engine.calculateTrip(createWaterInput(
+        daysCount: 7,
+        crewMembers: crew,
+        waterTankLiters: 600,
+        isWaterTankDrinkable: true,
+        hasWatermaker: false,
+      )).groupResults.firstWhere((g) => g.groupId == 'water');
+
+      // 10. hasWatermaker == true
+      final watermakerOnly = engine.calculateTrip(createWaterInput(
+        daysCount: 7,
+        crewMembers: crew,
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
         hasWatermaker: true,
       )).groupResults.firstWhere((g) => g.groupId == 'water');
 
-      final potableTank = engine.calculateTrip(createWaterInput(
+      // 11. Trinkbarer Tank + hasWatermaker == true
+      final potableAndWatermaker = engine.calculateTrip(createWaterInput(
         daysCount: 7,
         crewMembers: crew,
         waterTankLiters: 600,
@@ -1243,47 +1243,14 @@ void main() {
         hasWatermaker: true,
       )).groupResults.firstWhere((g) => g.groupId == 'water');
 
-      expect(noTank.rawGroupNeed, closeTo(30.0, 1e-6));
-      expect(nonPotableTank.rawGroupNeed, closeTo(30.0, 1e-6));
-      expect(potableTank.rawGroupNeed, closeTo(30.0, 1e-6));
+      expect(noTank.rawGroupNeed, closeTo(70.0, 1e-6));
+      expect(nonPotableTank.rawGroupNeed, closeTo(70.0, 1e-6));
+      expect(potableTank.rawGroupNeed, closeTo(70.0, 1e-6));
+      expect(watermakerOnly.rawGroupNeed, closeTo(70.0, 1e-6));
+      expect(potableAndWatermaker.rawGroupNeed, closeTo(70.0, 1e-6));
     });
 
-    test('Punkte 11–13: Ohne Watermaker bleiben voller Bedarf, partieller Tankabzug und 1.5-L/Person-Floor unverändert', () {
-      final engine = QuantityEngine(catalog: catalogRepo.catalog!, quantities: catalogRepo.quantities!);
-      final crew = [testMember('Alice'), testMember('Bob')]; // 2 Erwachsene, warm, 7 Tage -> 35.0 L
-
-      // 11. Kein Watermaker + kein Tank -> 35.0 L
-      final fullNeed = engine.calculateTrip(createWaterInput(
-        daysCount: 7,
-        crewMembers: crew,
-        waterTankLiters: 0,
-        isWaterTankDrinkable: false,
-        hasWatermaker: false,
-      )).groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(fullNeed.rawGroupNeed, closeTo(35.0, 1e-6));
-
-      // 12. Kein Watermaker + trinkbarer Tank (20 L) -> 35.0 - 20.0 = 15.0 L (> 3.0 L Floor)
-      final partialTank = engine.calculateTrip(createWaterInput(
-        daysCount: 7,
-        crewMembers: crew,
-        waterTankLiters: 20,
-        isWaterTankDrinkable: true,
-        hasWatermaker: false,
-      )).groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(partialTank.rawGroupNeed, closeTo(15.0, 1e-6));
-
-      // 13. Kein Watermaker + großer trinkbarer Tank (500 L) -> Floor 1.5 L * 2 = 3.0 L
-      final floorTank = engine.calculateTrip(createWaterInput(
-        daysCount: 7,
-        crewMembers: crew,
-        waterTankLiters: 500,
-        isWaterTankDrinkable: true,
-        hasWatermaker: false,
-      )).groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(floorTank.rawGroupNeed, closeTo(3.0, 1e-6));
-    });
-
-    test('Punkt 14: Bestehende manuelle Wasser-Packungs-Overrides bleiben bei Neuberechnung mit/ohne Watermaker stabil', () async {
+    test('Punkt 12: Bestehende manuelle Wasser-Packungs-Overrides bleiben bei Neuberechnung mit/ohne Watermaker stabil', () async {
       final tripId = await tripService.createTripWithCrew(
         name: 'Override Stability Trip',
         startDate: DateTime(2026, 7, 1),

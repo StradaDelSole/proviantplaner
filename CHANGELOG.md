@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-16 – WATER1 Simplification Amendment (Issue #30)
+
+- **Simplification der Trinkwasser-Rechenlogik:** `QuantityEngine._calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`) berechnet ausschließlich den reinen Mindest-Trinkwasserbedarf: `climateDailyLiters × crewFactorSum × effectiveDays` (`effectiveDays = daysUntilNextStop ?? daysCount`), mit bestehenden Klimawerten (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), bestehender Crew-/Kindergewichtung (`child = 0.6`), ohne Tankabzug, ohne Watermaker-Reduktion und ohne automatische Watermaker-Ausfallreserve.
+- **Rückkehr zu `data/quantities_v0.6.json`:** `data/quantities_v0.7.json` und `watermakerBackupDays` wurden vollständig entfernt; `data/quantities_v0.6.json` bleibt byte-identisch und unverändert kanonische Mengendatenbasis; `pubspec.yaml` und `CatalogRepository` referenzieren wieder `v0.6`.
+- **Anzeige des berechneten Gruppenbedarfs in der Wassergruppe:** `PlanningView` und `GroupDetailSheet` zeigen für die Wassergruppe (`CalculationBasis.perPersonDayRegion`) den berechneten dynamischen Gruppenbedarf (`calculatedGroupNeed` aus `TripCalculationResult`), z. B. `Mindest-Trinkwasser: ca. 35 l` statt des statischen Katalogwerts `2,5 l`.
+- **Verbindlicher Planungshinweis:** In `PlanningView` und `GroupDetailSheet` wird für die Wassergruppe ein klarer Hinweis gerendert, dass dieser Wert nur der geschätzte Mindest-Trinkwasserbedarf ist und Tank, Watermaker, Nachfüllmöglichkeiten sowie Frischwasser für Kochen, Spülen, Waschen und Körperpflege separat geplant werden müssen.
+- **Neutrale Bootsprofil-/Setup-Subtitles (6 Sprachen):** `waterTankDrinkableSubtitle` und `hasWatermakerSubtitle` in allen 6 Sprachen (`de`, `en`, `fr`, `es`, `pt`, `hr`) neutral formuliert; keine irreführenden Versprechen automatischer Flaschenwasser-Reduktion oder Notreserveberechnung mehr.
+- **Entfernung der Water-Boost-Chips:** Veraltete Buttons `+25 % warm` und `+50 % heiß/Tropen` in `ShoppingListItemRow` sowie zugehörige ARB-Schlüssel (`waterBoostWarm`, `waterBoostHot`, `waterIncreasedNotice`) ersatzlos entfernt.
+- **Tests & Qualitätssicherung:** Alle 24 Abnahmekriterien in `catalog_validation_test.dart`, `pivot3b_water_and_setup_test.dart`, `fb2_a_calculation_test.dart`, `fb2_b_ui_test.dart` und `s9_i18n_test.dart` abgedeckt und lokal verifiziert.
+
 ## 2026-10-16 – WATER1 Simplification Decision
 
 - Owner simplified WATER1 after product review.

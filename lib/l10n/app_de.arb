@@ -333,7 +333,7 @@
   "freezerCapacityLiters": "Tiefkühlfach-Volumen (l)",
   "waterTankLiters": "Wassertank an Bord (l)",
   "waterTankDrinkable": "Tankwasser ist trinkbar",
-  "waterTankDrinkableSubtitle": "Flaschenwasserbedarf wird reduziert (min. 1,5 l/Person Mindestreserve)",
+  "waterTankDrinkableSubtitle": "Technische Angabe für deine eigene Wasserplanung (reduziert nicht den Mindest-Trinkwasser-Richtwert)",
   "step1TripTitle": "1. Törn",
   "step2CrewTitle": "2. Crew",
   "step3FoodTitle": "3. Essen an Bord",
@@ -367,8 +367,6 @@
   "totalWeight": "Gesamtgewicht",
   "totalVolume": "Gesamtvolumen",
   "freezeImmediately": "gleich einfrieren",
-  "waterBoostWarm": "+25 % warm",
-  "waterBoostHot": "+50 % heiß/Tropen",
   "adjustQuantityTitle": "{name}: Menge anpassen",
   "@adjustQuantityTitle": {
     "placeholders": {
@@ -385,17 +383,6 @@
       },
       "stop": {
         "type": "String"
-      }
-    }
-  },
-  "waterIncreasedNotice": "Wassermenge auf {count} Packungen erhöht (+{percent} %)",
-  "@waterIncreasedNotice": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "percent": {
-        "type": "int"
       }
     }
   },
@@ -1167,7 +1154,19 @@
   "boatManufacturer": "Hersteller (optional)",
   "boatModel": "Modell (optional)",
   "hasWatermaker": "Watermaker an Bord vorhanden",
-  "hasWatermakerSubtitle": "Nimmt an, dass ein betriebsbereiter Watermaker die Trinkwasserversorgung im Betrieb übernimmt. Notreserve bleibt eingeplant.",
+  "hasWatermakerSubtitle": "Technische Angabe für deine eigene Wasserplanung (reduziert nicht den Mindest-Trinkwasser-Richtwert)",
+  "waterMinimumTotal": "Mindest-Trinkwasser: ca. {amount} {unit}",
+  "@waterMinimumTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "waterPlanningNotice": "Dieser Wert ist nur der geschätzte Mindest-Trinkwasserbedarf. Tank, Watermaker, Nachfüllmöglichkeiten sowie zusätzlicher Frischwasserverbrauch für Kochen, Spülen, Waschen und Körperpflege sind nicht eingerechnet und müssen separat geplant werden.",
   "linkedBoatProfile": "Verknüpftes Bootsprofil",
   "resyncBoatProfile": "Aus Bootsprofil aktualisieren",
   "resyncBoatProfileConfirm": "Möchtest du die Bootsdaten des Törns wirklich aus dem Bootsprofil aktualisieren? Manuelle Änderungen am Törn werden überschrieben.",

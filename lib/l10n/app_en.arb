@@ -333,7 +333,7 @@
   "freezerCapacityLiters": "Freezer volume (L)",
   "waterTankLiters": "On-board water tank (L)",
   "waterTankDrinkable": "Tank water is potable",
-  "waterTankDrinkableSubtitle": "Bottled water need is reduced (min. 1.5 L/person emergency reserve)",
+  "waterTankDrinkableSubtitle": "Technical fact for your own water planning (does not reduce the minimum drinking water estimate)",
   "step1TripTitle": "1. Trip",
   "step2CrewTitle": "2. Crew",
   "step3FoodTitle": "3. Food on board",
@@ -367,8 +367,6 @@
   "totalWeight": "Total weight",
   "totalVolume": "Total volume",
   "freezeImmediately": "freeze immediately",
-  "waterBoostWarm": "+25% warm",
-  "waterBoostHot": "+50% hot/tropics",
   "adjustQuantityTitle": "{name}: Adjust quantity",
   "@adjustQuantityTitle": {
     "placeholders": {
@@ -385,17 +383,6 @@
       },
       "stop": {
         "type": "String"
-      }
-    }
-  },
-  "waterIncreasedNotice": "Water quantity increased to {count} packages (+{percent}%)",
-  "@waterIncreasedNotice": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "percent": {
-        "type": "int"
       }
     }
   },
@@ -981,7 +968,19 @@
   "boatManufacturer": "Manufacturer (optional)",
   "boatModel": "Model (optional)",
   "hasWatermaker": "Watermaker available on board",
-  "hasWatermakerSubtitle": "Assumes an operational watermaker provides routine drinking water supply. Emergency reserve remains planned.",
+  "hasWatermakerSubtitle": "Technical fact for your own water planning (does not reduce the minimum drinking water estimate)",
+  "waterMinimumTotal": "Minimum drinking water: approx. {amount} {unit}",
+  "@waterMinimumTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "waterPlanningNotice": "This value is only the estimated minimum drinking water requirement. Tank, watermaker, resupply options, and additional freshwater usage for cooking, dishwashing, washing, and personal hygiene are not included and must be planned separately.",
   "linkedBoatProfile": "Linked boat profile",
   "resyncBoatProfile": "Resync from boat profile",
   "resyncBoatProfileConfirm": "Do you really want to update the trip boat data from the boat profile? Manual changes on this trip will be overwritten.",

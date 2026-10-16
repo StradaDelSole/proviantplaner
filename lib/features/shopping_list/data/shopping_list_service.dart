@@ -187,7 +187,7 @@ class ShoppingListService {
     }
 
     final itemViews = _buildItemViews(rawItems, catalog, allocationsByItem, calcResult);
-    final categories = _buildCategoryViews(catalog, itemViews);
+    final categories = _buildCategoryViews(catalog, itemViews, calcResult);
     final departments = _buildDepartmentViews(itemViews);
 
     return TripShoppingListData(
@@ -295,6 +295,7 @@ class ShoppingListService {
   List<ShoppingListCategoryView> _buildCategoryViews(
     CatalogData catalog,
     List<ShoppingListItemView> items,
+    TripCalculationResult? calcResult,
   ) {
     final itemsByGroup = <String, List<ShoppingListItemView>>{};
     for (final it in items) {
@@ -311,7 +312,15 @@ class ShoppingListService {
       for (final g in groupsInCat) {
         final variants = itemsByGroup[g.id] ?? [];
         if (variants.isNotEmpty) {
-          groupViews.add(ShoppingListGroupView(group: g, variants: variants));
+          final groupCalc = calcResult?.getGroupResult(g.id);
+          groupViews.add(
+            ShoppingListGroupView(
+              group: g,
+              variants: variants,
+              calculatedGroupNeed: groupCalc?.rawGroupNeed,
+              calculatedGroupUnit: groupCalc?.unit ?? g.need?.unit,
+            ),
+          );
         }
       }
 

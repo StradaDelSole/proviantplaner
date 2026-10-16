@@ -268,7 +268,7 @@
   "freezerCapacityLiters": "Volumen zamrzivača (l)",
   "waterTankLiters": "Brodski spremnik vode (l)",
   "waterTankDrinkable": "Voda iz spremnika je pitka",
-  "waterTankDrinkableSubtitle": "Smanjena potreba za flaširanom vodom (min. 1,5 l po osobi pričuve)",
+  "waterTankDrinkableSubtitle": "Tehnički podatak za vlastito planiranje vode (ne smanjuje minimalnu procjenu pitke vode)",
   "step1TripTitle": "1. Plovidba",
   "step2CrewTitle": "2. Posada",
   "step3FoodTitle": "3. Hrana na brodu",
@@ -302,11 +302,8 @@
   "totalWeight": "Ukupna težina",
   "totalVolume": "Ukupni volumen",
   "freezeImmediately": "odmah zamrznuti",
-  "waterBoostWarm": "+25% toplo",
-  "waterBoostHot": "+50% vruće / tropi",
   "adjustQuantityTitle": "{name}: Prilagodi količinu",
   "itemAssignedToStop": "{item} dodijeljen za „{stop}“.",
-  "waterIncreasedNotice": "Količina vode povećana na {count} pakiranja (+{percent}%)",
   "remainderNotice": "Ostatak cca {amount} – planirati u kasnijoj kupovini",
   "weightKg": "{weight} kg",
   "volumeLiters": "{volume} l",
@@ -394,16 +391,6 @@
       },
       "stop": {
         "type": "String"
-      }
-    }
-  },
-  "@waterIncreasedNotice": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "percent": {
-        "type": "int"
       }
     }
   },
@@ -981,7 +968,19 @@
   "boatManufacturer": "Proizvođač (neobavezno)",
   "boatModel": "Model (neobavezno)",
   "hasWatermaker": "Odsoljivač vode dostupan na brodu",
-  "hasWatermakerSubtitle": "Pretpostavlja da ispravan odsoljivač osigurava rutinsku opskrbu pitkom vodom. Sigurnosna rezerva ostaje uračunata.",
+  "hasWatermakerSubtitle": "Tehnički podatak za vlastito planiranje vode (ne smanjuje minimalnu procjenu pitke vode)",
+  "waterMinimumTotal": "Minimalna pitka voda: cca. {amount} {unit}",
+  "@waterMinimumTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "waterPlanningNotice": "Ova vrijednost je samo procijenjena minimalna potreba za pitkom vodom. Spremnik, odsoljivač vode, mogućnosti nadopune te dodatna potrošnja slatke vode za kuhanje, pranje posuđa, pranje i osobnu higijenu nisu uračunati i moraju se planirati zasebno.",
   "linkedBoatProfile": "Povezani profil broda",
   "resyncBoatProfile": "Ažuriraj iz profila broda",
   "resyncBoatProfileConfirm": "Želite li stvarno ažurirati podatke o brodu iz profila broda? Ručne izmjene na ovom putovanju bit će prebrisane.",

@@ -185,10 +185,14 @@ class ShoppingListItemView {
 class ShoppingListGroupView {
   final CatalogGroup group;
   final List<ShoppingListItemView> variants;
+  final double? calculatedGroupNeed;
+  final String? calculatedGroupUnit;
 
   const ShoppingListGroupView({
     required this.group,
     required this.variants,
+    this.calculatedGroupNeed,
+    this.calculatedGroupUnit,
   });
 
   /// Gesamtanzahl der Packungen aller auf der Liste befindlichen Varianten.

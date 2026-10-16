@@ -14,7 +14,7 @@ void main() {
 
   setUpAll(() {
     final catalogFile = File('data/catalog_v0.11.json');
-    final quantitiesFile = File('data/quantities_v0.7.json');
+    final quantitiesFile = File('data/quantities_v0.6.json');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;
     final quantitiesMap = json.decode(quantitiesFile.readAsStringSync()) as Map<String, dynamic>;
@@ -232,14 +232,12 @@ void main() {
       expect(result.isFreezerOverloaded, isFalse);
     });
 
-    // 4. Kriterium: Tank 200 l trinkbar vs. nicht trinkbar
-    test('Bordtank 200 l: Trinkwasserbedarf vs. Flaschenwasser mit 1.5 l/Person Reserve', () {
+    // 4. Kriterium: Mindest-Trinkwasserbedarf unabhängig von Bordtank (WATER1 Simplification)
+    test('Bordtank 200 l: Mindest-Trinkwasserbedarf bleibt 262.5 l unabhängig von Tankgröße und Trinkbarkeit', () {
       // 5 Personen, 21 Tage, Klimazone warm: 2.5 l / Person / Tag.
-      // Rohbedarf Trinkwasser = 5 * 21 * 2.5 = 262.5 l.
-      // Mindestreserve Flaschenwasser: 5 Personen * 1.5 l = 7.5 l.
+      // Mindest-Trinkwasserbedarf = 5 * 21 * 2.5 = 262.5 l.
 
-      // Fall A: Tank 200 l, NICHT trinkbar
-      // Flaschenwasser = 262.5 l (voller Bedarf aus Flaschen)
+      // Fall A: Tank 200 l, NICHT trinkbar -> 262.5 l
       final inputNotDrinkable = QuantityCalculationInput(
         daysCount: 21,
         climate: ClimateZone.warm,
@@ -257,8 +255,7 @@ void main() {
       final waterGroupA = resultNotDrinkable.groupResults.firstWhere((g) => g.groupId == 'water');
       expect(waterGroupA.rawGroupNeed, closeTo(262.5, 1e-3));
 
-      // Fall B: Tank 200 l, TRINKBAR
-      // Flaschenwasser = 262.5 l - 200 l = 62.5 l (da 62.5 >= 7.5 Reserve)
+      // Fall B: Tank 200 l, TRINKBAR -> 262.5 l (WATER1 Simplification: Tank reduziert Mindest-Trinkwasserschätzung nicht)
       final inputDrinkable = QuantityCalculationInput(
         daysCount: 21,
         climate: ClimateZone.warm,
@@ -274,10 +271,9 @@ void main() {
 
       final resultDrinkable = engine.calculateTrip(inputDrinkable);
       final waterGroupB = resultDrinkable.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterGroupB.rawGroupNeed, closeTo(62.5, 1e-3));
+      expect(waterGroupB.rawGroupNeed, closeTo(262.5, 1e-3));
 
-      // Fall C: Tank 300 l (übersteigt Bedarf), TRINKBAR
-      // 262.5 l - 300 l = -37.5 l -> greift Mindestreserve 7.5 l
+      // Fall C: Tank 300 l, TRINKBAR -> 262.5 l
       final inputTankSurplus = QuantityCalculationInput(
         daysCount: 21,
         climate: ClimateZone.warm,
@@ -293,7 +289,7 @@ void main() {
 
       final resultSurplus = engine.calculateTrip(inputTankSurplus);
       final waterGroupC = resultSurplus.groupResults.firstWhere((g) => g.groupId == 'water');
-      expect(waterGroupC.rawGroupNeed, closeTo(7.5, 1e-3));
+      expect(waterGroupC.rawGroupNeed, closeTo(262.5, 1e-3));
     });
 
     // 5. Kriterium: Gewicht/Volumen einer Beispielliste

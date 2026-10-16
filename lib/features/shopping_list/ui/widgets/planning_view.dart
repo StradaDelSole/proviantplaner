@@ -231,6 +231,9 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
     final hasAdopted = groupView.variants.any((v) => v.isOnList);
     // Standardmäßig aufgeklappt wenn Posten übernommen sind oder explizit expandiert
     final isExpanded = _expandedGroupIds.contains(groupView.group.id) || hasAdopted;
+    final isRegionalWaterGroup = groupView.group.need?.basis == CalculationBasis.perPersonDayRegion;
+    final effectiveGroupNeed = groupView.calculatedGroupNeed ?? groupView.group.need?.amount;
+    final effectiveGroupUnit = groupView.calculatedGroupUnit ?? groupView.group.need?.unit ?? '';
 
     return Card(
       elevation: 0,
@@ -265,9 +268,30 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
                               color: theme.colorScheme.primary,
                             ),
                           )
-                        else if (groupView.group.need != null)
+                        else if (isRegionalWaterGroup && effectiveGroupNeed != null) ...[
                           Text(
-                            l10n.suggestionTotal(AppFormatters.formatDecimal(context, groupView.group.need!.amount), groupView.group.need!.unit),
+                            l10n.waterMinimumTotal(
+                              AppFormatters.formatDecimal(context, effectiveGroupNeed),
+                              effectiveGroupUnit,
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.waterPlanningNotice,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ] else if (groupView.group.need != null)
+                          Text(
+                            l10n.suggestionTotal(
+                              AppFormatters.formatDecimal(context, groupView.group.need!.amount),
+                              groupView.group.need!.unit,
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

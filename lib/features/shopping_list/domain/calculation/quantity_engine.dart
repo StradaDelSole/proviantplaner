@@ -536,7 +536,9 @@ class QuantityEngine {
     return rawAmount;
   }
 
-  /// Berechnet den klimabasierten Trinkwasserbedarf inkl. Bordtank- und Watermaker-Logik (PIVOT3-B, WATER1).
+  /// Berechnet den klimabasierten Mindest-Trinkwasserbedarf (WATER1 Simplification).
+  /// Formel: minimumDrinkingWater = dailyAmount * effectiveDays * factorSum.
+  /// Bordtank, Watermaker, Nachfüllmöglichkeiten und Brauchwasser werden nicht verrechnet.
   double _calculateRegionalWaterNeed({
     required CatalogNeed need,
     required QuantityCalculationInput input,
@@ -555,21 +557,7 @@ class QuantityEngine {
         quantities.waterLiters['mediterranean_summer'];
     final dailyAmount = waterConfig?.defaultValue ?? need.amount;
 
-    if (input.hasWatermaker) {
-      final reserveDays = effectiveDays < quantities.watermakerBackupDays
-          ? effectiveDays
-          : quantities.watermakerBackupDays;
-      return dailyAmount * factorSum * reserveDays;
-    }
-
-    var rawAmount = dailyAmount * effectiveDays * factorSum;
-    if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
-      final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
-      final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
-      final afterTank = rawAmount - input.waterTankLiters!;
-      rawAmount = afterTank > minReserve ? afterTank : minReserve;
-    }
-    return rawAmount;
+    return dailyAmount * effectiveDays * factorSum;
   }
 
   int _determineEffectiveShelfLife(CatalogVariant v, QuantityCalculationInput input) {

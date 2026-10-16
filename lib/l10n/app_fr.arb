@@ -268,7 +268,7 @@
   "freezerCapacityLiters": "Volume du congélateur (l)",
   "waterTankLiters": "Réservoir d'eau douce (l)",
   "waterTankDrinkable": "L'eau du réservoir est potable",
-  "waterTankDrinkableSubtitle": "Besoin en bouteilles réduit (réserve minimale 1,5 l/personne)",
+  "waterTankDrinkableSubtitle": "Indication technique pour votre propre planification de l'eau (ne réduit pas le repère d'eau potable minimale)",
   "step1TripTitle": "1. Croisière",
   "step2CrewTitle": "2. Équipage",
   "step3FoodTitle": "3. Repas à bord",
@@ -302,11 +302,8 @@
   "totalWeight": "Poids total",
   "totalVolume": "Volume total",
   "freezeImmediately": "congeler immédiatement",
-  "waterBoostWarm": "+25 % chaud",
-  "waterBoostHot": "+50 % tropiques / très chaud",
   "adjustQuantityTitle": "{name}: Ajuster la quantité",
   "itemAssignedToStop": "{item} attribué à « {stop} ».",
-  "waterIncreasedNotice": "Quantité d'eau augmentée à {count} packs (+{percent} %)",
   "remainderNotice": "Reste env. {amount} – à prévoir lors d'une prochaine escale",
   "weightKg": "{weight} kg",
   "volumeLiters": "{volume} l",
@@ -394,16 +391,6 @@
       },
       "stop": {
         "type": "String"
-      }
-    }
-  },
-  "@waterIncreasedNotice": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "percent": {
-        "type": "int"
       }
     }
   },
@@ -981,7 +968,19 @@
   "boatManufacturer": "Constructeur (optionnel)",
   "boatModel": "Modèle (optionnel)",
   "hasWatermaker": "Dessalinisateur disponible à bord",
-  "hasWatermakerSubtitle": "Suppose qu'un dessalinisateur opérationnel assure l'approvisionnement courant en eau potable. La réserve d'urgence reste prévue.",
+  "hasWatermakerSubtitle": "Indication technique pour votre propre planification de l'eau (ne réduit pas le repère d'eau potable minimale)",
+  "waterMinimumTotal": "Eau potable minimale : env. {amount} {unit}",
+  "@waterMinimumTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "waterPlanningNotice": "Cette valeur ne représente que le besoin minimal estimé en eau potable. Le réservoir, le dessalinisateur, les possibilités de ravitaillement ainsi que la consommation supplémentaire d'eau douce pour la cuisine, la vaisselle, le lavage et l'hygiène corporelle ne sont pas inclus et doivent être planifiés séparément.",
   "linkedBoatProfile": "Profil de bateau associé",
   "resyncBoatProfile": "Actualiser depuis le profil du bateau",
   "resyncBoatProfileConfirm": "Voulez-vous vraiment actualiser les données du bateau depuis le profil ? Les modifications manuelles du voyage seront écrasées.",

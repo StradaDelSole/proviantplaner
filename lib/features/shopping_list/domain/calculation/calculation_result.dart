@@ -127,6 +127,13 @@ class TripCalculationResult {
     required this.weightVolume,
   });
 
+  GroupCalculationResult? getGroupResult(String groupId) {
+    for (final g in groupResults) {
+      if (g.groupId == groupId) return g;
+    }
+    return null;
+  }
+
   VariantCalculationResult? getVariantResult(String variantId) {
     for (final g in groupResults) {
       for (final v in g.variantResults) {

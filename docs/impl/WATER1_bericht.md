@@ -99,3 +99,101 @@ Vorschläge für das PRD:
 Commit: WATER1: Watermaker contingency reserve (`f39bb559f7fca1c35858e7b442725e84ae87d3b8`, gepusht auf Review-Branch `slice/water1-watermaker-contingency-reserve`: ja)
 ```
 
+## WATER1 Simplification Amendment
+
+```
+Slice: WATER1 – Minimum Drinking Water Simplification (Issue #30)
+Status: AMENDMENT IMPLEMENTED / READY FOR FULL-QA CI
+
+Grund der Überarbeitung:
+- Owner-Entscheidung nach Produktprüfung (`docs/impl/WATER1_simplification_reconciliation_2026-10-16.md`, `docs/impl/WATER1_simplification_plan.md`).
+- Die vorherige 3-Tage-Watermaker-Ausfallreserve und `data/quantities_v0.7.json` sind superseded und wurden vollständig zurückgenommen.
+- Keine automatische Berechnung von Tankabzug, Watermaker-Reduktion oder Watermaker-Ausfallreserve mehr.
+- Berechnung rein als Mindest-Trinkwasser-Richtwert; alle übrigen Wasserfaktoren (Tank, Watermaker, Kochen, Abwasch, Waschen, Körperpflege) werden als planerische Eigenverantwortung erklärt.
+
+Umgesetzt:
+- Rücknahme von `data/quantities_v0.7.json`, `backup_days`, altem Tankabzug und Watermaker-Reduktion.
+- Rückkehr zu `data/quantities_v0.6.json` (unverändert erhalten) in `pubspec.yaml`, `CatalogRepository`, `QuantitiesData` und allen Test-Dateien.
+- Neue kanonische Berechnungsformel in `QuantityEngine._calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`):
+  `minimumDrinkingWater = climateDailyLiters × crewFactorSum × effectiveDays`
+  mit `effectiveDays = input.daysUntilNextStop ?? input.daysCount`, bestehenden Klimawerten (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), bestehender Crew-/Kindergewichtung (`child = 0.6`), ohne Tankabzug, ohne Watermaker-Reduktion und ohne Watermaker-Reserve.
+- Dynamische Anzeige des berechneten Gruppenbedarfs in `PlanningView` und `GroupDetailSheet` (`calculatedGroupNeed` aus `TripCalculationResult`), z. B. "Mindest-Trinkwasser: ca. 35 l" statt statischem Katalogwert "2,5 l".
+- Verbindlicher informativer Planungshinweis in `PlanningView` und `GroupDetailSheet` in allen 6 Sprachen gerendert.
+- Überarbeitete neutrale Untertitel für `waterTankDrinkableSubtitle` und `hasWatermakerSubtitle` in allen 6 Sprachen (`de`, `en`, `fr`, `es`, `pt`, `hr`); keine Versprechen automatischer Reduktion oder Notreserve.
+- Entfernung der veralteten Water-Boost-Chips (`+25 % warm`, `+50 % heiß/Tropen`) aus `ShoppingListItemRow` und Entfernung der obsoleten ARB-Keys (`waterBoostWarm`, `waterBoostHot`, `waterIncreasedNotice`).
+- Vollständige Regressionstestsuite für alle 24 Kriterien implementiert und lokal erfolgreich verifiziert.
+
+Geänderte/gelöschte Dateien:
+- `data/quantities_v0.7.json` (gelöscht)
+- `pubspec.yaml` (auf v0.6 zurückgesetzt)
+- `lib/features/shopping_list/data/catalog_repository.dart` (auf v0.6 zurückgesetzt)
+- `lib/features/shopping_list/domain/models/quantities_models.dart` (watermakerBackupDays entfernt)
+- `lib/features/shopping_list/domain/calculation/quantity_engine.dart` (vereinfachte Formel ohne Tank/Watermaker)
+- `lib/features/shopping_list/domain/calculation/calculation_result.dart` (getGroupResult Hilfsmethode)
+- `lib/features/shopping_list/domain/models/shopping_list_models.dart` (calculatedGroupNeed/calculatedGroupUnit)
+- `lib/features/shopping_list/data/shopping_list_service.dart` (Propagation von calculatedGroupNeed)
+- `lib/features/shopping_list/ui/widgets/planning_view.dart` (calculatedGroupNeed + waterPlanningNotice)
+- `lib/features/shopping_list/ui/widgets/group_detail_sheet.dart` (calculatedGroupNeed + waterPlanningNotice)
+- `lib/features/shopping_list/ui/widgets/item_row_widget.dart` (Water-Boost entfernt)
+- `lib/l10n/app_{de,en,fr,es,pt,hr}.arb` (Lokalisierung für alle 6 Sprachen aktualisiert)
+- `test/features/shopping_list/domain/catalog_validation_test.dart`
+- `test/features/boat/pivot3b_water_and_setup_test.dart`
+- `test/features/shopping_list/fb2_a_calculation_test.dart`
+- `test/features/shopping_list/fb2_b_ui_test.dart`
+- `test/features/i18n/s9_i18n_test.dart`
+- 13 weitere Test-Dateien (quantities_v0.6.json Wiederherstellung)
+- `CHANGELOG.md`
+- `docs/impl/WATER1_bericht.md`
+
+Lokale Targeted Checks:
+- `flutter test test/features/shopping_list/domain/catalog_validation_test.dart`: grün (19 Tests bestanden)
+- `flutter test test/features/shopping_list/fb2_a_calculation_test.dart`: grün (7 Tests bestanden)
+- `flutter test test/features/shopping_list/fb2_b_ui_test.dart`: grün (13 Tests bestanden)
+- `test/features/boat/pivot3b_water_and_setup_test.dart`: grün (28 Tests bestanden)
+- `test/features/i18n/s9_i18n_test.dart`: grün (24 Tests bestanden)
+
+Abnahmekriterien (docs/PROMPT_SESSION_START_v0.11.md Abschnitt 11):
+1. Klimazone cool -> 2.0 × crewFactorSum × effectiveDays: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 1–3`)
+2. Klimazone warm -> 2.5 × crewFactorSum × effectiveDays: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 1–3`)
+3. Klimazone hot -> 3.5 × crewFactorSum × effectiveDays: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 1–3`)
+4. Törndauer 1 Tag, 7 Tage, 14 Tage: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 4–5`)
+5. Etappenhorizont daysUntilNextStop: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 4–5`)
+6. Kindergewichtung (factorSum mit child = 0.6): erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkt 6`)
+7. Kein Tank: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 7–11`)
+8. Nicht-trinkbarer Tank liefert identisches Ergebnis: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 7–11`)
+9. Trinkbarer Tank liefert identisches Ergebnis (kein Abzug): erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 7–11`)
+10. hasWatermaker == true liefert identisches Ergebnis (keine Reduktion): erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 7–11`)
+11. Trinkbarer Tank + hasWatermaker == true liefert identisches Ergebnis: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkte 7–11`)
+12. Bestehende manuelle Wasser-Packungs-Overrides bleiben stabil: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `WATER1 Simplification: Mindest-Trinkwasserbedarf (Issue #30) -> Punkt 12`)
+13. Wassergruppe zeigt dynamisch berechneten Gesamtbedarf aus TripCalculationResult: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 13 & 14`)
+14. Wassergruppe zeigt verbindlichen informativen Planungshinweis: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 13 & 14`)
+15. Wasser-Artikelzeilen haben keine Water-Boost-Chips: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 15–17`)
+16. Kein +25 % warm Chip: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 15–17`)
+17. Kein +50 % heiß/Tropen Chip: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 15–17`)
+18. waterTankDrinkableSubtitle ist neutral und behauptet keine automatische Flaschenwasser-Reduktion: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 18 & 19`)
+19. hasWatermakerSubtitle ist neutral und behauptet keine automatische Notreserve/Reduktion: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/fb2_b_ui_test.dart`: `WATER1 Simplification UI (Issue #30) -> Punkte 18 & 19`)
+20. Alle 6 Sprachen (de, en, fr, es, pt, hr) gepflegt: erfüllt – Nachweis: automatischer Test (`test/features/i18n/s9_i18n_test.dart`: `S9 Acceptance Criteria 1: All 6 ARB files exist and contain identical message keys` sowie `WATER1 Simplification (Punkte 20 & 23)`)
+21. data/quantities_v0.6.json byte-identisch unverändert: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/domain/catalog_validation_test.dart`: `12. WATER1 Simplification (Punkte 21 & 22)`)
+22. data/quantities_v0.7.json existiert nicht mehr im Repo: erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/domain/catalog_validation_test.dart`: `12. WATER1 Simplification (Punkte 21 & 22)`)
+23. Obsolete Water-Boost-Keys aus ARB entfernt: erfüllt – Nachweis: automatischer Test (`test/features/i18n/s9_i18n_test.dart`: `WATER1 Simplification (Punkte 20 & 23)`)
+24. BoatProfile- / Trip-Setup-Persistenz von Tank & Watermaker funktioniert unverändert weiter: erfüllt – Nachweis: automatischer Test (`test/features/boat/pivot3b_water_and_setup_test.dart`: `PIVOT3-B: 3. Setup Integration & Bootsprofil-Lifecycle (Issue #6) -> Watermaker-Toggle auf Trip persistiert hasWatermaker und berechnet Mengen neu` sowie `Real UI Journey: Watermaker-Switch im Törn-Edit betätigen`)
+
+Selbstprüfung Programmierregeln 1–10:
+- Regel 1 (Feste Typen): eingehalten.
+- Regel 2 (Keine versteckten Platzhalter): eingehalten.
+- Regel 3 (Ehrliche Berichte): eingehalten.
+- Regel 4 (Alles datengetrieben): eingehalten (Mengenformel basiert auf Werten aus `quantities_v0.6.json`).
+- Regel 5 (Rechnen mit Kommazahlen): eingehalten.
+- Regel 6 (Struktur): eingehalten.
+- Regel 7 (Tests): eingehalten (alle 24 Kriterien automatisiert belegt).
+- Regel 8 (Keine Eigenbauten von Standards): eingehalten.
+- Regel 9 (Nur berichten, was tatsächlich geschehen ist): eingehalten.
+- Regel 10 (Nichts aus späteren Versionen sichtbar bauen): eingehalten (kein PIVOT2, keine Watermaker-Leistungsmodelle o.ä.).
+
+PR & GitHub Actions CI:
+- Review-Branch: `slice/water1-watermaker-contingency-reserve`
+- PR: #31 (`https://github.com/StradaDelSole/proviantplaner/pull/31`)
+- Commit: `WATER1: Simplify water calculation to minimum drinking water estimate`
+```
+
+

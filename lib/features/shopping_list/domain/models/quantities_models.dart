@@ -157,7 +157,6 @@ class QuantitiesData {
   final double freshMaxOvershootFraction;
   final String groupBalancingDescription;
   final double waterTankReserveLitersPerPerson;
-  final int watermakerBackupDays;
 
   const QuantitiesData({
     required this.version,
@@ -172,7 +171,6 @@ class QuantitiesData {
     required this.freshMaxOvershootFraction,
     required this.groupBalancingDescription,
     this.waterTankReserveLitersPerPerson = 1.5,
-    required this.watermakerBackupDays,
   });
 
   factory QuantitiesData.fromJson(Map<String, dynamic> json) {
@@ -257,22 +255,8 @@ class QuantitiesData {
     final waterTankJson = json['water_tank'] as Map<String, dynamic>?;
     final waterTankReserve = (waterTankJson?['reserve_liters_per_person'] as num? ?? 1.5).toDouble();
 
-    // Watermaker contingency reserve (WATER1)
-    final watermakerJson = json['watermaker'];
-    if (watermakerJson is! Map<String, dynamic>) {
-      throw const FormatException(
-        'quantities_v0.7.json: Fehlendes oder ungültiges watermaker-Objekt',
-      );
-    }
-    final rawBackupDays = watermakerJson['backup_days'];
-    if (rawBackupDays is! int || rawBackupDays <= 0) {
-      throw FormatException(
-        'quantities_v0.7.json: Ungültiger Wert für watermaker.backup_days: $rawBackupDays (muss int > 0 sein)',
-      );
-    }
-
     return QuantitiesData(
-      version: json['version'] as String? ?? '0.7',
+      version: json['version'] as String? ?? '0.6',
       waterLiters: waterMap,
       factors: factors,
       eatProfiles: eatMap,
@@ -284,7 +268,6 @@ class QuantitiesData {
       freshMaxOvershootFraction: freshMaxOvershoot,
       groupBalancingDescription: balancingDesc,
       waterTankReserveLitersPerPerson: waterTankReserve,
-      watermakerBackupDays: rawBackupDays,
     );
   }
 }

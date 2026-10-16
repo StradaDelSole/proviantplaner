@@ -23,7 +23,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     catalogRepo = CatalogRepository();
     final catalogFile = File('data/catalog_v0.11.json');
-    final quantitiesFile = File('data/quantities_v0.7.json');
+    final quantitiesFile = File('data/quantities_v0.4.json');
     catalogRepo.loadFromJsonStrings(
       catalogJson: catalogFile.readAsStringSync(),
       quantitiesJson: quantitiesFile.readAsStringSync(),
