@@ -472,30 +472,12 @@ class QuantityEngine {
         break;
 
       case CalculationBasis.perPersonDayRegion:
-        final key = input.climate.rawValue;
-        final legacyKey = switch (input.climate) {
-          ClimateZone.cool => 'temperate',
-          ClimateZone.warm => 'mediterranean_summer',
-          ClimateZone.hot => 'hot_or_remote',
-        };
-        final waterConfig = quantities.waterLiters[key] ??
-            quantities.waterLiters[legacyKey] ??
-            quantities.waterLiters['warm'] ??
-            quantities.waterLiters['mediterranean_summer'];
-        final dailyAmount = waterConfig?.defaultValue ?? need.amount;
-        rawAmount = dailyAmount * effectiveDays * factorSum;
-
-        // Bordtank Trinkwasser & Watermaker (PIVOT3-B, FEEDBACK_R2 v0.3 Punkt 6):
-        final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
-        final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
-
-        if (input.hasWatermaker) {
-          rawAmount = minReserve;
-        } else if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
-          final tankLiters = input.waterTankLiters!;
-          final afterTank = rawAmount - tankLiters;
-          rawAmount = afterTank > minReserve ? afterTank : minReserve;
-        }
+        rawAmount = _calculateRegionalWaterNeed(
+          need: need,
+          input: input,
+          effectiveDays: effectiveDays,
+          factorSum: factorSum,
+        );
         break;
 
       case CalculationBasis.perPersonWeek:
@@ -551,6 +533,42 @@ class QuantityEngine {
       rawAmount *= quantities.factors.holidaySnackDrinkUplift.defaultValue;
     }
 
+    return rawAmount;
+  }
+
+  /// Berechnet den klimabasierten Trinkwasserbedarf inkl. Bordtank- und Watermaker-Logik (PIVOT3-B, WATER1).
+  double _calculateRegionalWaterNeed({
+    required CatalogNeed need,
+    required QuantityCalculationInput input,
+    required int effectiveDays,
+    required double factorSum,
+  }) {
+    final key = input.climate.rawValue;
+    final legacyKey = switch (input.climate) {
+      ClimateZone.cool => 'temperate',
+      ClimateZone.warm => 'mediterranean_summer',
+      ClimateZone.hot => 'hot_or_remote',
+    };
+    final waterConfig = quantities.waterLiters[key] ??
+        quantities.waterLiters[legacyKey] ??
+        quantities.waterLiters['warm'] ??
+        quantities.waterLiters['mediterranean_summer'];
+    final dailyAmount = waterConfig?.defaultValue ?? need.amount;
+
+    if (input.hasWatermaker) {
+      final reserveDays = effectiveDays < quantities.watermakerBackupDays
+          ? effectiveDays
+          : quantities.watermakerBackupDays;
+      return dailyAmount * factorSum * reserveDays;
+    }
+
+    var rawAmount = dailyAmount * effectiveDays * factorSum;
+    if (input.isWaterTankDrinkable && (input.waterTankLiters ?? 0) > 0) {
+      final crewCount = input.crewMembers.isEmpty ? 1 : input.crewMembers.length;
+      final minReserve = quantities.waterTankReserveLitersPerPerson * crewCount;
+      final afterTank = rawAmount - input.waterTankLiters!;
+      rawAmount = afterTank > minReserve ? afterTank : minReserve;
+    }
     return rawAmount;
   }
 

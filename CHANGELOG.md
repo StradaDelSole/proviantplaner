@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-16 – WATER1 Implementation (Watermaker Contingency Reserve, Issue #30)
+
+- **Datenbasis (`data/quantities_v0.7.json`):** Aus `data/quantities_v0.6.json` abgeleitet (`data/quantities_v0.6.json` bleibt unverändert erhalten), `version` auf `"0.7"` gesetzt und Sektion `watermaker` mit `"backup_days": 3` ergänzt; in `pubspec.yaml` als Asset registriert und in `CatalogRepository.loadFromBundle()` auf `data/quantities_v0.7.json` umgestellt.
+- **Modell & Parser (`QuantitiesData`):** Pflichtfeld `watermakerBackupDays` (`int`) ergänzt; `QuantitiesData.fromJson` validiert `watermaker.backup_days` strikt als positive Ganzzahl (`int`, `> 0`) und wirft bei fehlenden, `<= 0` oder nicht-ganzzahligen Werten sofort `FormatException` ohne stillen Fallback.
+- **Rechenlogik (`QuantityEngine`):** Watermaker-Reserveformel in `_calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`) auf `dailyAmount * factorSum * min(effectiveDays, quantities.watermakerBackupDays)` umgestellt; bestehende Klimazonen (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), Kindergewichtung (`factorSum`, `child = 0.6`) und Etappenhorizont (`effectiveDays = daysUntilNextStop ?? daysCount`) werden wiederverwendet; ein trinkbarer Tank reduziert die Watermaker-Ausfallreserve nicht; ohne Watermaker bleiben Tankabzug und `1.5 l × crewCount`-Floor unverändert.
+- **Tests & Bericht:** Alle 17 Nachweise aus `PROMPT_SESSION_START_v0.10.md` Abschnitt 13 in `catalog_validation_test.dart` und `pivot3b_water_and_setup_test.dart` ergänzt; Abschlussbericht in `docs/impl/WATER1_bericht.md` abgelegt.
+
+
 ## 2026-10-16 – WATER1 Release (Issue #30)
 
 - Owner accepted the WATER1 product decision and released implementation.

@@ -12,10 +12,10 @@ void main() {
 
   setUpAll(() {
     final catalogFile = File('data/catalog_v0.11.json');
-    final quantitiesFile = File('data/quantities_v0.6.json');
+    final quantitiesFile = File('data/quantities_v0.7.json');
 
     expect(catalogFile.existsSync(), isTrue, reason: 'data/catalog_v0.11.json existiert');
-    expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.6.json existiert');
+    expect(quantitiesFile.existsSync(), isTrue, reason: 'data/quantities_v0.7.json existiert');
 
     final catalogMap = json.decode(catalogFile.readAsStringSync()) as Map<String, dynamic>;
     final quantitiesMap = json.decode(quantitiesFile.readAsStringSync()) as Map<String, dynamic>;
@@ -27,7 +27,8 @@ void main() {
   group('DATA1: Katalog-Validierungstest v0.11 und Assistenzklassifikation (Programmierregel 7)', () {
     test('Katalog- und Mengendateien haben korrekte Versionen', () {
       expect(catalog.version, '0.11');
-      expect(quantities.version, '0.6');
+      expect(quantities.version, '0.7');
+      expect(quantities.watermakerBackupDays, 3);
     });
 
     test('Eindeutigkeit aller Gruppen- und Varianten-IDs', () {
@@ -347,6 +348,89 @@ void main() {
       expect(overrideRes, isNotNull);
       expect(overrideRes!.assistType, equals(AssistType.preferenceBased),
           reason: 'Check-Variante mit Override muss Override (preferenceBased) übernehmen und darf nicht auf guided fallen');
+    });
+
+    test('12. WATER1 (Punkt 15): Fehlender, 0, negativer oder nicht-ganzzahliger backup_days-Wert wirft FormatException', () {
+      final baseJson = json.decode(File('data/quantities_v0.7.json').readAsStringSync()) as Map<String, dynamic>;
+
+      // a) Fehlendes watermaker-Objekt
+      final missingSection = Map<String, dynamic>.from(baseJson)..remove('watermaker');
+      expect(
+        () => QuantitiesData.fromJson(missingSection),
+        throwsA(isA<FormatException>()),
+        reason: 'Fehlendes watermaker-Objekt muss FormatException werfen',
+      );
+
+      // b) Fehlendes backup_days-Feld
+      final missingKey = Map<String, dynamic>.from(baseJson)
+        ..['watermaker'] = <String, dynamic>{'note': 'ohne backup_days'};
+      expect(
+        () => QuantitiesData.fromJson(missingKey),
+        throwsA(isA<FormatException>()),
+        reason: 'Fehlendes backup_days muss FormatException werfen',
+      );
+
+      // c) backup_days == 0
+      final zeroDays = Map<String, dynamic>.from(baseJson)
+        ..['watermaker'] = <String, dynamic>{'backup_days': 0};
+      expect(
+        () => QuantitiesData.fromJson(zeroDays),
+        throwsA(isA<FormatException>()),
+        reason: 'backup_days == 0 muss FormatException werfen',
+      );
+
+      // d) backup_days < 0
+      final negativeDays = Map<String, dynamic>.from(baseJson)
+        ..['watermaker'] = <String, dynamic>{'backup_days': -2};
+      expect(
+        () => QuantitiesData.fromJson(negativeDays),
+        throwsA(isA<FormatException>()),
+        reason: 'Negativer backup_days-Wert muss FormatException werfen',
+      );
+
+      // e) Nicht-ganzzahliger Wert (double)
+      final floatDays = Map<String, dynamic>.from(baseJson)
+        ..['watermaker'] = <String, dynamic>{'backup_days': 3.5};
+      expect(
+        () => QuantitiesData.fromJson(floatDays),
+        throwsA(isA<FormatException>()),
+        reason: 'Kommazahl für backup_days muss FormatException werfen',
+      );
+
+      // f) Nicht-ganzzahliger Wert (String)
+      final stringDays = Map<String, dynamic>.from(baseJson)
+        ..['watermaker'] = <String, dynamic>{'backup_days': '3'};
+      expect(
+        () => QuantitiesData.fromJson(stringDays),
+        throwsA(isA<FormatException>()),
+        reason: 'String für backup_days muss FormatException werfen',
+      );
+    });
+
+    test('13. WATER1 (Punkt 16 & 17): quantities_v0.6.json ist unverändert und quantities_v0.7.json entspricht außerhalb von version/watermaker semantisch exakt v0.6', () {
+      final v06File = File('data/quantities_v0.6.json');
+      final v07File = File('data/quantities_v0.7.json');
+      expect(v06File.existsSync(), isTrue);
+      expect(v07File.existsSync(), isTrue);
+
+      final v06Map = json.decode(v06File.readAsStringSync()) as Map<String, dynamic>;
+      final v07Map = json.decode(v07File.readAsStringSync()) as Map<String, dynamic>;
+
+      // v0.6 ist unverändert auf Version 0.6 ohne watermaker-Sektion
+      expect(v06Map['version'], equals('0.6'));
+      expect(v06Map.containsKey('watermaker'), isFalse);
+      expect((v06Map['water_tank'] as Map<String, dynamic>)['reserve_liters_per_person'], equals(1.5));
+
+      // v0.7 hat Version 0.7 und backup_days == 3
+      expect(v07Map['version'], equals('0.7'));
+      expect((v07Map['watermaker'] as Map<String, dynamic>)['backup_days'], equals(3));
+
+      // Außerhalb von version und watermaker sind v0.6 und v0.7 identisch
+      final v06Normalized = Map<String, dynamic>.from(v06Map)..remove('version');
+      final v07Normalized = Map<String, dynamic>.from(v07Map)
+        ..remove('version')
+        ..remove('watermaker');
+      expect(v07Normalized, equals(v06Normalized));
     });
   });
 }
