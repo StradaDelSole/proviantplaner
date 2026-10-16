@@ -190,10 +190,16 @@ Selbstprüfung Programmierregeln 1–10:
 - Regel 9 (Nur berichten, was tatsächlich geschehen ist): eingehalten.
 - Regel 10 (Nichts aus späteren Versionen sichtbar bauen): eingehalten (kein PIVOT2, keine Watermaker-Leistungsmodelle o.ä.).
 
-PR & GitHub Actions CI:
+PR & GitHub Actions Full-QA CI (authoritative Suite):
 - Review-Branch: `slice/water1-watermaker-contingency-reserve`
 - PR: #31 (`https://github.com/StradaDelSole/proviantplaner/pull/31`)
-- Commit: `WATER1: Simplify water calculation to minimum drinking water estimate`
+- PR-Titel: `WATER1: Minimum drinking water simplification`
+- Final Implementation / Merge HEAD: `d2bf2476dddccb1225190869196db4651dc63986`
+- GitHub Actions CI Run: `38973295879` (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879`)
+  - `Flutter Analyze & Test`: pass in 2m6s (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879/job/117216583782`)
+  - `Backend Typecheck & Vitest`: pass in 22s (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879/job/117216584171`)
+- Commit: `WATER1: Simplify water calculation to minimum drinking water estimate` (gepusht: ja)
 ```
+
 
 
