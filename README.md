@@ -14,7 +14,8 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 | `docs/design/DESIGN_BRIEF_v0.5.md` | Stilrichtung, Stitch-Prompts, Animationshinweise |
 | `docs/design/mockups/` | Mockups der Kernbildschirme |
 | `docs/PROMPT_SESSION_START_v0.9.md` | Archivierter Startprompt für den abgeschlossenen DATA1 Review Amendment |
-| `docs/PROMPT_SESSION_START_v0.10.md` | Aktueller Session-Startprompt für WATER1; Review-Branch + GitHub-CI + STOP |
+| `docs/PROMPT_SESSION_START_v0.10.md` | Archivierter WATER1-Startprompt der supersedierten 3-Tage-Reserve |
+| `docs/PROMPT_SESSION_START_v0.11.md` | Aktueller Startprompt für WATER1 Simplification Amendment auf PR #31 |
 | `docs/design/UX_KONZEPT_v0.6.md` | UX-Konzept: Ablauf, fünf Hauptbildschirme, Bedienmuster (in Abstimmung) |
 | `docs/design/PROVY_UX_DIRECTION_v0.5.md` | Owner-accepted UX-Grundsätze inkl. Home-Launchpad, 4er-Command-Grid, Guest Shopping, Color/Motion/Haptics und psychologischer Klarheit |
 | `docs/design/PROVY_UX_DECISIONS_2026-10-05.md` | Owner-accepted 40-Punkte-Entscheidungssatz; Verhalten/Hierarchie/Interaktion verbindlich |
