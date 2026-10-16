@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.25
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.26
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -29,40 +29,30 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.23 | 16.10.2026 | Owner-accepted B2B Provider-Assortment-Entscheidung dokumentiert; Pflicht-Reconciliation vor B4/B5/Charter-Provisioning |
 | v0.24 | 16.10.2026 | WATER1 simplifiziert: nur Mindest-Trinkwasser; Tank/Watermaker nur Kontext; PR #31 Amendment Required |
 | v0.25 | 16.10.2026 | UX Benchmark Strategy owner-accepted: Instacart/Airbnb North Stars; Benchmark Pass Pflicht vor UX-D |
+| v0.26 | 17.10.2026 | WATER1 Owner Acceptance: COMPLETE; kein Folgeslice automatisch freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist ausschließlich freigegeben:
+**WATER1 – Minimum Drinking Water Simplification ist OWNER-ACCEPTED / COMPLETE.**
 
-- **WATER1 – Minimum Drinking Water Simplification**, Issue #30
-- Status: **OWNER-ACCEPTED / AMENDMENT REQUIRED**
-- Canonical Reconciliation: `docs/impl/WATER1_simplification_reconciliation_2026-10-16.md`
-- Amendment-Plan: `docs/impl/WATER1_simplification_plan.md`
-- Review-Branch: `slice/water1-watermaker-contingency-reserve`
-- PR #31: **DRAFT / NICHT MERGEN**
-- Authoritative Full-QA: GitHub Actions auf PR gegen `main`
+- Issue #30: abgeschlossen
+- PR #31: gemerged
+- Final reviewed PR HEAD: `788f9fb608a523eaaa0163a3e743077c04b53af4`
+- Merge-Commit: `6b206ee7cbf6ea276a642e0a4b5dc75788c68fc5`
+- Acceptance Review: `docs/impl/WATER1_acceptance_review_2026-10-17.md`
+- Owner Acceptance: `docs/impl/WATER1_owner_acceptance_2026-10-17.md`
 
-Die vorherige 3-Tage-Watermaker-Ausfallreserve und `quantities_v0.7.json` sind superseded und dürfen nicht weitergeführt werden.
-
-WATER1 setzt jetzt ausschließlich um:
+Verbindliche WATER1-Semantik:
 
 `minimumDrinkingWater = climateDailyLiters × crewFactorSum × effectiveDays`
 
-mit:
-- `effectiveDays = daysUntilNextStop ?? daysCount`;
-- bestehenden Klima-Werten aus `data/quantities_v0.6.json`;
-- bestehender Crew-/Kindergewichtung;
-- **keinem** Tankabzug;
-- **keiner** Watermaker-Reduktion;
-- **keiner** automatisch berechneten Watermaker-Reserve.
+mit bestehenden Klima-Werten aus `data/quantities_v0.6.json`; Tank und Watermaker verändern den Richtwert nicht. Zusätzlicher Frischwasserverbrauch bleibt Nutzerplanung.
 
-Tank, Watermaker, Nachfüllmöglichkeiten und zusätzlicher Frischwasserverbrauch für Kochen, Spülen, Waschen und Körperpflege werden als Planungsfaktoren erklärt, aber nicht berechnet.
+**Aktuell ist kein neuer Implementierungsslice freigegeben.**
 
-Production bleibt auf `data/quantities_v0.6.json`.
-
-Weiterhin nicht freigegeben:
+Weiterhin nicht automatisch freigegeben:
 - PIVOT2
 - RECEIPT1
 - GUEST1
@@ -70,6 +60,8 @@ Weiterhin nicht freigegeben:
 - CAT1
 - B3/B4/B5
 - Store-Publikation
+
+Vor dem nächsten Slice zuerst Decision/Implementation Reconciliation gegen den aktuellen `origin/main`.
 
 Kein Folgeslice wird automatisch freigegeben.
 
