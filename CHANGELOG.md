@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-16 – Charter Provider Assortment Product Decision (Issue #32)
+
+- Owner accepted provider- and base-specific assortment profiles as a required part of the future Charter-Provisioning/B2B model.
+- Canonical decision: `docs/PRODUCT_CHARTER_PROVIDER_ASSORTMENT_v0.1.md`.
+- Global Provy catalog remains the canonical product ontology; provider assortments are overlays for actual supplier availability, packaging, provider names/brands and SKUs.
+- Planning need and supplier availability are explicitly separate truths; unavailable provider items remain visible and must be replaceable or movable to another/self-shopping stop.
+- Provisioning providers may be the charter company itself or a local partner; provider-only products are allowed without automatically becoming global Provy catalog truth.
+- ShoppingStop remains the fulfillment boundary: a trip may mix self-shopping and one or more delivery providers.
+- Future Charter Admin must support Provider/Profile/Assortment management, not only supplier contact details.
+- Trip Codes may later preselect base, provider and provisioning profile.
+- Issue #32 opened as **OWNER-ACCEPTED PRODUCT DECISION / NOT IMPLEMENTATION RELEASED**.
+- Mandatory future Decision/Implementation Reconciliation added before B4, B5, supplier-aware `Liefern lassen` or Charter-Provisioning implementation.
+- WATER1 remains the only currently released implementation slice.
+
+
 ## 2026-10-16 – WATER1 Release (Issue #30)
 
 - Owner accepted the WATER1 product decision and released implementation.
