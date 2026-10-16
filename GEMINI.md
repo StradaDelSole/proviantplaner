@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.26
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.27
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -30,42 +30,47 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.24 | 16.10.2026 | WATER1 simplifiziert: nur Mindest-Trinkwasser; Tank/Watermaker nur Kontext; PR #31 Amendment Required |
 | v0.25 | 16.10.2026 | UX Benchmark Strategy owner-accepted: Instacart/Airbnb North Stars; Benchmark Pass Pflicht vor UX-D |
 | v0.26 | 17.10.2026 | WATER1 Owner Acceptance: COMPLETE; kein Folgeslice automatisch freigegeben |
+| v0.27 | 17.10.2026 | PIVOT2 nach FIX-B/DATA1/WATER1 reconciliert und als einziger Implementierungsslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-**WATER1 – Minimum Drinking Water Simplification ist OWNER-ACCEPTED / COMPLETE.**
+**PIVOT2 – Provisioning Review (Issue #26) ist OWNER-ACCEPTED / IMPLEMENTATION RELEASED und aktuell der einzige freigegebene Implementierungsslice.**
 
-- Issue #30: abgeschlossen
-- PR #31: gemerged
-- Final reviewed PR HEAD: `788f9fb608a523eaaa0163a3e743077c04b53af4`
-- Merge-Commit: `6b206ee7cbf6ea276a642e0a4b5dc75788c68fc5`
-- Acceptance Review: `docs/impl/WATER1_acceptance_review_2026-10-17.md`
-- Owner Acceptance: `docs/impl/WATER1_owner_acceptance_2026-10-17.md`
+Canonical:
+- Release: `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`
+- Reconciliation: `docs/impl/PIVOT2_reconciliation_2026-10-17.md`
+- Plan: `docs/impl/PIVOT2_plan_v0.2.md`
+- Session Prompt: `docs/PROMPT_SESSION_START_v0.12.md`
+- erwarteter Review-Branch: `slice/pivot2-provisioning-review`
 
-Verbindliche WATER1-Semantik:
+Verbindliche aktuelle Daten-/Domainwahrheit:
+- Catalog: `data/catalog_v0.11.json`
+- Quantities: `data/quantities_v0.6.json`
+- AssistType: DATA1 catalog-driven effective assist
+- WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
+- PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-`minimumDrinkingWater = climateDailyLiters × crewFactorSum × effectiveDays`
+Vor der neuen PIVOT2 Review-Surface ist der scoped Instacart-orientierte Benchmark Pass aus `docs/impl/PIVOT2_plan_v0.2.md` verpflichtend. Die frozen globale IA bleibt unverändert.
 
-mit bestehenden Klima-Werten aus `data/quantities_v0.6.json`; Tank und Watermaker verändern den Richtwert nicht. Zusätzlicher Frischwasserverbrauch bleibt Nutzerplanung.
-
-**Aktuell ist kein neuer Implementierungsslice freigegeben.**
-
-Weiterhin nicht automatisch freigegeben:
-- PIVOT2
+Weiterhin nicht freigegeben:
 - RECEIPT1
 - GUEST1
 - UX-D
+- Provider Assortment / Charter Provisioning
 - CAT1
 - B3/B4/B5
 - Store-Publikation
 
-Vor dem nächsten Slice zuerst Decision/Implementation Reconciliation gegen den aktuellen `origin/main`.
+Nach final grünem GitHub-Actions-PR:
+- nicht mergen;
+- Issue #26 nicht schließen;
+- Issues #7/#8 nicht schließen;
+- keinen Folgeslice starten;
+- STOP für unabhängigen Review / Owner Acceptance.
 
-Kein Folgeslice wird automatisch freigegeben.
-
-Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
+Plattform: Android zuerst (lokal nur gezielt testen), iOS später über Cloud-Build.
 
 ## Quelle der Wahrheit
 
@@ -75,7 +80,9 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 2. Neueste ausdrücklich **OWNER-ACCEPTED** Reconciliation-, Product- und UX-Dokumente, insbesondere aktuell:
    - `docs/impl/PIVOT3_reconciliation_2026-10-06.md`
    - `docs/impl/PIVOT3B_release_reconciliation_2026-10-06.md`
-   - `docs/impl/PIVOT2_release_reconciliation_2026-10-06.md`
+   - `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`
+   - `docs/impl/PIVOT2_reconciliation_2026-10-17.md`
+   - `docs/impl/PIVOT2_plan_v0.2.md`
    - `docs/impl/EXTERNAL_REVIEW_RECONCILIATION_2026-10-06.md`
    - `docs/impl/FIXB_release_reconciliation_2026-10-06.md`
    - `docs/PRODUCT_PIVOT_ASSISTED_PROVISIONING_v0.1.md`
