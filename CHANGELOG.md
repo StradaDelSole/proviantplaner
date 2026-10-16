@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-17 – WATER1 Owner Acceptance / Closure
+
+- Product Owner explicitly accepted WATER1.
+- Final reviewed PR HEAD: `788f9fb608a523eaaa0163a3e743077c04b53af4`.
+- Final authoritative GitHub Actions run: `38977941932`.
+- Flutter Analyze & Test: SUCCESS.
+- Backend Typecheck & Vitest: SUCCESS.
+- PR #31 merged into `main`.
+- Merge commit: `6b206ee7cbf6ea276a642e0a4b5dc75788c68fc5`.
+- Final review: `docs/impl/WATER1_acceptance_review_2026-10-17.md`.
+- Owner acceptance: `docs/impl/WATER1_owner_acceptance_2026-10-17.md`.
+- WATER1 status: **OWNER-ACCEPTED / COMPLETE**.
+- No subsequent slice is automatically released.
+
+
 ## 2026-10-16 – WATER1 Simplification Amendment (Issue #30)
 
 - **Simplification der Trinkwasser-Rechenlogik:** `QuantityEngine._calculateRegionalWaterNeed` (`CalculationBasis.perPersonDayRegion`) berechnet ausschließlich den reinen Mindest-Trinkwasserbedarf: `climateDailyLiters × crewFactorSum × effectiveDays` (`effectiveDays = daysUntilNextStop ?? daysCount`), mit bestehenden Klimawerten (`cool = 2.0`, `warm = 2.5`, `hot = 3.5`), bestehender Crew-/Kindergewichtung (`child = 0.6`), ohne Tankabzug, ohne Watermaker-Reduktion und ohne automatische Watermaker-Ausfallreserve.
