@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-16 – WATER1 Simplification Decision
+
+- Owner simplified WATER1 after product review.
+- The previous 3-day Watermaker contingency reserve is **superseded**.
+- Canonical reconciliation: `docs/impl/WATER1_simplification_reconciliation_2026-10-16.md`.
+- Amendment plan: `docs/impl/WATER1_simplification_plan.md`.
+- New water rule: `minimumDrinkingWater = climateDailyLiters × crewFactorSum × effectiveDays`.
+- Existing climate values in `data/quantities_v0.6.json` remain unchanged.
+- Tank and Watermaker no longer reduce or otherwise change the minimum drinking-water estimate.
+- No total freshwater, cooking-water, washing-water, shower or Watermaker-capacity calculation is introduced.
+- User-facing copy must clearly state that tank, Watermaker, refill opportunities and additional freshwater consumption for cooking, dishwashing, washing and body care must be planned separately.
+- `data/quantities_v0.7.json` / `watermakerBackupDays` from the first WATER1 implementation are no longer part of the accepted direction.
+- Water-specific +25% warm / +50% hot chips are to be removed because climate is already represented in the estimate.
+- PR #31 converted to **DRAFT / AMENDMENT REQUIRED**.
+- PIVOT2 remains ON HOLD pending final WATER1 review and Owner Acceptance.
+
+
 ## 2026-10-16 – WATER1 Implementation (Watermaker Contingency Reserve, Issue #30)
 
 - **Datenbasis (`data/quantities_v0.7.json`):** Aus `data/quantities_v0.6.json` abgeleitet (`data/quantities_v0.6.json` bleibt unverändert erhalten), `version` auf `"0.7"` gesetzt und Sektion `watermaker` mit `"backup_days": 3` ergänzt; in `pubspec.yaml` als Asset registriert und in `CatalogRepository.loadFromBundle()` auf `data/quantities_v0.7.json` umgestellt.
