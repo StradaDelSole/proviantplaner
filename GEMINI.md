@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.21
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.22
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -25,24 +25,38 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.19 | 07.10.2026 | DATA1 als einziger Implementierungsslice freigegeben |
 | v0.20 | 07.10.2026 | DATA1 independent review: enger Review Amendment freigegeben |
 | v0.21 | 16.10.2026 | DATA1 Owner Acceptance: COMPLETE; GitHub-PR/CI als authoritative Full-QA; kein Folgeslice freigegeben |
+| v0.22 | 16.10.2026 | WATER1 als einziger Slice freigegeben; 3-Tage Watermaker-Ausfallreserve; quantities v0.7 Daten-Ausnahme |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist **kein neuer Implementierungsslice freigegeben**.
+Aktuell ist ausschließlich freigegeben:
 
-Abgeschlossen:
-- **DATA1 – Catalog-driven Assist Classification**, Issue #28
-- Status: **OWNER-ACCEPTED / COMPLETE**
-- Final reviewed amendment HEAD: `84240ee67600f0955df79fba4f091a853ea950d0`
-- PR #29 merged
-- Merge commit: `75c1290822e9301aed4e610065be58995e3d3a2e`
-- Final review: `docs/impl/DATA1_acceptance_review_2026-10-16.md`
-- Owner Acceptance: `docs/impl/DATA1_owner_acceptance_2026-10-16.md`
+- **WATER1 – Watermaker Contingency Reserve**, Issue #30
+- Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
+- Reconciliation: `docs/impl/WATER1_release_reconciliation_2026-10-16.md`
+- Plan: `docs/impl/WATER1_plan.md`
+- Review-Branch: `slice/water1-watermaker-contingency-reserve`
+- Authoritative Full-QA: GitHub Actions auf PR gegen `main`
+
+WATER1 setzt die owner-accepted Entscheidung um:
+
+`bottleNeed = climateDailyLiters × crewFactorSum × min(effectiveDays, backupDays)`
+
+mit:
+- `backupDays = 3`, datengetrieben;
+- `effectiveDays = daysUntilNextStop ?? daysCount`;
+- bestehender Crew-/Kindergewichtung;
+- trinkbarer Tank reduziert die Watermaker-Ausfallreserve nicht;
+- ohne Watermaker bleibt die bestehende Tank-/1,5-l-Floor-Logik unverändert.
+
+Explizite Daten-Ausnahme:
+- `data/quantities_v0.7.json` darf aus v0.6 neu angelegt werden;
+- v0.6 bleibt unverändert;
+- außer der akzeptierten WATER1-Konfiguration dürfen keine Mengen-/Faktor-/Profilwerte geändert werden.
 
 Weiterhin nicht freigegeben:
-- Watermaker-Reserve-Amendment
 - PIVOT2
 - RECEIPT1
 - GUEST1
@@ -108,12 +122,12 @@ Historische Durchlauf-Modus-Anweisungen und direkte `main`-Push-Anweisungen in �
 - Pakete aus den technischen Leitplanken im Slice-Plan verwenden
 - `CHANGELOG.md` ergänzen; im README nur den Umsetzungsstand unter "Status" ergänzen
 - Pläne und Berichte in `docs/impl/` ablegen
-- Nach grünem Slice committen und auf `main` pushen
+- Nach lokalem Entwicklungsstand auf den ausdrücklich freigegebenen Review-Branch committen und pushen; niemals direkt auf `main`
 - Rückfragen stellen, jederzeit
 
 ## Darf nicht
 
-- Nichts in `docs/` (außer `docs/impl/`) oder `data/` ändern (Ausnahme nur in S9: neue Dateien unter `data/i18n/`). Änderungswünsche als "Vorschläge für das PRD" im CHANGELOG notieren
+- Nichts in `docs/` (außer `docs/impl/`) oder `data/` ändern, außer eine neuere ausdrücklich owner-accepted Slice-Reconciliation autorisiert eine enge Datenänderung. Aktuell für WATER1 ausdrücklich erlaubt: `data/quantities_v0.7.json` aus v0.6 anlegen; v0.6 unverändert lassen; nur die akzeptierte Watermaker-Backup-Konfiguration ergänzen. Änderungswünsche außerhalb solcher Ausnahmen als "Vorschläge für das PRD" im CHANGELOG notieren
 - Keine Features bauen, die nicht im PRD stehen; nichts aus späteren Slices vorziehen
 - Keine Pakete außerhalb der Leitplanken ohne ausdrückliche Freigabe hinzufügen
 - Keine bestehenden Dateien löschen oder umbenennen, die nicht zum aktuellen Slice gehören
@@ -124,8 +138,8 @@ Historische Durchlauf-Modus-Anweisungen und direkte `main`-Push-Anweisungen in �
 - Keine Zugangsdaten, API-Schlüssel, Tokens oder IBANs in Code oder Repo
 - Keine Tests abschwächen, auskommentieren oder löschen, um sie grün zu bekommen
 - Kein `git push --force`, kein `git reset --hard` auf gepushte Commits, kein Ändern der Git-Historie, keine anderen Branches
-- Nichts pushen, solange `flutter analyze` oder `flutter test` nicht grün sind
-- Vor jedem Push `git pull --rebase`, damit Dokumenten-Updates nicht überschrieben werden
+- Review-Branch darf für GitHub-CI gepusht werden, auch wenn die vollständige lokale Suite nicht gelaufen ist. Full-QA (`flutter analyze`, vollständiges `flutter test`, Backend-Checks) muss auf GitHub Actions am finalen PR-HEAD grün sein, bevor ein Slice als review-ready gilt
+- Vor Branch-Erstellung/Integration `git fetch origin`; kein direktes Pushen auf `main`. Review-Branch gegen aktuellen `origin/main` sauber halten
 
 ## Stoppregeln – sofort anhalten und fragen, wenn
 
