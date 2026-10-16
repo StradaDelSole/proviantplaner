@@ -294,10 +294,10 @@ void main() {
 
       // 2. Synthetischer Check-Mode-Test mit needsBased-Gruppe und preferenceBased-Override:
       // Beweist, dass _processCheckGroup() nicht still auf AssistType.guided fällt, sondern catalog.getEffectiveAssist(v) nutzt.
-      final syntheticCatalog = CatalogData(
+      const syntheticCatalog = CatalogData(
         version: '0.11',
-        categories: const [CatalogCategory(id: 'cat_check', nameDe: 'Check')],
-        groups: const [
+        categories: [CatalogCategory(id: 'cat_check', nameDe: 'Check')],
+        groups: [
           CatalogGroup(
             id: 'check_group_needs',
             category: 'cat_check',
@@ -310,7 +310,7 @@ void main() {
             mode: GroupMode.check,
           ),
         ],
-        variants: const [
+        variants: [
           CatalogVariant(
             id: 'check_var_inherited',
             group: 'check_group_needs',
@@ -333,7 +333,7 @@ void main() {
             assistOverride: AssistType.preferenceBased,
           ),
         ],
-        storageHints: const {},
+        storageHints: {},
       );
 
       final syntheticEngine = QuantityEngine(catalog: syntheticCatalog, quantities: quantities);
