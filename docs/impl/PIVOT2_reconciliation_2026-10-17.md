@@ -1,6 +1,6 @@
 # PIVOT2 Reconciliation – 17.10.2026
 
-Status: **READY FOR OWNER DECISION / NOT IMPLEMENTATION RELEASED**
+Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
 
 Canonical repo baseline:
 
@@ -270,4 +270,4 @@ Before implementation release, the Product Owner should explicitly accept the re
 
 After that decision, create/update the implementation plan and session prompt, mark Issue #26 IMPLEMENTATION RELEASED, and start a dedicated review branch + PR.
 
-No implementation is released by this document.
+Owner accepted the recommended water-review severity with `pivot2 go`. Canonical release: `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`.
