@@ -12,6 +12,7 @@ import 'package:proviantplaner/core/services/pdf_export_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/calculation/kitty_engine.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
@@ -101,6 +102,7 @@ void main() {
           shelfLifeDays: 4,
           storageHints: ['Kühl und trocken lagern'],
           allocationsByStop: {},
+          assistType: AssistType.guided,
         ),
         ShoppingListItemView(
           item: dummyItem2,
@@ -120,6 +122,7 @@ void main() {
           shelfLifeDays: 7,
           storageHints: ['Immer kühlen'],
           allocationsByStop: {},
+          assistType: AssistType.guided,
         ),
       ];
 

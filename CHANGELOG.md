@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-16 – DATA1 Review Amendment (Issue #28)
+
+- **Finding A (`VariantCalculationResult`):** Stiller Default `this.assistType = AssistType.guided` entfernt (`required this.assistType`); `QuantityEngine._processCheckGroup()` übergibt explizit `catalog.getEffectiveAssist(v)`.
+- **Finding B (`ShoppingListItemView`):** Stiller Default `this.assistType = AssistType.guided` entfernt (`required this.assistType`); Catalog Items bleiben kataloggetrieben, Custom Items setzen in `_buildCustomItemView()` explizit `AssistType.guided` ohne Namens-/ID-Heuristik.
+- **Finding C (Kanonische Assist-Auflösung & Zyklus):** Alle direkten `assistOverride ?? group.assist`-Ausdrücke in `QuantityEngine` durch `catalog.getEffectiveAssist(...)` ersetzt; ungenutzte Fassade `AssistClassifier` und zyklischen Import zwischen `assist_type.dart` und `catalog_models.dart` entfernt.
+- **Tests:** Gezielte Regressionstests für Check-Mode-Propagation (`catalog_validation_test.dart` Nr. 11) sowie Catalog- vs. Custom-Item-Propagation (`pivot1_assisted_list_test.dart` Nr. 16 & 17) ergänzt; Constructor-Fixtures in `fb2_a_calculation_test.dart` und `pdf_export_test.dart` aktualisiert.
+- Keine Änderungen an `data/catalog_v0.11.json`, `data/catalog_v0.10.json`, Mengenformeln, Water-Boost-UI, Watermaker oder PIVOT2.
+
+
 ## 2026-10-07 – DATA1 Independent Review
 
 - Reviewed implementation HEAD: `73cfdecefe16721e11fa33878a18a751f092c330`.

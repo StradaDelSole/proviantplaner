@@ -10,6 +10,7 @@ import 'package:proviantplaner/features/shopping_list/domain/calculation/quantit
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
 /// Aggregiertes Datenobjekt der gesamten Vorratsliste für einen Törn.
@@ -250,6 +251,7 @@ class ShoppingListService {
       checkState: raw.checkState,
       isAdopted: raw.isAdopted,
       allocationsByStop: allocations,
+      assistType: AssistType.guided,
     );
   }
 

@@ -329,6 +329,7 @@ class QuantityEngine {
         buyFreshUnderway: v.buyFreshUnderway,
         storage: v.storage,
         tags: v.tags,
+        assistType: catalog.getEffectiveAssist(v),
       );
     }).toList();
 
@@ -623,7 +624,7 @@ class QuantityEngine {
       final state = input.userItemStates[v.id];
       final isSel = (state?.isSelected ?? v.defaultSelected) &&
           !(v.chill == ChillRequirement.freezer && !input.hasFreezer);
-      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
+      final isPref = catalog.getEffectiveAssist(v).isPreferenceBased;
       if (isSel && !isPref) selectedVariants.add(v);
     }
 
@@ -661,7 +662,7 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
-      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
+      final isPref = catalog.getEffectiveAssist(v).isPreferenceBased;
 
       if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
@@ -720,7 +721,7 @@ class QuantityEngine {
       final packSize = state?.customPackSize ?? v.pack.size;
       final effShelfLife = _determineEffectiveShelfLife(v, input);
       final storageNotice = _determineStorageNotice(v, input);
-      final isPref = (v.assistOverride ?? group.assist).isPreferenceBased;
+      final isPref = catalog.getEffectiveAssist(v).isPreferenceBased;
 
       if (!isSel || isPref) {
         computations.add(_createUnselectedComputation(
@@ -818,7 +819,7 @@ class QuantityEngine {
     required String? storageNotice,
     String? shelfRemainderNotice,
   }) {
-    final assistType = variant.assistOverride ?? group.assist;
+    final assistType = catalog.getEffectiveAssist(variant);
     if (assistType.isPreferenceBased) {
       return _VariantComputation(
         variant: variant,
