@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.22
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.23
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -26,6 +26,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.20 | 07.10.2026 | DATA1 independent review: enger Review Amendment freigegeben |
 | v0.21 | 16.10.2026 | DATA1 Owner Acceptance: COMPLETE; GitHub-PR/CI als authoritative Full-QA; kein Folgeslice freigegeben |
 | v0.22 | 16.10.2026 | WATER1 als einziger Slice freigegeben; 3-Tage Watermaker-Ausfallreserve; quantities v0.7 Daten-Ausnahme |
+| v0.23 | 16.10.2026 | Owner-accepted B2B Provider-Assortment-Entscheidung dokumentiert; Pflicht-Reconciliation vor B4/B5/Charter-Provisioning |
 
 ## Aktueller Status
 
@@ -91,6 +92,32 @@ Bei Widersprüchen gilt für aktuelle Arbeit diese Priorität:
 7. Design-Brief/Mockups für nicht durch neuere UX-Entscheidungen ersetzte visuelle Details.
 
 Code und Dokumente widersprechen sich? Zuerst gegen diese Hierarchie reconciliieren. Dokumente sind innerhalb derselben Prioritätsstufe unklar oder widersprüchlich? Dann NICHT raten, sondern Stoppregel anwenden.
+
+
+## Verbindliches Zukunfts-Gate: Charter Provisioning / Provider Assortment
+
+Owner-accepted Produktentscheidung:
+
+`docs/PRODUCT_CHARTER_PROVIDER_ASSORTMENT_v0.1.md`
+
+Issue #32 ist **nicht zur Implementierung freigegeben**.
+
+Bevor ein Agent einen der folgenden Bereiche implementiert oder wesentlich erweitert:
+
+- B4 Törn-Codes
+- B5 Charter-Admin
+- supplier-aware `Liefern lassen`
+- Charter-Provisioning-Backend
+- ProvisioningProvider / ProvisioningProfile
+- Provider-Assortment / ProviderCatalogItem
+
+muss zuerst eine neue Decision/Implementation Reconciliation gegen den dann aktuellen `origin/main` erstellt werden.
+
+Diese Reconciliation muss die owner-accepted Provider-Assortment-Entscheidung ausdrücklich berücksichtigen und mindestens Datenmodell, Offline-/Snapshot-Semantik, Provider-only Produkte, Import, Availability-/Substitution-UX und den Preis-/Delivery-Scope entscheiden.
+
+Der globale Provy-Katalog bleibt die fachliche Produkt-Ontologie; Provider-Sortimente sind ein Overlay für reale Lieferfähigkeit. Nicht verfügbare Produkte dürfen nicht still aus der Crew-Planung verschwinden.
+
+Dieses Zukunfts-Gate ändert den aktuellen Implementierungsslice nicht: WATER1 bleibt derzeit der einzige freigegebene Slice.
 
 ## Wiederaufnahme nach Unterbrechung (Kontingent, Absturz, neue Sitzung)
 
