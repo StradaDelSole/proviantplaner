@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-16 – DATA1 Owner Acceptance
+
+- Owner explicitly accepted DATA1: `DATA1 akzeptiert`.
+- Status: **OWNER-ACCEPTED / COMPLETE**.
+- Core implementation HEAD: `73cfdecefe16721e11fa33878a18a751f092c330`.
+- Final reviewed amendment HEAD: `84240ee67600f0955df79fba4f091a853ea950d0`.
+- PR #29 merged successfully.
+- Merge commit on `main`: `75c1290822e9301aed4e610065be58995e3d3a2e`.
+- Final acceptance review: `docs/impl/DATA1_acceptance_review_2026-10-16.md`.
+- Owner Acceptance: `docs/impl/DATA1_owner_acceptance_2026-10-16.md`.
+- Issue #28 closed as completed.
+- No next implementation slice released automatically.
+- PIVOT2 remains ON HOLD; Watermaker reserve reconciliation remains the next unresolved prerequisite.
+- Workflow update: full Flutter QA is authoritative on GitHub Actions PR runs; local full-suite execution is no longer required for review-gated post-Pivot slices.
+
+
 ## 2026-10-16 – DATA1 Review Amendment (Issue #28)
 
 - **Finding A (`VariantCalculationResult`):** Stiller Default `this.assistType = AssistType.guided` entfernt (`required this.assistType`); `QuantityEngine._processCheckGroup()` übergibt explizit `catalog.getEffectiveAssist(v)`.
