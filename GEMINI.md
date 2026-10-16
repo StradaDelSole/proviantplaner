@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.23
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.24
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -27,6 +27,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.21 | 16.10.2026 | DATA1 Owner Acceptance: COMPLETE; GitHub-PR/CI als authoritative Full-QA; kein Folgeslice freigegeben |
 | v0.22 | 16.10.2026 | WATER1 als einziger Slice freigegeben; 3-Tage Watermaker-Ausfallreserve; quantities v0.7 Daten-Ausnahme |
 | v0.23 | 16.10.2026 | Owner-accepted B2B Provider-Assortment-Entscheidung dokumentiert; Pflicht-Reconciliation vor B4/B5/Charter-Provisioning |
+| v0.24 | 16.10.2026 | WATER1 simplifiziert: nur Mindest-Trinkwasser; Tank/Watermaker nur Kontext; PR #31 Amendment Required |
 
 ## Aktueller Status
 
@@ -34,28 +35,31 @@ Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historis
 
 Aktuell ist ausschließlich freigegeben:
 
-- **WATER1 – Watermaker Contingency Reserve**, Issue #30
-- Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
-- Reconciliation: `docs/impl/WATER1_release_reconciliation_2026-10-16.md`
-- Plan: `docs/impl/WATER1_plan.md`
+- **WATER1 – Minimum Drinking Water Simplification**, Issue #30
+- Status: **OWNER-ACCEPTED / AMENDMENT REQUIRED**
+- Canonical Reconciliation: `docs/impl/WATER1_simplification_reconciliation_2026-10-16.md`
+- Amendment-Plan: `docs/impl/WATER1_simplification_plan.md`
 - Review-Branch: `slice/water1-watermaker-contingency-reserve`
+- PR #31: **DRAFT / NICHT MERGEN**
 - Authoritative Full-QA: GitHub Actions auf PR gegen `main`
 
-WATER1 setzt die owner-accepted Entscheidung um:
+Die vorherige 3-Tage-Watermaker-Ausfallreserve und `quantities_v0.7.json` sind superseded und dürfen nicht weitergeführt werden.
 
-`bottleNeed = climateDailyLiters × crewFactorSum × min(effectiveDays, backupDays)`
+WATER1 setzt jetzt ausschließlich um:
+
+`minimumDrinkingWater = climateDailyLiters × crewFactorSum × effectiveDays`
 
 mit:
-- `backupDays = 3`, datengetrieben;
 - `effectiveDays = daysUntilNextStop ?? daysCount`;
+- bestehenden Klima-Werten aus `data/quantities_v0.6.json`;
 - bestehender Crew-/Kindergewichtung;
-- trinkbarer Tank reduziert die Watermaker-Ausfallreserve nicht;
-- ohne Watermaker bleibt die bestehende Tank-/1,5-l-Floor-Logik unverändert.
+- **keinem** Tankabzug;
+- **keiner** Watermaker-Reduktion;
+- **keiner** automatisch berechneten Watermaker-Reserve.
 
-Explizite Daten-Ausnahme:
-- `data/quantities_v0.7.json` darf aus v0.6 neu angelegt werden;
-- v0.6 bleibt unverändert;
-- außer der akzeptierten WATER1-Konfiguration dürfen keine Mengen-/Faktor-/Profilwerte geändert werden.
+Tank, Watermaker, Nachfüllmöglichkeiten und zusätzlicher Frischwasserverbrauch für Kochen, Spülen, Waschen und Körperpflege werden als Planungsfaktoren erklärt, aber nicht berechnet.
+
+Production bleibt auf `data/quantities_v0.6.json`.
 
 Weiterhin nicht freigegeben:
 - PIVOT2
