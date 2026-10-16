@@ -1,3 +1,5 @@
+> **SUPERSEDED FOR CURRENT IMPLEMENTATION – 17.10.2026:** Use `docs/impl/PIVOT2_plan_v0.2.md`. Historical content below remains for audit only; conflicting water/catalog/release wording must not be implemented.
+
 # PIVOT2 – Provisioning Review – Implementierungsplan
 
 Stand: 06.10.2026  
