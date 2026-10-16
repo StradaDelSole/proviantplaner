@@ -103,7 +103,7 @@ Commit: WATER1: Watermaker contingency reserve (`f39bb559f7fca1c35858e7b442725e8
 
 ```
 Slice: WATER1 – Minimum Drinking Water Simplification (Issue #30)
-Status: AMENDMENT IMPLEMENTED / READY FOR FULL-QA CI
+Status: READY FOR FINAL INDEPENDENT RE-REVIEW / OWNER ACCEPTANCE
 
 Grund der Überarbeitung:
 - Owner-Entscheidung nach Produktprüfung (`docs/impl/WATER1_simplification_reconciliation_2026-10-16.md`, `docs/impl/WATER1_simplification_plan.md`).
@@ -194,10 +194,13 @@ PR & GitHub Actions Full-QA CI (authoritative Suite):
 - Review-Branch: `slice/water1-watermaker-contingency-reserve`
 - PR: #31 (`https://github.com/StradaDelSole/proviantplaner/pull/31`)
 - PR-Titel: `WATER1: Minimum drinking water simplification`
-- Final Implementation / Merge HEAD: `d2bf2476dddccb1225190869196db4651dc63986`
-- GitHub Actions CI Run: `38973295879` (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879`)
-  - `Flutter Analyze & Test`: pass in 2m6s (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879/job/117216583782`)
-  - `Backend Typecheck & Vitest`: pass in 22s (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973295879/job/117216584171`)
+- PR-Status: open, Ready for Review, mergeable (NICHT gemergt, Issue #30 NICHT geschlossen)
+- Code-/Implementation-HEAD: `d2bf2476dddccb1225190869196db4651dc63986`
+- Zuletzt unabhängig verifizierter PR-HEAD vor diesem Dokumentations-Amendment: `d133e91e92adfa1d159f90eb2a362349241643e3`
+- Zugehöriger verifizierter CI Run: `38973635021` (`https://github.com/StradaDelSole/proviantplaner/actions/runs/38973635021`)
+  - `Flutter Analyze & Test`: pass in 1m48s (Job `117217692118` – SUCCESS)
+  - `Backend Typecheck & Vitest`: pass in 25s (Job `117217692431` – SUCCESS)
+- Hinweis zur Dokumentationsintegration: Der endgültige Reporting-Commit und dessen abschließender GitHub-Actions-Run werden im anschließenden unabhängigen Re-Review gegen den tatsächlichen PR-HEAD verifiziert.
 - Commit: `WATER1: Simplify water calculation to minimum drinking water estimate` (gepusht: ja)
 ```
 
