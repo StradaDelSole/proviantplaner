@@ -1,3 +1,5 @@
+> **SUPERSEDED – 16.10.2026:** Die hier beschriebene 3-Tage-Watermaker-Reserve wurde durch `docs/impl/WATER1_simplification_reconciliation_2026-10-16.md` ersetzt. Nicht mehr implementieren.
+
 # WATER1 – Watermaker Contingency Reserve Reconciliation – 16.10.2026
 
 Status: **OWNER-ACCEPTED / IMPLEMENTATION RELEASED**
