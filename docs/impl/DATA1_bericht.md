@@ -48,6 +48,7 @@ Alle eingehalten; keine manuellen Tests behauptet. Vorschläge für das PRD: sie
 - **Reviewed Core Implementation HEAD:** `73cfdecefe16721e11fa33878a18a751f092c330` (Korrektur zum Tippfehler `73cfdecefe16721e11fa33878a18aa751f092c330` in der früheren Chat-Meldung)
 - **Review-Grundlage:** `docs/impl/DATA1_review_2026-10-07.md` (Issue #28)
 - **Review-Branch:** `amend/data1-review`
+- **Pull Request:** #29 (`https://github.com/StradaDelSole/proviantplaner/pull/29`, **NICHT gemerged**)
 
 ### Findings A–C und Umsetzung
 
@@ -94,7 +95,12 @@ Alle eingehalten; keine manuellen Tests behauptet. Vorschläge für das PRD: sie
 
 ### QA & GitHub Actions Status
 
-- **Lokale QA:** Gemäß Vorgabe wurden lokal keine belastenden Voll-Läufe (`flutter test` / `flutter analyze`) gestartet; die vollständige QA erfolgt autoritativ über GitHub Actions auf dem Review-PR.
-- **GitHub Actions (wird nach PR-Lauf mit finalem SHA und exakten Ergebnissen aktualisiert):** _stehend bis Abschluss des CI-Runs auf dem PR_.
+- **Gezielter lokaler Entwicklungscheck (gemäß Abschnitt 12 erlaubt):**
+  - `flutter test test/features/shopping_list/domain/catalog_validation_test.dart` → **18/18 Tests grün** (inkl. Test 11 für Check-Mode `VariantCalculationResult` ohne stillen `guided`-Fallback).
+  - Vollständige Suite (`flutter test`) und Gesamt-Analyze (`flutter analyze`) wurden gemäß Anweisung lokal **nicht** ausgeführt.
+- **GitHub Actions auf PR #29:**
+  - `Flutter Analyze & Test`: **BLOCKED BY GITHUB BILLING** (`The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings`)
+  - `Backend Typecheck & Vitest`: **BLOCKED BY GITHUB GITHUB BILLING** (`The job was not started because recent account payments have failed or your spending limit needs to be increased. Please check the 'Billing & plans' section in your settings`)
+
 
 
