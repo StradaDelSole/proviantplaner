@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.20
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.21
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -24,34 +24,34 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.18 | 07.10.2026 | FIX-B Owner Acceptance: COMPLETE; kein Folgeslice freigegeben |
 | v0.19 | 07.10.2026 | DATA1 als einziger Implementierungsslice freigegeben |
 | v0.20 | 07.10.2026 | DATA1 independent review: enger Review Amendment freigegeben |
+| v0.21 | 16.10.2026 | DATA1 Owner Acceptance: COMPLETE; GitHub-PR/CI als authoritative Full-QA; kein Folgeslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-Aktuell ist ausschließlich freigegeben:
-- **DATA1 Review Amendment**, Issue #28
-- Reviewed implementation HEAD: `73cfdecefe16721e11fa33878a18a751f092c330`
-- Review: `docs/impl/DATA1_review_2026-10-07.md`
-- Release reconciliation: `docs/impl/DATA1_release_reconciliation_2026-10-07.md`
-- Plan: `docs/impl/DATA1_plan.md`
+Aktuell ist **kein neuer Implementierungsslice freigegeben**.
 
-Der Amendment darf ausschließlich:
-- stille `AssistType.guided` Defaults entfernen;
-- AssistType explizit durch Production-Pfade propagieren;
-- effektive Assist-Auflösung zentralisieren;
-- ungenutzte AssistClassifier-Fassade / zyklischen Import entfernen, falls passend;
-- gezielte Tests und Bericht/Doku aktualisieren.
+Abgeschlossen:
+- **DATA1 – Catalog-driven Assist Classification**, Issue #28
+- Status: **OWNER-ACCEPTED / COMPLETE**
+- Final reviewed amendment HEAD: `84240ee67600f0955df79fba4f091a853ea950d0`
+- PR #29 merged
+- Merge commit: `75c1290822e9301aed4e610065be58995e3d3a2e`
+- Final review: `docs/impl/DATA1_acceptance_review_2026-10-16.md`
+- Owner Acceptance: `docs/impl/DATA1_owner_acceptance_2026-10-16.md`
 
-Nicht ändern:
-- `data/catalog_v0.11.json` Mapping;
-- `data/catalog_v0.10.json`;
-- Quantity-Formeln;
-- Water-Boost-UI;
-- Watermaker-Semantik;
-- PIVOT2 oder andere Slices.
+Weiterhin nicht freigegeben:
+- Watermaker-Reserve-Amendment
+- PIVOT2
+- RECEIPT1
+- GUEST1
+- UX-D
+- CAT1
+- B3/B4/B5
+- Store-Publikation
 
-Nach Amendment: **STOP für unabhängigen Re-Review / Owner Acceptance.**
+Kein Folgeslice wird automatisch freigegeben.
 
 Plattform: Android zuerst (lokal testen), iOS später über Cloud-Build.
 
@@ -89,14 +89,18 @@ Code und Dokumente widersprechen sich? Zuerst gegen diese Hierarchie reconciliie
 
 Für aktuell und künftig explizit review-gegatete Slices gilt:
 
-1. `git status` prüfen, `git pull --rebase`, dann README, GEMINI.md, Reconciliation und den freigegebenen Slice-Plan vollständig lesen.
-2. Nur den **einen ausdrücklich freigegebenen Slice** umsetzen.
-3. Prüfen: `flutter analyze` ohne Fehler und vollständige relevante `flutter test`-Suite grün.
+1. `git status` prüfen, `git fetch origin`, README, GEMINI.md, Reconciliation und den freigegebenen Slice-Plan vollständig lesen.
+2. Nur den **einen ausdrücklich freigegebenen Slice** auf einem eigenen Review-Branch umsetzen.
+3. Lokal nur kleine gezielte Tests ausführen, wenn sie den Owner-Rechner nicht relevant belasten. **Keine vollständige lokale Flutter-Suite als Gate.**
 4. `CHANGELOG.md` ergänzen und Abschlussbericht in `docs/impl/<Slice>_bericht.md` ablegen.
-5. Nur bei grünem Stand: vor Push erneut `git pull --rebase`, dann committen und auf `main` pushen.
-6. Danach **STOP**. Kein Folgeslice wird automatisch freigegeben. Erst unabhängiger Review + ausdrückliche Owner Acceptance + README-Release erlauben den nächsten Slice.
+5. Review-Branch pushen und Pull Request gegen `main` öffnen.
+6. **GitHub Actions ist authoritative Full-QA**: mindestens `flutter analyze`, vollständiges `flutter test` sowie vorhandene Backend-Checks müssen auf dem finalen PR-HEAD grün sein.
+7. Bei CI-Fehlern nur auf dem Review-Branch korrigieren; Tests/CI nicht abschwächen.
+8. Danach **STOP**. PR nicht automatisch mergen. Erst unabhängiger Review + ausdrückliche Owner Acceptance erlauben Merge/Closure.
+9. Nach Owner Acceptance PR mergen, Acceptance dokumentieren und Issue schließen.
+10. Kein Folgeslice wird automatisch freigegeben.
 
-Historische Durchlauf-Modus-Anweisungen in älteren Session-Prompts gelten für diese post-Pivot-Slices nicht mehr.
+Historische Durchlauf-Modus-Anweisungen und direkte `main`-Push-Anweisungen in älteren Session-Prompts gelten für diese post-Pivot-Slices nicht mehr.
 
 ## Darf
 
