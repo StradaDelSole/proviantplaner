@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-16 – WATER1 Release (Issue #30)
+
+- Owner accepted the WATER1 product decision and released implementation.
+- WATER1 replaces the previous Watermaker reserve `1.5 l × crew count` with a climate-adjusted contingency horizon:
+  `climateDailyLiters × crewFactorSum × min(effectiveDays, backupDays)`.
+- Accepted `backupDays = 3`, stored in a new `data/quantities_v0.7.json`; v0.6 remains unchanged.
+- Existing crew/child weighting is reused.
+- `effectiveDays = daysUntilNextStop ?? daysCount`; one-/two-day provisioning horizons therefore use one/two backup days, three or more are capped at three.
+- A potable tank does not reduce the Watermaker-failure reserve because nominal tank capacity is not equivalent to guaranteed current potable inventory.
+- Without Watermaker, existing potable-tank subtraction and the existing 1.5 l/person floor remain unchanged.
+- Reconciliation: `docs/impl/WATER1_release_reconciliation_2026-10-16.md`.
+- Plan: `docs/impl/WATER1_plan.md`.
+- Issue #30 opened.
+- WATER1 is the only released implementation slice; PIVOT2 remains ON HOLD.
+- Implementation uses a dedicated review branch and GitHub Actions as authoritative Full-QA.
+
+
 ## 2026-10-16 – DATA1 Owner Acceptance
 
 - Owner explicitly accepted DATA1: `DATA1 akzeptiert`.
