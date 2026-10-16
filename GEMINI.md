@@ -137,7 +137,7 @@ Historische Durchlauf-Modus-Anweisungen und direkte `main`-Push-Anweisungen in �
 - Keine Zahlungsabwicklung (nur QR-Codes und Links)
 - Keine Zugangsdaten, API-Schlüssel, Tokens oder IBANs in Code oder Repo
 - Keine Tests abschwächen, auskommentieren oder löschen, um sie grün zu bekommen
-- Kein `git push --force`, kein `git reset --hard` auf gepushte Commits, kein Ändern der Git-Historie, keine anderen Branches
+- Kein `git push --force`, kein `git reset --hard` auf gepushte Commits, kein Ändern der Git-Historie; ausschließlich den ausdrücklich freigegebenen Review-Branch verwenden und keine fremden/unrelated Branches verändern
 - Review-Branch darf für GitHub-CI gepusht werden, auch wenn die vollständige lokale Suite nicht gelaufen ist. Full-QA (`flutter analyze`, vollständiges `flutter test`, Backend-Checks) muss auf GitHub Actions am finalen PR-HEAD grün sein, bevor ein Slice als review-ready gilt
 - Vor Branch-Erstellung/Integration `git fetch origin`; kein direktes Pushen auf `main`. Review-Branch gegen aktuellen `origin/main` sauber halten
 
