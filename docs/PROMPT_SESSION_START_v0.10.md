@@ -2,9 +2,11 @@
 
 Wir setzen `StradaDelSole/proviantplaner` mit WATER1 fort.
 
-Kanonischer Startstand zum Release:
+WATER1-Release-Baseline vor dem Session-Prompt:
 
-`origin/main = 621accb7f3cebf55a401bb0f57dc46412c4726d0`
+`621accb7f3cebf55a401bb0f57dc46412c4726d0`
+
+Zu Sitzungsbeginn gilt jedoch immer der **aktuelle** `origin/main` nach `git fetch origin` als kanonische Wahrheit; spätere reine Release-/Prompt-Dokumentationscommits sind zu übernehmen.
 
 WICHTIG:
 - `origin/main` ist die kanonische Wahrheit.
