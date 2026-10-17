@@ -368,5 +368,12 @@ In Vorbereitung auf die abschließende Owner Acceptance wurde die nach dem A3 Mi
   - Authoritative GitHub Actions Run: `39031280782` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39031280782)
     - `Flutter Analyze & Test`: SUCCESS (Job ID 117392062804)
     - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117392062614)
+- Final Cleanup Amendment:
+  - Implementation Commit: `a7082806e23617be2d3c9dc282b04f7b2c5f11bb`
+  - Authoritative GitHub Actions Run: `39032229918` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39032229918)
+    - `Flutter Analyze & Test`: SUCCESS (Job ID 117394856391)
+    - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117394856168)
+  - Final Clean PR HEAD: Dokumentations-Commit nach CI-Verifikation auf `a708280`
+
 
 
