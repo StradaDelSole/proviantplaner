@@ -210,5 +210,6 @@ Status: **IMPLEMENTIERT / BEREIT FÜR FULL-QA CI**
 
 ### Commit & PR:
 - Branch: `slice/pivot2-provisioning-review`
-- Commit: `PIVOT2: Implement read-only Provisioning Review`
-- PR: Erstellung folgt.
+- PR: `#33` (https://github.com/StradaDelSole/proviantplaner/pull/33)
+- Initial Implementation Commit: `227a33777f9ae235c3a44d82f71887010f3c64c9`
+

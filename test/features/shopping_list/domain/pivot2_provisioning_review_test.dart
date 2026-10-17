@@ -37,8 +37,6 @@ import 'package:proviantplaner/features/shopping_list/domain/models/catalog_mode
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
-import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
-import 'package:proviantplaner/features/shopping_list/ui/widgets/item_row_widget.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/provisioning_review_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
@@ -1014,11 +1012,6 @@ void main() {
       );
       expect(readyRes.status, ProvisioningReviewStatus.ready);
 
-      final checkFinding = const ProvisioningReviewFinding(
-        id: 'check_1',
-        kind: ProvisioningReviewKind.missingBasic,
-        severity: ProvisioningReviewSeverity.check,
-      );
       final checkEngineResult = ProvisioningReviewEngine(ProvisioningReviewInput(
         trip: Trip(
           id: 1,

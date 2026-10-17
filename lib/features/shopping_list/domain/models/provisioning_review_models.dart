@@ -1,9 +1,7 @@
 /// Domänenmodelle für die Vorratsprüfung (PIVOT2 / Issue #26).
 library;
 
-import 'package:proviantplaner/core/database/tables.dart';
 import 'catalog_models.dart';
-import 'quantities_models.dart';
 
 /// Gesamtstatus der Vorratsprüfung.
 enum ProvisioningReviewStatus {
