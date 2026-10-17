@@ -213,9 +213,9 @@ In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbess
     erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/domain/pivot3b_water_and_setup_test.dart`, `PIVOT2 Kriterium 13-17: Trinkwasser-Abgleich (WATER1)`)
 
 38. **full GitHub Actions green on final PR HEAD**  
-    erfüllt – Nachweis: GitHub Actions Run `38985212384` auf PR HEAD `0e9c6d36333cb55639b7b3c40148d39b6ca89232`  
-    - `Flutter Analyze & Test` (Job 117254974410): SUCCESS (409 Tests bestanden, 0 Warnungen/Fehler)  
-    - `Backend Typecheck & Vitest` (Job 117254974238): SUCCESS
+    erfüllt – Nachweis: GitHub Actions Run `38995520899` auf PR HEAD `cd673fe1341a08c7c8691fa15bd0e301193625e8`  
+    - `Flutter Analyze & Test` (Job 117287100429): SUCCESS (414 Tests bestanden, 0 Warnungen/Fehler)  
+    - `Backend Typecheck & Vitest` (Job 117287100173): SUCCESS
 
 ---
 
@@ -256,8 +256,10 @@ In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbess
 - Branch: `slice/pivot2-provisioning-review`
 - PR: `#33` (https://github.com/StradaDelSole/proviantplaner/pull/33)
 - Initial Implementation Commit: `227a33777f9ae235c3a44d82f71887010f3c64c9`
-- Final Implementation / PR HEAD Commit: `0e9c6d36333cb55639b7b3c40148d39b6ca89232`
-- GitHub Actions Run: `38985212384` (https://github.com/StradaDelSole/proviantplaner/actions/runs/38985212384)
-  - `Flutter Analyze & Test`: SUCCESS (Job ID 117254974410)
-  - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117254974238)
+- Initial Full-QA HEAD Commit: `0e9c6d36333cb55639b7b3c40148d39b6ca89232`
+- Review Findings A-G Commit: `063a1858b52220ffd479c224429c22cab24e91a8`
+- Final Amendment / PR HEAD Commit: `cd673fe1341a08c7c8691fa15bd0e301193625e8`
+- Final GitHub Actions Run: `38995520899` (https://github.com/StradaDelSole/proviantplaner/actions/runs/38995520899)
+  - `Flutter Analyze & Test`: SUCCESS (Job ID 117287100429)
+  - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117287100173)
 
