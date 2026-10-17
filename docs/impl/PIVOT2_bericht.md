@@ -248,9 +248,9 @@ In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende 
     erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/domain/pivot3b_water_and_setup_test.dart`, `PIVOT2 Kriterium 13-17: Trinkwasser-Abgleich (WATER1)`)
 
 38. **full GitHub Actions green on final PR HEAD**  
-    erfüllt – Nachweis: GitHub Actions Run `38995713673` auf PR HEAD `0279dd603d25e786a45e6969a8f0e1d9b06a61d1`  
-    - `Flutter Analyze & Test` (Job 117287705318): SUCCESS (414 Tests bestanden, 0 Warnungen/Fehler)  
-    - `Backend Typecheck & Vitest` (Job 117287705171): SUCCESS
+    erfüllt – Nachweis: GitHub Actions Run `39023216153` auf PR HEAD `c53f4923cdaa986a609b571aa13f43f95b2ce53e`  
+    - `Flutter Analyze & Test` (Job 117369011893): SUCCESS (0 Warnungen/Fehler, alle Tests bestanden)  
+    - `Backend Typecheck & Vitest` (Job 117369011675): SUCCESS
 
 ---
 
@@ -295,7 +295,10 @@ In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende 
 - Review Findings A-G Commit: `063a1858b52220ffd479c224429c22cab24e91a8`
 - Analysis & Lint Fixes Commit: `cd673fe1341a08c7c8691fa15bd0e301193625e8` (CI Run `38995520899`)
 - Final Documentation Commit / PR HEAD: `0279dd603d25e786a45e6969a8f0e1d9b06a61d1`
-- Final Authoritative GitHub Actions Run: `38995713673` (https://github.com/StradaDelSole/proviantplaner/actions/runs/38995713673)
-  - `Flutter Analyze & Test`: SUCCESS (Job ID 117287705318)
-  - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117287705171)
+- Re-Review Amendment 2 Commits:
+  - `dfc77eb2fa282d33ce858c2534a747ea01ba5381` (Findings A2, B2, E2, F2 implementation)
+  - `c53f4923cdaa986a609b571aa13f43f95b2ce53e` (Analysis & lint fix: remove unused import in shopping_list_providers.dart)
+- Final Authoritative GitHub Actions Run (Re-Review Amendment 2): `39023216153` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39023216153)
+  - `Flutter Analyze & Test`: SUCCESS (Job ID 117369011893)
+  - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117369011675)
 
