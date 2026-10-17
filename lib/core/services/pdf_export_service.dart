@@ -2,19 +2,54 @@
 /// Verwendet Standard-PostScript-Schriften (Helvetica, Courier) für 100% Offline-Unterstützung.
 library;
 
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/kitty/domain/models/receipt_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import 'package:share_plus/share_plus.dart';
+
+/// Einzelne benannte PDF-Datei.
+class NamedPdf {
+  final String fileName;
+  final Uint8List bytes;
+
+  const NamedPdf({
+    required this.fileName,
+    required this.bytes,
+  });
+}
+
+/// Vollständiges Versandpaket für die Endabrechnung (RECEIPT1).
+class SettlementPackage {
+  final NamedPdf settlementPdf;
+  final List<NamedPdf> receiptPdfs;
+
+  const SettlementPackage({
+    required this.settlementPdf,
+    required this.receiptPdfs,
+  });
+
+  /// Alle enthaltenen PDF-Dateien.
+  List<NamedPdf> get allPdfs => [settlementPdf, ...receiptPdfs];
+
+  /// Gibt an, ob die Belege auf mehrere Dateien aufgeteilt werden mussten.
+  bool get wasSplit => receiptPdfs.length > 1;
+}
 
 /// Aggregierte Zusammenfassung für den Export der Bordkassenabrechnung (FIX-B Finding E / S5).
 class SettlementPdfSummary {
+
   final int totalExpensesCents;
   final int totalDepositsCents;
   final int? kittyCashCents;
@@ -627,4 +662,267 @@ class PdfExportService {
       subject: subject,
     );
   }
+
+  /// Generiert ein oder mehrere Belege-PDFs (RECEIPT1).
+  /// Falls die Gesamtgröße ein typisches Limit (z.B. 15 MB) überschreitet,
+  /// wird die Sammlung automatisch in nummerierte Dateien (Belege_1.pdf, Belege_2.pdf, ...) aufgeteilt.
+  Future<List<NamedPdf>> generateReceiptsPdfs({
+    required TripKittyData data,
+    required ReceiptFileService receiptFileService,
+    int maxBytesPerChunk = 15 * 1024 * 1024,
+  }) async {
+    final expensesWithReceipts = data.expenses.where((e) => e.receipts.isNotEmpty).toList();
+    if (expensesWithReceipts.isEmpty) {
+      return const [];
+    }
+
+    final fontRegular = pw.Font.helvetica();
+    final fontBold = pw.Font.helveticaBold();
+    final fontMono = pw.Font.courier();
+    final fontMonoBold = pw.Font.courierBold();
+    final dateFormat = DateFormat('dd.MM.yyyy');
+
+    // Sammle alle Beleg-Einträge mit ihren zugehörigen Daten
+    final allReceiptEntries = <_ReceiptPageEntry>[];
+    for (final exp in expensesWithReceipts) {
+      final payerName = exp.isPaidFromKitty
+          ? 'Bordkasse'
+          : (data.members.where((m) => m.id == exp.paidByMemberId).firstOrNull?.name ?? 'Crew');
+
+      for (var i = 0; i < exp.receipts.length; i++) {
+        final receipt = exp.receipts[i];
+        final bytes = await receiptFileService.readReceiptBytes(receipt.filePath);
+        if (bytes != null && bytes.isNotEmpty) {
+
+          allReceiptEntries.add(
+            _ReceiptPageEntry(
+              expense: exp,
+              receipt: receipt,
+              imageBytes: bytes,
+              photoIndex: i + 1,
+              totalPhotos: exp.receipts.length,
+              payerName: payerName,
+            ),
+          );
+        }
+      }
+    }
+
+    if (allReceiptEntries.isEmpty) {
+      return const [];
+    }
+
+    // Erzeuge Chunks bei Größenüberschreitung
+    final chunks = <List<_ReceiptPageEntry>>[];
+    var currentChunk = <_ReceiptPageEntry>[];
+    var currentChunkBytes = 0;
+
+    for (final entry in allReceiptEntries) {
+      if (currentChunk.isNotEmpty && (currentChunkBytes + entry.imageBytes.length > maxBytesPerChunk)) {
+        chunks.add(currentChunk);
+        currentChunk = [entry];
+        currentChunkBytes = entry.imageBytes.length;
+      } else {
+        currentChunk.add(entry);
+        currentChunkBytes += entry.imageBytes.length;
+      }
+    }
+    if (currentChunk.isNotEmpty) {
+      chunks.add(currentChunk);
+    }
+
+    final isMultiChunk = chunks.length > 1;
+    final resultList = <NamedPdf>[];
+
+    for (var chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      final chunkEntries = chunks[chunkIndex];
+      final chunkNum = chunkIndex + 1;
+      final fileName = isMultiChunk ? 'Belege_$chunkNum.pdf' : 'Belege.pdf';
+
+      final doc = pw.Document(
+        title: '$fileName - ${data.trip.name}',
+        author: 'Proviantplaner - powered by HullQ',
+      );
+
+      for (final entry in chunkEntries) {
+        pw.MemoryImage? memImage;
+        try {
+          memImage = pw.MemoryImage(entry.imageBytes);
+        } catch (_) {}
+
+        doc.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(32),
+            build: (context) {
+              return pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            data.trip.name,
+                            style: pw.TextStyle(font: fontBold, fontSize: 13, color: PdfColors.blueGrey800),
+                          ),
+                          pw.Text(
+                            'Beleg zur Ausgabe: ${entry.expense.title}',
+                            style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey700),
+                          ),
+                        ],
+                      ),
+                      pw.Text(
+                        dateFormat.format(entry.expense.createdAt),
+                        style: pw.TextStyle(font: fontMono, fontSize: 10, color: PdfColors.grey700),
+                      ),
+                    ],
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.blueGrey50,
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                      border: pw.Border.all(color: PdfColors.blueGrey200, width: 0.5),
+                    ),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(
+                          'Kategorie: ${entry.expense.category.displayName}',
+                          style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
+                        ),
+                        pw.Text(
+                          'Bezahlt von: ${entry.payerName}',
+                          style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
+                        ),
+                        pw.Text(
+                          'Betrag: ${_formatCents(entry.expense.amountInCents, entry.expense.currency)}',
+                          style: pw.TextStyle(font: fontMonoBold, fontSize: 10),
+                        ),
+                        if (entry.totalPhotos > 1)
+                          pw.Text(
+                            'Foto ${entry.photoIndex} von ${entry.totalPhotos}',
+                            style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.grey600),
+                          ),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 12),
+                  pw.Expanded(
+                    child: pw.Container(
+                      alignment: pw.Alignment.center,
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                      ),
+                      child: memImage != null
+                          ? pw.Image(memImage, fit: pw.BoxFit.contain)
+                          : pw.Center(
+                              child: pw.Text(
+                                'Belegbild konnte nicht gerendert werden',
+                                style: pw.TextStyle(font: fontRegular, color: PdfColors.red800),
+                              ),
+                            ),
+                    ),
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'Proviantplaner - powered by HullQ',
+                        style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
+                      ),
+                      pw.Text(
+                        'Seite ${context.pageNumber} von ${context.pagesCount}',
+                        style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      }
+
+      final bytes = await doc.save();
+      resultList.add(NamedPdf(fileName: fileName, bytes: bytes));
+    }
+
+    return resultList;
+  }
+
+  /// Erzeugt das vollständige Abrechnungspaket (RECEIPT1).
+  Future<SettlementPackage> generateSettlementPackage({
+    required TripKittyData data,
+    required ReceiptFileService receiptFileService,
+    int maxBytesPerChunk = 15 * 1024 * 1024,
+    String settlementFilename = 'Abrechnung.pdf',
+  }) async {
+    final settlementBytes = await generateSettlementPdf(data: data);
+    final settlementPdf = NamedPdf(fileName: settlementFilename, bytes: settlementBytes);
+
+    final receiptPdfs = await generateReceiptsPdfs(
+      data: data,
+      receiptFileService: receiptFileService,
+      maxBytesPerChunk: maxBytesPerChunk,
+    );
+
+    return SettlementPackage(
+      settlementPdf: settlementPdf,
+      receiptPdfs: receiptPdfs,
+    );
+  }
+
+  /// Schreibt das Abrechnungspaket temporär auf das Dateisystem und öffnet
+  /// den nativen Share-/Mail-Composer über `share_plus` (RECEIPT1).
+  Future<void> shareSettlementPackage({
+    required SettlementPackage package,
+    required String subject,
+    required String bodyText,
+    Future<Directory> Function()? tempDirProvider,
+  }) async {
+    final tempDir = await (tempDirProvider ?? getTemporaryDirectory)();
+    final exportDir = Directory(p.join(tempDir.path, 'settlement_export_${DateTime.now().millisecondsSinceEpoch}'));
+    if (!await exportDir.exists()) {
+      await exportDir.create(recursive: true);
+    }
+
+    final xFiles = <XFile>[];
+    for (final pdf in package.allPdfs) {
+      final file = File(p.join(exportDir.path, pdf.fileName));
+      await file.writeAsBytes(pdf.bytes, flush: true);
+      xFiles.add(XFile(file.path, name: pdf.fileName, mimeType: 'application/pdf'));
+    }
+
+    await Share.shareXFiles(
+      xFiles,
+      subject: subject,
+      text: bodyText,
+    );
+  }
 }
+
+class _ReceiptPageEntry {
+  final KittyExpense expense;
+  final ExpenseReceiptItem receipt;
+  final Uint8List imageBytes;
+  final int photoIndex;
+  final int totalPhotos;
+  final String payerName;
+
+  _ReceiptPageEntry({
+    required this.expense,
+    required this.receipt,
+    required this.imageBytes,
+    required this.photoIndex,
+    required this.totalPhotos,
+    required this.payerName,
+  });
+}
+

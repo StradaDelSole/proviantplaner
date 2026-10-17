@@ -1328,5 +1328,50 @@
   "reviewActionEditItem": "Artikel anpassen",
   "reviewInlineFreshnessHint": "Haltbarkeit kürzer als Törn",
   "reviewInlineFridgeHint": "Benötigt Kühlschrank",
-  "reviewInlineFreezerHint": "Benötigt Tiefkühler"
+  "reviewInlineFreezerHint": "Benötigt Tiefkühler",
+  "receiptAdd": "Beleg hinzufügen",
+  "receiptTakePhoto": "Beleg fotografieren",
+  "receiptPickGallery": "Aus Galerie wählen",
+  "receiptAddAnotherPage": "Weitere Seite",
+  "receiptDelete": "Beleg entfernen",
+  "receiptDeleteConfirm": "Beleg wirklich entfernen?",
+  "receiptAttachedCount": "{count, plural, =1{1 Beleg} other{{count} Belege}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Belegvorschau",
+  "receiptSourceCamera": "Kamera",
+  "receiptSourceGallery": "Mediathek",
+  "sendSettlementPackage": "Abrechnung senden",
+  "sendSettlementPackageSubtitle": "Abrechnung & Belege per Mail oder Messenger teilen",
+  "settlementPackageSubject": "Bordkassenabrechnung {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Hallo Crew,\n\nanbei die Bordkassenabrechnung für {tripName} inklusive aller Belege.\n\nViele Grüße,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Die Belege wurden aufgrund der Dateigröße auf {count} PDFs aufgeteilt.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Belege"
 }
+

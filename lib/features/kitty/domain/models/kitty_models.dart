@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'receipt_models.dart';
 
 /// Die zwei Bordkassenmodelle laut PRD und SLICES_v0.12.
 enum KittyModel {
@@ -153,6 +154,7 @@ class KittyExpense {
   final bool isPaidFromKitty;
   final DateTime createdAt;
   final Map<int, int>? customSplitInCents;
+  final List<ExpenseReceiptItem> receipts;
 
   const KittyExpense({
     required this.id,
@@ -165,6 +167,7 @@ class KittyExpense {
     this.isPaidFromKitty = false,
     required this.createdAt,
     this.customSplitInCents,
+    this.receipts = const [],
   });
 }
 

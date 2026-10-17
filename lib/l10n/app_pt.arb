@@ -1030,5 +1030,50 @@
   "reviewActionEditItem": "Ajustar artigo",
   "reviewInlineFreshnessHint": "Validade mais curta do que a viagem",
   "reviewInlineFridgeHint": "Necessita de frigorífico",
-  "reviewInlineFreezerHint": "Necessita de congelador"
+  "reviewInlineFreezerHint": "Necessita de congelador",
+  "receiptAdd": "Adicionar comprovativo",
+  "receiptTakePhoto": "Fotografar comprovativo",
+  "receiptPickGallery": "Escolher da galeria",
+  "receiptAddAnotherPage": "Outra página",
+  "receiptDelete": "Remover comprovativo",
+  "receiptDeleteConfirm": "Deseja remover este comprovativo?",
+  "receiptAttachedCount": "{count, plural, =1{1 comprovativo} other{{count} comprovativos}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Pré-visualização do comprovativo",
+  "receiptSourceCamera": "Câmara",
+  "receiptSourceGallery": "Galeria",
+  "sendSettlementPackage": "Enviar fecho de contas",
+  "sendSettlementPackageSubtitle": "Partilhar fecho de contas e comprovativos por e-mail ou mensagem",
+  "settlementPackageSubject": "Fecho da caixa {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Olá tripulação,\n\nsegue em anexo o fecho da caixa de bordo de {tripName} incluindo todos os comprovativos.\n\nCumprimentos,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Os comprovativos foram divididos em {count} ficheiros PDF devido ao tamanho.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Comprovativos"
 }
+

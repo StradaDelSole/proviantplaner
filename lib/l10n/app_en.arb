@@ -1142,5 +1142,50 @@
   "reviewActionEditItem": "Adjust item",
   "reviewInlineFreshnessHint": "Shelf life shorter than trip",
   "reviewInlineFridgeHint": "Requires fridge",
-  "reviewInlineFreezerHint": "Requires freezer"
+  "reviewInlineFreezerHint": "Requires freezer",
+  "receiptAdd": "Add receipt",
+  "receiptTakePhoto": "Take receipt photo",
+  "receiptPickGallery": "Choose from gallery",
+  "receiptAddAnotherPage": "Add another page",
+  "receiptDelete": "Remove receipt",
+  "receiptDeleteConfirm": "Really remove receipt?",
+  "receiptAttachedCount": "{count, plural, =1{1 receipt} other{{count} receipts}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Receipt preview",
+  "receiptSourceCamera": "Camera",
+  "receiptSourceGallery": "Photo library",
+  "sendSettlementPackage": "Send settlement package",
+  "sendSettlementPackageSubtitle": "Share settlement & receipts via email or messenger",
+  "settlementPackageSubject": "Fund settlement {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Hello crew,\n\nattached is the fund settlement for {tripName} including all receipts.\n\nBest regards,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Receipts were split into {count} PDFs due to file size.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Receipts"
 }
+

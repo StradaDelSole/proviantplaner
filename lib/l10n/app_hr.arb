@@ -1030,5 +1030,50 @@
   "reviewActionEditItem": "Prilagodi artikl",
   "reviewInlineFreshnessHint": "Rok trajanja kraći od putovanja",
   "reviewInlineFridgeHint": "Zahtijeva hladnjak",
-  "reviewInlineFreezerHint": "Zahtijeva zamrzivač"
+  "reviewInlineFreezerHint": "Zahtijeva zamrzivač",
+  "receiptAdd": "Dodaj račun",
+  "receiptTakePhoto": "Fotografiraj račun",
+  "receiptPickGallery": "Odaberi iz galerije",
+  "receiptAddAnotherPage": "Sljedeća stranica",
+  "receiptDelete": "Ukloni račun",
+  "receiptDeleteConfirm": "Sigurno ukloniti ovaj račun?",
+  "receiptAttachedCount": "{count, plural, =1{1 račun} other{{count} računa}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Pregled računa",
+  "receiptSourceCamera": "Kamera",
+  "receiptSourceGallery": "Galerija",
+  "sendSettlementPackage": "Pošalji obračun",
+  "sendSettlementPackageSubtitle": "Podijeli obračun i račune e-poštom ili porukom",
+  "settlementPackageSubject": "Obračun blagajne {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Pozdrav posado,\n\nu prilogu je obračun brodske blagajne za {tripName} uključujući sve račune.\n\nLijep pozdrav,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Računi su podijeljeni u {count} PDF datoteka zbog veličine.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Računi"
 }
+

@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/hullq_backup_service.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
@@ -16,14 +17,17 @@ class BackupCoordinator {
   final AppDatabase _db;
   final HullqBackupService _backupService;
   final HullqAuthService _authService;
+  final ReceiptFileService _receiptFileService;
 
   BackupCoordinator({
     required AppDatabase db,
     required HullqBackupService backupService,
     required HullqAuthService authService,
+    ReceiptFileService? receiptFileService,
   })  : _db = db,
         _backupService = backupService,
-        _authService = authService;
+        _authService = authService,
+        _receiptFileService = receiptFileService ?? ReceiptFileService();
 
   /// Prüft, ob eine Sicherung in der Cloud existiert.
   Future<bool> hasBackup() async {
@@ -57,6 +61,24 @@ class BackupCoordinator {
 
       final expenses = await _db.expenseDao.getExpensesForTrip(trip.id);
       final payments = await _db.expenseDao.getKittyPaymentsForTrip(trip.id);
+      final receipts = await _db.expenseDao.getReceiptsForTrip(trip.id);
+
+      final receiptsBackup = <Map<String, dynamic>>[];
+      for (final r in receipts) {
+        final bytes = await _receiptFileService.readReceiptBytes(r.filePath);
+        receiptsBackup.add({
+          'id': r.id,
+          'tripId': r.tripId,
+          'expenseId': r.expenseId,
+          'filePath': r.filePath,
+          'fileName': r.fileName,
+          'byteSize': r.byteSize,
+          'sortOrder': r.sortOrder,
+          'createdAt': r.createdAt.toIso8601String(),
+          'imageBase64': bytes != null ? base64Encode(bytes) : null,
+        });
+      }
+
 
       tripsBackupList.add({
         'trip': _serializeTrip(trip),
@@ -67,11 +89,12 @@ class BackupCoordinator {
         'allocations': allocations.map(_serializeAllocation).toList(),
         'expenses': expenses.map(_serializeExpense).toList(),
         'payments': payments.map(_serializePayment).toList(),
+        'receipts': receiptsBackup,
       });
     }
 
     final backupPayload = jsonEncode({
-      'version': 2,
+      'version': 3,
       'exportedAt': DateTime.now().toIso8601String(),
       'boatProfiles': allBoatProfiles.map(_serializeBoatProfile).toList(),
       'trips': tripsBackupList,
@@ -101,6 +124,7 @@ class BackupCoordinator {
       // Vorhandene Daten bereinigen
       await _db.customStatement('PRAGMA foreign_keys = OFF');
       try {
+        await _db.delete(_db.expenseReceipts).go();
         await _db.delete(_db.kittyPayments).go();
         await _db.delete(_db.expenses).go();
         await _db.delete(_db.listItemAllocations).go();
@@ -110,6 +134,7 @@ class BackupCoordinator {
         await _db.delete(_db.tripDays).go();
         await _db.delete(_db.trips).go();
         await _db.delete(_db.boatProfiles).go();
+
 
         // 0. Bootsprofile einfügen (falls in Backup vorhanden)
         final profileIdMap = <int, int>{};
@@ -303,9 +328,11 @@ class BackupCoordinator {
           }
 
           // 7. Expenses einfügen
+          final expenseIdMap = <int, int>{};
           final expenses = tripData['expenses'] as List<dynamic>? ?? [];
           for (final e in expenses) {
             final eMap = e as Map<String, dynamic>;
+            final oldExpenseId = eMap['id'] as int;
             final oldPayerId = eMap['paidByCrewMemberId'] as int?;
             if (oldPayerId != null && !crewIdMap.containsKey(oldPayerId)) {
               throw StateError(
@@ -336,7 +363,7 @@ class BackupCoordinator {
               }
             }
 
-            await _db.into(_db.expenses).insert(
+            final newExpenseId = await _db.into(_db.expenses).insert(
               ExpensesCompanion.insert(
                 tripId: newTripId,
                 amount: eMap['amount'] as double,
@@ -351,6 +378,7 @@ class BackupCoordinator {
                     : const Value.absent(),
               ),
             );
+            expenseIdMap[oldExpenseId] = newExpenseId;
           }
 
           // 8. KittyPayments einfügen
@@ -375,6 +403,48 @@ class BackupCoordinator {
               ),
             );
           }
+
+          // 9. Receipts einfügen (RECEIPT1)
+          final receipts = tripData['receipts'] as List<dynamic>? ?? [];
+          for (final r in receipts) {
+            final rMap = r as Map<String, dynamic>;
+            final oldExpenseId = rMap['expenseId'] as int;
+            final newExpenseId = expenseIdMap[oldExpenseId];
+            if (newExpenseId != null) {
+              final base64Image = rMap['imageBase64'] as String?;
+              final fileName = rMap['fileName'] as String? ?? 'receipt.jpg';
+              String filePath = rMap['filePath'] as String? ?? rMap['relativePath'] as String? ?? '';
+              int byteSize = rMap['byteSize'] as int? ?? rMap['fileSize'] as int? ?? 0;
+
+              if (base64Image != null && base64Image.isNotEmpty) {
+                final imageBytes = base64Decode(base64Image);
+                byteSize = imageBytes.length;
+                final processed = await _receiptFileService.saveRawReceiptBytes(
+                  tripId: newTripId,
+                  expenseId: newExpenseId,
+                  bytes: imageBytes,
+                  fileName: fileName,
+                );
+                filePath = processed.filePath;
+              }
+
+              await _db.into(_db.expenseReceipts).insert(
+                ExpenseReceiptsCompanion.insert(
+                  tripId: newTripId,
+                  expenseId: newExpenseId,
+                  filePath: filePath,
+                  fileName: fileName,
+                  byteSize: Value(byteSize),
+                  sortOrder: Value(rMap['sortOrder'] as int? ?? 0),
+                  createdAt: rMap['createdAt'] != null
+                      ? Value(DateTime.parse(rMap['createdAt'] as String))
+                      : const Value.absent(),
+                ),
+              );
+
+            }
+          }
+
         }
       } finally {
         await _db.customStatement('PRAGMA foreign_keys = ON');

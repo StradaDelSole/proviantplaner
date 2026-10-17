@@ -1030,5 +1030,50 @@
   "reviewActionEditItem": "Ajustar artículo",
   "reviewInlineFreshnessHint": "Caducidad más corta que el viaje",
   "reviewInlineFridgeHint": "Requiere nevera",
-  "reviewInlineFreezerHint": "Requiere congelador"
+  "reviewInlineFreezerHint": "Requiere congelador",
+  "receiptAdd": "Añadir recibo",
+  "receiptTakePhoto": "Fotografiar recibo",
+  "receiptPickGallery": "Elegir de la galería",
+  "receiptAddAnotherPage": "Otra página",
+  "receiptDelete": "Eliminar recibo",
+  "receiptDeleteConfirm": "¿Eliminar este recibo?",
+  "receiptAttachedCount": "{count, plural, =1{1 recibo} other{{count} recibos}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Vista previa del recibo",
+  "receiptSourceCamera": "Cámara",
+  "receiptSourceGallery": "Galería",
+  "sendSettlementPackage": "Enviar liquidación",
+  "sendSettlementPackageSubtitle": "Compartir liquidación y recibos por correo o mensajería",
+  "settlementPackageSubject": "Liquidación de caja {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Hola tripulación,\n\nadjunto la liquidación de la caja común para {tripName} con todos los recibos.\n\nSaludos,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Los recibos se dividieron en {count} archivos PDF debido al tamaño.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Recibos"
 }
+

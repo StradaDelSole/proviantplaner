@@ -1030,5 +1030,50 @@
   "reviewActionEditItem": "Ajuster l'article",
   "reviewInlineFreshnessHint": "Conservation plus courte que le voyage",
   "reviewInlineFridgeHint": "Nécessite réfrigérateur",
-  "reviewInlineFreezerHint": "Nécessite congélateur"
+  "reviewInlineFreezerHint": "Nécessite congélateur",
+  "receiptAdd": "Ajouter un reçu",
+  "receiptTakePhoto": "Photographier le reçu",
+  "receiptPickGallery": "Choisir dans la galerie",
+  "receiptAddAnotherPage": "Page suivante",
+  "receiptDelete": "Supprimer le reçu",
+  "receiptDeleteConfirm": "Supprimer ce reçu ?",
+  "receiptAttachedCount": "{count, plural, =1{1 reçu} other{{count} reçus}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Aperçu du reçu",
+  "receiptSourceCamera": "Appareil photo",
+  "receiptSourceGallery": "Galerie",
+  "sendSettlementPackage": "Envoyer le bilan",
+  "sendSettlementPackageSubtitle": "Partager le bilan et les reçus par e-mail ou messagerie",
+  "settlementPackageSubject": "Règlement de caisse {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Bonjour l'équipage,\n\nvoici le bilan de caisse pour {tripName} avec tous les reçus en pièce jointe.\n\nBien cordialement,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Les reçus ont été divisés en {count} fichiers PDF en raison de leur taille.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Reçus"
 }
+

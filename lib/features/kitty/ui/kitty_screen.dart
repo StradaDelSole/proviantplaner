@@ -949,9 +949,35 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
           child: Icon(exp.category.icon, size: 20, color: theme.colorScheme.primary),
         ),
         title: Text(exp.title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-        subtitle: Text(
-          '${exp.category.localizedName(l10n)} • $payerName',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        subtitle: Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${exp.category.localizedName(l10n)} • $payerName',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (exp.receipts.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.receipt_long_outlined,
+                size: 14,
+                color: theme.colorScheme.primary,
+              ),
+              if (exp.receipts.length > 1) ...[
+                const SizedBox(width: 2),
+                Text(
+                  '${exp.receipts.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ],
+          ],
         ),
         trailing: Text(
           '-${_formatCents(exp.amountInCents, exp.currency)}',
@@ -963,6 +989,7 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
       ),
     );
   }
+
 
   Widget _buildPeopleList(
     BuildContext context,
