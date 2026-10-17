@@ -8,6 +8,7 @@ import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'add_or_edit_item_sheet.dart';
 
@@ -369,9 +370,79 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                 ),
               ),
             ],
+            // PIVOT2: Maximal 1 höchstpriorisierter kontextueller Hinweis aus der Vorratsprüfung
+            _buildReviewInlineHint(context, ref, theme, l10n),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildReviewInlineHint(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final reviewAsync = ref.watch(provisioningReviewProvider(widget.data.trip.id));
+    return reviewAsync.maybeWhen(
+      data: (result) {
+        final finding = result.highestPriorityFindingForListItem(widget.item.item.id);
+        if (finding == null) return const SizedBox.shrink();
+
+        final (icon, color, hintText) = switch (finding.kind) {
+          ProvisioningReviewKind.freshness => (
+              Icons.schedule,
+              Colors.orange,
+              l10n.reviewInlineFreshnessHint,
+            ),
+          ProvisioningReviewKind.fridgeRequirement => (
+              Icons.ac_unit,
+              theme.colorScheme.error,
+              l10n.reviewInlineFridgeHint,
+            ),
+          ProvisioningReviewKind.freezerRequirement => (
+              Icons.kitchen,
+              theme.colorScheme.error,
+              l10n.reviewInlineFreezerHint,
+            ),
+          _ => (
+              Icons.info_outline,
+              Colors.orange,
+              l10n.reviewStatusCheck,
+            ),
+        };
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    hintText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 }

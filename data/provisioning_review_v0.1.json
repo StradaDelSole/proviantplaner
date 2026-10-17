@@ -1,0 +1,81 @@
+{
+  "version": "0.1",
+  "source": "docs/impl/PIVOT2_release_reconciliation_2026-10-17.md",
+  "rules": [
+    {
+      "id": "durable_bread",
+      "type": "shelf_life_group_presence",
+      "severity": "check",
+      "group": "bread",
+      "threshold_field": "quantities.rounding.durable_min_shelf_life_days",
+      "action": {
+        "type": "search_or_add",
+        "target_group": "bread",
+        "target_variants": [
+          "crispbread",
+          "pumpernickel",
+          "bake_rolls",
+          "bread_longlife",
+          "wraps"
+        ]
+      }
+    },
+    {
+      "id": "cooking_oil",
+      "type": "any_variant_presence",
+      "severity": "check",
+      "variants": [
+        "olive_oil",
+        "sunflower_oil"
+      ],
+      "action": {
+        "type": "search_or_add",
+        "target_variants": [
+          "olive_oil",
+          "sunflower_oil"
+        ]
+      }
+    },
+    {
+      "id": "hygiene_basic",
+      "type": "group_presence",
+      "severity": "check",
+      "group": "hygiene",
+      "action": {
+        "type": "search_or_add",
+        "target_group": "hygiene"
+      }
+    },
+    {
+      "id": "cleaning_basic",
+      "type": "any_variant_presence",
+      "severity": "check",
+      "variants": [
+        "dish_soap",
+        "all_purpose"
+      ],
+      "action": {
+        "type": "search_or_add",
+        "target_variants": [
+          "dish_soap",
+          "all_purpose"
+        ]
+      }
+    },
+    {
+      "id": "trash_bags",
+      "type": "any_variant_presence",
+      "severity": "check",
+      "variants": [
+        "trash_bags"
+      ],
+      "action": {
+        "type": "search_or_add",
+        "target_variants": [
+          "trash_bags"
+        ]
+      }
+    }
+  ]
+}
+

@@ -6,8 +6,10 @@ import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/calculation_result.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/provisioning_review_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
@@ -102,12 +104,14 @@ class ShoppingListService {
   final ListItemDao listItemDao;
   final CatalogRepository catalogRepository;
   final TripService tripService;
+  void Function(int tripId)? onTripDataChanged;
 
   ShoppingListService({
     required this.tripDao,
     required this.listItemDao,
     required this.catalogRepository,
     required this.tripService,
+    this.onTripDataChanged,
   });
 
   /// Lädt alle Vorräte, Gruppierungen und Zuordnungen für den angegebenen Törn.
@@ -367,6 +371,7 @@ class ShoppingListService {
       final next = itemView.effectivePackages + 1;
       await listItemDao.adoptItem(itemView.item.id, packages: next);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Verringert die Packungsanzahl um 1 (− Stepper, bei <= 0 wird die Position entfernt).
@@ -377,11 +382,13 @@ class ShoppingListService {
     } else {
       await listItemDao.adoptItem(itemView.item.id, packages: next);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
   Future<void> resetOverride(ShoppingListItemView itemView) async {
     await listItemDao.setOverriddenPackages(itemView.item.id, null);
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
@@ -391,16 +398,19 @@ class ShoppingListService {
     } else {
       await listItemDao.adoptItem(itemView.item.id, packages: packages);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
   Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
     await listItemDao.adoptItem(listItemId, packages: packages);
+    onTripDataChanged?.call(tripId);
   }
 
   /// Entfernt eine Position von der Vorratsliste (FB1-B).
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
     await listItemDao.unadoptItem(listItemId);
+    onTripDataChanged?.call(tripId);
   }
 
   /// Übernimmt alle Vorschläge von Varianten mit default_selected == true (FB1-B).
@@ -418,6 +428,7 @@ class ShoppingListService {
       tripId: tripId,
       defaultSelectedCatalogIds: defaultSelectedIds,
     );
+    onTripDataChanged?.call(tripId);
   }
 
   /// Übernimmt alle Vorschläge einer bestimmten Kategorie (FB1-B).
@@ -439,6 +450,7 @@ class ShoppingListService {
       tripId: tripId,
       categoryDefaultSelectedIds: defaultSelectedIds,
     );
+    onTripDataChanged?.call(tripId);
   }
 
   /// Aktualisiert den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
@@ -491,13 +503,15 @@ class ShoppingListService {
     required int listItemId,
     required int shoppingStopId,
     required int packages,
-  }) {
-    return listItemDao.setAllocation(
+  }) async {
+    final result = await listItemDao.setAllocation(
       tripId: tripId,
       listItemId: listItemId,
       shoppingStopId: shoppingStopId,
       packages: packages,
     );
+    onTripDataChanged?.call(tripId);
+    return result;
   }
 
   /// Verschiebt Packungen von einem Stopp zu einem anderen Stopp.
@@ -524,6 +538,7 @@ class ShoppingListService {
       shoppingStopId: toStopId,
       packages: newTo,
     );
+    onTripDataChanged?.call(it.item.tripId);
   }
 
   /// Verarbeitet nicht gekaufte Artikel eines Einkaufsstopps (FIX-A / Issue #14).
@@ -619,11 +634,12 @@ class ShoppingListService {
         }
       }
     }
+    onTripDataChanged?.call(tripId);
   }
 
   /// Legt eine eigene Position an.
-  Future<int> addCustomItem(CustomItemInput input) {
-    return listItemDao.addCustomItem(
+  Future<int> addCustomItem(CustomItemInput input) async {
+    final result = await listItemDao.addCustomItem(
       tripId: input.tripId,
       name: input.name,
       quantity: input.quantity,
@@ -632,6 +648,8 @@ class ShoppingListService {
       categoryId: input.categoryId,
       shoppingStopId: input.shoppingStopId,
     );
+    onTripDataChanged?.call(input.tripId);
+    return result;
   }
 
   /// Schaltet den Gekauft-Status im Einkaufsmodus um.
@@ -640,13 +658,15 @@ class ShoppingListService {
     required int listItemId,
     required int shoppingStopId,
     required bool isBought,
-  }) {
-    return listItemDao.toggleBought(
+  }) async {
+    final result = await listItemDao.toggleBought(
       tripId: tripId,
       listItemId: listItemId,
       shoppingStopId: shoppingStopId,
       isBought: isBought,
     );
+    onTripDataChanged?.call(tripId);
+    return result;
   }
 
   /// Lädt die Einlagerungs-Checkliste nach Hinweisen aus dem Katalog.
@@ -698,5 +718,51 @@ class ShoppingListService {
     for (final it in entry.affectedItems) {
       await listItemDao.setStored(it.item.id, isStored);
     }
+  }
+
+  /// Führt eine reine, lesende Vorratsprüfung für den Törn durch (PIVOT2).
+  Future<ProvisioningReviewResult> reviewProvisioningList(int tripId) async {
+    final listData = await loadShoppingList(tripId);
+    final days = await tripDao.getDaysForTrip(tripId);
+    final crew = await tripDao.getCrewForTrip(tripId);
+    return reviewProvisioningListData(
+      listData: listData,
+      crew: crew,
+      days: days,
+    );
+  }
+
+  /// Führt die flüchtige Vorratsprüfung anhand geladener TripShoppingListData und Kontexte durch.
+  Future<ProvisioningReviewResult> reviewProvisioningListData({
+    required TripShoppingListData listData,
+    List<CrewMember>? crew,
+    List<TripDay>? days,
+  }) async {
+    final effectiveDays = days ?? await tripDao.getDaysForTrip(listData.trip.id);
+    final effectiveCrew = crew ?? await tripDao.getCrewForTrip(listData.trip.id);
+
+    if (catalogRepository.catalog == null ||
+        catalogRepository.quantities == null ||
+        catalogRepository.reviewConfig == null) {
+      await catalogRepository.loadFromBundle();
+    }
+
+    final catalog = catalogRepository.catalog!;
+    final quantities = catalogRepository.quantities!;
+    final config = catalogRepository.reviewConfig!;
+
+    final input = ProvisioningReviewInput(
+      trip: listData.trip,
+      crew: effectiveCrew,
+      tripDays: effectiveDays,
+      stops: listData.stops,
+      allItems: listData.allItems,
+      catalog: catalog,
+      quantities: quantities,
+      config: config,
+    );
+
+    final engine = ProvisioningReviewEngine(input);
+    return engine.evaluate();
   }
 }

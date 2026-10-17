@@ -13,11 +13,17 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
   final TripShoppingListData data;
   final BuildContext? parentContext;
   final String? _customSearchFieldLabel;
+  final List<String> targetVariants;
+  final String? targetGroup;
+  final int? minShelfLifeDays;
 
   CatalogSearchDelegate({
     required this.data,
     this.parentContext,
     String? searchFieldLabel,
+    this.targetVariants = const [],
+    this.targetGroup,
+    this.minShelfLifeDays,
   }) : _customSearchFieldLabel = searchFieldLabel;
 
   @override
@@ -55,16 +61,53 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
   /// Filtert Positionen für einen Suchbegriff (ohne oder mit BuildContext für Lokalisierung).
   List<ShoppingListItemView> filterItems(String query, [BuildContext? context]) {
     final q = query.trim().toLowerCase();
-    if (q.isEmpty) return [];
-    return data.allItems.where((it) {
-      final locName = context != null ? it.localizedName(context).toLowerCase() : it.name.toLowerCase();
-      final nameMatches = it.name.toLowerCase().contains(q) || locName.contains(q);
-      final deptMatches = it.department.rawValue.toLowerCase().contains(q) ||
-          (context != null ? it.department.localizedName(context).toLowerCase().contains(q) : false);
-      final catMatches = it.categoryId.toLowerCase().contains(q);
-      final tagMatches = it.variant?.tags.any((t) => t.toLowerCase().contains(q)) ?? false;
-      return nameMatches || deptMatches || catMatches || tagMatches;
-    }).toList();
+    List<ShoppingListItemView> matches;
+    if (q.isEmpty) {
+      if (targetVariants.isNotEmpty) {
+        matches = data.allItems
+            .where((it) => targetVariants.contains(it.variant?.id ?? it.id))
+            .toList();
+      } else if (targetGroup != null) {
+        matches = data.allItems
+            .where((it) => it.variant?.group == targetGroup)
+            .toList();
+      } else {
+        return [];
+      }
+    } else {
+      matches = data.allItems.where((it) {
+        final locName = context != null ? it.localizedName(context).toLowerCase() : it.name.toLowerCase();
+        final nameMatches = it.name.toLowerCase().contains(q) || locName.contains(q);
+        final deptMatches = it.department.rawValue.toLowerCase().contains(q) ||
+            (context != null ? it.department.localizedName(context).toLowerCase().contains(q) : false);
+        final catMatches = it.categoryId.toLowerCase().contains(q);
+        final groupMatches = it.variant?.group.toLowerCase().contains(q) ?? false;
+        final tagMatches = it.variant?.tags.any((t) => t.toLowerCase().contains(q)) ?? false;
+        final variantIdMatches = (it.variant?.id ?? it.id).toLowerCase().contains(q);
+        return nameMatches || deptMatches || catMatches || groupMatches || tagMatches || variantIdMatches;
+      }).toList();
+    }
+
+    // Sortierung:
+    // 1. Artikel in targetVariants zuerst
+    // 2. Artikel mit Haltbarkeit >= minShelfLifeDays vor Artikeln mit kürzerer Haltbarkeit
+    matches.sort((a, b) {
+      final aInTarget = targetVariants.contains(a.variant?.id ?? a.id);
+      final bInTarget = targetVariants.contains(b.variant?.id ?? b.id);
+      if (aInTarget && !bInTarget) return -1;
+      if (!aInTarget && bInTarget) return 1;
+
+      if (minShelfLifeDays != null) {
+        final aDurable = a.shelfLifeDays >= minShelfLifeDays!;
+        final bDurable = b.shelfLifeDays >= minShelfLifeDays!;
+        if (aDurable && !bDurable) return -1;
+        if (!aDurable && bDurable) return 1;
+      }
+
+      return 0;
+    });
+
+    return matches;
   }
 
   Widget _buildSearchResults(BuildContext context) {
@@ -72,7 +115,9 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
     final theme = Theme.of(context);
     final q = query.trim().toLowerCase();
 
-    if (q.isEmpty) {
+    final matches = filterItems(query, context);
+
+    if (q.isEmpty && matches.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -88,7 +133,9 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               icon: const Icon(Icons.add),
               label: Text(l10n.addCustomItem),
               onPressed: () {
-                final targetContext = parentContext ?? context;
+                final targetContext = (parentContext != null && parentContext!.mounted)
+                    ? parentContext!
+                    : context;
                 close(context, null);
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (targetContext.mounted) {
@@ -105,8 +152,6 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
         ),
       );
     }
-
-    final matches = filterItems(query, context);
 
     if (matches.isEmpty) {
       return Center(
@@ -160,7 +205,9 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.w500),
             ),
             onTap: () {
-              final targetContext = parentContext ?? context;
+              final targetContext = (parentContext != null && parentContext!.mounted)
+                ? parentContext!
+                : context;
               close(context, null);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (targetContext.mounted) {
@@ -195,7 +242,9 @@ class CatalogSearchDelegate extends SearchDelegate<ShoppingListItemView?> {
               ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 22)
               : Icon(Icons.add_circle_outline, color: theme.colorScheme.primary, size: 22),
           onTap: () {
-            final targetContext = parentContext ?? context;
+            final targetContext = (parentContext != null && parentContext!.mounted)
+                ? parentContext!
+                : context;
             close(context, it);
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (targetContext.mounted) {

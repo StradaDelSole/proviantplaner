@@ -8,6 +8,9 @@ import 'package:proviantplaner/features/shopping_list/data/catalog_repository.da
 import 'boat_profile_service.dart';
 import 'trip_service.dart';
 
+/// Versionierung für Törn-Daten zur reaktiven Invalidierung ohne zirkuläre Abhängigkeiten.
+final tripDataVersionProvider = StateProvider.family<int, int>((ref, tripId) => 0);
+
 /// Singleton Provider für das CatalogRepository.
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   final repo = CatalogRepository();
@@ -17,13 +20,21 @@ final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
 
 /// Provider für den TripService.
 final tripServiceProvider = Provider<TripService>((ref) {
-  return TripService(
+  final service = TripService(
     tripDao: ref.watch(tripDaoProvider),
     listItemDao: ref.watch(listItemDaoProvider),
     catalogRepository: ref.watch(catalogRepositoryProvider),
     boatProfileDao: ref.watch(boatProfileDaoProvider),
     expenseDao: ref.watch(expenseDaoProvider),
   );
+  service.onTripDataChanged = (tripId) {
+    ref.invalidate(tripCrewByIdProvider(tripId));
+    ref.invalidate(tripDaysByIdProvider(tripId));
+    ref.invalidate(tripStopsByIdProvider(tripId));
+    ref.invalidate(tripByIdProvider(tripId));
+    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
+  };
+  return service;
 });
 
 /// Provider für den BoatProfileService (PIVOT3-A).
@@ -99,4 +110,10 @@ final tripDaysByIdProvider = FutureProvider.family<List<TripDay>, int>((ref, tri
 final tripStopsByIdProvider = FutureProvider.family<List<ShoppingStop>, int>((ref, tripId) async {
   final dao = ref.watch(tripDaoProvider);
   return dao.getShoppingStopsForTrip(tripId);
+});
+
+/// Provider für die Crew eines Törns nach ID (PIVOT2).
+final tripCrewByIdProvider = FutureProvider.family<List<CrewMember>, int>((ref, tripId) async {
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getCrewForTrip(tripId);
 });

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'shopping_list_service.dart';
 
@@ -18,17 +19,22 @@ enum ShoppingListSortMode {
 }
 
 /// Provider für den ShoppingListService.
-final shoppingListServiceProvider = Provider<ShoppingListService>((ref) {
+final Provider<ShoppingListService> shoppingListServiceProvider =
+    Provider<ShoppingListService>((ref) {
   final db = ref.watch(databaseProvider);
   final catalogRepo = ref.watch(catalogRepositoryProvider);
   final tripService = ref.watch(tripServiceProvider);
 
-  return ShoppingListService(
+  final service = ShoppingListService(
     tripDao: db.tripDao,
     listItemDao: db.listItemDao,
     catalogRepository: catalogRepo,
     tripService: tripService,
   );
+  service.onTripDataChanged = (tripId) {
+    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
+  };
+  return service;
 });
 
 /// Aktiver Sortiermodus ("Nach Kategorie" oder "Nach Abteilung").
@@ -47,6 +53,7 @@ final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
+  ref.watch(tripDataVersionProvider(tripId));
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadShoppingList(tripId);
 });
@@ -56,4 +63,21 @@ final storageChecklistProvider =
     FutureProvider.family<List<StorageChecklistEntry>, int>((ref, tripId) async {
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadStorageChecklist(tripId);
+});
+
+/// Führt die flüchtige Vorratsprüfung durch (PIVOT2).
+/// Reaktiv verknüpft mit tripShoppingListProvider, tripCrewByIdProvider und tripDaysByIdProvider,
+/// sodass jede Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen
+/// den Review automatisch und unterbrechungsfrei aktualisiert.
+final provisioningReviewProvider =
+    FutureProvider.family<ProvisioningReviewResult, int>((ref, tripId) async {
+  final listData = await ref.watch(tripShoppingListProvider(tripId).future);
+  final crew = await ref.watch(tripCrewByIdProvider(tripId).future);
+  final days = await ref.watch(tripDaysByIdProvider(tripId).future);
+  final service = ref.watch(shoppingListServiceProvider);
+  return service.reviewProvisioningListData(
+    listData: listData,
+    crew: crew,
+    days: days,
+  );
 });

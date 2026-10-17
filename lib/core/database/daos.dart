@@ -62,7 +62,12 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<Trip?> getTripById(int id) =>
       (select(trips)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 
+  Stream<Trip?> watchTripById(int id) =>
+      (select(trips)..where((tbl) => tbl.id.equals(id))).watchSingleOrNull();
+
   Future<List<Trip>> getAllTrips() => select(trips).get();
+
+  Stream<List<Trip>> watchAllTrips() => select(trips).watch();
 
   Future<bool> updateTrip(Trip trip) => update(trips).replace(trip);
 
@@ -87,6 +92,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<List<TripDay>> getDaysForTrip(int tripId) =>
       (select(tripDays)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).get();
 
+  Stream<List<TripDay>> watchDaysForTrip(int tripId) =>
+      (select(tripDays)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).watch();
+
   Future<bool> updateTripDay(TripDay day) => update(tripDays).replace(day);
 
   Future<int> addTripDay(TripDaysCompanion day) => into(tripDays).insert(day);
@@ -100,6 +108,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   Future<List<CrewMember>> getCrewForTrip(int tripId) =>
       (select(crewMembers)..where((tbl) => tbl.tripId.equals(tripId))).get();
+
+  Stream<List<CrewMember>> watchCrewForTrip(int tripId) =>
+      (select(crewMembers)..where((tbl) => tbl.tripId.equals(tripId))).watch();
 
   Future<bool> updateCrewMember(CrewMember member) =>
       update(crewMembers).replace(member);
@@ -133,6 +144,12 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<List<ShoppingStop>> getShoppingStopsForTrip(int tripId) =>
       (select(shoppingStops)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).get();
 
+  Future<ShoppingStop?> getShoppingStopById(int id) =>
+      (select(shoppingStops)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
+  Stream<List<ShoppingStop>> watchShoppingStopsForTrip(int tripId) =>
+      (select(shoppingStops)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).watch();
+
   Future<bool> updateShoppingStop(ShoppingStop stop) =>
       update(shoppingStops).replace(stop);
 
@@ -161,6 +178,9 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
   Future<List<ListItem>> getListItemsForTrip(int tripId) =>
       (select(listItems)..where((tbl) => tbl.tripId.equals(tripId))).get();
 
+  Stream<List<ListItem>> watchListItemsForTrip(int tripId) =>
+      (select(listItems)..where((tbl) => tbl.tripId.equals(tripId))).watch();
+
   Future<bool> updateListItem(ListItem item) =>
       update(listItems).replace(item);
 
@@ -173,6 +193,9 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
 
   Future<List<ListItemAllocation>> getAllocationsForStop(int shoppingStopId) =>
       (select(listItemAllocations)..where((tbl) => tbl.shoppingStopId.equals(shoppingStopId))).get();
+
+  Stream<List<ListItemAllocation>> watchAllocationsForTrip(int tripId) =>
+      (select(listItemAllocations)..where((tbl) => tbl.tripId.equals(tripId))).watch();
 
   /// Ermittelt die effektive Gesamtpackungszahl eines ListItems (überschrieben oder berechnet).
   int getEffectivePackages(ListItem item) {

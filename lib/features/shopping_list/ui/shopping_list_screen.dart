@@ -13,6 +13,7 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_service
 import 'widgets/catalog_search_delegate.dart';
 import 'widgets/custom_item_sheet.dart';
 import 'widgets/planning_view.dart';
+import 'widgets/provisioning_review_sheet.dart';
 import 'widgets/shopping_view.dart';
 
 class ShoppingListScreen extends ConsumerWidget {
@@ -84,13 +85,26 @@ class ShoppingListScreen extends ConsumerWidget {
             ),
             orElse: () => const SizedBox.shrink(),
           ),
+          listDataAsync.maybeWhen(
+            data: (data) => IconButton(
+              icon: const Icon(Icons.fact_check_outlined),
+              tooltip: l10n.reviewButtonLabel,
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              onPressed: () {
+                ProvisioningReviewSheet.show(context, data: data);
+              },
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             onSelected: (val) {
               final data = listDataAsync.valueOrNull;
               if (data == null) return;
-              if (val == 'custom') {
+              if (val == 'review') {
+                ProvisioningReviewSheet.show(context, data: data);
+              } else if (val == 'custom') {
                 CustomItemSheet.show(context, tripId: tripId, stops: data.stops);
               } else if (val == 'storage') {
                 context.push('/trips/$tripId/storage');
@@ -104,6 +118,16 @@ class ShoppingListScreen extends ConsumerWidget {
               }
             },
             itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'review',
+                child: Row(
+                  children: [
+                    Icon(Icons.fact_check_outlined, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(l10n.reviewButtonLabel),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 value: 'shop',
                 child: Row(

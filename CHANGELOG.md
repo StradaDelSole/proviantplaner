@@ -1,5 +1,67 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Final Cleanup Amendment
+
+- **Code Cleanup (Removal of Obsolete Callback Infrastructure):**
+  - Vollständige Entfernung der obsoleten Hilfsklasse `TripDataChangeNotifier` und des Providers `tripDataChangeCallbackProvider` aus `lib/features/trip/data/trip_provider.dart` sowie aller Bezüge in `lib/features/shopping_list/data/shopping_list_providers.dart`.
+  - Keine leeren Callbacks oder ungenutzte Infrastruktur gemäß Programmierregel 2.
+  - Reaktivität bleibt schlank und direkt gewahrt: `TripService` invalidiert die Törn-Provider und erhöht direkt `tripDataVersionProvider(tripId)` um genau 1; `ShoppingListService` aktualisiert `tripDataVersionProvider(tripId)` bei List-Mutationen ebenfalls direkt um 1.
+
+## 2026-10-17 – PIVOT2 Provisioning Review Final A3 Micro-Amendment
+
+- **Finding A3 Micro-Amendment (Elimination of Duplicate Version Increment & Verified Reactive Assertions):**
+  - Beseitigung der doppelten Inkrementierung von `tripDataVersionProvider`: Eine abgeschlossene `TripService`-Mutation im produktiven Provider-Graph löst exakt eine wirksame Versionsaktualisierung aus (`versionBefore + 1`).
+  - Integrationstest `Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories` belegt unter Verwendung der originalen Provider-Factories mit konkreten Vorher-/Nachher-Assertions:
+    1. Eine einzelne `TripService`-Mutation führt zu exakt einem Versionsinkrement (belegt für `updateTripDetails`, `addCrewMember` und `addShoppingStop`).
+    2. Crew-Zuwachs (von 1 auf 2 Erwachsene) verdoppelt den berechneten Mindest-Trinkwasserbedarf reaktiv von 17,5 l auf 35,0 l.
+    3. Eine Stopp-Wasserallokation verändert den korrekten stoppbezogenen Review-Befund (Unterdeckung an Stopp 2 bei 6,0 l vs 20,0 l Bedarf verschwindet reaktiv nach bedarfsgerechter Allokation).
+
+## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 3 (Findings A3, F3, F4)
+
+- **Finding A3 (Production Reactivity & Lifecycle Safety):**
+  - Alle produktiven Mutationspfade in `ShoppingListService` (`allocateToStop`, `movePackagesBetweenStops`, `adoptAllSuggestions`, `adoptCategorySuggestions`, `handleUnboughtItems`, `addCustomItem`, `toggleBought`) lösen `onTripDataChanged?.call(tripId)` aus. Bei Batch-Operationen (`handleUnboughtItems`) erfolgt die Benachrichtigung konsistent einmalig nach Abschluss der Schleife.
+  - Reaktivität über `tripDataVersionProvider` (StateProvider.family<int, int>) entkoppelt, wodurch Riverpod-Zyklen und Invalidation-Exceptions während Provider-Initialisierungen vollständig verhindert werden.
+  - Integrationstest verwendet ausschließlich die originalen un-overriddeten Provider-Factories (`tripServiceProvider`, `shoppingListServiceProvider`) und belegt Reaktivität für Artikel-, Boots-, Crew- und Stopp-Allokationsänderungen.
+- **Finding F3 (Allocation Consistency):**
+  - `packagesAtStop` in `ShoppingListItemView` stellt sicher, dass eine vorhandene explizite Allokation an Stopp 1 (`isFirstStop: true`) verbleibende, noch nicht zugewiesene Packungen nicht verschwinden lässt (`(alloc?.allocatedPackages ?? 0) + unallocated`).
+  - Haltbarkeitsprüfung (`_resolveEffectiveHorizonForItem`), `packagesAtStop` und Trinkwasserprüfung verwenden dieselbe wirksame Packungsanzahl je Stopp.
+  - Regressionstest belegt: Bei 10 Packungen gesamt, 2 an Stopp 1 und 3 an Stopp 2, berücksichtigt Stopp 1 exakt 7 Packungen und Stopp 2 exakt 3 Packungen.
+- **Finding F4 (Water Carryover):**
+  - Kumulative Trinkwasser-Betrachtung in `_evaluateDrinkingWater`: Nicht rechnerisch verbrauchtes Wasser früherer Stopp-Horizonte wird als Übertrag (`carriedOverLiters = availableLiters - horizonMinWater`) für spätere Etappen berücksichtigt.
+  - Regressionstest belegt: Bei 7 Tagen, warm, 1 Erwachsener (17,5 l gesamt) mit 18,0 l an Stopp 1 (Horizont 3 Tage -> 7,5 l) und 1,5 l an Stopp 2 (Horizont 4 Tage -> 10,0 l) stehen an Stopp 2 durch den 10,5-l-Übertrag 12,0 l zur Verfügung; kein Falsch-Check an Stopp 2.
+  - Echter Unterdeckungsfall verifiziert: Stehen getragen + zugekauft weniger als der Horizontbedarf bereit, wird zuverlässig ein `CHECK` ausgelöst.
+
+## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 2 (Findings A2, B2, E2, F2)
+
+- **Finding A2 (Production Reactivity):** Reaktivität der Drift-Streams (`watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, `watchShoppingStopsForTrip`, `watchListItemsForTrip`, `watchAllocationsForTrip`) im gesamten Provider-Graph verankert. Real durchgeführte Mutationen an ListItems, Bootsprofil, Crew oder Stopps aktualisieren `provisioningReviewProvider` automatisch ohne künstliche/manuelle Invalidation.
+- **Finding B2 (Strict Threshold Field Validation):** `ProvisioningReviewRule.fromJson` validiert `threshold_field` strikt gegen die kanonische Mengen-Referenz `quantities.rounding.durable_min_shelf_life_days`. Unbekannte Schwellenwertfelder werfen explizit eine `FormatException`.
+- **Finding E2 (Search Handoff & Disposed Context):** Verwendung eines aktiven `callerContext` / `parentContext` verhindert ungültige/disposed Kontexte beim Absprung aus dem Review in `CatalogSearchDelegate` und `AddOrEditItemSheet`. Haltbare Alternativen (`minShelfLifeDays: 14`) und `targetVariants` werden bei der Suche gegenüber kurz haltbaren Backwaren priorisiert. Vollständiger End-to-End-Flow getestet: Review → Suche → Treffer auswählen → Add/Edit-Sheet → bestätigte Übernahme.
+- **Finding F2 (Stop Allocations & Water Horizon):**
+  - Bei unvollständig auf Stopps verteilten Artikeln wird die Restmenge (`residualPackages = effectivePackages - explicitlyAllocated`) implizit Stopp 1 zugeordnet und auf Haltbarkeit gegen den Stopp-1-Horizont geprüft.
+  - Drinking-Water-Bedarfsprüfung berücksichtigt bei vorhandenen Stopp-Allokationen die Wasserdeckung je Stopp-Horizont.
+
+## 2026-10-17 – PIVOT2 Provisioning Review Amendment (Findings A–G)
+
+- **Finding A (Stale Review Results & Reactivity):** `provisioningReviewProvider` reagiert reaktiv auf `tripShoppingListProvider(tripId)`, `tripCrewByIdProvider(tripId)` und `tripDaysByIdProvider(tripId)`. Jede Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen aktualisiert den Review automatisch und unterbrechungsfrei.
+- **Finding B (Strict Config Validation):** `ProvisioningReviewRuleType` enum (`shelfLifeGroupPresence`, `anyVariantPresence`, `groupPresence`) eingeführt. Strikt typisiertes Parsing erzwingt Pflichtfelder je Regeltyp; `validateAgainstCatalog` validiert Gruppen, Varianten, Action und Action-Targets (`targetGroup`, `targetVariants`) strikt gegen `CatalogData`. Unbekannte Typen oder falsche Targets scheitern explizit mit `FormatException`.
+- **Finding C (DATA1 Effective AssistType):** Mengen- und Unterdeckungsprüfungen respektieren den effektiven `AssistType` (`catalog.getEffectiveAssist(variant)`). Trinkwasser wird nur für Varianten mit effektivem `AssistType.needsBased` als Trinkwasserdeckung gezählt; Varianten mit `preferenceBased` zählen nicht zur Deckung des Grundbedarfs.
+- **Finding D (Incomplete Cooling Assessment):** Wenn unquantifizierbare Kühlartikel vorhanden sind und das Boot über eine aktive Kühlkapazität verfügt (`fridgeCapacity > 0 || freezerCapacity > 0`), wird das Finding `incompleteCoolingAssessment` mit Schweregrad `CHECK` ausgewiesen, sodass der Gesamtstatus nicht irreführend `READY` anzeigt.
+- **Finding E (UX Actions & Contextual Search/Stop Handoff):** `searchOrAdd`-Aktion übergibt die berechnete Variante oder Gruppe als vorausgefüllte `initialQuery` an `showSearch`. `assignShoppingStop` öffnet bei mehreren Stopps direkt das `StopAllocationSheet`.
+- **Finding F (Stop Context & Allocations):** Haltbarkeitshorizont berücksichtigt Stopp-Allokationen (`_resolveEffectiveHorizonForItem`). Artikel, die an späteren Stopps gekauft werden, prüfen ihre Haltbarkeit gegen den Stopphorizont statt starr gegen die gesamte Törndauer.
+- **Finding G (Airtight Read-Only Proof):** Vollständige Tabellensnapshots (`trips`, `tripDays`, `crewMembers`, `shoppingStops`, `listItems`, `listItemAllocations`) vor und nach mehrfacher Review-Ausführung belegen lückenlose Read-Only-Garantie ohne DB-Mutationen.
+
+## 2026-10-17 – PIVOT2 Provisioning Review Implementation (Issue #26)
+
+- **Reine Lese-Garantie (Read-Only Copilot):** `ProvisioningReviewEngine` und `ShoppingListService.reviewProvisioningList` arbeiten vollständig deterministisch und lesend; keine Mutationen von ListItems, Mengen, Zuweisungen, Stopps, Crew oder Boot in der Datenbank.
+- **Datengetriebene Prüfregeln (Missing Basics):** `data/provisioning_review_v0.1.json` definiert strikte Regeln für haltbares Brot (`durable_bread`, shelf_life >= 14 Tage), Speiseöl (`cooking_oil`: Oliven- oder Sonnenblumenöl), Hygiene-Grundausstattung (`hygiene_basic`), Spülmittel / Reiniger (`cleaning_basic`) und Müllbeutel (`trash_bags`). Alle Gruppen- und Varianten-IDs validieren strikt gegen Katalog v0.11; keine Namensheuristik für Custom Items.
+- **WATER1-Trinkwasser-Abgleich:** Berechnung des geschätzten Mindest-Trinkwasserbedarfs (`climateDailyLiters × crewFactorSum × effectiveDays`). Bei Unterschreitung durch explizit übernommenes Flaschenwasser wird der Befund mit Schweregrad `CHECK` (niemals `ACTION_NEEDED`) ausgewiesen; Tank und Watermaker werden als informativer Kontext aufgeführt, ohne den Richtwert rechnerisch zu reduzieren.
+- **Haltbarkeit & Frische (Issue #8):** Frische Artikel mit Haltbarkeit kürzer als der Törn- bzw. Stopphorizont (z. B. frische Brötchen mit 1 Tag) erhalten einen beratenden `CHECK`; keine automatische Verteilung oder Mengenänderung.
+- **Kühlung & Tiefkühlung Plausibilität:** Klare `ACTION_NEEDED`-Befunde bei harten technischen Widersprüchen (Kühlware bei 0 L Kühlschrank, Tiefkühlware ohne Tiefkühler, bekanntes Kühl- oder Gefriervolumen übersteigt Kapazität). Reine Stückwaren ohne Volumenbasis führen zu einem dezenten Unvollständigkeits-Hinweis ohne falsches „Passt“.
+- **Gewicht & Volumen:** Reines Info-Finding unter Wiederverwendung der bestehenden Mengen-Engine (`QuantityEngine.calculateWeightAndVolume`).
+- **Status-Aggregation & UI:** Dreistufiger Gesamtstatus (`READY`, `CHECK`, `ACTION_NEEDED`) ohne Scores oder Gamification. Einstieg über `Liste prüfen` im App-Bar-Menü und Icon-Button der Vorratsliste. Fokussiertes Modal Sheet (`ProvisioningReviewSheet`) mit Absprüngen in Suche (`search_or_add`), Stopp-Zuweisung (`assign_shopping_stop`) und Zeilenanpassung (`edit_item`). Maximal ein höchstpriorisierter Inline-Hinweis in `ShoppingListItemRow`.
+- **Lokalisierung:** Vollständige Parität aller neuen Texte in DE, EN, FR, ES, PT und HR.
+- **UX Benchmark Pass:** Vorab-Dokumentation gemäß UX Benchmark Strategy in `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md`.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Release
 
 - Product Owner explicitly released PIVOT2 with `pivot2 go`.

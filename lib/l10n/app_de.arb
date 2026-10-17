@@ -1178,5 +1178,155 @@
   "technicalErrorTitle": "Technischer Fehler",
   "technicalErrorMessage": "Ein unerwarteter technischer Fehler ist aufgetreten. Bitte versuche es erneut.",
   "retry": "Erneut versuchen",
-  "epcQrEurOnly": "GiroCode (EPC-QR) ist nur für Zahlungen in Euro (EUR) verfügbar."
+  "epcQrEurOnly": "GiroCode (EPC-QR) ist nur für Zahlungen in Euro (EUR) verfügbar.",
+  "reviewButtonLabel": "Liste prüfen",
+  "reviewTitle": "Vorratsprüfung",
+  "reviewStatusReady": "Vorratsliste bereit",
+  "reviewStatusReadySubtitle": "Keine offenen Prüfpunkte oder Widersprüche erkannt.",
+  "reviewStatusCheck": "Noch prüfen",
+  "reviewStatusCheckSubtitle": "Einige Vorräte oder Mengen sollten noch geprüft werden.",
+  "reviewStatusActionNeeded": "Aktion nötig",
+  "reviewStatusActionNeededSubtitle": "Widersprüche oder Kapazitätsprobleme erfordern Anpassungen.",
+  "reviewSectionActionNeeded": "Aktion nötig",
+  "reviewSectionCheck": "Noch prüfen",
+  "reviewSectionInfo": "Informationen",
+  "reviewMissingBasicTitle": "{rule, select, durable_bread{Haltbares Brot fehlt} cooking_oil{Speiseöl fehlt} hygiene_basic{Grundhygiene fehlt} cleaning_basic{Spülmittel / Reiniger fehlt} trash_bags{Müllbeutel fehlen} other{Grundbedarf fehlt}}",
+  "@reviewMissingBasicTitle": {
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewMissingBasicMessage": "{rule, select, durable_bread{Kein haltbares Brot (mind. 14 Tage haltbar) auf der Liste. Als eiserne Reserve empfohlen.} cooking_oil{Kein Speiseöl (z. B. Olivenöl oder Sonnenblumenöl) auf der Liste.} hygiene_basic{Keine Hygieneartikel aus der Hygiene-Gruppe auf der Liste.} cleaning_basic{Kein Spülmittel oder Allzweckreiniger auf der Liste.} trash_bags{Keine Müllbeutel auf der Liste.} other{Ein grundlegender Bordartikel ist nicht auf der Liste.}}",
+  "@reviewMissingBasicMessage": {
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWaterCheckTitle": "Trinkwasser-Richtwert prüfen",
+  "reviewWaterCheckMessage": "Ausgewählt: ca. {actual} l Trinkwasser (geschätzter Richtwert: {estimated} l). Tank, Watermaker und Nachfüllmöglichkeiten können die Differenz ganz oder teilweise abdecken. Bitte Wasserplan prüfen.",
+  "@reviewWaterCheckMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "estimated": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWaterTankNote": "Bordtank ist als trinkbar markiert.",
+  "reviewWatermakerNote": "Watermaker an Bord vorhanden.",
+  "reviewFreshnessTitle": "Haltbarkeit / Frische prüfen: {name}",
+  "@reviewFreshnessTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreshnessMessage": "{name} ist nur ca. {shelfLife} Tage haltbar (Planungshorizont: {horizon} Tage). Bei einem späteren Einkaufsstopp einplanen oder frisch verbrauchen.",
+  "@reviewFreshnessMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "shelfLife": {
+        "type": "int"
+      },
+      "horizon": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewFridgeNoCapacityTitle": "Kühlschrank nötig: {name}",
+  "@reviewFridgeNoCapacityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFridgeNoCapacityMessage": "{name} benötigt Kühlung, aber das Boot hat keine Kühlschrank-Kapazität (0 l).",
+  "@reviewFridgeNoCapacityMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerNoFreezerTitle": "Tiefkühler nötig: {name}",
+  "@reviewFreezerNoFreezerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerNoFreezerMessage": "{name} benötigt ein Tiefkühlfach, aber an Bord ist kein Tiefkühler vorhanden.",
+  "@reviewFreezerNoFreezerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFridgeOverloadedTitle": "Kühlschrank überlastet",
+  "reviewFridgeOverloadedMessage": "Das geschätzte Kühlvolumen ({actual} l) übersteigt die Kühlschrank-Kapazität ({capacity} l).",
+  "@reviewFridgeOverloadedMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "capacity": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerOverloadedTitle": "Tiefkühlfach überlastet",
+  "reviewFreezerOverloadedMessage": "Das geschätzte Tiefkühlvolumen ({actual} l) übersteigt die Gefrierkapazität ({capacity} l).",
+  "@reviewFreezerOverloadedMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "capacity": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewIncompleteCoolingTitle": "Kühlvolumen nicht vollständig berechenbar",
+  "reviewIncompleteCoolingMessage": "Einige Kühlartikel haben keine Volumenangabe; die Auslastung konnte nicht vollständig ermittelt werden.",
+  "reviewTotalWeightVolumeTitle": "Gesamtgewicht & Volumen",
+  "reviewTotalWeightVolumeMessage": "Geschätzt: ca. {weight} kg / {volume} l.",
+  "@reviewTotalWeightVolumeMessage": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewTotalWeightVolumeMessageWithNotice": "Geschätzt: ca. {weight} kg / {volume} l (ohne Stückwaren ohne Gewichtsangabe).",
+  "@reviewTotalWeightVolumeMessageWithNotice": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewActionSearchAdd": "Suchen & hinzufügen",
+  "reviewActionAssignStop": "Stopp zuweisen",
+  "reviewActionEditItem": "Artikel anpassen",
+  "reviewInlineFreshnessHint": "Haltbarkeit kürzer als Törn",
+  "reviewInlineFridgeHint": "Benötigt Kühlschrank",
+  "reviewInlineFreezerHint": "Benötigt Tiefkühler"
 }

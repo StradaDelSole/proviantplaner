@@ -145,12 +145,14 @@ class ShoppingListItemView {
   /// Ermittelt die zugeordnete Packungsmenge für einen Stopp.
   int packagesAtStop(int stopId, {required bool isFirstStop, required int totalOtherAllocated}) {
     final alloc = allocationsByStop[stopId];
-    if (alloc != null) return alloc.allocatedPackages;
     if (isFirstStop) {
-      final remaining = effectivePackages - totalOtherAllocated;
-      return remaining < 0 ? 0 : remaining;
+      final explicitAtThisStop = alloc?.allocatedPackages ?? 0;
+      final totalExplicit = totalOtherAllocated + explicitAtThisStop;
+      final remaining = effectivePackages - totalExplicit;
+      final unallocated = remaining > 0 ? remaining : 0;
+      return explicitAtThisStop + unallocated;
     }
-    return 0;
+    return alloc?.allocatedPackages ?? 0;
   }
 
   /// Formatierte Anzeige der Packungsangabe, z. B. "3 × 750 g" oder "2 × 1 l".
