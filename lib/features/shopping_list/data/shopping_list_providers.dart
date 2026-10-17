@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
