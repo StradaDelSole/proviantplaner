@@ -344,4 +344,13 @@ In Reaktion auf den Review-Befund zum dritten Amendment (HEAD `8c649725a6160af30
 - Final Authoritative GitHub Actions Run (Re-Review Amendment 2): `39023216153` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39023216153)
   - `Flutter Analyze & Test`: SUCCESS (Job ID 117369011893)
   - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117369011675)
+- Re-Review Amendment 3 Commits:
+  - `8c649725a6160af3099f198b28d495c405231a30` (Findings A3, F3, F4 implementation)
+  - CI Run (Amendment 3): `39029216399` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39029216399) - SUCCESS
+- Final A3 Micro-Amendment:
+  - Code & Verification Commit: `93f5b4fa623316ab15a032e0b572a824ff4e2a61`
+  - Authoritative GitHub Actions Run: `39031280782` (https://github.com/StradaDelSole/proviantplaner/actions/runs/39031280782)
+    - `Flutter Analyze & Test`: SUCCESS (Job ID 117392062804)
+    - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117392062614)
+
 
