@@ -34,7 +34,15 @@ class ReceiptFileService {
 
   ReceiptFileService({
     Future<Directory> Function()? docsDirProvider,
-  }) : getDocsDir = docsDirProvider ?? getApplicationDocumentsDirectory;
+  }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
+
+  static Future<Directory> _resolveDefaultDocsDir() async {
+    try {
+      return await getApplicationDocumentsDirectory();
+    } catch (_) {
+      return Directory.systemTemp;
+    }
+  }
 
   /// Bereinigt vom Nutzer oder System übergebene Dateinamen und verhindert Path Traversal.
   String sanitizeFileName(String? preferredFileName) {
