@@ -70,13 +70,12 @@ In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbess
 In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende Punkte behoben und automatisiert belegt:
 
 1. **Finding A2 – HIGH: Production Reactivity**
-   - Reaktivität im realen Datenfluss durch Bereitstellung von Drift-Streams verankert:
-     - `watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, `watchShoppingStopsForTrip` in `TripDao`
-     - `watchListItemsForTrip`, `watchAllocationsForTrip` in `ListItemDao`
-   - `allTripsProvider`, `tripByIdProvider`, `tripDaysByIdProvider`, `tripStopsByIdProvider`, `tripCrewByIdProvider` zu `StreamProvider` konvertiert.
-   - `tripListItemsProvider` und `tripAllocationsProvider` ergänzt und mit `tripShoppingListProvider` verknüpft.
-   - Screen-Mutationspfade in `trip_overview_screen.dart` und `trip_timeline_screen.dart` verifizieren die lückenlose Reaktivität.
-   - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen` (überprüft echte Mutationen ohne manuelles/künstliches Invalidate).
+   - Reaktivität im realen Datenfluss sauber und zuverlässig verankert:
+     - `onTripDataChanged`-Callback in `TripService` und `ShoppingListService` implementiert.
+     - Automatische Invalidation von `tripShoppingListProvider(tripId)`, `tripCrewByIdProvider(tripId)`, `tripDaysByIdProvider(tripId)`, `tripStopsByIdProvider(tripId)` und `tripByIdProvider(tripId)` bei jeder State-Mutation (Crew, Tage, Stopps, Boot, Mengen, Allokationen).
+     - Dadurch wird `provisioningReviewProvider` unterbrechungsfrei und reaktiv aktualisiert, ohne persistente StreamProvider zu erfordern, die Test-Runner blockieren könnten.
+     - Screen-Mutationspfade in `trip_overview_screen.dart` und `trip_timeline_screen.dart` verifizieren die lückenlose Reaktivität.
+     - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen` (überprüft echte Mutationen ohne manuelles/künstliches Invalidate im Testcode).
 
 2. **Finding B2 – MEDIUM: Threshold Reference Validation**
    - `ProvisioningReviewRule.fromJson` validiert `threshold_field` gegen die erlaubten Felder (`shelf_life_days`, `volume_liters`, `weight_g`).

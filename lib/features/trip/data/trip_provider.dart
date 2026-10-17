@@ -8,6 +8,9 @@ import 'package:proviantplaner/features/shopping_list/data/catalog_repository.da
 import 'boat_profile_service.dart';
 import 'trip_service.dart';
 
+/// Callback für Törn-Datenänderungen zur Vermeidung zirkulärer Provider-Abhängigkeiten.
+final tripDataChangeCallbackProvider = StateProvider<void Function(int tripId)?>((ref) => null);
+
 /// Singleton Provider für das CatalogRepository.
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   final repo = CatalogRepository();
@@ -17,13 +20,21 @@ final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
 
 /// Provider für den TripService.
 final tripServiceProvider = Provider<TripService>((ref) {
-  return TripService(
+  final service = TripService(
     tripDao: ref.watch(tripDaoProvider),
     listItemDao: ref.watch(listItemDaoProvider),
     catalogRepository: ref.watch(catalogRepositoryProvider),
     boatProfileDao: ref.watch(boatProfileDaoProvider),
     expenseDao: ref.watch(expenseDaoProvider),
   );
+  service.onTripDataChanged = (tripId) {
+    ref.invalidate(tripCrewByIdProvider(tripId));
+    ref.invalidate(tripDaysByIdProvider(tripId));
+    ref.invalidate(tripStopsByIdProvider(tripId));
+    ref.invalidate(tripByIdProvider(tripId));
+    ref.read(tripDataChangeCallbackProvider)?.call(tripId);
+  };
+  return service;
 });
 
 /// Provider für den BoatProfileService (PIVOT3-A).
@@ -55,50 +66,54 @@ final activeTripProvider = FutureProvider<Trip?>((ref) async {
     final all = await ref.watch(allTripsProvider.future);
     return all.firstOrNull;
   }
-  return ref.watch(tripByIdProvider(tripId).future);
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getTripById(tripId);
 });
 
 /// Provider für die Tage des aktuell aktiven Törns.
 final activeTripDaysProvider = FutureProvider<List<TripDay>>((ref) async {
   final activeTrip = await ref.watch(activeTripProvider.future);
   if (activeTrip == null) return [];
-  return ref.watch(tripDaysByIdProvider(activeTrip.id).future);
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getDaysForTrip(activeTrip.id);
 });
 
 /// Provider für die Einkaufsstopps des aktuell aktiven Törns.
 final activeTripStopsProvider = FutureProvider<List<ShoppingStop>>((ref) async {
   final activeTrip = await ref.watch(activeTripProvider.future);
   if (activeTrip == null) return [];
-  return ref.watch(tripStopsByIdProvider(activeTrip.id).future);
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getShoppingStopsForTrip(activeTrip.id);
 });
 
 /// Provider für die Crew des aktuell aktiven Törns.
 final activeTripCrewProvider = FutureProvider<List<CrewMember>>((ref) async {
   final activeTrip = await ref.watch(activeTripProvider.future);
   if (activeTrip == null) return [];
-  return ref.watch(tripCrewByIdProvider(activeTrip.id).future);
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getCrewForTrip(activeTrip.id);
 });
 
 /// Provider für einen Törn nach ID (FB2-B).
-final tripByIdProvider = StreamProvider.family<Trip?, int>((ref, tripId) {
+final tripByIdProvider = FutureProvider.family<Trip?, int>((ref, tripId) async {
   final dao = ref.watch(tripDaoProvider);
-  return dao.watchTripById(tripId);
+  return dao.getTripById(tripId);
 });
 
 /// Provider für die Tage eines Törns nach ID (FB2-B).
-final tripDaysByIdProvider = StreamProvider.family<List<TripDay>, int>((ref, tripId) {
+final tripDaysByIdProvider = FutureProvider.family<List<TripDay>, int>((ref, tripId) async {
   final dao = ref.watch(tripDaoProvider);
-  return dao.watchDaysForTrip(tripId);
+  return dao.getDaysForTrip(tripId);
 });
 
 /// Provider für die Einkaufsstopps eines Törns nach ID (FB2-B).
-final tripStopsByIdProvider = StreamProvider.family<List<ShoppingStop>, int>((ref, tripId) {
+final tripStopsByIdProvider = FutureProvider.family<List<ShoppingStop>, int>((ref, tripId) async {
   final dao = ref.watch(tripDaoProvider);
-  return dao.watchShoppingStopsForTrip(tripId);
+  return dao.getShoppingStopsForTrip(tripId);
 });
 
 /// Provider für die Crew eines Törns nach ID (PIVOT2).
-final tripCrewByIdProvider = StreamProvider.family<List<CrewMember>, int>((ref, tripId) {
+final tripCrewByIdProvider = FutureProvider.family<List<CrewMember>, int>((ref, tripId) async {
   final dao = ref.watch(tripDaoProvider);
-  return dao.watchCrewForTrip(tripId);
+  return dao.getCrewForTrip(tripId);
 });

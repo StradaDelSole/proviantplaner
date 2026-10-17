@@ -2012,6 +2012,17 @@ void main() {
       );
       addTearDown(container.dispose);
 
+      shoppingListService.onTripDataChanged = (id) {
+        container.invalidate(tripShoppingListProvider(id));
+      };
+      tripService.onTripDataChanged = (id) {
+        container.invalidate(tripShoppingListProvider(id));
+        container.invalidate(tripCrewByIdProvider(id));
+        container.invalidate(tripDaysByIdProvider(id));
+        container.invalidate(tripStopsByIdProvider(id));
+        container.invalidate(tripByIdProvider(id));
+      };
+
       // Initial review evaluation
       final initialReview = await container.read(provisioningReviewProvider(tripId).future);
       expect(initialReview.status, isNotNull);
@@ -2044,8 +2055,9 @@ void main() {
       final hasFridgeFinding = reviewAfterFridgeChange.findings.any((f) => f.kind == ProvisioningReviewKind.fridgeRequirement);
       expect(hasFridgeFinding, isTrue, reason: 'Fridge requirement finding must appear reactively when fridge capacity is set to 0');
 
-      // 3. Crew-Änderung:
-      await db.tripDao.addCrewMember(
+      // 3. Crew-Änderung über TripService:
+      await tripService.addCrewMember(
+        tripId,
         CrewMembersCompanion.insert(
           tripId: tripId,
           name: 'Sailor 2',

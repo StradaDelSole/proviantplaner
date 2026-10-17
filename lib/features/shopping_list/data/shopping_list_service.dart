@@ -104,12 +104,14 @@ class ShoppingListService {
   final ListItemDao listItemDao;
   final CatalogRepository catalogRepository;
   final TripService tripService;
+  void Function(int tripId)? onTripDataChanged;
 
   ShoppingListService({
     required this.tripDao,
     required this.listItemDao,
     required this.catalogRepository,
     required this.tripService,
+    this.onTripDataChanged,
   });
 
   /// Lädt alle Vorräte, Gruppierungen und Zuordnungen für den angegebenen Törn.
@@ -369,6 +371,7 @@ class ShoppingListService {
       final next = itemView.effectivePackages + 1;
       await listItemDao.adoptItem(itemView.item.id, packages: next);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Verringert die Packungsanzahl um 1 (− Stepper, bei <= 0 wird die Position entfernt).
@@ -379,11 +382,13 @@ class ShoppingListService {
     } else {
       await listItemDao.adoptItem(itemView.item.id, packages: next);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
   Future<void> resetOverride(ShoppingListItemView itemView) async {
     await listItemDao.setOverriddenPackages(itemView.item.id, null);
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
@@ -393,16 +398,19 @@ class ShoppingListService {
     } else {
       await listItemDao.adoptItem(itemView.item.id, packages: packages);
     }
+    onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
   Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
     await listItemDao.adoptItem(listItemId, packages: packages);
+    onTripDataChanged?.call(tripId);
   }
 
   /// Entfernt eine Position von der Vorratsliste (FB1-B).
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
     await listItemDao.unadoptItem(listItemId);
+    onTripDataChanged?.call(tripId);
   }
 
   /// Übernimmt alle Vorschläge von Varianten mit default_selected == true (FB1-B).

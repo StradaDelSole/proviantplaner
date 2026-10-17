@@ -20,17 +20,27 @@ enum ShoppingListSortMode {
 }
 
 /// Provider für den ShoppingListService.
-final shoppingListServiceProvider = Provider<ShoppingListService>((ref) {
+final Provider<ShoppingListService> shoppingListServiceProvider =
+    Provider<ShoppingListService>((ref) {
   final db = ref.watch(databaseProvider);
   final catalogRepo = ref.watch(catalogRepositoryProvider);
   final tripService = ref.watch(tripServiceProvider);
 
-  return ShoppingListService(
+  // Verknüpfe TripService-Änderungen reaktiv mit tripShoppingListProvider
+  ref.read(tripDataChangeCallbackProvider.notifier).state = (tripId) {
+    ref.invalidate(tripShoppingListProvider(tripId));
+  };
+
+  final service = ShoppingListService(
     tripDao: db.tripDao,
     listItemDao: db.listItemDao,
     catalogRepository: catalogRepo,
     tripService: tripService,
   );
+  service.onTripDataChanged = (tripId) {
+    ref.invalidate(tripShoppingListProvider(tripId));
+  };
+  return service;
 });
 
 /// Aktiver Sortiermodus ("Nach Kategorie" oder "Nach Abteilung").
@@ -46,30 +56,9 @@ typedef ShoppingListViewMode = ShoppingListSortMode;
 /// Filter nach Einkaufsstopp (null = Alle Stopps).
 final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 
-/// Stream-Provider für alle ListItems eines Törns.
-final tripListItemsProvider = StreamProvider.family<List<ListItem>, int>((ref, tripId) {
-  final db = ref.watch(databaseProvider);
-  return db.listItemDao.watchListItemsForTrip(tripId);
-});
-
-/// Stream-Provider für alle Allocations eines Törns.
-final tripAllocationsProvider = StreamProvider.family<List<ListItemAllocation>, int>((ref, tripId) {
-  final db = ref.watch(databaseProvider);
-  return db.listItemDao.watchAllocationsForTrip(tripId);
-});
-
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
-/// Reaktiv verknüpft mit den Drift-Streams für Törn, Tage, Stopps, Crew, ListItems und Allocations,
-/// sodass jede Mutation in der Datenbank unmittelbar eine Neuberechnung auslöst.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
-  ref.watch(tripByIdProvider(tripId));
-  ref.watch(tripDaysByIdProvider(tripId));
-  ref.watch(tripStopsByIdProvider(tripId));
-  ref.watch(tripCrewByIdProvider(tripId));
-  ref.watch(tripListItemsProvider(tripId));
-  ref.watch(tripAllocationsProvider(tripId));
-
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadShoppingList(tripId);
 });

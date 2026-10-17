@@ -31,6 +31,7 @@ class TripService {
   final CatalogRepository catalogRepository;
   final BoatProfileDao? boatProfileDao;
   final ExpenseDao? expenseDao;
+  void Function(int tripId)? onTripDataChanged;
 
   TripService({
     required this.tripDao,
@@ -38,6 +39,7 @@ class TripService {
     required this.catalogRepository,
     this.boatProfileDao,
     this.expenseDao,
+    this.onTripDataChanged,
   });
 
   /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
@@ -269,6 +271,8 @@ class TripService {
         }
       }
     }
+
+    onTripDataChanged?.call(tripId);
   }
 
   /// Schaltet Mittags-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
@@ -310,6 +314,13 @@ class TripService {
     await tripDao.updateTripDay(updated);
   }
 
+  /// Fügt ein Crew-Mitglied hinzu und berechnet den Törn neu.
+  Future<int> addCrewMember(int tripId, CrewMembersCompanion member) async {
+    final id = await tripDao.addCrewMember(member);
+    await recalculateTrip(tripId);
+    return id;
+  }
+
   // --- Einkaufsstopps CRUD ---
 
   /// Fügt einen neuen Einkaufsstopp hinzu.
@@ -317,8 +328,8 @@ class TripService {
     required int tripId,
     required String name,
     required int dayNumber,
-  }) {
-    return tripDao.addShoppingStop(
+  }) async {
+    final id = await tripDao.addShoppingStop(
       ShoppingStopsCompanion.insert(
         tripId: tripId,
         name: name,
@@ -326,17 +337,26 @@ class TripService {
         isInitial: const Value(false),
       ),
     );
+    onTripDataChanged?.call(tripId);
+    return id;
   }
 
   /// Aktualisiert einen Einkaufsstopp (z. B. Umbenennen).
-  Future<bool> updateShoppingStop(ShoppingStop stop) {
-    return tripDao.updateShoppingStop(stop);
+  Future<bool> updateShoppingStop(ShoppingStop stop) async {
+    final result = await tripDao.updateShoppingStop(stop);
+    onTripDataChanged?.call(stop.tripId);
+    return result;
   }
 
   /// Löscht einen Einkaufsstopp.
   /// Gibt false zurück, wenn es der initiale Stopp ist (dieser darf nicht gelöscht werden).
-  Future<bool> deleteShoppingStop(int stopId) {
-    return tripDao.deleteShoppingStop(stopId);
+  Future<bool> deleteShoppingStop(int stopId) async {
+    final stop = await tripDao.getShoppingStopById(stopId);
+    final result = await tripDao.deleteShoppingStop(stopId);
+    if (stop != null) {
+      onTripDataChanged?.call(stop.tripId);
+    }
+    return result;
   }
 
   /// Archiviert oder de-archiviert einen Törn.

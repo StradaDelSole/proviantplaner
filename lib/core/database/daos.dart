@@ -144,6 +144,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<List<ShoppingStop>> getShoppingStopsForTrip(int tripId) =>
       (select(shoppingStops)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).get();
 
+  Future<ShoppingStop?> getShoppingStopById(int id) =>
+      (select(shoppingStops)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
   Stream<List<ShoppingStop>> watchShoppingStopsForTrip(int tripId) =>
       (select(shoppingStops)..where((tbl) => tbl.tripId.equals(tripId))..orderBy([(t) => OrderingTerm.asc(t.dayNumber)])).watch();
 
