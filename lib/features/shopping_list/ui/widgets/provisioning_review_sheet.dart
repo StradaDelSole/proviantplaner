@@ -9,7 +9,6 @@ import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
-import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'add_or_edit_item_sheet.dart';
 import 'catalog_search_delegate.dart';
 import 'stop_allocation_sheet.dart';

@@ -1584,9 +1584,9 @@ void main() {
       );
 
       // 3 Stopps: Tag 1 (Start), Tag 4 (Nachkauf), Tag 9 (Nachkauf)
-      final stop1 = const ShoppingStop(id: 11, tripId: 1, name: 'Marina Start', dayNumber: 1, isInitial: true);
-      final stop2 = const ShoppingStop(id: 12, tripId: 1, name: 'Hafen 2', dayNumber: 4, isInitial: false);
-      final stop3 = const ShoppingStop(id: 13, tripId: 1, name: 'Hafen 3', dayNumber: 9, isInitial: false);
+      const stop1 = ShoppingStop(id: 11, tripId: 1, name: 'Marina Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 12, tripId: 1, name: 'Hafen 2', dayNumber: 4, isInitial: false);
+      const stop3 = ShoppingStop(id: 13, tripId: 1, name: 'Hafen 3', dayNumber: 9, isInitial: false);
 
       final toastVariant = catalog.variants.firstWhere((v) => v.id == 'toast');
 
@@ -1788,8 +1788,8 @@ void main() {
         createdAt: DateTime(2026, 10, 18),
       );
 
-      final stop1 = const ShoppingStop(id: 1, tripId: 1, name: 'Marina', dayNumber: 1, isInitial: true);
-      final stop2 = const ShoppingStop(id: 2, tripId: 1, name: 'Bucht', dayNumber: 3, isInitial: false);
+      const stop1 = ShoppingStop(id: 1, tripId: 1, name: 'Marina', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 2, tripId: 1, name: 'Bucht', dayNumber: 3, isInitial: false);
 
       final milkVariant = catalog.variants.firstWhere((v) => v.id == 'milk_fresh');
       final milkItem = ShoppingListItemView(
