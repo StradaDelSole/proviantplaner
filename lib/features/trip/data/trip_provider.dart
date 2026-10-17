@@ -8,8 +8,23 @@ import 'package:proviantplaner/features/shopping_list/data/catalog_repository.da
 import 'boat_profile_service.dart';
 import 'trip_service.dart';
 
-/// Callback für Törn-Datenänderungen zur Vermeidung zirkulärer Provider-Abhängigkeiten.
-final tripDataChangeCallbackProvider = StateProvider<void Function(int tripId)?>((ref) => null);
+/// Versionierung für Törn-Daten zur reaktiven Invalidierung ohne zirkuläre Abhängigkeiten.
+final tripDataVersionProvider = StateProvider.family<int, int>((ref, tripId) => 0);
+
+/// Callback-Halter für Törn-Datenänderungen zur Vermeidung zirkulärer Provider-Abhängigkeiten.
+class TripDataChangeNotifier {
+  void Function(int tripId)? callback;
+  void call(int tripId) => callback?.call(tripId);
+}
+
+/// Provider für den TripDataChangeNotifier.
+final tripDataChangeCallbackProvider = Provider<TripDataChangeNotifier>((ref) {
+  final notifier = TripDataChangeNotifier();
+  ref.onDispose(() {
+    notifier.callback = null;
+  });
+  return notifier;
+});
 
 /// Singleton Provider für das CatalogRepository.
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
@@ -32,7 +47,8 @@ final tripServiceProvider = Provider<TripService>((ref) {
     ref.invalidate(tripDaysByIdProvider(tripId));
     ref.invalidate(tripStopsByIdProvider(tripId));
     ref.invalidate(tripByIdProvider(tripId));
-    ref.read(tripDataChangeCallbackProvider)?.call(tripId);
+    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
+    ref.read(tripDataChangeCallbackProvider).call(tripId);
   };
   return service;
 });

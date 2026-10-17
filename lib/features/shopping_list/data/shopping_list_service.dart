@@ -428,6 +428,7 @@ class ShoppingListService {
       tripId: tripId,
       defaultSelectedCatalogIds: defaultSelectedIds,
     );
+    onTripDataChanged?.call(tripId);
   }
 
   /// Übernimmt alle Vorschläge einer bestimmten Kategorie (FB1-B).
@@ -449,6 +450,7 @@ class ShoppingListService {
       tripId: tripId,
       categoryDefaultSelectedIds: defaultSelectedIds,
     );
+    onTripDataChanged?.call(tripId);
   }
 
   /// Aktualisiert den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
@@ -501,13 +503,15 @@ class ShoppingListService {
     required int listItemId,
     required int shoppingStopId,
     required int packages,
-  }) {
-    return listItemDao.setAllocation(
+  }) async {
+    final result = await listItemDao.setAllocation(
       tripId: tripId,
       listItemId: listItemId,
       shoppingStopId: shoppingStopId,
       packages: packages,
     );
+    onTripDataChanged?.call(tripId);
+    return result;
   }
 
   /// Verschiebt Packungen von einem Stopp zu einem anderen Stopp.
@@ -534,6 +538,7 @@ class ShoppingListService {
       shoppingStopId: toStopId,
       packages: newTo,
     );
+    onTripDataChanged?.call(it.item.tripId);
   }
 
   /// Verarbeitet nicht gekaufte Artikel eines Einkaufsstopps (FIX-A / Issue #14).
@@ -629,11 +634,12 @@ class ShoppingListService {
         }
       }
     }
+    onTripDataChanged?.call(tripId);
   }
 
   /// Legt eine eigene Position an.
-  Future<int> addCustomItem(CustomItemInput input) {
-    return listItemDao.addCustomItem(
+  Future<int> addCustomItem(CustomItemInput input) async {
+    final result = await listItemDao.addCustomItem(
       tripId: input.tripId,
       name: input.name,
       quantity: input.quantity,
@@ -642,6 +648,8 @@ class ShoppingListService {
       categoryId: input.categoryId,
       shoppingStopId: input.shoppingStopId,
     );
+    onTripDataChanged?.call(input.tripId);
+    return result;
   }
 
   /// Schaltet den Gekauft-Status im Einkaufsmodus um.
@@ -650,13 +658,15 @@ class ShoppingListService {
     required int listItemId,
     required int shoppingStopId,
     required bool isBought,
-  }) {
-    return listItemDao.toggleBought(
+  }) async {
+    final result = await listItemDao.toggleBought(
       tripId: tripId,
       listItemId: listItemId,
       shoppingStopId: shoppingStopId,
       isBought: isBought,
     );
+    onTripDataChanged?.call(tripId);
+    return result;
   }
 
   /// Lädt die Einlagerungs-Checkliste nach Hinweisen aus dem Katalog.

@@ -78,7 +78,7 @@ In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende 
      - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen` (überprüft echte Mutationen ohne manuelles/künstliches Invalidate im Testcode).
 
 2. **Finding B2 – MEDIUM: Threshold Reference Validation**
-   - `ProvisioningReviewRule.fromJson` validiert `threshold_field` gegen die erlaubten Felder (`shelf_life_days`, `volume_liters`, `weight_g`).
+   - `ProvisioningReviewRule.fromJson` validiert `threshold_field` gegen die kanonische Mengen-Referenz `quantities.rounding.durable_min_shelf_life_days` und nicht gegen beliebige Freitext-Felder.
    - Unbekannte oder fehlerhafte Referenzfelder werfen deterministisch eine `FormatException`.
    - Nachweis: automatischer Test `PIVOT2 Kriterium 2 & 3: Review-Config Parsing & Validierung Unbekanntes threshold_field in Review-Regel wirft FormatException`.
 
@@ -95,22 +95,49 @@ In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende 
 
 ---
 
+## PIVOT2 Final Re-Review Amendment 3 (Findings A3, F3, F4)
+
+In Reaktion auf den dritten unabhängigen Review vom 17.10.2026 wurden folgende Punkte behoben und automatisiert belegt:
+
+1. **Finding A3 – HIGH: Production Reactivity & Lifecycle Safety**
+   - Vollständige Integration aller produktiven Mutationspfade in `ShoppingListService`:
+     - `allocateToStop`, `movePackagesBetweenStops`, `adoptAllSuggestions`, `adoptCategorySuggestions`, `handleUnboughtItems`, `addCustomItem` und `toggleBought` melden Datenänderungen via `onTripDataChanged?.call(tripId)`.
+     - Bei Schleifen-Mutationen (`handleUnboughtItems`) erfolgt die Benachrichtigung konsistent einmalig nach Abschluss aller Änderungen.
+   - Entkopplung der Provider-Reaktivität über `tripDataVersionProvider` (StateProvider.family<int, int>) und den typisierten `TripDataChangeNotifier` (`tripDataChangeCallbackProvider`), um Riverpod-Zyklen und Invalidation-Exceptions während Provider-Initialisierungen vollständig zu vermeiden.
+   - `ref.onDispose` bereinigt den Callback im `TripDataChangeNotifier` für lückenlose Lifecycle-Sicherheit.
+   - Nachweis: automatischer Integrationstest mit den **originalen un-overriddeten Provider-Factories** (`tripServiceProvider` und `shoppingListServiceProvider`) in `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (`Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories`), belegt Reaktivität für Artikel-, Boots-, Crew- und Stopp-Allokationsänderungen.
+
+2. **Finding F3 – MEDIUM: Allocation Consistency**
+   - `packagesAtStop` in `ShoppingListItemView` korrigiert: Wenn eine explizite Allokation an Stopp 1 vorliegt (`isFirstStop: true`), verbleiben unzugewiesene Restpackungen (`unallocated = (effectivePackages - totalExplicit).clamp(0, effectivePackages)`) konsistent an Stopp 1 (`explicitAtThisStop + unallocated`).
+   - `_resolveEffectiveHorizonForItem` und Haltbarkeitsprüfung synchronisiert: Beide verwenden die identische wirksame Packungsanzahl je Stopp über `packagesAtStop`.
+   - Regressionstest: 10 Packungen insgesamt, 2 explizit an Stopp 1, 3 an Stopp 2 -> Stopp 1 berücksichtigt exakt 7 Packungen, Stopp 2 exakt 3 Packungen, Summe = 10.
+   - Nachweis: automatischer Test `Finding F3: Konsistente Erststopp-Allokation bei Teilzuweisung (10 Packungen gesamt, 2 an Stopp 1, 3 an Stopp 2 -> 7 an Stopp 1)`.
+
+3. **Finding F4 – MEDIUM: Water Carryover**
+   - Kumulative Wasserbetrachtung bei mehreren Stopps in `_evaluateDrinkingWater`: Nicht rechnerisch verbrauchtes Trinkwasser früherer Stopp-Horizonte wird als Übertrag (`carriedOverLiters = availableLiters - horizonMinWater`) für spätere Etappen berücksichtigt.
+   - Regressionstest: 7 Tage, warm, 1 Erwachsener (2,5 l/Tag -> 17,5 l gesamt). Stopp 1 (Tag 1, Horizont 3 Tage -> 7,5 l Bedarf) hat 18,0 l geplant; Stopp 2 (Tag 4, Horizont 4 Tage -> 10,0 l Bedarf) hat 1,5 l geplant. Überschuss von Stopp 1 (10,5 l) trägt über -> Stopp 2 hat 12,0 l verfügbar (>= 10,0 l) -> kein Falsch-Check an Stopp 2.
+   - Echter Unterdeckungsfall verifiziert: Stehen getragen + zugekauft weniger als der Horizontbedarf bereit, wird zuverlässig ein `CHECK` ausgelöst.
+   - Nachweise: automatische Tests `Finding F4: Kumulativer Trinkwasser-Übertrag über mehrere Stopps (Kein Falsch-Check bei ausreichendem Übertrag)` und `Finding F4: Echter Unterdeckungsfall an Folge-Stopp mit getragenem Wasser löst CHECK aus`.
+
+---
+
 ### Geänderte / neue Dateien:
 - `data/provisioning_review_v0.1.json` (neu / Re-Review Update)
 - `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md` (neu)
 - `lib/core/database/daos.dart` (Reaktivitäts-Streams `watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, etc.)
-- `lib/features/trip/data/trip_provider.dart` (Reaktivitäts-Streams `tripByIdProvider`, `tripCrewByIdProvider`, etc.)
+- `lib/features/trip/data/trip_provider.dart` (`tripDataVersionProvider`, `TripDataChangeNotifier`, `tripDataChangeCallbackProvider`)
 - `lib/features/trip/ui/trip_overview_screen.dart` (Reaktive Invalidation nach Mutationen)
 - `lib/features/trip/ui/trip_timeline_screen.dart` (Reaktive Invalidation nach Mutationen)
+- `lib/features/shopping_list/domain/models/shopping_list_models.dart` (`packagesAtStop` berücksichtigt Restmengen an Stopp 1 auch bei expliziter Erststopp-Allokation)
 - `lib/features/shopping_list/domain/models/provisioning_review_models.dart` (neu / strikte Enums & Validierung)
-- `lib/features/shopping_list/domain/calculation/provisioning_review_engine.dart` (neu / Stopp-Allokation Restmengen & Trinkwasser je Stopp)
+- `lib/features/shopping_list/domain/calculation/provisioning_review_engine.dart` (neu / Stopp-Allokation Restmengen & Trinkwasser je Stopp mit kumulativem Übertrag)
 - `lib/features/shopping_list/ui/widgets/provisioning_review_sheet.dart` (neu / callerContext & sicherer Search-Handoff)
 - `lib/features/shopping_list/ui/widgets/catalog_search_delegate.dart` (targetVariants, targetGroup, minShelfLife Priorisierung)
-- `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (neu / 30 Tests inkl. aller Amendment-Regressionen)
+- `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (neu / 33 Tests inkl. aller Amendment-Regressionen)
 - `pubspec.yaml` (Asset `data/provisioning_review_v0.1.json` registriert)
 - `lib/features/shopping_list/data/catalog_repository.dart` (Laden und Validieren der Review-Config)
-- `lib/features/shopping_list/data/shopping_list_service.dart` (`reviewProvisioningList` Methode)
-- `lib/features/shopping_list/data/shopping_list_providers.dart` (`provisioningReviewProvider`, `tripListItemsProvider`, `tripAllocationsProvider`)
+- `lib/features/shopping_list/data/shopping_list_service.dart` (`reviewProvisioningList` Methode & Reaktivitäts-Notifikation in allen Mutationspfaden)
+- `lib/features/shopping_list/data/shopping_list_providers.dart` (`provisioningReviewProvider`, `tripDataVersionProvider`-Anbindung)
 - `lib/features/shopping_list/ui/shopping_list_screen.dart` (`Liste prüfen` Entry Point & Sheet Opening)
 - `lib/features/shopping_list/ui/widgets/item_row_widget.dart` (Contextual Inline Finding Hint)
 - `lib/l10n/app_de.arb` (19 neue Review-Schlüssel)
@@ -127,7 +154,7 @@ In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende 
 ### Lokale Verifikation:
 - `flutter analyze`: Authoritative Full-QA läuft über GitHub Actions CI (Owner-Rechner geschont).
 - `flutter test`: Gezielte lokale Tests erfolgreich ausgeführt:
-  - `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart`: 30/30 Tests erfolgreich.
+  - `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart`: 33/33 Tests erfolgreich.
   - `test/features/shopping_list/domain/catalog_validation_test.dart`: 1/1 Test erfolgreich.
   - `test/features/shopping_list/domain/pivot3b_water_and_setup_test.dart`: 8/8 Tests erfolgreich.
   - `test/features/shopping_list/domain/pivot1_assisted_list_test.dart`: 16/16 Tests erfolgreich.

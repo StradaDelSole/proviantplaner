@@ -1109,6 +1109,242 @@ void main() {
       final stop2WaterFinding = res.findings.where((f) => f.id == 'water_undercoverage_check_stop_102').firstOrNull;
       expect(stop2WaterFinding, isNull);
     });
+
+    test('Finding F4: Kumulativer Trinkwasser-Übertrag über mehrere Stopps (Kein Falsch-Check bei ausreichendem Übertrag)', () {
+      final trip = Trip(
+        id: 1,
+        name: 'Water Carryover Trip',
+        startDate: DateTime(2026, 10, 18),
+        daysCount: 7,
+        region: 'mediterranean',
+        climate: 'warm',
+        isCharter: true,
+        boatType: 'mono',
+        fridgeCapacity: 100,
+        hasFreezer: false,
+        freezerCapacity: 0,
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+        appetite: CrewAppetite.normal,
+        reserveDays: 'few_days',
+        drinkingHabit: CrewDrinking.normal,
+        hasStorageChecklist: true,
+        phase: TripPhase.plan,
+        isArchived: false,
+        currency: 'EUR',
+        kittyModel: KittyModel.sharedKitty,
+        createdAt: DateTime(2026, 10, 18),
+      );
+
+      // 2 Stopps: Stopp 1 an Tag 1 (Horizont 3 Tage: 1, 2, 3), Stopp 2 an Tag 4 (Horizont 4 Tage: 4, 5, 6, 7)
+      const stop1 = ShoppingStop(id: 101, tripId: 1, name: 'Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 102, tripId: 1, name: 'Zwischenstopp', dayNumber: 4, isInitial: false);
+
+      // 1 Erwachsener, warm -> 2.5 l/Tag.
+      // Stopp 1 Horizont: 3 Tage * 2.5 l = 7.5 l
+      // Stopp 2 Horizont: 4 Tage * 2.5 l = 10.0 l
+      // Geplant: Stopp 1 = 18 l (12 Flaschen à 1.5 l). Überschuss = 18 - 7.5 = 10.5 l.
+      // Geplant: Stopp 2 = 1.5 l (1 Flasche à 1.5 l).
+      // An Stopp 2 stehen zur Verfügung: 1.5 l + 10.5 l Übertrag = 12.0 l >= 10.0 l Bedarf!
+      final waterItem = ShoppingListItemView(
+        item: const ListItem(
+          id: 1,
+          tripId: 1,
+          catalogId: 'water_15',
+          isCustom: false,
+          selected: true,
+          share: 1.0,
+          calculatedPackages: 13,
+          overriddenPackages: 13,
+          calculatedQuantity: 19.5,
+          checkState: CheckItemState.available,
+          isAdopted: true,
+        ),
+        variant: catalog.variants.firstWhere((v) => v.id == 'water_15'),
+        id: 'water_15',
+        name: 'Still 1.5L',
+        unit: 'l',
+        department: CatalogDepartment.getraenke,
+        categoryId: 'water',
+        calculatedPackages: 13,
+        overriddenPackages: 13,
+        calculatedQuantity: 19.5,
+        customPackageSize: 1.5,
+        isSelected: true,
+        share: 1.0,
+        isCustom: false,
+        shelfLifeDays: 360,
+        storageHints: const [],
+        isAdopted: true,
+        allocationsByStop: {
+          101: const ListItemAllocation(
+            id: 1,
+            listItemId: 1,
+            shoppingStopId: 101,
+            allocatedPackages: 12,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+          102: const ListItemAllocation(
+            id: 2,
+            listItemId: 1,
+            shoppingStopId: 102,
+            allocatedPackages: 1,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+        assistType: AssistType.needsBased,
+      );
+
+      final engine = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: trip,
+        crew: const [
+          CrewMember(
+            id: 1,
+            tripId: 1,
+            name: 'Adult',
+            isChild: false,
+            isVegetarian: false,
+            isNonDrinker: false,
+            categoryParticipation: '{"all":true}',
+            isSkipperFree: false,
+          )
+        ],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [waterItem],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final res = engine.evaluate();
+      // KEIN Falsch-Check für Stopp 101 und KEIN Falsch-Check für Stopp 102!
+      final waterFindings = res.findings.where((f) => f.kind == ProvisioningReviewKind.drinkingWaterCheck).toList();
+      expect(waterFindings, isEmpty, reason: 'Water carryover of 10.5 l from Stop 1 covers the 10.0 l need of Stop 2');
+    });
+
+    test('Finding F4: Echter Unterdeckungsfall an Folge-Stopp mit getragenem Wasser löst CHECK aus', () {
+      final trip = Trip(
+        id: 1,
+        name: 'Water Undercoverage Trip',
+        startDate: DateTime(2026, 10, 18),
+        daysCount: 7,
+        region: 'mediterranean',
+        climate: 'warm',
+        isCharter: true,
+        boatType: 'mono',
+        fridgeCapacity: 100,
+        hasFreezer: false,
+        freezerCapacity: 0,
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+        appetite: CrewAppetite.normal,
+        reserveDays: 'few_days',
+        drinkingHabit: CrewDrinking.normal,
+        hasStorageChecklist: true,
+        phase: TripPhase.plan,
+        isArchived: false,
+        currency: 'EUR',
+        kittyModel: KittyModel.sharedKitty,
+        createdAt: DateTime(2026, 10, 18),
+      );
+
+      const stop1 = ShoppingStop(id: 101, tripId: 1, name: 'Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 102, tripId: 1, name: 'Zwischenstopp', dayNumber: 4, isInitial: false);
+
+      // Stopp 1 Horizont: 3 Tage * 2.5 l = 7.5 l
+      // Stopp 2 Horizont: 4 Tage * 2.5 l = 10.0 l
+      // Stopp 1: 6 Flaschen à 1.5 l = 9.0 l (Übertrag = 9.0 - 7.5 = 1.5 l)
+      // Stopp 2: 1 Flasche à 1.5 l = 1.5 l
+      // Verfügbar an Stopp 2: 1.5 l + 1.5 l = 3.0 l < 10.0 l Bedarf -> CHECK!
+      final waterItem = ShoppingListItemView(
+        item: const ListItem(
+          id: 1,
+          tripId: 1,
+          catalogId: 'water_15',
+          isCustom: false,
+          selected: true,
+          share: 1.0,
+          calculatedPackages: 7,
+          overriddenPackages: 7,
+          calculatedQuantity: 10.5,
+          checkState: CheckItemState.available,
+          isAdopted: true,
+        ),
+        variant: catalog.variants.firstWhere((v) => v.id == 'water_15'),
+        id: 'water_15',
+        name: 'Still 1.5L',
+        unit: 'l',
+        department: CatalogDepartment.getraenke,
+        categoryId: 'water',
+        calculatedPackages: 7,
+        overriddenPackages: 7,
+        calculatedQuantity: 10.5,
+        customPackageSize: 1.5,
+        isSelected: true,
+        share: 1.0,
+        isCustom: false,
+        shelfLifeDays: 360,
+        storageHints: const [],
+        isAdopted: true,
+        allocationsByStop: {
+          101: const ListItemAllocation(
+            id: 1,
+            listItemId: 1,
+            shoppingStopId: 101,
+            allocatedPackages: 6,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+          102: const ListItemAllocation(
+            id: 2,
+            listItemId: 1,
+            shoppingStopId: 102,
+            allocatedPackages: 1,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+        assistType: AssistType.needsBased,
+      );
+
+      final engine = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: trip,
+        crew: const [
+          CrewMember(
+            id: 1,
+            tripId: 1,
+            name: 'Adult',
+            isChild: false,
+            isVegetarian: false,
+            isNonDrinker: false,
+            categoryParticipation: '{"all":true}',
+            isSkipperFree: false,
+          )
+        ],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [waterItem],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final res = engine.evaluate();
+      final stop2WaterFinding = res.findings.where((f) => f.id == 'water_undercoverage_check_stop_102').firstOrNull;
+      expect(stop2WaterFinding, isNotNull);
+      expect(stop2WaterFinding!.horizonDays, 4);
+      expect(stop2WaterFinding.estimatedValue, closeTo(10.0, 0.01));
+      expect(stop2WaterFinding.actualValue, closeTo(3.0, 0.01));
+    });
   });
 
   group('PIVOT2 Kriterium 18-19: Frische & Haltbarkeit (Issue #8)', () {
@@ -1330,6 +1566,118 @@ void main() {
           .where((f) => f.kind == ProvisioningReviewKind.freshness && f.listItemId == 43)
           .firstOrNull;
       expect(findingB, isNull);
+    });
+
+    test('Finding F3: Konsistente Erststopp-Allokation bei Teilzuweisung (10 Packungen gesamt, 2 an Stopp 1, 3 an Stopp 2 -> 7 an Stopp 1)', () {
+      const stop1 = ShoppingStop(id: 10, tripId: 1, name: 'Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 20, tripId: 1, name: 'Hafen', dayNumber: 4, isInitial: false);
+
+      final item = ShoppingListItemView(
+        item: const ListItem(
+          id: 42,
+          tripId: 1,
+          catalogId: 'bread_white',
+          isCustom: false,
+          selected: true,
+          share: 1.0,
+          calculatedPackages: 10,
+          overriddenPackages: 10,
+          calculatedQuantity: 5000,
+          checkState: CheckItemState.available,
+          isAdopted: true,
+        ),
+        variant: catalog.variants.firstWhere((v) => v.id == 'bread_white'),
+        id: 'bread_white',
+        name: 'Weißbrot',
+        unit: 'g',
+        department: CatalogDepartment.backwaren,
+        categoryId: 'bread',
+        calculatedPackages: 10,
+        overriddenPackages: 10,
+        calculatedQuantity: 5000,
+        customPackageSize: 500,
+        isSelected: true,
+        share: 1.0,
+        isCustom: false,
+        shelfLifeDays: 3,
+        storageHints: const [],
+        isAdopted: true,
+        allocationsByStop: {
+          10: const ListItemAllocation(
+            id: 1,
+            listItemId: 42,
+            shoppingStopId: 10,
+            allocatedPackages: 2,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+          20: const ListItemAllocation(
+            id: 2,
+            listItemId: 42,
+            shoppingStopId: 20,
+            allocatedPackages: 3,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+        assistType: AssistType.guided,
+      );
+
+      // Total other for stop 1 is stop 2 (3 pkgs).
+      final pkgsAtStop1 = item.packagesAtStop(stop1.id, isFirstStop: true, totalOtherAllocated: 3);
+      // Total other for stop 2 is stop 1 (2 pkgs).
+      final pkgsAtStop2 = item.packagesAtStop(stop2.id, isFirstStop: false, totalOtherAllocated: 2);
+
+      // Regression: Zehn Packungen insgesamt, davon zwei explizit an Stopp 1 und drei an Stopp 2.
+      // Der erste Stopp muss die insgesamt sieben dort vorgesehenen Packungen korrekt berücksichtigen.
+      expect(pkgsAtStop1, 7, reason: 'Stop 1 gets its 2 explicit packages + 5 unallocated remaining packages = 7');
+      expect(pkgsAtStop2, 3, reason: 'Stop 2 gets its 3 explicit packages');
+      expect(pkgsAtStop1 + pkgsAtStop2, 10, reason: 'Total packages across stops must sum to 10');
+
+      // Auch der ProvisioningReviewEngine berücksichtigt beide Stopps (beide haben Packungen > 0):
+      final engine = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: Trip(
+          id: 1,
+          name: 'Allocation Trip',
+          startDate: DateTime(2026, 10, 18),
+          daysCount: 7,
+          region: 'mediterranean',
+          climate: 'warm',
+          isCharter: true,
+          boatType: 'mono',
+          fridgeCapacity: 100,
+          hasFreezer: false,
+          freezerCapacity: 0,
+          waterTankLiters: 0,
+          isWaterTankDrinkable: false,
+          hasWatermaker: false,
+          appetite: CrewAppetite.normal,
+          reserveDays: 'few_days',
+          drinkingHabit: CrewDrinking.normal,
+          hasStorageChecklist: true,
+          phase: TripPhase.plan,
+          isArchived: false,
+          currency: 'EUR',
+          kittyModel: KittyModel.sharedKitty,
+          createdAt: DateTime(2026, 10, 18),
+        ),
+        crew: const [],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [item],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final res = engine.evaluate();
+      // An beiden Stopps überschreitet der Horizont (Stopp 1: 3 Tage; Stopp 2: 4 Tage)
+      // bzw. erreicht ihn knapp; Stopp 2 hat Horizont 4 Tage > Haltbarkeit 3 Tage -> Frische-Finding!
+      final freshnessFinding = res.findings.where((f) => f.kind == ProvisioningReviewKind.freshness && f.listItemId == 42).firstOrNull;
+      expect(freshnessFinding, isNotNull);
+      expect(freshnessFinding!.horizonDays, 4);
     });
   });
 
@@ -1968,24 +2316,27 @@ void main() {
       expect(freshFinding.horizonDays, 14);
     });
 
-    test('Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen', () async {
+    test('Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories', () async {
       final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
       final repo = CatalogRepository(
         catalog: catalog,
         quantities: quantities,
         reviewConfig: reviewConfig,
       );
-      final tripService = TripService(
-        tripDao: db.tripDao,
-        listItemDao: db.listItemDao,
-        catalogRepository: repo,
+
+      // Verwendet die ORIGINALEN Provider-Factories für tripServiceProvider und shoppingListServiceProvider
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          catalogRepositoryProvider.overrideWithValue(repo),
+        ],
       );
-      final shoppingListService = ShoppingListService(
-        tripDao: db.tripDao,
-        listItemDao: db.listItemDao,
-        catalogRepository: repo,
-        tripService: tripService,
-      );
+      addTearDown(container.dispose);
+
+      final tripService = container.read(tripServiceProvider);
+      final shoppingListService = container.read(shoppingListServiceProvider);
 
       final tripId = await tripService.createTripWithCrew(
         name: 'Reactivity Trip',
@@ -2002,27 +2353,6 @@ void main() {
         ],
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          catalogRepositoryProvider.overrideWithValue(repo),
-          tripServiceProvider.overrideWithValue(tripService),
-          shoppingListServiceProvider.overrideWithValue(shoppingListService),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      shoppingListService.onTripDataChanged = (id) {
-        container.invalidate(tripShoppingListProvider(id));
-      };
-      tripService.onTripDataChanged = (id) {
-        container.invalidate(tripShoppingListProvider(id));
-        container.invalidate(tripCrewByIdProvider(id));
-        container.invalidate(tripDaysByIdProvider(id));
-        container.invalidate(tripStopsByIdProvider(id));
-        container.invalidate(tripByIdProvider(id));
-      };
-
       // Initial review evaluation
       final initialReview = await container.read(provisioningReviewProvider(tripId).future);
       expect(initialReview.status, isNotNull);
@@ -2031,12 +2361,12 @@ void main() {
       final hasMissingBreadBefore = initialReview.findings.any((f) => f.ruleId == 'durable_bread');
       expect(hasMissingBreadBefore, isTrue);
 
-      // 1. Catalog-Item adoptieren:
+      // 1. Artikel-Mutation: Catalog-Item adoptieren:
       final items = await db.listItemDao.getListItemsForTrip(tripId);
       final crispbreadItem = items.firstWhere((i) => i.catalogId == 'crispbread');
       await shoppingListService.adoptItem(tripId: tripId, listItemId: crispbreadItem.id, packages: 2);
 
-      // Reaktive Aktualisierung OHNE manuelles container.invalidate(...)
+      // Reaktive Aktualisierung ohne manuelles Invalidate
       await Future<void>.delayed(const Duration(milliseconds: 10));
       final updatedReview = await container.read(provisioningReviewProvider(tripId).future);
       final hasMissingBreadAfter = updatedReview.findings.any((f) => f.ruleId == 'durable_bread');
@@ -2066,6 +2396,22 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
       final reviewAfterCrewChange = await container.read(provisioningReviewProvider(tripId).future);
       expect(reviewAfterCrewChange, isNotNull);
+
+      // 4. Stopp- & Allokations-Änderung über TripService & ShoppingListService:
+      final stop2Id = await tripService.addShoppingStop(
+        tripId: tripId,
+        name: 'Zwischenhafen',
+        dayNumber: 3,
+      );
+      await shoppingListService.allocateToStop(
+        tripId: tripId,
+        listItemId: milkItem.id,
+        shoppingStopId: stop2Id,
+        packages: 1,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final reviewAfterStopAllocation = await container.read(provisioningReviewProvider(tripId).future);
+      expect(reviewAfterStopAllocation, isNotNull);
     });
 
     testWidgets('Finding E: Review-Aktionen führen zu echten Navigationen & Hand-offs', (tester) async {

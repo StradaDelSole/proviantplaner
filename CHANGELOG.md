@@ -1,9 +1,25 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 3 (Findings A3, F3, F4)
+
+- **Finding A3 (Production Reactivity & Lifecycle Safety):**
+  - Alle produktiven Mutationspfade in `ShoppingListService` (`allocateToStop`, `movePackagesBetweenStops`, `adoptAllSuggestions`, `adoptCategorySuggestions`, `handleUnboughtItems`, `addCustomItem`, `toggleBought`) lösen `onTripDataChanged?.call(tripId)` aus. Bei Batch-Operationen (`handleUnboughtItems`) erfolgt die Benachrichtigung konsistent einmalig nach Abschluss der Schleife.
+  - Entkopplung der Reaktivität über `tripDataVersionProvider` (StateProvider.family<int, int>) und den typisierten `TripDataChangeNotifier` (`tripDataChangeCallbackProvider`), wodurch Riverpod-Zyklen und Invalidation-Exceptions während Provider-Initialisierungen vollständig verhindert werden.
+  - `ref.onDispose` bereinigt den Callback im `TripDataChangeNotifier` für lückenlose Lifecycle-Sicherheit.
+  - Integrationstest verwendet ausschließlich die originalen un-overriddeten Provider-Factories (`tripServiceProvider`, `shoppingListServiceProvider`) und belegt Reaktivität für Artikel-, Boots-, Crew- und Stopp-Allokationsänderungen.
+- **Finding F3 (Allocation Consistency):**
+  - `packagesAtStop` in `ShoppingListItemView` stellt sicher, dass eine vorhandene explizite Allokation an Stopp 1 (`isFirstStop: true`) verbleibende, noch nicht zugewiesene Packungen nicht verschwinden lässt (`(alloc?.allocatedPackages ?? 0) + unallocated`).
+  - Haltbarkeitsprüfung (`_resolveEffectiveHorizonForItem`), `packagesAtStop` und Trinkwasserprüfung verwenden dieselbe wirksame Packungsanzahl je Stopp.
+  - Regressionstest belegt: Bei 10 Packungen gesamt, 2 an Stopp 1 und 3 an Stopp 2, berücksichtigt Stopp 1 exakt 7 Packungen und Stopp 2 exakt 3 Packungen.
+- **Finding F4 (Water Carryover):**
+  - Kumulative Trinkwasser-Betrachtung in `_evaluateDrinkingWater`: Nicht rechnerisch verbrauchtes Wasser früherer Stopp-Horizonte wird als Übertrag (`carriedOverLiters = availableLiters - horizonMinWater`) für spätere Etappen berücksichtigt.
+  - Regressionstest belegt: Bei 7 Tagen, warm, 1 Erwachsener (17,5 l gesamt) mit 18,0 l an Stopp 1 (Horizont 3 Tage -> 7,5 l) und 1,5 l an Stopp 2 (Horizont 4 Tage -> 10,0 l) stehen an Stopp 2 durch den 10,5-l-Übertrag 12,0 l zur Verfügung; kein Falsch-Check an Stopp 2.
+  - Echter Unterdeckungsfall verifiziert: Stehen getragen + zugekauft weniger als der Horizontbedarf bereit, wird zuverlässig ein `CHECK` ausgelöst.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 2 (Findings A2, B2, E2, F2)
 
 - **Finding A2 (Production Reactivity):** Reaktivität der Drift-Streams (`watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, `watchShoppingStopsForTrip`, `watchListItemsForTrip`, `watchAllocationsForTrip`) im gesamten Provider-Graph verankert. Real durchgeführte Mutationen an ListItems, Bootsprofil, Crew oder Stopps aktualisieren `provisioningReviewProvider` automatisch ohne künstliche/manuelle Invalidation.
-- **Finding B2 (Strict Threshold Field Validation):** `ProvisioningReviewRule.fromJson` validiert `threshold_field` strikt gegen `supportedThresholdFields` (`shelf_life_days`, `volume_liters`, `weight_g`). Unbekannte Schwellenwertfelder werfen explizit eine `FormatException`.
+- **Finding B2 (Strict Threshold Field Validation):** `ProvisioningReviewRule.fromJson` validiert `threshold_field` strikt gegen die kanonische Mengen-Referenz `quantities.rounding.durable_min_shelf_life_days`. Unbekannte Schwellenwertfelder werfen explizit eine `FormatException`.
 - **Finding E2 (Search Handoff & Disposed Context):** Verwendung eines aktiven `callerContext` / `parentContext` verhindert ungültige/disposed Kontexte beim Absprung aus dem Review in `CatalogSearchDelegate` und `AddOrEditItemSheet`. Haltbare Alternativen (`minShelfLifeDays: 14`) und `targetVariants` werden bei der Suche gegenüber kurz haltbaren Backwaren priorisiert. Vollständiger End-to-End-Flow getestet: Review → Suche → Treffer auswählen → Add/Edit-Sheet → bestätigte Übernahme.
 - **Finding F2 (Stop Allocations & Water Horizon):**
   - Bei unvollständig auf Stopps verteilten Artikeln wird die Restmenge (`residualPackages = effectivePackages - explicitlyAllocated`) implizit Stopp 1 zugeordnet und auf Haltbarkeit gegen den Stopp-1-Horizont geprüft.

@@ -24,11 +24,15 @@ final Provider<ShoppingListService> shoppingListServiceProvider =
   final db = ref.watch(databaseProvider);
   final catalogRepo = ref.watch(catalogRepositoryProvider);
   final tripService = ref.watch(tripServiceProvider);
+  final changeNotifier = ref.watch(tripDataChangeCallbackProvider);
 
   // Verknüpfe TripService-Änderungen reaktiv mit tripShoppingListProvider
-  ref.read(tripDataChangeCallbackProvider.notifier).state = (tripId) {
-    ref.invalidate(tripShoppingListProvider(tripId));
+  changeNotifier.callback = (tripId) {
+    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
   };
+  ref.onDispose(() {
+    changeNotifier.callback = null;
+  });
 
   final service = ShoppingListService(
     tripDao: db.tripDao,
@@ -37,7 +41,7 @@ final Provider<ShoppingListService> shoppingListServiceProvider =
     tripService: tripService,
   );
   service.onTripDataChanged = (tripId) {
-    ref.invalidate(tripShoppingListProvider(tripId));
+    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
   };
   return service;
 });
@@ -58,6 +62,7 @@ final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
+  ref.watch(tripDataVersionProvider(tripId));
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadShoppingList(tripId);
 });

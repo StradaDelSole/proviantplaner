@@ -234,7 +234,8 @@ class ProvisioningReviewEngine {
         ));
       }
     } else if (hasStopWaterAllocations) {
-      // Mehrere Stopps mit Wasser-Allokationen: prüfe jeden Stopp-Horizont
+      // Mehrere Stopps mit Wasser-Allokationen: prüfe jeden Stopp-Horizont mit Übertrag (Carryover)
+      double carriedOverLiters = 0.0;
       for (int i = 0; i < sortedStops.length; i++) {
         final stop = sortedStops[i];
         final int horizonDays;
@@ -258,14 +259,16 @@ class ProvisioningReviewEngine {
           stopLiters += itemLitersForPackages(item, pkgs);
         }
 
-        if (stopLiters + epsilon < horizonMinWater) {
+        final availableLiters = stopLiters + carriedOverLiters;
+
+        if (availableLiters + epsilon < horizonMinWater) {
           findings.add(ProvisioningReviewFinding(
             id: 'water_undercoverage_check_stop_${stop.id}',
             kind: ProvisioningReviewKind.drinkingWaterCheck,
             severity: ProvisioningReviewSeverity.check,
             groupId: 'water',
             estimatedValue: horizonMinWater,
-            actualValue: stopLiters,
+            actualValue: availableLiters,
             unit: 'l',
             horizonDays: horizonDays,
             hasPotableTank: input.trip.isWaterTankDrinkable && input.trip.waterTankLiters > 0,
@@ -275,6 +278,9 @@ class ProvisioningReviewEngine {
               targetGroup: 'water',
             ),
           ));
+          carriedOverLiters = 0.0;
+        } else {
+          carriedOverLiters = availableLiters - horizonMinWater;
         }
       }
     } else {
@@ -321,24 +327,21 @@ class ProvisioningReviewEngine {
       return input.trip.daysCount;
     }
 
-    final firstStop = sortedStops[0];
-    int explicitlyAllocated = 0;
     final activeStopIds = <int>{};
-    for (final entry in item.allocationsByStop.entries) {
-      if (entry.value.allocatedPackages > 0) {
-        activeStopIds.add(entry.key);
-        explicitlyAllocated += entry.value.allocatedPackages;
+    for (int i = 0; i < sortedStops.length; i++) {
+      final stop = sortedStops[i];
+      final isFirst = (i == 0);
+      final totalOther = item.allocationsByStop.entries
+          .where((e) => e.key != stop.id)
+          .fold(0, (sum, e) => sum + e.value.allocatedPackages);
+      final pkgs = item.packagesAtStop(stop.id, isFirstStop: isFirst, totalOtherAllocated: totalOther);
+      if (pkgs > 0) {
+        activeStopIds.add(stop.id);
       }
     }
 
-    // Restmenge, die nicht explizit Folge-Stopps zugeordnet ist, fällt implizit auf den ersten Stopp:
-    final residualPackages = item.effectivePackages - explicitlyAllocated;
-    if (residualPackages > 0) {
-      activeStopIds.add(firstStop.id);
-    }
-
     if (activeStopIds.isEmpty) {
-      activeStopIds.add(firstStop.id);
+      activeStopIds.add(sortedStops.first.id);
     }
 
     // Maximaler Horizont über alle Stopps, an denen der Artikel gekauft wird
