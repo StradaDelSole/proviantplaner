@@ -15,15 +15,31 @@ import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
+
+Uint8List _createTestJpeg({int width = 10, int height = 10}) {
+  final image = img.Image(width: width, height: height);
+  img.fill(image, color: img.ColorRgb8(200, 100, 50));
+  return Uint8List.fromList(img.encodeJpg(image));
+}
+
 void main() {
   late AppDatabase db;
   late MockHullqAuthService authService;
   late MockHullqBackupService backupService;
+  late Directory tempDir;
+  late ReceiptFileService receiptService;
   late BackupCoordinator coordinator;
 
   setUp(() async {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     FlutterSecureStorage.setMockInitialValues({});
+    tempDir = await Directory.systemTemp.createTemp('backup_coord_test_');
+    receiptService = ReceiptFileService(docsDirProvider: () async => tempDir);
     db = AppDatabase(NativeDatabase.memory());
     authService = MockHullqAuthService();
     backupService = MockHullqBackupService();
@@ -31,11 +47,15 @@ void main() {
       db: db,
       backupService: backupService,
       authService: authService,
+      receiptFileService: receiptService,
     );
   });
 
   tearDown(() async {
     await db.close();
+    if (await tempDir.exists()) {
+      await tempDir.delete(recursive: true);
+    }
   });
 
   Future<int> seedCompleteTrip(AppDatabase targetDb, String tripName) async {
@@ -156,7 +176,7 @@ void main() {
       expect(rawData, isNotNull);
 
       final decoded = jsonDecode(rawData!) as Map<String, dynamic>;
-      expect(decoded['version'], equals(2));
+      expect(decoded['version'], equals(3));
       expect(decoded['boatProfiles'], isNotNull);
       final trips = decoded['trips'] as List<dynamic>;
       expect(trips.length, equals(1));
@@ -193,6 +213,7 @@ void main() {
         db: newDeviceDb,
         backupService: backupService, // Teilt die verschlüsselte Cloud-Sicherung des Mock-Servers
         authService: authService,
+        receiptFileService: receiptService,
       );
 
       final hasBackupOnNewDevice = await newCoordinator.hasBackup();
@@ -305,7 +326,7 @@ void main() {
       expect(rawData, isNotNull);
 
       final decoded = jsonDecode(rawData!) as Map<String, dynamic>;
-      expect(decoded['version'], equals(2));
+      expect(decoded['version'], equals(3));
 
       // Bootsprofile prüfen (beide Profile inklusive des archivierten müssen vorhanden sein)
       final profiles = decoded['boatProfiles'] as List<dynamic>;
@@ -419,6 +440,7 @@ void main() {
         db: newDeviceDb,
         backupService: backupService,
         authService: authService,
+        receiptFileService: receiptService,
       );
 
       final restoreOk = await newCoordinator.restoreBackup();
@@ -533,6 +555,251 @@ void main() {
       // Keine BoatProfiles erzeugt
       final profiles = await db.boatProfileDao.getAllProfiles(includeArchived: true);
       expect(profiles, isEmpty);
+    });
+
+    test('Finding A: createBackup bricht mit BackupIntegrityException ab, wenn Belegdatei physisch fehlt', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+      final tripId = await seedCompleteTrip(db, 'Fehlender Beleg Test');
+
+      // Expense ermitteln
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final expenseId = expenses.first.id;
+
+      // Beleg in DB eintragen, dessen physische Datei NICHT existiert
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenseId,
+          fileName: 'missing_receipt.jpg',
+          filePath: 'receipts/trip_$tripId/expense_$expenseId/missing_receipt.jpg',
+          byteSize: const Value(1024),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      // Sichern muss mit BackupIntegrityException abbrechen
+      expect(
+        () => coordinator.createBackup(),
+        throwsA(isA<BackupIntegrityException>()),
+      );
+    });
+
+    test('Finding A & C: restoreBackup bricht mit BackupCorruptException ab, wenn Belegbild im Backup null oder ungültig ist', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Payload mit Beleg, der imageBase64: null hat
+      final nullImagePayload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-17T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 1,
+              'name': 'Corrupt Payload Trip',
+              'startDate': '2026-10-17T00:00:00.000Z',
+              'daysCount': 7,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+            },
+            'days': [],
+            'crew': [],
+            'stops': [],
+            'items': [],
+            'allocations': [],
+            'expenses': [
+              {
+                'id': 10,
+                'tripId': 1,
+                'amount': 25.0,
+                'category': 'provisions',
+                'isPaidFromKitty': true,
+              }
+            ],
+            'payments': [],
+            'receipts': [
+              {
+                'id': 100,
+                'tripId': 1,
+                'expenseId': 10,
+                'fileName': 'receipt.jpg',
+                'filePath': 'receipts/trip_1/expense_10/rcpt_1.jpg',
+                'byteSize': 500,
+                'mimeType': 'image/jpeg',
+                'imageBase64': null, // Nicht zulässig!
+              }
+            ],
+          }
+        ],
+      });
+
+      await backupService.backupData(nullImagePayload);
+      expect(
+        () => coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+
+      // Payload mit invaliden base64-Bytes
+      final invalidBase64Payload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-17T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 1,
+              'name': 'Corrupt Payload Trip 2',
+              'startDate': '2026-10-17T00:00:00.000Z',
+              'daysCount': 7,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+            },
+            'days': [],
+            'crew': [],
+            'stops': [],
+            'items': [],
+            'allocations': [],
+            'expenses': [
+              {
+                'id': 10,
+                'tripId': 1,
+                'amount': 25.0,
+                'category': 'provisions',
+                'isPaidFromKitty': true,
+              }
+            ],
+            'payments': [],
+            'receipts': [
+              {
+                'id': 101,
+                'tripId': 1,
+                'expenseId': 10,
+                'fileName': 'receipt.jpg',
+                'filePath': 'receipts/trip_1/expense_10/rcpt_2.jpg',
+                'byteSize': 500,
+                'mimeType': 'image/jpeg',
+                'imageBase64': '!!!not-valid-base64???',
+              }
+            ],
+          }
+        ],
+      });
+
+      await backupService.backupData(invalidBase64Payload);
+      expect(
+        () => coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+    });
+
+    test('Finding C: restoreBackup ist crash-sicher - Erhält bei Fehler bestehende DB und Belegdateien byte-genau', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // 1. Aktiven Törn anlegen und Belegdatei physisch speichern
+      final tripId = await seedCompleteTrip(db, 'Aktiver Original-Törn');
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final expenseId = expenses.first.id;
+
+      final testJpegBytes = _createTestJpeg(width: 20, height: 20);
+      final processed = await receiptService.saveReceiptImage(
+        tripId: tripId,
+        expenseId: expenseId,
+        preferredFileName: 'active_orig.jpg',
+        imageBytes: testJpegBytes,
+      );
+
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenseId,
+          fileName: processed.fileName,
+          filePath: processed.filePath,
+          byteSize: Value(processed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      final originalFile = File(p.join(tempDir.path, processed.filePath));
+      expect(await originalFile.exists(), isTrue);
+      final savedOriginalBytes = await originalFile.readAsBytes();
+
+      // 2. Fehlerhaften Restore-Payload bereitstellen
+      final corruptPayload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-17T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 999,
+              'name': 'Fehlerhafter Törn',
+            },
+            'expenses': [],
+            'receipts': [
+              {
+                'id': 888,
+                'tripId': 999,
+                'expenseId': 777,
+                'fileName': 'broken.jpg',
+                'filePath': 'receipts/trip_999/broken.jpg',
+                'imageBase64': null, // Verursacht Pre-flight Abbruch
+              }
+            ],
+          }
+        ],
+      });
+      await backupService.backupData(corruptPayload);
+
+      // Restore ausführen - muss scheitern
+      expect(
+        () => coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+
+      // 3. Verifizieren: Aktive Datenbank ist unberührt
+      final trips = await db.tripDao.getAllTrips();
+      expect(trips.length, equals(1));
+      expect(trips.first.name, equals('Aktiver Original-Törn'));
+
+      final receipts = await db.expenseDao.getReceiptsForExpense(expenseId);
+      expect(receipts.length, equals(1));
+
+      // 4. Verifizieren: Physische Original-Datei ist byte-genau erhalten!
+      expect(await originalFile.exists(), isTrue);
+      expect(await originalFile.readAsBytes(), equals(savedOriginalBytes));
+
+      // 5. Staging-Verzeichnis ist bereinigt
+      final stagingActiveDir = Directory(p.join(tempDir.path, 'receipts_staging_active'));
+      expect(await stagingActiveDir.exists(), isFalse);
+    });
+
+    test('Finding F: createBackup bricht mit BackupSizeLimitExceededException ab, wenn Beleg-Budget überschritten ist', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+      final tripId = await seedCompleteTrip(db, 'Budget Test Törn');
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final expenseId = expenses.first.id;
+
+      final receiptBytes = _createTestJpeg(width: 80, height: 80);
+      final processed = await receiptService.saveReceiptImage(
+        tripId: tripId,
+        expenseId: expenseId,
+        preferredFileName: 'receipt_2kb.jpg',
+        imageBytes: receiptBytes,
+      );
+
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenseId,
+          fileName: processed.fileName,
+          filePath: processed.filePath,
+          byteSize: Value(processed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      // Budget auf 50 Bytes begrenzen (Beleg hat deutlich mehr Bytes)
+      expect(
+        () => coordinator.createBackup(maxBackupReceiptBytes: 50),
+        throwsA(isA<BackupSizeLimitExceededException>()),
+      );
     });
   });
 }

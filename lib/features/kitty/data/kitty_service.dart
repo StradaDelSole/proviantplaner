@@ -5,9 +5,12 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import '../domain/calculation/kitty_engine.dart';
 import '../domain/models/kitty_models.dart';
+import '../domain/models/receipt_models.dart';
+
 
 /// Aggregiertes Kassen-Datenobjekt für die Benutzeroberfläche.
 class TripKittyData {
@@ -50,7 +53,7 @@ class TripKittyData {
           : members.where((m) => m.isSkipperFree).firstOrNull ?? members.firstOrNull);
 }
 
-/// Eingabe-Objekt zum Erfassen oder Bearbeiten einer Ausgabe (SC-KAS-02).
+/// Eingabe-Objekt zum Erfassen oder Bearbeiten einer Ausgabe (SC-KAS-02, RECEIPT1).
 class ExpenseInput {
   final int tripId;
   final String title;
@@ -61,6 +64,7 @@ class ExpenseInput {
   final Map<int, int>? customSplitInCents;
   final DateTime? createdAt;
   final String? currency;
+  final List<DraftReceipt> draftReceipts;
 
   const ExpenseInput({
     required this.tripId,
@@ -72,6 +76,7 @@ class ExpenseInput {
     this.customSplitInCents,
     this.createdAt,
     this.currency,
+    this.draftReceipts = const [],
   });
 }
 
@@ -79,13 +84,15 @@ class ExpenseInput {
 class KittyService {
   final TripDao tripDao;
   final ExpenseDao expenseDao;
+  final ReceiptFileService receiptFileService;
   final KittyEngine engine;
 
   KittyService({
     required this.tripDao,
     required this.expenseDao,
+    ReceiptFileService? receiptFileService,
     this.engine = const KittyEngine(),
-  });
+  }) : receiptFileService = receiptFileService ?? ReceiptFileService();
 
   /// Lädt den vollständigen Kassenstand inklusive Salden und Abrechnung.
   Future<TripKittyData> loadKittyData(int tripId) async {
@@ -97,9 +104,30 @@ class KittyService {
     final rawCrew = await tripDao.getCrewForTrip(tripId);
     final rawExpenses = await expenseDao.getExpensesForTrip(tripId);
     final rawDeposits = await expenseDao.getKittyPaymentsForTrip(tripId);
+    final rawReceipts = await expenseDao.getReceiptsForTrip(tripId);
+
+    final receiptsByExpense = <int, List<ExpenseReceiptItem>>{};
+    for (final r in rawReceipts) {
+      receiptsByExpense.putIfAbsent(r.expenseId, () => []).add(
+        ExpenseReceiptItem(
+          id: r.id,
+          tripId: r.tripId,
+          expenseId: r.expenseId,
+          filePath: r.filePath,
+          fileName: r.fileName,
+          byteSize: r.byteSize,
+          sortOrder: r.sortOrder,
+          createdAt: r.createdAt,
+        ),
+      );
+    }
+
+    for (final list in receiptsByExpense.values) {
+      list.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
 
     final members = rawCrew.map(_mapCrewMember).toList();
-    final expenses = rawExpenses.map(_mapExpense).toList();
+    final expenses = rawExpenses.map((e) => _mapExpense(e, receiptsByExpense[e.id])).toList();
     final deposits = rawDeposits.map(_mapDeposit).toList();
 
     final model = trip.kittyModel;
@@ -163,7 +191,7 @@ class KittyService {
     );
   }
 
-  KittyExpense _mapExpense(Expense e) {
+  KittyExpense _mapExpense(Expense e, [List<ExpenseReceiptItem>? receipts]) {
     Map<int, int>? customSplit;
     if (e.customSplit != null && e.customSplit!.isNotEmpty) {
       try {
@@ -183,6 +211,7 @@ class KittyService {
       isPaidFromKitty: e.isPaidFromKitty,
       createdAt: e.createdAt,
       customSplitInCents: customSplit,
+      receipts: receipts ?? const [],
     );
   }
 
@@ -246,7 +275,7 @@ class KittyService {
     }
   }
 
-  /// Erfasst eine neue Ausgabe (SC-KAS-02).
+  /// Erfasst eine neue Ausgabe (SC-KAS-02, RECEIPT1).
   Future<int> addExpense(ExpenseInput input) async {
     final trip = await tripDao.getTripById(input.tripId);
     final crew = await tripDao.getCrewForTrip(input.tripId);
@@ -259,7 +288,7 @@ class KittyService {
       splitJson = json.encode(strMap);
     }
 
-    return expenseDao.addExpense(
+    final expenseId = await expenseDao.addExpense(
       ExpensesCompanion.insert(
         tripId: input.tripId,
         amount: euros,
@@ -272,7 +301,106 @@ class KittyService {
         createdAt: Value(input.createdAt ?? DateTime.now()),
       ),
     );
+
+    final savedFiles = <String>[];
+    try {
+      if (input.draftReceipts.isNotEmpty) {
+        for (var i = 0; i < input.draftReceipts.length; i++) {
+          final draft = input.draftReceipts[i];
+          final processed = await receiptFileService.saveReceiptImage(
+            tripId: input.tripId,
+            expenseId: expenseId,
+            imageBytes: draft.bytes,
+            preferredFileName: draft.fileName,
+          );
+          savedFiles.add(processed.relativePath);
+          await expenseDao.addReceipt(
+            ExpenseReceiptsCompanion.insert(
+              tripId: input.tripId,
+              expenseId: expenseId,
+              filePath: processed.filePath,
+              fileName: processed.fileName,
+              byteSize: Value(processed.byteSize),
+              sortOrder: Value(i),
+              createdAt: Value(draft.createdAt),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      for (final f in savedFiles) {
+        await receiptFileService.deleteReceiptFile(f);
+      }
+      await receiptFileService.deleteExpenseReceiptFolder(input.tripId, expenseId);
+      await expenseDao.deleteExpense(expenseId);
+      rethrow;
+    }
+
+    return expenseId;
   }
+
+  /// Fügt einer bestehenden Ausgabe einen Beleg hinzu (RECEIPT1).
+  Future<ExpenseReceiptItem> addReceiptToExpense({
+    required int tripId,
+    required int expenseId,
+    required Uint8List imageBytes,
+    String? preferredFileName,
+    int? sortOrder,
+  }) async {
+    final expense = await expenseDao.getExpenseById(expenseId);
+    if (expense == null) {
+      throw ArgumentError('Ausgabe mit ID $expenseId existiert nicht.');
+    }
+    if (expense.tripId != tripId) {
+      throw ArgumentError(
+        'Ausgabe $expenseId gehört nicht zu Törn $tripId (sondern zu Törn ${expense.tripId}).',
+      );
+    }
+
+    final existing = await expenseDao.getReceiptsForExpense(expenseId);
+    final effectiveSortOrder = sortOrder ?? existing.length;
+
+    final processed = await receiptFileService.saveReceiptImage(
+      tripId: tripId,
+      expenseId: expenseId,
+      imageBytes: imageBytes,
+      preferredFileName: preferredFileName,
+    );
+
+    final id = await expenseDao.addReceipt(
+      ExpenseReceiptsCompanion.insert(
+        tripId: tripId,
+        expenseId: expenseId,
+        filePath: processed.filePath,
+        fileName: processed.fileName,
+        byteSize: Value(processed.byteSize),
+        sortOrder: Value(effectiveSortOrder),
+        createdAt: Value(DateTime.now()),
+      ),
+    );
+
+    return ExpenseReceiptItem(
+      id: id,
+      tripId: tripId,
+      expenseId: expenseId,
+      filePath: processed.filePath,
+      fileName: processed.fileName,
+      byteSize: processed.byteSize,
+      sortOrder: effectiveSortOrder,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  /// Löscht einen Beleg aus DB und Dateisystem (RECEIPT1).
+  Future<bool> deleteReceipt(int receiptId) async {
+    final receipt = await expenseDao.getReceiptById(receiptId);
+    if (receipt == null) return false;
+
+    await receiptFileService.deleteReceiptFile(receipt.filePath);
+    final count = await expenseDao.deleteReceipt(receiptId);
+    return count > 0;
+  }
+
 
   /// Erfasst eine Einzahlung in die Bordkasse (SC-KAS-03).
   Future<int> addDeposit({
@@ -319,7 +447,24 @@ class KittyService {
   }
 
   /// Löscht eine Ausgabe.
-  Future<int> deleteExpense(int id) => expenseDao.deleteExpense(id);
+  /// Standardmäßig wird bei [softDelete] = true der Belegordner für das 5-Sekunden-Undo-Fenster
+  /// in den temporären Papierkorb verschoben statt sofort unwiderruflich gelöscht.
+  Future<int> deleteExpense(int id, {bool softDelete = true}) async {
+    final expense = await expenseDao.getExpenseById(id);
+    if (expense != null) {
+      if (softDelete) {
+        await receiptFileService.moveToTrash(expense.tripId, id);
+      } else {
+        await receiptFileService.deleteExpenseReceiptFolder(expense.tripId, id);
+      }
+    }
+    return expenseDao.deleteExpense(id);
+  }
+
+  /// Löscht Belege einer gelöschten Ausgabe endgültig aus dem Papierkorb nach Ablauf des Undo-Fensters.
+  Future<void> purgeDeletedExpenseReceipts(int tripId, int expenseId) {
+    return receiptFileService.purgeTrash(tripId: tripId, expenseId: expenseId);
+  }
 
   /// Aktualisiert eine bestehende Ausgabe (FEEDBACK_R1 Punkt 8).
   Future<bool> updateExpense({
@@ -356,7 +501,7 @@ class KittyService {
   }
 
   /// Stellt eine gelöschte Ausgabe wieder her (Rückgängig-Funktion).
-  Future<int> restoreExpense(KittyExpense exp) {
+  Future<int> restoreExpense(KittyExpense exp) async {
     if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
       throw ArgumentError(
         'Ungültige Zahlungsquelle für Wiederherstellung: Kassenausgaben dürfen keinen persönlichen Zahler haben.',
@@ -367,7 +512,7 @@ class KittyService {
         'Ungültige Zahlungsquelle für Wiederherstellung: Personenausgaben müssen ein Crew-Mitglied als Zahler haben.',
       );
     }
-    return expenseDao.addExpense(
+    final newId = await expenseDao.addExpense(
       ExpensesCompanion.insert(
         id: Value(exp.id),
         tripId: exp.tripId,
@@ -385,6 +530,27 @@ class KittyService {
         createdAt: Value(exp.createdAt),
       ),
     );
+
+    // Belege im Dateisystem aus dem Papierkorb wiederherstellen
+    await receiptFileService.restoreFromTrash(exp.tripId, exp.id);
+
+    // Belege wiederherstellen, falls vorhanden
+    for (final r in exp.receipts) {
+      await expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          id: Value(r.id),
+          tripId: exp.tripId,
+          expenseId: exp.id,
+          filePath: r.filePath,
+          fileName: r.fileName,
+          byteSize: Value(r.byteSize),
+          sortOrder: Value(r.sortOrder),
+          createdAt: Value(r.createdAt),
+        ),
+      );
+    }
+
+    return newId;
   }
 
   /// Aktualisiert die Zahlungsdaten eines Crew-Mitglieds (FEEDBACK_R1 Punkt 10).

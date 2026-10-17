@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/core/services/pdf_export_service.dart';
 import 'package:proviantplaner/core/services/pdf_providers.dart';
 import '../data/kitty_providers.dart';
 import '../data/kitty_service.dart';
@@ -302,6 +303,8 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           const SizedBox(height: 12),
           _buildComplianceNotice(theme, l10n),
           const SizedBox(height: 24),
+          _buildSendSettlementButton(context, theme, l10n, data),
+          const SizedBox(height: 12),
           _buildExportPdfButton(context, theme, l10n, data),
           const SizedBox(height: 12),
           _buildArchiveButton(context, theme, l10n),
@@ -309,6 +312,7 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
           _buildPoweredBy(theme),
           const SizedBox(height: 24),
         ],
+
       ),
     );
   }
@@ -947,12 +951,103 @@ class _SettlementScreenState extends ConsumerState<SettlementScreen> {
     );
   }
 
+  Widget _buildSendSettlementButton(
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+    TripKittyData data,
+  ) {
+    return FilledButton.icon(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      icon: const Icon(Icons.share_outlined),
+      label: Text(l10n.sendSettlementPackage),
+      onPressed: () => _sendSettlementPackage(context, data),
+    );
+  }
+
+  Future<void> _sendSettlementPackage(BuildContext context, TripKittyData data) async {
+    final l10n = AppLocalizations.of(context)!;
+    final pdfService = ref.read(pdfExportServiceProvider);
+    final receiptFileService = ref.read(receiptFileServiceProvider);
+
+    try {
+      final package = await pdfService.generateSettlementPackage(
+        data: data,
+        receiptFileService: receiptFileService,
+        settlementFilename: l10n.settlementPdfFilename(data.trip.name.replaceAll(' ', '_')),
+      );
+
+      if (package.wasSplit && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.settlementPackageSplitNotice(package.receiptPdfs.length)),
+          ),
+        );
+      }
+
+      await pdfService.shareSettlementPackage(
+        package: package,
+        subject: l10n.settlementPackageSubject(data.trip.name),
+        bodyText: l10n.settlementPackageBody(data.trip.name),
+      );
+    } on ReceiptImageMissingException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(l10n.receiptMissingError(e.expenseTitle)),
+          ),
+        );
+      }
+    } on ReceiptImageCorruptException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(l10n.receiptCorruptError(e.expenseTitle)),
+          ),
+        );
+      }
+    } on PdfReceiptOversizedException catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(l10n.receiptOversizedError(15)),
+          ),
+        );
+      }
+    } on PdfChunkOversizedException catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(l10n.receiptOversizedError(15)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Text(e.toString()),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildExportPdfButton(
     BuildContext context,
     ThemeData theme,
     AppLocalizations l10n,
     TripKittyData data,
   ) {
+
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),

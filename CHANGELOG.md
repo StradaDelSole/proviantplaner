@@ -1,5 +1,65 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Independent Review Amendment 1 (Findings A–G)
+
+- **Finding A (Backup-Vollständigkeit & Validierung):**
+  - `createBackup()` prüft physische Belegdateien auf Existenz und Inhalt; fehlt eine Datei oder ist sie leer, bricht die Sicherung mit `BackupIntegrityException` ab (`imageBase64: null` ist unzulässig).
+  - `restoreBackup()` validiert in einem Pre-Flight-Schritt alle Belegbilder über alle Törns. Fehlt `imageBase64` oder ist es korrupt, bricht der Vorgang mit `BackupCorruptException` ab.
+- **Finding B (PDF-Vollständigkeit & Fehlerbehandlung):**
+  - `generateReceiptsPdfs()` bricht bei fehlender Bilddatei mit `ReceiptImageMissingException` und bei unlesbarem Bild mit `ReceiptImageCorruptException` ab (keine stillen Platzhaltertexte).
+  - `SettlementScreen` fängt diese Ausnahmen ab und zeigt dem Nutzer eine klare, lokalisierte Rückmeldung.
+- **Finding C (Crash-sicherer Restore):**
+  - Gestagter Restore: Belegdateien werden zunächst in `receipts_staging_active` aufgebaut.
+  - Bei erfolgreichem DB-Commit atomarer Tausch: altes `receipts/` nach `receipts_rollback/`, `receipts_staging_active` nach `receipts/`.
+  - Bei Fehler Rollback: Re-instanziierung aus `receipts_rollback/`, wodurch der vorherige Datenbestand und alle Belegdateien byte-genau erhalten bleiben (`commitRestoreStaging`, `abortRestoreStaging`).
+- **Finding D (Expense-Lifecycle, Undo & Törn-Löschung):**
+  - 5-Sekunden-Snackbar-Undo: `deleteExpense` verschiebt bei `softDelete: true` Belege in `receipts_trash/trip_<id>/expense_<id>`.
+  - `restoreExpense` stellt die physischen Belege aus dem Papierkorb wieder her.
+  - Nach Ablauf des Undo-Fensters endgültige Bereinigung via `purgeDeletedExpenseReceipts`.
+  - `TripService.deleteTrip` bereinigt kaskadierend alle Belege und Papierkörbe des Törns vom Dateisystem (`deleteTripReceipts`).
+- **Finding E (Dateinamenkollisionen & Path Traversal):**
+  - Generierung kollisionsfreier interner Dateinamen (`rcpt_<timestamp>_<nonce>.jpg`).
+  - Bereinigung von bevorzugten Anzeigenamen via `sanitizeFileName` (Verhinderung von `..`, `/`, `\`).
+  - Standardisierte Posix-Pfade (`/`) für relationale Konsistenz über Plattformen hinweg.
+- **Finding F (Größen- und Speichergrenzen):**
+  - Cloud-Backup: Durchsetzung des 50 MB Limits (`maxBackupReceiptBytes`) mit `BackupSizeLimitExceededException`.
+  - PDF: Durchsetzung des 15 MB Limits gegen tatsächliche PDF-Bytegröße mit `PdfChunkOversizedException` bzw. `PdfReceiptOversizedException`.
+- **Finding G (Transaktionale Integrität):**
+  - `addExpense`: Transaktionaler Rollback bereinigt bei Fehlern beim Beleg-Speichern sowohl die Datenbankzeile als auch angelegte Dateien/Ordner.
+  - `addReceiptToExpense`: Validiert `expense.tripId == tripId` und wirft `ArgumentError` bei Abweichung.
+  - Lokalisierte Fehlermeldungen in allen 6 ARB-Dateien synchron ergänzt.
+
+## 2026-10-17 – RECEIPT1 Expense Receipts & Settlement Package (Issue #23)
+
+- **Datenbank & Migration (Drift v7 → v8):**
+  - Neue Entitätstabelle `ExpenseReceipts` (`id`, `tripId`, `expenseId`, `filePath`, `fileName`, `sortOrder`, `byteSize`, `mimeType`, `createdAt`) mit `onDelete: cascade` auf `Expenses` und `Trips`.
+  - Reale SQLite-Migration von v7 auf v8 verifiziert mit Erhalt aller bestehenden Daten und sauberem Kaskadenverhalten (`test/core/database/migration_test.dart`).
+- **Lokale Belegspeicherung & Bildoptimierung (100% Offline):**
+  - Neuer Service `ReceiptFileService` in `lib/core/services/receipt_file_service.dart`.
+  - Optimierung auf max. 1800 px Kantenlänge (`package:image`), EXIF-Baking und -Stripping (GPS- und Rotations-Datenschutz) sowie Komprimierung auf JPEG Qualität 82%.
+  - Strukturierte Ordnerhierarchie: `receipts/trip_{tripId}/expense_{expenseId}/{fileName}`.
+  - Vollständiges Lifecycle-Handling: Speichern, Einlesen, Löschen einzelner Dateien sowie kaskadierendes Bereinigen von Ausgaben- und Törnordnern (`test/core/services/receipt_file_service_test.dart`).
+- **Bordkassen-Integration (0..n Belege pro Ausgabe):**
+  - Erweiterung von `KittyExpense` um `List<ExpenseReceiptItem> receipts`.
+  - Erweiterung von `ExpenseInput` und `KittyService.addExpense` um `List<DraftReceipt> draftReceipts`.
+  - Methoden `addReceiptToExpense`, `deleteReceipt` und `restoreExpense` (mit Beleg-Wiederherstellung) in `KittyService`.
+  - Finanzmathematische Invarianz: Belege verändern den FIX-B Ledger, Salden, Anteile oder Ausgleichszahlungen in keiner Weise (`test/features/kitty/receipt_attachment_lifecycle_test.dart`).
+- **Endabrechnungs-Paket & Mehrteiliges PDF (Settlement Package):**
+  - Neuer Exportfluss in `PdfExportService`: `generateSettlementPackage`, `generateReceiptsPdfs` und `shareSettlementPackage`.
+  - Generierung von `Abrechnung.pdf` (Wer-zahlt-wem, Salden, Ausgaben) und `Belege.pdf` (A4-Seiten mit Törndaten, Ausgabendetails, Zahler und eingebetteten Belegfotos).
+  - Automatisches Splitting bei Überschreitung des Chunk-Limits (z. B. 15 MB) in `Belege_1.pdf`, `Belege_2.pdf` usw.
+  - Versand über nativen Share-Sheet (`share_plus`) als Mail oder AirDrop/Sharing ohne dedizierten Backend-Maildienst (`test/core/services/pdf_receipts_package_test.dart`).
+- **Cloud-Datensicherung v3 (Backup & Restore):**
+  - Upgrade des Backup-Formats auf Version 3 mit Base64-Serialisierung aller Belegbilder.
+  - Relationales ID-Remapping für `ExpenseReceipts` (`newExpenseId`, `newTripId`) und Wiederherstellung der physischen Bilddateien auf dem lokalen Dateisystem.
+  - Vollständige Abwärtskompatibilität für Backups der Versionen 1 und 2 (`test/core/services/backup_coordinator_v3_test.dart`).
+- **UI & UX:**
+  - `ExpenseSheet`: Kamera-/Galerie-Auswahl (`image_picker`), Miniaturansichten im Belegstreifen, Vollbild-Vorschau mit interaktivem Zoom (`ReceiptPreviewDialog`), Löschen und Anhängen weiterer Belegseiten.
+  - `KittyScreen`: Beleg-Indikator (Badge / Icon mit Beleganzahl) an jeder Ausgabenzeile.
+  - `SettlementScreen`: Prominenter Button „Abrechnungspaket versenden“ mit Subtitle „Abrechnung.pdf + Belege.pdf teilen“.
+- **Vollständige Lokalisierung:**
+  - Alle RECEIPT1-Texte in allen 6 unterstützten Sprachen (DE, EN, FR, ES, PT, HR) synchron gepflegt.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Final Cleanup Amendment
 
 - **Code Cleanup (Removal of Obsolete Callback Infrastructure):**

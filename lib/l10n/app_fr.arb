@@ -1030,5 +1030,83 @@
   "reviewActionEditItem": "Ajuster l'article",
   "reviewInlineFreshnessHint": "Conservation plus courte que le voyage",
   "reviewInlineFridgeHint": "Nécessite réfrigérateur",
-  "reviewInlineFreezerHint": "Nécessite congélateur"
+  "reviewInlineFreezerHint": "Nécessite congélateur",
+  "receiptAdd": "Ajouter un reçu",
+  "receiptTakePhoto": "Photographier le reçu",
+  "receiptPickGallery": "Choisir dans la galerie",
+  "receiptAddAnotherPage": "Page suivante",
+  "receiptDelete": "Supprimer le reçu",
+  "receiptDeleteConfirm": "Supprimer ce reçu ?",
+  "receiptAttachedCount": "{count, plural, =1{1 reçu} other{{count} reçus}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Aperçu du reçu",
+  "receiptSourceCamera": "Appareil photo",
+  "receiptSourceGallery": "Galerie",
+  "sendSettlementPackage": "Envoyer le bilan",
+  "sendSettlementPackageSubtitle": "Partager le bilan et les reçus par e-mail ou messagerie",
+  "settlementPackageSubject": "Règlement de caisse {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Bonjour l'équipage,\n\nvoici le bilan de caisse pour {tripName} avec tous les reçus en pièce jointe.\n\nBien cordialement,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Les reçus ont été divisés en {count} fichiers PDF en raison de leur taille.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Reçus",
+  "receiptMissingError": "Une image de reçu est manquante ou n'a pas pu être chargée ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "Une image de reçu est endommagée et ne peut pas être traitée ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Un reçu ou un paquet PDF est trop volumineux pour l'exportation (maximum {maxMb} Mo).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "La sauvegarde dépasse la taille maximale autorisée de {maxMb} Mo pour les reçus.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Un reçu est manquant dans le stockage local. Sauvegarde annulée."
 }
+

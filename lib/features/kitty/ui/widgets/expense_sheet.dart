@@ -1,12 +1,13 @@
-/// Bottom Sheet zum Erfassen und Bearbeiten einer Ausgabe (SC-KAS-02, FEEDBACK_R1 Punkt 8).
-library;
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/kitty_providers.dart';
 import '../../data/kitty_service.dart';
 import '../../domain/models/kitty_models.dart';
+import '../../domain/models/receipt_models.dart';
+import 'receipt_preview_dialog.dart';
 
 /// Sheet zum Erfassen oder Bearbeiten einer Ausgabe.
 class ExpenseSheet extends ConsumerStatefulWidget {
@@ -66,6 +67,11 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   bool _customSplitEnabled = false;
   final Map<int, TextEditingController> _splitControllers = {};
 
+  // Belege (RECEIPT1)
+  final List<ExpenseReceiptItem> _existingReceipts = [];
+  final List<DraftReceipt> _draftReceipts = [];
+  final Set<int> _deletedReceiptIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -88,6 +94,10 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
         text: customMemberCents != null ? (customMemberCents / 100.0).toStringAsFixed(2) : '',
       );
     }
+
+    if (edit != null) {
+      _existingReceipts.addAll(edit.receipts);
+    }
   }
 
   @override
@@ -101,6 +111,64 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
   }
 
   String get _currencySuffix => widget.currency == 'EUR' ? '€' : widget.currency;
+
+  Future<void> _pickReceiptImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source);
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      final fileName = picked.name.isNotEmpty
+          ? picked.name
+          : 'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      setState(() {
+        _draftReceipts.add(
+          DraftReceipt(
+            bytes: bytes,
+            fileName: fileName,
+            tempPath: picked.path,
+          ),
+        );
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler beim Laden des Bildes: $e')),
+        );
+      }
+    }
+  }
+
+  void _showImageSourcePicker(BuildContext context, AppLocalizations l10n) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: Text(l10n.receiptSourceCamera),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickReceiptImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(l10n.receiptSourceGallery),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _pickReceiptImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
@@ -134,10 +202,26 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       isPaidFromKitty: _isPaidFromKitty,
       customSplitInCents: customSplit,
       createdAt: widget.expenseToEdit?.createdAt,
+      draftReceipts: widget.expenseToEdit == null ? _draftReceipts : const [],
     );
 
     if (widget.expenseToEdit != null) {
       await service.updateExpense(id: widget.expenseToEdit!.id, input: input);
+
+      // Gelöschte Belege entfernen
+      for (final deletedId in _deletedReceiptIds) {
+        await service.deleteReceipt(deletedId);
+      }
+
+      // Neu hinzugefügte Belege persistieren
+      for (final draft in _draftReceipts) {
+        await service.addReceiptToExpense(
+          tripId: widget.tripId,
+          expenseId: widget.expenseToEdit!.id,
+          imageBytes: draft.bytes,
+          preferredFileName: draft.fileName,
+        );
+      }
     } else {
       await service.addExpense(input);
     }
@@ -151,6 +235,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       ref.invalidate(tripKittyDataProvider(widget.tripId));
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +263,8 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
               _buildCategorySelector(theme, l10n),
               const SizedBox(height: 16),
               _buildPayerSelector(theme, l10n),
+              const SizedBox(height: 16),
+              _buildReceiptsSection(theme, l10n),
               const SizedBox(height: 12),
               _buildMoreOptions(theme, l10n),
               const SizedBox(height: 24),
@@ -189,6 +276,7 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
       ),
     );
   }
+
 
   Widget _buildHeader(ThemeData theme, AppLocalizations l10n) {
     final isEditing = widget.expenseToEdit != null;
@@ -401,6 +489,201 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     );
   }
 
+  Widget _buildReceiptsSection(ThemeData theme, AppLocalizations l10n) {
+    final totalCount = _existingReceipts.length + _draftReceipts.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.receiptsPdfTitle,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (totalCount > 0)
+              Text(
+                l10n.receiptAttachedCount(totalCount),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (totalCount == 0)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.photo_camera_outlined),
+            label: Text(l10n.receiptTakePhoto),
+            onPressed: () => _showImageSourcePicker(context, l10n),
+          )
+        else
+          SizedBox(
+            height: 104,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (var i = 0; i < _existingReceipts.length; i++)
+                  _buildExistingReceiptThumbnail(_existingReceipts[i], i + 1, theme, l10n),
+                for (var i = 0; i < _draftReceipts.length; i++)
+                  _buildDraftReceiptThumbnail(_draftReceipts[i], _existingReceipts.length + i + 1, theme, l10n),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.add_photo_alternate_outlined, size: 20),
+                      label: Text(l10n.receiptAddAnotherPage),
+                      onPressed: () => _showImageSourcePicker(context, l10n),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildExistingReceiptThumbnail(
+    ExpenseReceiptItem receipt,
+    int index,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    final fileService = ref.read(receiptFileServiceProvider);
+
+    return FutureBuilder<String>(
+      future: fileService.resolveAbsolutePath(receipt.filePath),
+      builder: (context, snapshot) {
+        final absPath = snapshot.data;
+        final fileExists = absPath != null && File(absPath).existsSync();
+
+        return Container(
+          width: 80,
+          margin: const EdgeInsets.only(right: 8),
+          child: Stack(
+            children: [
+              InkWell(
+                onTap: () {
+                  if (absPath != null) {
+                    ReceiptPreviewDialog.show(
+                      context,
+                      title: '${l10n.receiptPreview} #$index',
+                      subtitle: receipt.fileName,
+                      filePath: absPath,
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 80,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    color: theme.colorScheme.surfaceContainerHighest,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: fileExists
+                      ? Image.file(File(absPath), fit: BoxFit.cover)
+                      : const Center(child: Icon(Icons.receipt_outlined)),
+                ),
+              ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _existingReceipts.removeWhere((r) => r.id == receipt.id);
+                      _deletedReceiptIds.add(receipt.id);
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withAlpha(200),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(Icons.close, size: 16, color: theme.colorScheme.error),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDraftReceiptThumbnail(
+    DraftReceipt draft,
+    int index,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
+    return Container(
+      width: 80,
+      margin: const EdgeInsets.only(right: 8),
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () {
+              ReceiptPreviewDialog.show(
+                context,
+                title: '${l10n.receiptPreview} #$index',
+                subtitle: draft.fileName,
+                imageBytes: draft.bytes,
+              );
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              width: 80,
+              height: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                color: theme.colorScheme.surfaceContainerHighest,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.memory(draft.bytes, fit: BoxFit.cover),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _draftReceipts.remove(draft);
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withAlpha(200),
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 16, color: theme.colorScheme.error),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSubmitButton(ThemeData theme, AppLocalizations l10n) {
     return FilledButton(
       onPressed: _saveExpense,
@@ -412,3 +695,4 @@ class _ExpenseSheetState extends ConsumerState<ExpenseSheet> {
     );
   }
 }
+

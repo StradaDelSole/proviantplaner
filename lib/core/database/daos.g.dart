@@ -24,6 +24,7 @@ mixin _$ExpenseDaoMixin on DatabaseAccessor<AppDatabase> {
   $CrewMembersTable get crewMembers => attachedDatabase.crewMembers;
   $ExpensesTable get expenses => attachedDatabase.expenses;
   $KittyPaymentsTable get kittyPayments => attachedDatabase.kittyPayments;
+  $ExpenseReceiptsTable get expenseReceipts => attachedDatabase.expenseReceipts;
 }
 mixin _$BoatProfileDaoMixin on DatabaseAccessor<AppDatabase> {
   $BoatProfilesTable get boatProfiles => attachedDatabase.boatProfiles;

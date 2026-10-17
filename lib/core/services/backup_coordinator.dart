@@ -3,27 +3,63 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/hullq_backup_service.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
+
+/// Exception wenn eine referenzierte Belegdatei fehlt oder unlesbar ist (Finding A).
+class BackupIntegrityException implements Exception {
+  final String message;
+  const BackupIntegrityException(this.message);
+  @override
+  String toString() => 'BackupIntegrityException: $message';
+}
+
+/// Exception wenn die Beleg-Gesamtgröße im Backup das Limit überschreitet (Finding F).
+class BackupSizeLimitExceededException implements Exception {
+  final String message;
+  final int totalBytes;
+  final int maxBytes;
+  const BackupSizeLimitExceededException({
+    required this.message,
+    required this.totalBytes,
+    required this.maxBytes,
+  });
+  @override
+  String toString() => 'BackupSizeLimitExceededException: $message';
+}
+
+/// Exception wenn ein Backup-Datensatz korrupt oder unvollständig ist (Finding A & C).
+class BackupCorruptException implements Exception {
+  final String message;
+  const BackupCorruptException(this.message);
+  @override
+  String toString() => 'BackupCorruptException: $message';
+}
 
 /// Verwaltet den Export aller lokalen Törndaten in die Cloud und den Import daraus.
 class BackupCoordinator {
   final AppDatabase _db;
   final HullqBackupService _backupService;
   final HullqAuthService _authService;
+  final ReceiptFileService _receiptFileService;
 
   BackupCoordinator({
     required AppDatabase db,
     required HullqBackupService backupService,
     required HullqAuthService authService,
+    ReceiptFileService? receiptFileService,
   })  : _db = db,
         _backupService = backupService,
-        _authService = authService;
+        _authService = authService,
+        _receiptFileService = receiptFileService ?? ReceiptFileService();
 
   /// Prüft, ob eine Sicherung in der Cloud existiert.
   Future<bool> hasBackup() async {
@@ -31,9 +67,12 @@ class BackupCoordinator {
     return data != null && data.isNotEmpty;
   }
 
+  /// Maximale Gesamtgröße aller Belege in einem Cloud-Backup (50 MB) zum Schutz vor Speicher-/Worker-Limits.
+  static const int defaultMaxBackupReceiptBytes = 50 * 1024 * 1024;
+
   /// Erstellt eine Sicherung aller Törns.
   /// Gemäß PRD nur für angemeldete Mitglieder verfügbar.
-  Future<bool> createBackup() async {
+  Future<bool> createBackup({int maxBackupReceiptBytes = defaultMaxBackupReceiptBytes}) async {
     final status = await _authService.getMembershipStatus();
     if (status == HullqMembershipStatus.trial) {
       throw StateError('Sicherung ist nur für angemeldete HullQ-Mitglieder verfügbar.');
@@ -42,6 +81,7 @@ class BackupCoordinator {
     final allTrips = await _db.tripDao.getAllTrips();
     final allBoatProfiles = await _db.boatProfileDao.getAllProfiles(includeArchived: true);
     final tripsBackupList = <Map<String, dynamic>>[];
+    int totalReceiptBytes = 0;
 
     for (final trip in allTrips) {
       final days = await _db.tripDao.getDaysForTrip(trip.id);
@@ -57,6 +97,37 @@ class BackupCoordinator {
 
       final expenses = await _db.expenseDao.getExpensesForTrip(trip.id);
       final payments = await _db.expenseDao.getKittyPaymentsForTrip(trip.id);
+      final receipts = await _db.expenseDao.getReceiptsForTrip(trip.id);
+
+      final receiptsBackup = <Map<String, dynamic>>[];
+      for (final r in receipts) {
+        final bytes = await _receiptFileService.readReceiptBytes(r.filePath);
+        if (bytes == null || bytes.isEmpty) {
+          throw BackupIntegrityException(
+            'Belegdatei für Beleg ${r.id} fehlt oder ist leer: ${r.filePath}. Ein unvollständiges Backup wird nicht erstellt.',
+          );
+        }
+        totalReceiptBytes += bytes.length;
+        if (totalReceiptBytes > maxBackupReceiptBytes) {
+          throw BackupSizeLimitExceededException(
+            message:
+                'Die Gesamtgröße aller Belege (${(totalReceiptBytes / (1024 * 1024)).toStringAsFixed(1)} MB) überschreitet das Limit von ${(maxBackupReceiptBytes / (1024 * 1024)).toStringAsFixed(0)} MB.',
+            totalBytes: totalReceiptBytes,
+            maxBytes: maxBackupReceiptBytes,
+          );
+        }
+        receiptsBackup.add({
+          'id': r.id,
+          'tripId': r.tripId,
+          'expenseId': r.expenseId,
+          'filePath': r.filePath,
+          'fileName': r.fileName,
+          'byteSize': bytes.length,
+          'sortOrder': r.sortOrder,
+          'createdAt': r.createdAt.toIso8601String(),
+          'imageBase64': base64Encode(bytes),
+        });
+      }
 
       tripsBackupList.add({
         'trip': _serializeTrip(trip),
@@ -67,11 +138,12 @@ class BackupCoordinator {
         'allocations': allocations.map(_serializeAllocation).toList(),
         'expenses': expenses.map(_serializeExpense).toList(),
         'payments': payments.map(_serializePayment).toList(),
+        'receipts': receiptsBackup,
       });
     }
 
     final backupPayload = jsonEncode({
-      'version': 2,
+      'version': 3,
       'exportedAt': DateTime.now().toIso8601String(),
       'boatProfiles': allBoatProfiles.map(_serializeBoatProfile).toList(),
       'trips': tripsBackupList,
@@ -80,7 +152,7 @@ class BackupCoordinator {
     return _backupService.backupData(backupPayload);
   }
 
-  /// Stellt alle gesicherten Törns und Bootsprofile wieder her.
+  /// Stellt alle gesicherten Törns und Bootsprofile crash-sicher wieder her.
   /// Gewährleistet relationale Integrität durch Neu-Verknüpfung der generierten IDs.
   Future<bool> restoreBackup() async {
     final status = await _authService.getMembershipStatus();
@@ -97,291 +169,379 @@ class BackupCoordinator {
     final rawProfiles = decoded['boatProfiles'] as List<dynamic>? ?? [];
     final tripsList = decoded['trips'] as List<dynamic>? ?? [];
 
-    await _db.transaction(() async {
-      // Vorhandene Daten bereinigen
-      await _db.customStatement('PRAGMA foreign_keys = OFF');
-      try {
-        await _db.delete(_db.kittyPayments).go();
-        await _db.delete(_db.expenses).go();
-        await _db.delete(_db.listItemAllocations).go();
-        await _db.delete(_db.listItems).go();
-        await _db.delete(_db.shoppingStops).go();
-        await _db.delete(_db.crewMembers).go();
-        await _db.delete(_db.tripDays).go();
-        await _db.delete(_db.trips).go();
-        await _db.delete(_db.boatProfiles).go();
-
-        // 0. Bootsprofile einfügen (falls in Backup vorhanden)
-        final profileIdMap = <int, int>{};
-        for (final rawProfile in rawProfiles) {
-          final pMap = rawProfile as Map<String, dynamic>;
-          final oldProfileId = pMap['id'] as int;
-          final newProfileId = await _db.into(_db.boatProfiles).insert(
-            BoatProfilesCompanion.insert(
-              name: pMap['name'] as String,
-              manufacturer: Value(pMap['manufacturer'] as String?),
-              model: Value(pMap['model'] as String?),
-              fridgeCapacity: Value(pMap['fridgeCapacity'] as int? ?? 100),
-              hasFreezer: Value(pMap['hasFreezer'] as bool? ?? false),
-              freezerCapacity: Value(pMap['freezerCapacity'] as int? ?? 0),
-              waterTankLiters: Value(pMap['waterTankLiters'] as int? ?? 0),
-              isWaterTankDrinkable: Value(pMap['isWaterTankDrinkable'] as bool? ?? false),
-              hasWatermaker: Value(pMap['hasWatermaker'] as bool? ?? false),
-              isArchived: Value(pMap['isArchived'] as bool? ?? false),
-              createdAt: pMap['createdAt'] != null
-                  ? Value(DateTime.parse(pMap['createdAt'] as String))
-                  : const Value.absent(),
-            ),
+    // Pre-Flight-Validierung aller Belege (Finding A & C):
+    // Kein Restore startet und keine aktiven Daten werden verändert, wenn ein Beleg korrupt ist.
+    for (final rawTripData in tripsList) {
+      final tripData = rawTripData as Map<String, dynamic>;
+      final receipts = tripData['receipts'] as List<dynamic>? ?? [];
+      for (final r in receipts) {
+        final rMap = r as Map<String, dynamic>;
+        final b64 = rMap['imageBase64'] as String?;
+        if (b64 == null || b64.trim().isEmpty) {
+          throw BackupCorruptException(
+            'Beleg ${rMap['id']} im Backup enthält keine Bilddaten (imageBase64 fehlt oder ist leer).',
           );
-          profileIdMap[oldProfileId] = newProfileId;
         }
-
-        for (final rawTripData in tripsList) {
-          final tripData = rawTripData as Map<String, dynamic>;
-          final tMap = tripData['trip'] as Map<String, dynamic>;
-
-          // 1. Trip einfügen
-          final oldBoatProfileId = tMap['boatProfileId'] as int?;
-          final newBoatProfileId = oldBoatProfileId != null ? profileIdMap[oldBoatProfileId] : null;
-
-          final newTripId = await _db.into(_db.trips).insert(
-            TripsCompanion.insert(
-              name: tMap['name'] as String,
-              startDate: DateTime.parse(tMap['startDate'] as String),
-              region: Value(tMap['region'] as String? ?? 'warm'),
-              climate: Value(tMap['climate'] as String? ??
-                  (tMap['region'] == 'temperate'
-                      ? 'cool'
-                      : (tMap['region'] == 'hot_or_remote' ? 'hot' : 'warm'))),
-              isCharter: Value(tMap['isCharter'] as bool? ?? true),
-              boatProfileId: Value(newBoatProfileId),
-              boatName: Value(tMap['boatName'] as String?),
-              boatManufacturer: Value(tMap['boatManufacturer'] as String?),
-              boatModel: Value(tMap['boatModel'] as String?),
-              boatType: Value(tMap['boatType'] as String? ?? 'mono'),
-              fridgeCapacity: Value(tMap['fridgeCapacity'] as int? ?? 100),
-              appetite: tMap['appetite'] != null
-                  ? Value(CrewAppetite.fromString(tMap['appetite'] as String))
-                  : const Value.absent(),
-              reserveDays: Value(tMap['reserveDays'] as String? ?? 'few_days'),
-              drinkingHabit: tMap['drinkingHabit'] != null
-                  ? Value(CrewDrinking.fromString(tMap['drinkingHabit'] as String))
-                  : const Value.absent(),
-              hasStorageChecklist: Value(tMap['hasStorageChecklist'] as bool? ?? true),
-              phase: tMap['phase'] != null
-                  ? Value(TripPhase.fromString(tMap['phase'] as String))
-                  : const Value.absent(),
-              isArchived: Value(tMap['isArchived'] as bool? ?? false),
-              currency: Value(tMap['currency'] as String? ?? 'EUR'),
-              kittyModel: tMap['kittyModel'] != null
-                  ? Value(KittyModel.fromString(tMap['kittyModel'] as String))
-                  : const Value.absent(),
-              hasFreezer: Value(tMap['hasFreezer'] as bool? ?? false),
-              freezerCapacity: Value(tMap['freezerCapacity'] as int? ?? 0),
-              waterTankLiters: Value(tMap['waterTankLiters'] as int? ?? 0),
-              isWaterTankDrinkable: Value(tMap['isWaterTankDrinkable'] as bool? ?? false),
-              hasWatermaker: Value(tMap['hasWatermaker'] as bool? ?? false),
-              createdAt: tMap['createdAt'] != null
-                  ? Value(DateTime.parse(tMap['createdAt'] as String))
-                  : const Value.absent(),
-            ),
+        try {
+          final decodedBytes = base64Decode(b64);
+          if (decodedBytes.isEmpty) {
+            throw BackupCorruptException(
+              'Beleg ${rMap['id']} im Backup enthält leere Bilddaten.',
+            );
+          }
+        } catch (e) {
+          if (e is BackupCorruptException) rethrow;
+          throw BackupCorruptException(
+            'Belegbild für Beleg ${rMap['id']} im Backup konnte nicht dekodiert werden.',
           );
+        }
+      }
+    }
 
-          final stopIdMap = <int, int>{};
-          final crewIdMap = <int, int>{};
-          final listItemIdMap = <int, int>{};
+    final docsDir = await _receiptFileService.getDocsDir();
+    final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
+    if (await stagedActiveDir.exists()) {
+      await stagedActiveDir.delete(recursive: true);
+    }
+    await stagedActiveDir.create(recursive: true);
 
-          // 2. ShoppingStops einfügen
-          final stops = tripData['stops'] as List<dynamic>? ?? [];
-          for (final s in stops) {
-            final sMap = s as Map<String, dynamic>;
-            final oldStopId = sMap['id'] as int;
-            final newStopId = await _db.into(_db.shoppingStops).insert(
-              ShoppingStopsCompanion.insert(
-                tripId: newTripId,
-                name: sMap['name'] as String,
-                dayNumber: Value(sMap['dayNumber'] as int? ?? 1),
-                isInitial: Value(sMap['isInitial'] as bool? ?? false),
+    try {
+      await _db.transaction(() async {
+        // Vorhandene Daten bereinigen
+        await _db.customStatement('PRAGMA foreign_keys = OFF');
+        try {
+          await _db.delete(_db.expenseReceipts).go();
+          await _db.delete(_db.kittyPayments).go();
+          await _db.delete(_db.expenses).go();
+          await _db.delete(_db.listItemAllocations).go();
+          await _db.delete(_db.listItems).go();
+          await _db.delete(_db.shoppingStops).go();
+          await _db.delete(_db.crewMembers).go();
+          await _db.delete(_db.tripDays).go();
+          await _db.delete(_db.trips).go();
+          await _db.delete(_db.boatProfiles).go();
+
+          // 0. Bootsprofile einfügen (falls in Backup vorhanden)
+          final profileIdMap = <int, int>{};
+          for (final rawProfile in rawProfiles) {
+            final pMap = rawProfile as Map<String, dynamic>;
+            final oldProfileId = pMap['id'] as int;
+            final newProfileId = await _db.into(_db.boatProfiles).insert(
+              BoatProfilesCompanion.insert(
+                name: pMap['name'] as String,
+                manufacturer: Value(pMap['manufacturer'] as String?),
+                model: Value(pMap['model'] as String?),
+                fridgeCapacity: Value(pMap['fridgeCapacity'] as int? ?? 100),
+                hasFreezer: Value(pMap['hasFreezer'] as bool? ?? false),
+                freezerCapacity: Value(pMap['freezerCapacity'] as int? ?? 0),
+                waterTankLiters: Value(pMap['waterTankLiters'] as int? ?? 0),
+                isWaterTankDrinkable: Value(pMap['isWaterTankDrinkable'] as bool? ?? false),
+                hasWatermaker: Value(pMap['hasWatermaker'] as bool? ?? false),
+                isArchived: Value(pMap['isArchived'] as bool? ?? false),
+                createdAt: pMap['createdAt'] != null
+                    ? Value(DateTime.parse(pMap['createdAt'] as String))
+                    : const Value.absent(),
               ),
             );
-            stopIdMap[oldStopId] = newStopId;
+            profileIdMap[oldProfileId] = newProfileId;
           }
 
-          // 3. TripDays einfügen
-          final days = tripData['days'] as List<dynamic>? ?? [];
-          for (final d in days) {
-            final dMap = d as Map<String, dynamic>;
-            await _db.into(_db.tripDays).insert(
-              TripDaysCompanion.insert(
-                tripId: newTripId,
-                dayNumber: dMap['dayNumber'] as int,
-                lunchRestaurant: Value(dMap['lunchRestaurant'] as bool? ?? false),
-                dinnerRestaurant: Value(dMap['dinnerRestaurant'] as bool? ?? false),
-                dayType: Value(dMap['dayType'] as String?),
-                portName: Value(dMap['portName'] as String?),
+          for (final rawTripData in tripsList) {
+            final tripData = rawTripData as Map<String, dynamic>;
+            final tMap = tripData['trip'] as Map<String, dynamic>;
+
+            // 1. Trip einfügen
+            final oldBoatProfileId = tMap['boatProfileId'] as int?;
+            final newBoatProfileId = oldBoatProfileId != null ? profileIdMap[oldBoatProfileId] : null;
+
+            final newTripId = await _db.into(_db.trips).insert(
+              TripsCompanion.insert(
+                name: tMap['name'] as String,
+                startDate: DateTime.parse(tMap['startDate'] as String),
+                region: Value(tMap['region'] as String? ?? 'warm'),
+                climate: Value(tMap['climate'] as String? ??
+                    (tMap['region'] == 'temperate'
+                        ? 'cool'
+                        : (tMap['region'] == 'hot_or_remote' ? 'hot' : 'warm'))),
+                isCharter: Value(tMap['isCharter'] as bool? ?? true),
+                boatProfileId: Value(newBoatProfileId),
+                boatName: Value(tMap['boatName'] as String?),
+                boatManufacturer: Value(tMap['boatManufacturer'] as String?),
+                boatModel: Value(tMap['boatModel'] as String?),
+                boatType: Value(tMap['boatType'] as String? ?? 'mono'),
+                fridgeCapacity: Value(tMap['fridgeCapacity'] as int? ?? 100),
+                appetite: tMap['appetite'] != null
+                    ? Value(CrewAppetite.fromString(tMap['appetite'] as String))
+                    : const Value.absent(),
+                reserveDays: Value(tMap['reserveDays'] as String? ?? 'few_days'),
+                drinkingHabit: tMap['drinkingHabit'] != null
+                    ? Value(CrewDrinking.fromString(tMap['drinkingHabit'] as String))
+                    : const Value.absent(),
+                hasStorageChecklist: Value(tMap['hasStorageChecklist'] as bool? ?? true),
+                phase: tMap['phase'] != null
+                    ? Value(TripPhase.fromString(tMap['phase'] as String))
+                    : const Value.absent(),
+                isArchived: Value(tMap['isArchived'] as bool? ?? false),
+                currency: Value(tMap['currency'] as String? ?? 'EUR'),
+                kittyModel: tMap['kittyModel'] != null
+                    ? Value(KittyModel.fromString(tMap['kittyModel'] as String))
+                    : const Value.absent(),
+                hasFreezer: Value(tMap['hasFreezer'] as bool? ?? false),
+                freezerCapacity: Value(tMap['freezerCapacity'] as int? ?? 0),
+                waterTankLiters: Value(tMap['waterTankLiters'] as int? ?? 0),
+                isWaterTankDrinkable: Value(tMap['isWaterTankDrinkable'] as bool? ?? false),
+                hasWatermaker: Value(tMap['hasWatermaker'] as bool? ?? false),
+                createdAt: tMap['createdAt'] != null
+                    ? Value(DateTime.parse(tMap['createdAt'] as String))
+                    : const Value.absent(),
               ),
             );
-          }
 
-          // 4. CrewMembers einfügen
-          final crew = tripData['crew'] as List<dynamic>? ?? [];
-          for (final c in crew) {
-            final cMap = c as Map<String, dynamic>;
-            final oldCrewId = cMap['id'] as int;
-            final newCrewId = await _db.into(_db.crewMembers).insert(
-              CrewMembersCompanion.insert(
-                tripId: newTripId,
-                name: cMap['name'] as String,
-                isChild: Value(cMap['isChild'] as bool? ?? false),
-                isVegetarian: Value(cMap['isVegetarian'] as bool? ?? false),
-                isNonDrinker: Value(cMap['isNonDrinker'] as bool? ?? false),
-                customEatLevel: Value(cMap['customEatLevel'] as String?),
-                customDrinkLevel: Value(cMap['customDrinkLevel'] as String?),
-                categoryParticipation: Value(cMap['categoryParticipation'] as String? ?? '{"all": true}'),
-                isSkipperFree: Value(cMap['isSkipperFree'] as bool? ?? false),
-                skipperFreeScope: Value(cMap['skipperFreeScope'] as String?),
-              ),
-            );
-            crewIdMap[oldCrewId] = newCrewId;
-          }
+            final stopIdMap = <int, int>{};
+            final crewIdMap = <int, int>{};
+            final listItemIdMap = <int, int>{};
 
-          // Falls treasurerMemberId vorhanden, jetzt über crewIdMap aktualisieren
-          if (tMap['treasurerMemberId'] != null) {
-            final oldTreasurerId = tMap['treasurerMemberId'] as int;
-            final newTreasurerId = crewIdMap[oldTreasurerId];
-            if (newTreasurerId != null) {
-              await (_db.update(_db.trips)..where((t) => t.id.equals(newTripId))).write(
-                TripsCompanion(treasurerMemberId: Value(newTreasurerId)),
-              );
-            }
-          }
-
-          // 5. ListItems einfügen
-          final items = tripData['items'] as List<dynamic>? ?? [];
-          for (final i in items) {
-            final iMap = i as Map<String, dynamic>;
-            final oldItemId = iMap['id'] as int;
-            final newItemId = await _db.into(_db.listItems).insert(
-              ListItemsCompanion.insert(
-                tripId: newTripId,
-                catalogId: iMap['catalogId'] as String,
-                isCustom: Value(iMap['isCustom'] as bool? ?? false),
-                customName: Value(iMap['customName'] as String?),
-                customUnit: Value(iMap['customUnit'] as String?),
-                customDepartment: Value(iMap['customDepartment'] as String?),
-                selected: Value(iMap['selected'] as bool? ?? true),
-                share: Value(iMap['share'] as double? ?? 1.0),
-                calculatedQuantity: Value(iMap['calculatedQuantity'] as double? ?? 0.0),
-                calculatedPackages: Value(iMap['calculatedPackages'] as int? ?? 1),
-                overriddenPackages: Value(iMap['overriddenPackages'] as int?),
-                customPackageSize: Value(iMap['customPackageSize'] as double?),
-              ),
-            );
-            listItemIdMap[oldItemId] = newItemId;
-          }
-
-          // 6. ListItemAllocations einfügen
-          final allocations = tripData['allocations'] as List<dynamic>? ?? [];
-          for (final a in allocations) {
-            final aMap = a as Map<String, dynamic>;
-            final oldItemId = aMap['listItemId'] as int;
-            final oldStopId = aMap['shoppingStopId'] as int;
-            final newItemId = listItemIdMap[oldItemId];
-            final newStopId = stopIdMap[oldStopId];
-            if (newItemId != null && newStopId != null) {
-              await _db.into(_db.listItemAllocations).insert(
-                ListItemAllocationsCompanion.insert(
+            // 2. ShoppingStops einfügen
+            final stops = tripData['stops'] as List<dynamic>? ?? [];
+            for (final s in stops) {
+              final sMap = s as Map<String, dynamic>;
+              final oldStopId = sMap['id'] as int;
+              final newStopId = await _db.into(_db.shoppingStops).insert(
+                ShoppingStopsCompanion.insert(
                   tripId: newTripId,
-                  listItemId: newItemId,
-                  shoppingStopId: newStopId,
-                  allocatedPackages: aMap['allocatedPackages'] as int,
-                  isBought: Value(aMap['isBought'] as bool? ?? false),
-                  isStored: Value(aMap['isStored'] as bool? ?? false),
+                  name: sMap['name'] as String,
+                  dayNumber: Value(sMap['dayNumber'] as int? ?? 1),
+                  isInitial: Value(sMap['isInitial'] as bool? ?? false),
+                ),
+              );
+              stopIdMap[oldStopId] = newStopId;
+            }
+
+            // 3. TripDays einfügen
+            final days = tripData['days'] as List<dynamic>? ?? [];
+            for (final d in days) {
+              final dMap = d as Map<String, dynamic>;
+              await _db.into(_db.tripDays).insert(
+                TripDaysCompanion.insert(
+                  tripId: newTripId,
+                  dayNumber: dMap['dayNumber'] as int,
+                  lunchRestaurant: Value(dMap['lunchRestaurant'] as bool? ?? false),
+                  dinnerRestaurant: Value(dMap['dinnerRestaurant'] as bool? ?? false),
+                  dayType: Value(dMap['dayType'] as String?),
+                  portName: Value(dMap['portName'] as String?),
                 ),
               );
             }
-          }
 
-          // 7. Expenses einfügen
-          final expenses = tripData['expenses'] as List<dynamic>? ?? [];
-          for (final e in expenses) {
-            final eMap = e as Map<String, dynamic>;
-            final oldPayerId = eMap['paidByCrewMemberId'] as int?;
-            if (oldPayerId != null && !crewIdMap.containsKey(oldPayerId)) {
-              throw StateError(
-                'Cannot restore expense: payer ID $oldPayerId could not be mapped to restored crew.',
+            // 4. CrewMembers einfügen
+            final crew = tripData['crew'] as List<dynamic>? ?? [];
+            for (final c in crew) {
+              final cMap = c as Map<String, dynamic>;
+              final oldCrewId = cMap['id'] as int;
+              final newCrewId = await _db.into(_db.crewMembers).insert(
+                CrewMembersCompanion.insert(
+                  tripId: newTripId,
+                  name: cMap['name'] as String,
+                  isChild: Value(cMap['isChild'] as bool? ?? false),
+                  isVegetarian: Value(cMap['isVegetarian'] as bool? ?? false),
+                  isNonDrinker: Value(cMap['isNonDrinker'] as bool? ?? false),
+                  customEatLevel: Value(cMap['customEatLevel'] as String?),
+                  customDrinkLevel: Value(cMap['customDrinkLevel'] as String?),
+                  categoryParticipation: Value(cMap['categoryParticipation'] as String? ?? '{"all": true}'),
+                  isSkipperFree: Value(cMap['isSkipperFree'] as bool? ?? false),
+                  skipperFreeScope: Value(cMap['skipperFreeScope'] as String?),
+                ),
               );
+              crewIdMap[oldCrewId] = newCrewId;
             }
-            final newPayerId = oldPayerId != null ? crewIdMap[oldPayerId] : null;
 
-            String? remappedCustomSplit;
-            final rawSplit = eMap['customSplit'] as String?;
-            if (rawSplit != null && rawSplit.isNotEmpty) {
-              final dynamic decoded = jsonDecode(rawSplit);
-              if (decoded is Map) {
-                final remappedMap = <String, dynamic>{};
-                for (final entry in decoded.entries) {
-                  final oldId = int.tryParse(entry.key.toString());
-                  if (oldId == null || !crewIdMap.containsKey(oldId)) {
-                    throw StateError(
-                      'Cannot restore custom split: member ID ${entry.key} could not be mapped to restored crew.',
-                    );
-                  }
-                  final newId = crewIdMap[oldId]!;
-                  remappedMap[newId.toString()] = entry.value;
-                }
-                remappedCustomSplit = jsonEncode(remappedMap);
-              } else {
-                remappedCustomSplit = rawSplit;
+            // Falls treasurerMemberId vorhanden, jetzt über crewIdMap aktualisieren
+            if (tMap['treasurerMemberId'] != null) {
+              final oldTreasurerId = tMap['treasurerMemberId'] as int;
+              final newTreasurerId = crewIdMap[oldTreasurerId];
+              if (newTreasurerId != null) {
+                await (_db.update(_db.trips)..where((t) => t.id.equals(newTripId))).write(
+                  TripsCompanion(treasurerMemberId: Value(newTreasurerId)),
+                );
               }
             }
 
-            await _db.into(_db.expenses).insert(
-              ExpensesCompanion.insert(
-                tripId: newTripId,
-                amount: eMap['amount'] as double,
-                currency: Value(eMap['currency'] as String? ?? 'EUR'),
-                category: ExpenseCategory.fromString(eMap['category'] as String),
-                paidByCrewMemberId: Value(newPayerId),
-                isPaidFromKitty: Value(eMap['isPaidFromKitty'] as bool? ?? false),
-                customSplit: Value(remappedCustomSplit),
-                note: Value(eMap['note'] as String?),
-                createdAt: eMap['createdAt'] != null
-                    ? Value(DateTime.parse(eMap['createdAt'] as String))
-                    : const Value.absent(),
-              ),
-            );
-          }
+            // 5. ListItems einfügen
+            final items = tripData['items'] as List<dynamic>? ?? [];
+            for (final i in items) {
+              final iMap = i as Map<String, dynamic>;
+              final oldItemId = iMap['id'] as int;
+              final newItemId = await _db.into(_db.listItems).insert(
+                ListItemsCompanion.insert(
+                  tripId: newTripId,
+                  catalogId: iMap['catalogId'] as String,
+                  isCustom: Value(iMap['isCustom'] as bool? ?? false),
+                  customName: Value(iMap['customName'] as String?),
+                  customUnit: Value(iMap['customUnit'] as String?),
+                  customDepartment: Value(iMap['customDepartment'] as String?),
+                  selected: Value(iMap['selected'] as bool? ?? true),
+                  share: Value(iMap['share'] as double? ?? 1.0),
+                  calculatedQuantity: Value(iMap['calculatedQuantity'] as double? ?? 0.0),
+                  calculatedPackages: Value(iMap['calculatedPackages'] as int? ?? 1),
+                  overriddenPackages: Value(iMap['overriddenPackages'] as int?),
+                  customPackageSize: Value(iMap['customPackageSize'] as double?),
+                ),
+              );
+              listItemIdMap[oldItemId] = newItemId;
+            }
 
-          // 8. KittyPayments einfügen
-          final payments = tripData['payments'] as List<dynamic>? ?? [];
-          for (final p in payments) {
-            final pMap = p as Map<String, dynamic>;
-            final oldMemberId = pMap['crewMemberId'] as int;
-            if (!crewIdMap.containsKey(oldMemberId)) {
-              throw StateError(
-                'Cannot restore kitty payment: member ID $oldMemberId could not be mapped to restored crew.',
+            // 6. ListItemAllocations einfügen
+            final allocations = tripData['allocations'] as List<dynamic>? ?? [];
+            for (final a in allocations) {
+              final aMap = a as Map<String, dynamic>;
+              final oldItemId = aMap['listItemId'] as int;
+              final oldStopId = aMap['shoppingStopId'] as int;
+              final newItemId = listItemIdMap[oldItemId];
+              final newStopId = stopIdMap[oldStopId];
+              if (newItemId != null && newStopId != null) {
+                await _db.into(_db.listItemAllocations).insert(
+                  ListItemAllocationsCompanion.insert(
+                    tripId: newTripId,
+                    listItemId: newItemId,
+                    shoppingStopId: newStopId,
+                    allocatedPackages: aMap['allocatedPackages'] as int,
+                    isBought: Value(aMap['isBought'] as bool? ?? false),
+                    isStored: Value(aMap['isStored'] as bool? ?? false),
+                  ),
+                );
+              }
+            }
+
+            // 7. Expenses einfügen
+            final expenseIdMap = <int, int>{};
+            final expenses = tripData['expenses'] as List<dynamic>? ?? [];
+            for (final e in expenses) {
+              final eMap = e as Map<String, dynamic>;
+              final oldExpenseId = eMap['id'] as int;
+              final oldPayerId = eMap['paidByCrewMemberId'] as int?;
+              if (oldPayerId != null && !crewIdMap.containsKey(oldPayerId)) {
+                throw StateError(
+                  'Cannot restore expense: payer ID $oldPayerId could not be mapped to restored crew.',
+                );
+              }
+              final newPayerId = oldPayerId != null ? crewIdMap[oldPayerId] : null;
+
+              String? remappedCustomSplit;
+              final rawSplit = eMap['customSplit'] as String?;
+              if (rawSplit != null && rawSplit.isNotEmpty) {
+                final dynamic decoded = jsonDecode(rawSplit);
+                if (decoded is Map) {
+                  final remappedMap = <String, dynamic>{};
+                  for (final entry in decoded.entries) {
+                    final oldId = int.tryParse(entry.key.toString());
+                    if (oldId == null || !crewIdMap.containsKey(oldId)) {
+                      throw StateError(
+                        'Cannot restore custom split: member ID ${entry.key} could not be mapped to restored crew.',
+                      );
+                    }
+                    final newId = crewIdMap[oldId]!;
+                    remappedMap[newId.toString()] = entry.value;
+                  }
+                  remappedCustomSplit = jsonEncode(remappedMap);
+                } else {
+                  remappedCustomSplit = rawSplit;
+                }
+              }
+
+              final newExpenseId = await _db.into(_db.expenses).insert(
+                ExpensesCompanion.insert(
+                  tripId: newTripId,
+                  amount: eMap['amount'] as double,
+                  currency: Value(eMap['currency'] as String? ?? 'EUR'),
+                  category: ExpenseCategory.fromString(eMap['category'] as String),
+                  paidByCrewMemberId: Value(newPayerId),
+                  isPaidFromKitty: Value(eMap['isPaidFromKitty'] as bool? ?? false),
+                  customSplit: Value(remappedCustomSplit),
+                  note: Value(eMap['note'] as String?),
+                  createdAt: eMap['createdAt'] != null
+                      ? Value(DateTime.parse(eMap['createdAt'] as String))
+                      : const Value.absent(),
+                ),
+              );
+              expenseIdMap[oldExpenseId] = newExpenseId;
+            }
+
+            // 8. KittyPayments einfügen
+            final payments = tripData['payments'] as List<dynamic>? ?? [];
+            for (final p in payments) {
+              final pMap = p as Map<String, dynamic>;
+              final oldMemberId = pMap['crewMemberId'] as int;
+              if (!crewIdMap.containsKey(oldMemberId)) {
+                throw StateError(
+                  'Cannot restore kitty payment: member ID $oldMemberId could not be mapped to restored crew.',
+                );
+              }
+              final newMemberId = crewIdMap[oldMemberId]!;
+              await _db.into(_db.kittyPayments).insert(
+                KittyPaymentsCompanion.insert(
+                  tripId: newTripId,
+                  crewMemberId: newMemberId,
+                  amount: pMap['amount'] as double,
+                  paidAt: pMap['paidAt'] != null
+                      ? Value(DateTime.parse(pMap['paidAt'] as String))
+                      : const Value.absent(),
+                ),
               );
             }
-            final newMemberId = crewIdMap[oldMemberId]!;
-            await _db.into(_db.kittyPayments).insert(
-              KittyPaymentsCompanion.insert(
-                tripId: newTripId,
-                crewMemberId: newMemberId,
-                amount: pMap['amount'] as double,
-                paidAt: pMap['paidAt'] != null
-                    ? Value(DateTime.parse(pMap['paidAt'] as String))
-                    : const Value.absent(),
-              ),
-            );
-          }
-        }
-      } finally {
-        await _db.customStatement('PRAGMA foreign_keys = ON');
-      }
-    });
 
-    return true;
+            // 9. Receipts einfügen (RECEIPT1)
+            final receipts = tripData['receipts'] as List<dynamic>? ?? [];
+            for (final r in receipts) {
+              final rMap = r as Map<String, dynamic>;
+              final oldExpenseId = rMap['expenseId'] as int;
+              final newExpenseId = expenseIdMap[oldExpenseId];
+              if (newExpenseId != null) {
+                final base64Image = rMap['imageBase64'] as String;
+                final fileName = _receiptFileService.sanitizeFileName(rMap['fileName'] as String?);
+                final imageBytes = base64Decode(base64Image);
+
+                // Kollisionsfreie interne Datei im Staging-Ordner erzeugen
+                final uniqueInternalName = 'rcpt_${DateTime.now().microsecondsSinceEpoch}_${rMap['id'] ?? 0}.jpg';
+                final stagedExpenseDir = Directory(
+                  p.join(stagedActiveDir.path, 'trip_$newTripId', 'expense_$newExpenseId'),
+                );
+                if (!await stagedExpenseDir.exists()) {
+                  await stagedExpenseDir.create(recursive: true);
+                }
+                final stagedFile = File(p.join(stagedExpenseDir.path, uniqueInternalName));
+                await stagedFile.writeAsBytes(imageBytes, flush: true);
+
+                final relativeFilePath = p.join('receipts', 'trip_$newTripId', 'expense_$newExpenseId', uniqueInternalName);
+
+                await _db.into(_db.expenseReceipts).insert(
+                  ExpenseReceiptsCompanion.insert(
+                    tripId: newTripId,
+                    expenseId: newExpenseId,
+                    filePath: relativeFilePath,
+                    fileName: fileName,
+                    byteSize: Value(imageBytes.length),
+                    sortOrder: Value(rMap['sortOrder'] as int? ?? 0),
+                    createdAt: rMap['createdAt'] != null
+                        ? Value(DateTime.parse(rMap['createdAt'] as String))
+                        : const Value.absent(),
+                  ),
+                );
+              }
+            }
+          }
+        } finally {
+          await _db.customStatement('PRAGMA foreign_keys = ON');
+        }
+      });
+
+      // DB-Transaktion war erfolgreich -> Staged Files atomar zum neuen Produktivstand machen
+      await _receiptFileService.commitRestoreStaging(stagedActiveDir: stagedActiveDir);
+      return true;
+    } catch (e) {
+      // Bei Fehler: Abort und Rollback des Dateisystems
+      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+      rethrow;
+    }
   }
 
   Map<String, dynamic> _serializeTrip(Trip t) => {

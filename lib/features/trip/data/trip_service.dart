@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
@@ -31,6 +32,7 @@ class TripService {
   final CatalogRepository catalogRepository;
   final BoatProfileDao? boatProfileDao;
   final ExpenseDao? expenseDao;
+  final ReceiptFileService? receiptFileService;
   void Function(int tripId)? onTripDataChanged;
 
   TripService({
@@ -39,6 +41,7 @@ class TripService {
     required this.catalogRepository,
     this.boatProfileDao,
     this.expenseDao,
+    this.receiptFileService,
     this.onTripDataChanged,
   });
 
@@ -547,6 +550,16 @@ class TripService {
 
     await tripDao.deleteCrewMember(crewMemberId);
     await recalculateTrip(tripId);
+  }
+
+  /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem (RECEIPT1 Finding D).
+  Future<bool> deleteTrip(int tripId) async {
+    final count = await tripDao.deleteTrip(tripId);
+    if (count > 0) {
+      await receiptFileService?.deleteTripReceipts(tripId);
+      return true;
+    }
+    return false;
   }
 }
 

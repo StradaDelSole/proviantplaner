@@ -474,8 +474,8 @@ class ListItemDao extends DatabaseAccessor<AppDatabase> with _$ListItemDaoMixin 
   }
 }
 
-/// DAO für Bordkassenausgaben und Einzahlungen.
-@DriftAccessor(tables: [Expenses, KittyPayments])
+/// DAO für Bordkassenausgaben, Belege und Einzahlungen.
+@DriftAccessor(tables: [Expenses, KittyPayments, ExpenseReceipts])
 class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
   ExpenseDao(super.db);
 
@@ -484,6 +484,9 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
 
   Future<List<Expense>> getExpensesForTrip(int tripId) =>
       (select(expenses)..where((tbl) => tbl.tripId.equals(tripId))).get();
+
+  Future<Expense?> getExpenseById(int id) =>
+      (select(expenses)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
 
   Future<bool> updateExpense(Expense expense) =>
       update(expenses).replace(expense);
@@ -499,6 +502,32 @@ class ExpenseDao extends DatabaseAccessor<AppDatabase> with _$ExpenseDaoMixin {
 
   Future<int> deleteKittyPayment(int id) =>
       (delete(kittyPayments)..where((tbl) => tbl.id.equals(id))).go();
+
+  // --- Belege (RECEIPT1) ---
+
+  Future<int> addReceipt(ExpenseReceiptsCompanion receipt) =>
+      into(expenseReceipts).insert(receipt);
+
+  Future<List<ExpenseReceipt>> getReceiptsForExpense(int expenseId) =>
+      (select(expenseReceipts)
+            ..where((tbl) => tbl.expenseId.equals(expenseId))
+            ..orderBy([(t) => OrderingTerm.asc(t.sortOrder), (t) => OrderingTerm.asc(t.id)]))
+          .get();
+
+  Future<List<ExpenseReceipt>> getReceiptsForTrip(int tripId) =>
+      (select(expenseReceipts)
+            ..where((tbl) => tbl.tripId.equals(tripId))
+            ..orderBy([(t) => OrderingTerm.asc(t.expenseId), (t) => OrderingTerm.asc(t.sortOrder)]))
+          .get();
+
+  Future<ExpenseReceipt?> getReceiptById(int id) =>
+      (select(expenseReceipts)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
+  Future<int> deleteReceipt(int id) =>
+      (delete(expenseReceipts)..where((tbl) => tbl.id.equals(id))).go();
+
+  Future<int> deleteReceiptsForExpense(int expenseId) =>
+      (delete(expenseReceipts)..where((tbl) => tbl.expenseId.equals(expenseId))).go();
 
   /// Berechnet die Summe aller getätigten Einzahlungen für einen Törn.
   Future<double> getTotalKittyPayments(int tripId) async {

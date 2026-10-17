@@ -1030,5 +1030,83 @@
   "reviewActionEditItem": "Ajustar artigo",
   "reviewInlineFreshnessHint": "Validade mais curta do que a viagem",
   "reviewInlineFridgeHint": "Necessita de frigorífico",
-  "reviewInlineFreezerHint": "Necessita de congelador"
+  "reviewInlineFreezerHint": "Necessita de congelador",
+  "receiptAdd": "Adicionar comprovativo",
+  "receiptTakePhoto": "Fotografar comprovativo",
+  "receiptPickGallery": "Escolher da galeria",
+  "receiptAddAnotherPage": "Outra página",
+  "receiptDelete": "Remover comprovativo",
+  "receiptDeleteConfirm": "Deseja remover este comprovativo?",
+  "receiptAttachedCount": "{count, plural, =1{1 comprovativo} other{{count} comprovativos}}",
+  "@receiptAttachedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptPreview": "Pré-visualização do comprovativo",
+  "receiptSourceCamera": "Câmara",
+  "receiptSourceGallery": "Galeria",
+  "sendSettlementPackage": "Enviar fecho de contas",
+  "sendSettlementPackageSubtitle": "Partilhar fecho de contas e comprovativos por e-mail ou mensagem",
+  "settlementPackageSubject": "Fecho da caixa {tripName}",
+  "@settlementPackageSubject": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageBody": "Olá tripulação,\n\nsegue em anexo o fecho da caixa de bordo de {tripName} incluindo todos os comprovativos.\n\nCumprimentos,\nProvy",
+  "@settlementPackageBody": {
+    "placeholders": {
+      "tripName": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPackageSplitNotice": "Os comprovativos foram divididos em {count} ficheiros PDF devido ao tamanho.",
+  "@settlementPackageSplitNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptsPdfTitle": "Comprovativos",
+  "receiptMissingError": "A imagem do recibo está em falta ou não pôde ser carregada ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "A imagem do recibo está danificada e não pode ser processada ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Um recibo ou pacote PDF é demasiado grande para exportar (máximo {maxMb} MB).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "A cópia de segurança excede o limite máximo de {maxMb} MB para recibos.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Falta um recibo no armazenamento local. Cópia de segurança cancelada."
 }
+
