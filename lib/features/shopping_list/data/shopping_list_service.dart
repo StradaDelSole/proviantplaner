@@ -707,6 +707,21 @@ class ShoppingListService {
     final listData = await loadShoppingList(tripId);
     final days = await tripDao.getDaysForTrip(tripId);
     final crew = await tripDao.getCrewForTrip(tripId);
+    return reviewProvisioningListData(
+      listData: listData,
+      crew: crew,
+      days: days,
+    );
+  }
+
+  /// Führt die flüchtige Vorratsprüfung anhand geladener TripShoppingListData und Kontexte durch.
+  Future<ProvisioningReviewResult> reviewProvisioningListData({
+    required TripShoppingListData listData,
+    List<CrewMember>? crew,
+    List<TripDay>? days,
+  }) async {
+    final effectiveDays = days ?? await tripDao.getDaysForTrip(listData.trip.id);
+    final effectiveCrew = crew ?? await tripDao.getCrewForTrip(listData.trip.id);
 
     if (catalogRepository.catalog == null ||
         catalogRepository.quantities == null ||
@@ -720,8 +735,8 @@ class ShoppingListService {
 
     final input = ProvisioningReviewInput(
       trip: listData.trip,
-      crew: crew,
-      tripDays: days,
+      crew: effectiveCrew,
+      tripDays: effectiveDays,
       stops: listData.stops,
       allItems: listData.allItems,
       catalog: catalog,

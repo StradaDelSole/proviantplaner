@@ -24,6 +24,47 @@ Status: **VOLLSTÄNDIG IMPLEMENTIERT / CI GRÜN / BEREIT FÜR REVIEW & OWNER ACC
 
 ---
 
+## PIVOT2 Review Amendment (Findings A–G)
+
+In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbesserungen umgesetzt und automatisiert belegt:
+
+1. **Finding A – HIGH: Stale Review Results**
+   - `provisioningReviewProvider` reagiert reaktiv und unterbrechungsfrei auf `tripShoppingListProvider(tripId)`, `tripCrewByIdProvider(tripId)` und `tripDaysByIdProvider(tripId)`.
+   - Bei jeder Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen wird die flüchtige Vorratsprüfung automatisch neu berechnet.
+   - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen`.
+
+2. **Finding B – HIGH: Strict Config Validation**
+   - Freie Regeltyp-Strings durch `ProvisioningReviewRuleType` Enum (`shelfLifeGroupPresence`, `anyVariantPresence`, `groupPresence`) ersetzt.
+   - Pflichtfelder je Regeltyp strikt durchgesetzt (`group`, `minShelfLifeDays`, `variants`).
+   - Validierung von Action-Targets (`targetGroup`, `targetVariants`) gegen `CatalogData` ergänzt; unbekannte Regeltypen, ungültige Gruppen, ungültige Varianten und ungültige Targets werfen explizit `FormatException`.
+   - Nachweis: automatische Negativtests in `PIVOT2 Kriterium 2 & 3: Review-Config Parsing & Validierung` (`Unbekannter Regel-Typ wirft FormatException`, `Fehlende Pflichtfelder je Regel-Typ werfen FormatException`, `Ungültige Action-Ziele werfen FormatException in validateAgainstCatalog`, etc.).
+
+3. **Finding C – HIGH: DATA1 Effective AssistType**
+   - Mengen- und Unterdeckungsprüfungen respektieren den effektiven `AssistType` (`catalog.getEffectiveAssist(variant)`).
+   - Varianten in der Wassergruppe mit `assistOverride: AssistType.preferenceBased` zählen nicht zur Deckung des Grundbedarfs; führen daher nicht fälschlich zur Annahme voller Bedarfsdeckung.
+   - Nachweis: automatischer Test `PIVOT2 Kriterium 10-12: AssistType-Verhalten Variant mit assistOverride: preferenceBased in Wassergruppe zählt nicht zur needs_based Deckung`.
+
+4. **Finding D – MEDIUM: Incomplete Cooling Assessment**
+   - Befund `incompleteCoolingAssessment` wird bei aktiver Kühlkapazität (`fridgeCapacity > 0 || freezerCapacity > 0`) auf Schweregrad `CHECK` gesetzt, wenn unquantifizierbare Kühlartikel vorhanden sind.
+   - Verhindert irreführenden `READY`-Status bei unvollständiger Kühlvolumenprüfung.
+   - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding D: Unquantifizierte Kühlartikel bei aktiver Kühlkapazität erzeugen CHECK`.
+
+5. **Finding E – MEDIUM: UX Actions & Contextual Search/Stop Handoff**
+   - `searchOrAdd`-Aktion übergibt die konkrete Variante oder Gruppe als vorausgefüllte `initialQuery` an `showSearch`.
+   - `assignShoppingStop` öffnet bei mehreren Stopps direkt das `StopAllocationSheet`.
+   - Nachweis: automatischer Widget-Test `PIVOT2 Amendment Tests (Findings A-F) Finding E: Review-Aktionen führen zu echten Navigationen & Hand-offs`.
+
+6. **Finding F – LOW: Stop Context & Allocations**
+   - Haltbarkeitshorizont berücksichtigt Stopp-Allokationen (`_resolveEffectiveHorizonForItem`).
+   - Artikel, die an späteren Stopps gekauft werden, prüfen ihre Haltbarkeit gegen den Stopphorizont statt starr gegen die gesamte Törndauer.
+   - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding F: Einkaufsstopp-Kontext berechnet Haltbarkeitshorizont anhand von Stopp-Allokationen`.
+
+7. **Finding G – LOW: Airtight Read-Only Proof**
+   - Kriterium 1 Test erweitert um Snapshots aller relevanten Tabellen (`trips`, `tripDays`, `crewMembers`, `shoppingStops`, `listItems`, `listItemAllocations`) vor und nach mehrfacher Review-Ausführung inklusive Stopp-Allokationen.
+   - Nachweis: automatischer Test `PIVOT2 Kriterium 1: Pure/Read-Only Garantie reviewProvisioningList verändert keinen Datenbankzustand einschließlich Allokationen`.
+
+---
+
 ### Geänderte / neue Dateien:
 - `data/provisioning_review_v0.1.json` (neu)
 - `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md` (neu)

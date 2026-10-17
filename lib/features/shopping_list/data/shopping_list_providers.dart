@@ -60,8 +60,18 @@ final storageChecklistProvider =
 });
 
 /// Führt die flüchtige Vorratsprüfung durch (PIVOT2).
+/// Reaktiv verknüpft mit tripShoppingListProvider, tripCrewByIdProvider und tripDaysByIdProvider,
+/// sodass jede Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen
+/// den Review automatisch und unterbrechungsfrei aktualisiert.
 final provisioningReviewProvider =
     FutureProvider.family<ProvisioningReviewResult, int>((ref, tripId) async {
+  final listData = await ref.watch(tripShoppingListProvider(tripId).future);
+  final crew = await ref.watch(tripCrewByIdProvider(tripId).future);
+  final days = await ref.watch(tripDaysByIdProvider(tripId).future);
   final service = ref.watch(shoppingListServiceProvider);
-  return service.reviewProvisioningList(tripId);
+  return service.reviewProvisioningListData(
+    listData: listData,
+    crew: crew,
+    days: days,
+  );
 });

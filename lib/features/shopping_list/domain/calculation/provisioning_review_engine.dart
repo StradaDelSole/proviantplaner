@@ -86,15 +86,19 @@ class ProvisioningReviewEngine {
     for (final rule in input.config.rules) {
       bool isSatisfied = false;
 
-      if (rule.type == 'shelf_life_group_presence') {
-        final thresholdDays = input.quantities.durableMinShelfLifeDays;
-        isSatisfied = adoptedCatalogItems.any((it) =>
-            it.variant!.group == rule.group &&
-            it.variant!.shelfLifeDays >= thresholdDays);
-      } else if (rule.type == 'group_presence') {
-        isSatisfied = adoptedCatalogItems.any((it) => it.variant!.group == rule.group);
-      } else if (rule.type == 'any_variant_presence') {
-        isSatisfied = adoptedCatalogItems.any((it) => rule.variants.contains(it.variant!.id));
+      switch (rule.type) {
+        case ProvisioningReviewRuleType.shelfLifeGroupPresence:
+          final thresholdDays = input.quantities.durableMinShelfLifeDays;
+          isSatisfied = adoptedCatalogItems.any((it) =>
+              it.variant!.group == rule.group &&
+              it.variant!.shelfLifeDays >= thresholdDays);
+          break;
+        case ProvisioningReviewRuleType.groupPresence:
+          isSatisfied = adoptedCatalogItems.any((it) => it.variant!.group == rule.group);
+          break;
+        case ProvisioningReviewRuleType.anyVariantPresence:
+          isSatisfied = adoptedCatalogItems.any((it) => rule.variants.contains(it.variant!.id));
+          break;
       }
 
       if (!isSatisfied) {
@@ -161,6 +165,13 @@ class ProvisioningReviewEngine {
       final isWaterGroup = item.variant?.group == 'water' || item.categoryId == 'water';
       if (!isWaterGroup) continue;
 
+      // Respektiere den effektiven AssistType (DATA1):
+      // Nur Positionen, die effektiv needsBased sind, zählen zur Bedarfsdeckung des Grund-Trinkwassers.
+      final effectiveAssist = item.variant != null
+          ? input.catalog.getEffectiveAssist(item.variant!)
+          : item.assistType;
+      if (effectiveAssist != AssistType.needsBased) continue;
+
       final packages = item.effectivePackages;
       if (packages <= 0) continue;
 
@@ -194,16 +205,64 @@ class ProvisioningReviewEngine {
     }
   }
 
+  /// Ermittelt den effektiven Zeithorizont für einen Artikel unter Berücksichtigung von Einkaufsstopps und Allokationen.
+  int _resolveEffectiveHorizonForItem(ShoppingListItemView item) {
+    if (input.daysUntilNextStop != null) {
+      return input.daysUntilNextStop!;
+    }
+    if (input.stops.isEmpty) {
+      return input.trip.daysCount;
+    }
+    final sortedStops = [...input.stops]..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+    if (sortedStops.length <= 1) {
+      return input.trip.daysCount;
+    }
+
+    // Prüfe Allokationen des Artikels auf Einkaufsstopps
+    final allocatedStopIds = item.allocationsByStop.entries
+        .where((e) => e.value.allocatedPackages > 0)
+        .map((e) => e.key)
+        .toSet();
+
+    if (allocatedStopIds.isEmpty) {
+      // Standardmäßig beim ersten Stopp gekauft: Horizont bis zum zweiten Stopp
+      final firstStop = sortedStops[0];
+      final secondStop = sortedStops[1];
+      final diff = secondStop.dayNumber - firstStop.dayNumber;
+      return diff > 0 ? diff : 1;
+    }
+
+    // Maximaler Horizont über alle Stopps, an denen der Artikel gekauft wird
+    int maxHorizon = 1;
+    for (int i = 0; i < sortedStops.length; i++) {
+      final stop = sortedStops[i];
+      if (allocatedStopIds.contains(stop.id)) {
+        final int stopDuration;
+        if (i < sortedStops.length - 1) {
+          final nextStop = sortedStops[i + 1];
+          final diff = nextStop.dayNumber - stop.dayNumber;
+          stopDuration = diff > 0 ? diff : 1;
+        } else {
+          final diff = (input.trip.daysCount - stop.dayNumber) + 1;
+          stopDuration = diff > 0 ? diff : 1;
+        }
+        if (stopDuration > maxHorizon) {
+          maxHorizon = stopDuration;
+        }
+      }
+    }
+    return maxHorizon;
+  }
+
   /// 3. Haltbarkeit & Frische (Issue #8)
   void _evaluateFreshnessAndShelfLife(List<ProvisioningReviewFinding> findings) {
-    final effectiveHorizonDays = input.daysUntilNextStop ?? input.trip.daysCount;
-
     for (final item in input.allItems) {
       if (!item.isOnList || item.isCustom || item.variant == null) continue;
       final variant = item.variant!;
+      final effectiveHorizonDays = _resolveEffectiveHorizonForItem(item);
 
       // Ein Frische-Befund wird erzeugt wenn:
-      // a) buy_fresh_underway == true und Törn/Horizont > Haltbarkeit oder > 1 Tag
+      // a) buy_fresh_underway == true und Horizont > Haltbarkeit oder > 1 Tag
       // b) shelfLifeDays < relevanter Törn-/Stopphorizont (und shelfLifeDays > 0)
       final isShortShelfLife =
           variant.shelfLifeDays > 0 && variant.shelfLifeDays < effectiveHorizonDays;
@@ -334,10 +393,14 @@ class ProvisioningReviewEngine {
 
     // 4e. Unvollständige Kühlvolumen-Bewertung (wenn Kühlwaren ohne Liter-/Gewichtsbasis existieren)
     if (!allCooledQuantifiable) {
-      findings.add(const ProvisioningReviewFinding(
+      final hasCoolingCapacity = fridgeCapacity > 0 || (hasFreezer && freezerCapacity > 0);
+      findings.add(ProvisioningReviewFinding(
         id: 'incomplete_cooling_assessment',
         kind: ProvisioningReviewKind.incompleteCoolingAssessment,
-        severity: ProvisioningReviewSeverity.info,
+        // Wenn eine aktive Kühlkapazität zu prüfen ist, führt unvollständige Quantifizierbarkeit zu CHECK
+        severity: hasCoolingCapacity
+            ? ProvisioningReviewSeverity.check
+            : ProvisioningReviewSeverity.info,
       ));
     }
 

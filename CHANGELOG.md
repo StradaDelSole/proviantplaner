@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Amendment (Findings A–G)
+
+- **Finding A (Stale Review Results & Reactivity):** `provisioningReviewProvider` reagiert reaktiv auf `tripShoppingListProvider(tripId)`, `tripCrewByIdProvider(tripId)` und `tripDaysByIdProvider(tripId)`. Jede Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen aktualisiert den Review automatisch und unterbrechungsfrei.
+- **Finding B (Strict Config Validation):** `ProvisioningReviewRuleType` enum (`shelfLifeGroupPresence`, `anyVariantPresence`, `groupPresence`) eingeführt. Strikt typisiertes Parsing erzwingt Pflichtfelder je Regeltyp; `validateAgainstCatalog` validiert Gruppen, Varianten, Action und Action-Targets (`targetGroup`, `targetVariants`) strikt gegen `CatalogData`. Unbekannte Typen oder falsche Targets scheitern explizit mit `FormatException`.
+- **Finding C (DATA1 Effective AssistType):** Mengen- und Unterdeckungsprüfungen respektieren den effektiven `AssistType` (`catalog.getEffectiveAssist(variant)`). Trinkwasser wird nur für Varianten mit effektivem `AssistType.needsBased` als Trinkwasserdeckung gezählt; Varianten mit `preferenceBased` zählen nicht zur Deckung des Grundbedarfs.
+- **Finding D (Incomplete Cooling Assessment):** Wenn unquantifizierbare Kühlartikel vorhanden sind und das Boot über eine aktive Kühlkapazität verfügt (`fridgeCapacity > 0 || freezerCapacity > 0`), wird das Finding `incompleteCoolingAssessment` mit Schweregrad `CHECK` ausgewiesen, sodass der Gesamtstatus nicht irreführend `READY` anzeigt.
+- **Finding E (UX Actions & Contextual Search/Stop Handoff):** `searchOrAdd`-Aktion übergibt die berechnete Variante oder Gruppe als vorausgefüllte `initialQuery` an `showSearch`. `assignShoppingStop` öffnet bei mehreren Stopps direkt das `StopAllocationSheet`.
+- **Finding F (Stop Context & Allocations):** Haltbarkeitshorizont berücksichtigt Stopp-Allokationen (`_resolveEffectiveHorizonForItem`). Artikel, die an späteren Stopps gekauft werden, prüfen ihre Haltbarkeit gegen den Stopphorizont statt starr gegen die gesamte Törndauer.
+- **Finding G (Airtight Read-Only Proof):** Vollständige Tabellensnapshots (`trips`, `tripDays`, `crewMembers`, `shoppingStops`, `listItems`, `listItemAllocations`) vor und nach mehrfacher Review-Ausführung belegen lückenlose Read-Only-Garantie ohne DB-Mutationen.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Implementation (Issue #26)
 
 - **Reine Lese-Garantie (Read-Only Copilot):** `ProvisioningReviewEngine` und `ShoppingListService.reviewProvisioningList` arbeiten vollständig deterministisch und lesend; keine Mutationen von ListItems, Mengen, Zuweisungen, Stopps, Crew oder Boot in der Datenbank.

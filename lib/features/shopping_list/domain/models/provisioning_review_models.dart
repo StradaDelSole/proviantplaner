@@ -108,10 +108,27 @@ class ProvisioningReviewAction {
   }
 }
 
+/// Strikt typisierte Regel-Typen für die Konfiguration (PIVOT2).
+enum ProvisioningReviewRuleType {
+  shelfLifeGroupPresence('shelf_life_group_presence'),
+  anyVariantPresence('any_variant_presence'),
+  groupPresence('group_presence');
+
+  final String rawValue;
+  const ProvisioningReviewRuleType(this.rawValue);
+
+  static ProvisioningReviewRuleType fromString(String val) {
+    for (final t in values) {
+      if (t.rawValue == val) return t;
+    }
+    throw FormatException('provisioning_review_v0.1.json: Unbekannter ProvisioningReviewRuleType: "$val"');
+  }
+}
+
 /// Regeldefinition aus provisioning_review_v0.1.json.
 class ProvisioningReviewRule {
   final String id;
-  final String type;
+  final ProvisioningReviewRuleType type;
   final ProvisioningReviewSeverity severity;
   final String? group;
   final List<String> variants;
@@ -133,10 +150,12 @@ class ProvisioningReviewRule {
     if (id == null || id.isEmpty) {
       throw const FormatException('provisioning_review_v0.1.json: Fehlende Regel-ID');
     }
-    final type = json['type'] as String?;
-    if (type == null || type.isEmpty) {
+    final typeStr = json['type'] as String?;
+    if (typeStr == null || typeStr.isEmpty) {
       throw FormatException('provisioning_review_v0.1.json: Fehlender Regel-Typ in $id');
     }
+    final type = ProvisioningReviewRuleType.fromString(typeStr);
+
     final severityStr = json['severity'] as String? ?? 'check';
     final group = json['group'] as String?;
     final variants = (json['variants'] as List<dynamic>?)
@@ -145,10 +164,37 @@ class ProvisioningReviewRule {
         const [];
     final threshold = json['threshold_field'] as String?;
 
+    // Validierung der Pflichtfelder je Regeltyp
+    switch (type) {
+      case ProvisioningReviewRuleType.shelfLifeGroupPresence:
+        if (group == null || group.isEmpty) {
+          throw FormatException(
+              'provisioning_review_v0.1.json: Regel "$id" vom Typ "$typeStr" erfordert ein "group"-Feld');
+        }
+        if (threshold == null || threshold.isEmpty) {
+          throw FormatException(
+              'provisioning_review_v0.1.json: Regel "$id" vom Typ "$typeStr" erfordert ein "threshold_field"-Feld');
+        }
+        break;
+      case ProvisioningReviewRuleType.anyVariantPresence:
+        if (variants.isEmpty) {
+          throw FormatException(
+              'provisioning_review_v0.1.json: Regel "$id" vom Typ "$typeStr" erfordert nicht-leere "variants"');
+        }
+        break;
+      case ProvisioningReviewRuleType.groupPresence:
+        if (group == null || group.isEmpty) {
+          throw FormatException(
+              'provisioning_review_v0.1.json: Regel "$id" vom Typ "$typeStr" erfordert ein "group"-Feld');
+        }
+        break;
+    }
+
     final actionJson = json['action'] as Map<String, dynamic>?;
-    final action = actionJson != null
-        ? ProvisioningReviewAction.fromJson(actionJson)
-        : const ProvisioningReviewAction(type: ProvisioningReviewActionType.noAction);
+    if (actionJson == null) {
+      throw FormatException('provisioning_review_v0.1.json: Fehlende "action" in Regel "$id"');
+    }
+    final action = ProvisioningReviewAction.fromJson(actionJson);
 
     return ProvisioningReviewRule(
       id: id,
@@ -161,7 +207,7 @@ class ProvisioningReviewRule {
     );
   }
 
-  /// Validiert referenzierte Gruppen und Varianten gegen den Katalog.
+  /// Validiert referenzierte Gruppen, Varianten, Actions und Action-Ziele gegen den Katalog.
   void validateAgainstCatalog(CatalogData catalog) {
     if (group != null) {
       final exists = catalog.groups.any((g) => g.id == group);
@@ -175,6 +221,20 @@ class ProvisioningReviewRule {
       if (!exists) {
         throw FormatException(
             'provisioning_review_v0.1.json: Unbekannte Variante "$v" in Regel "$id"');
+      }
+    }
+    if (action.targetGroup != null) {
+      final exists = catalog.groups.any((g) => g.id == action.targetGroup);
+      if (!exists) {
+        throw FormatException(
+            'provisioning_review_v0.1.json: Unbekannte Zielgruppe "${action.targetGroup}" in Aktion von Regel "$id"');
+      }
+    }
+    for (final tv in action.targetVariants) {
+      final exists = catalog.variants.any((variant) => variant.id == tv);
+      if (!exists) {
+        throw FormatException(
+            'provisioning_review_v0.1.json: Unbekannte Zielvariante "$tv" in Aktion von Regel "$id"');
       }
     }
   }

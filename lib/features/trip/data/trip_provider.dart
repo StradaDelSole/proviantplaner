@@ -100,3 +100,9 @@ final tripStopsByIdProvider = FutureProvider.family<List<ShoppingStop>, int>((re
   final dao = ref.watch(tripDaoProvider);
   return dao.getShoppingStopsForTrip(tripId);
 });
+
+/// Provider für die Crew eines Törns nach ID (PIVOT2).
+final tripCrewByIdProvider = FutureProvider.family<List<CrewMember>, int>((ref, tripId) async {
+  final dao = ref.watch(tripDaoProvider);
+  return dao.getCrewForTrip(tripId);
+});

@@ -5,11 +5,14 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'add_or_edit_item_sheet.dart';
 import 'catalog_search_delegate.dart';
+import 'stop_allocation_sheet.dart';
 
 class ProvisioningReviewSheet extends ConsumerWidget {
   final TripShoppingListData data;
@@ -488,8 +491,19 @@ class ProvisioningReviewSheet extends ConsumerWidget {
           ),
           onPressed: () {
             Navigator.of(context).pop();
+            String? initialQuery;
+            if (action.targetVariants.isNotEmpty) {
+              final firstVarId = action.targetVariants.first;
+              final matchingItem = data.allItems.where((i) => i.id == firstVarId).firstOrNull;
+              initialQuery = matchingItem?.localizedName(context) ?? matchingItem?.name ?? firstVarId;
+            } else if (action.targetGroup != null) {
+              final matchingItem = data.allItems.where((i) => i.variant?.group == action.targetGroup).firstOrNull;
+              initialQuery = matchingItem?.localizedName(context) ?? action.targetGroup;
+            }
+
             showSearch(
               context: context,
+              query: initialQuery,
               delegate: CatalogSearchDelegate(
                 data: data,
                 parentContext: context,
@@ -511,7 +525,16 @@ class ProvisioningReviewSheet extends ConsumerWidget {
             Navigator.of(context).pop();
             final it = data.allItems.where((i) => i.item.id == action.listItemId).firstOrNull;
             if (it != null) {
-              AddOrEditItemSheet.show(context, data: data, item: it);
+              if (data.stops.length > 1) {
+                StopAllocationSheet.show(
+                  context,
+                  tripId: data.trip.id,
+                  item: it,
+                  stops: data.stops,
+                );
+              } else {
+                AddOrEditItemSheet.show(context, data: data, item: it);
+              }
             }
           },
         );
