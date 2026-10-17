@@ -65,17 +65,53 @@ In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbess
 
 ---
 
+## PIVOT2 Re-Review Amendment 2 (Findings A2, B2, E2, F2)
+
+In Reaktion auf den zweiten unabhängigen Review vom 17.10.2026 wurden folgende Punkte behoben und automatisiert belegt:
+
+1. **Finding A2 – HIGH: Production Reactivity**
+   - Reaktivität im realen Datenfluss durch Bereitstellung von Drift-Streams verankert:
+     - `watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, `watchShoppingStopsForTrip` in `TripDao`
+     - `watchListItemsForTrip`, `watchAllocationsForTrip` in `ListItemDao`
+   - `allTripsProvider`, `tripByIdProvider`, `tripDaysByIdProvider`, `tripStopsByIdProvider`, `tripCrewByIdProvider` zu `StreamProvider` konvertiert.
+   - `tripListItemsProvider` und `tripAllocationsProvider` ergänzt und mit `tripShoppingListProvider` verknüpft.
+   - Screen-Mutationspfade in `trip_overview_screen.dart` und `trip_timeline_screen.dart` verifizieren die lückenlose Reaktivität.
+   - Nachweis: automatischer Test `PIVOT2 Amendment Tests (Findings A-F) Finding A: provisioningReviewProvider reagiert reaktiv auf State-Mutationen` (überprüft echte Mutationen ohne manuelles/künstliches Invalidate).
+
+2. **Finding B2 – MEDIUM: Threshold Reference Validation**
+   - `ProvisioningReviewRule.fromJson` validiert `threshold_field` gegen die erlaubten Felder (`shelf_life_days`, `volume_liters`, `weight_g`).
+   - Unbekannte oder fehlerhafte Referenzfelder werfen deterministisch eine `FormatException`.
+   - Nachweis: automatischer Test `PIVOT2 Kriterium 2 & 3: Review-Config Parsing & Validierung Unbekanntes threshold_field in Review-Regel wirft FormatException`.
+
+3. **Finding E2 – HIGH: Search Handoff / Disposed Context**
+   - `callerContext` / `parentContext` an `ProvisioningReviewSheet` und `CatalogSearchDelegate` übergeben; verhindert disposed context beim Übergang von Sheet zu Suche und AddOrEdit-Sheet.
+   - `targetVariants` und `minShelfLifeDays` (14 Tage für haltbares Brot) priorisieren haltbare Alternativen vor kurz haltbaren Backwaren.
+   - Suchabfrage matcht auch auf `variant.id`.
+   - Nachweis: automatischer Widget-Test `PIVOT2 Amendment Tests (Findings A-F) Finding E2: Review -> Suche -> Treffer auswählen -> Add/Edit-Sheet -> bestätigte Übernahme`.
+
+4. **Finding F2 – MEDIUM: Stop Allocations & Water Horizon**
+   - Restmengen (`residualPackages = effectivePackages - explicitlyAllocated`) werden bei Frischeprüfung implizit Stopp 1 zugeordnet und gegen dessen Zeithorizont geprüft.
+   - Trinkwasserprüfung evaluiert bei vorhandenen Stopps und Stopp-Allokationen den Wasserbedarf je Stopp-Horizont.
+   - Nachweis: automatische Tests `PIVOT2 Kriterium 18-19: Frische & Haltbarkeit (Issue #8) Restmenge bei Stopp-Allokationen wird implizit Stopp 1 zugeordnet und auf Haltbarkeit geprüft` und `PIVOT2 Kriterium 13-17: Trinkwasser-Abgleich (WATER1) Trinkwasser-Bedarfsabgleich bei Stopps prüft Horizont und Stopp-Allokationen`.
+
+---
+
 ### Geänderte / neue Dateien:
-- `data/provisioning_review_v0.1.json` (neu)
+- `data/provisioning_review_v0.1.json` (neu / Re-Review Update)
 - `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md` (neu)
-- `lib/features/shopping_list/domain/models/provisioning_review_models.dart` (neu)
-- `lib/features/shopping_list/domain/calculation/provisioning_review_engine.dart` (neu)
-- `lib/features/shopping_list/ui/widgets/provisioning_review_sheet.dart` (neu)
-- `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (neu)
+- `lib/core/database/daos.dart` (Reaktivitäts-Streams `watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, etc.)
+- `lib/features/trip/data/trip_provider.dart` (Reaktivitäts-Streams `tripByIdProvider`, `tripCrewByIdProvider`, etc.)
+- `lib/features/trip/ui/trip_overview_screen.dart` (Reaktive Invalidation nach Mutationen)
+- `lib/features/trip/ui/trip_timeline_screen.dart` (Reaktive Invalidation nach Mutationen)
+- `lib/features/shopping_list/domain/models/provisioning_review_models.dart` (neu / strikte Enums & Validierung)
+- `lib/features/shopping_list/domain/calculation/provisioning_review_engine.dart` (neu / Stopp-Allokation Restmengen & Trinkwasser je Stopp)
+- `lib/features/shopping_list/ui/widgets/provisioning_review_sheet.dart` (neu / callerContext & sicherer Search-Handoff)
+- `lib/features/shopping_list/ui/widgets/catalog_search_delegate.dart` (targetVariants, targetGroup, minShelfLife Priorisierung)
+- `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (neu / 30 Tests inkl. aller Amendment-Regressionen)
 - `pubspec.yaml` (Asset `data/provisioning_review_v0.1.json` registriert)
 - `lib/features/shopping_list/data/catalog_repository.dart` (Laden und Validieren der Review-Config)
 - `lib/features/shopping_list/data/shopping_list_service.dart` (`reviewProvisioningList` Methode)
-- `lib/features/shopping_list/data/shopping_list_providers.dart` (`provisioningReviewProvider`)
+- `lib/features/shopping_list/data/shopping_list_providers.dart` (`provisioningReviewProvider`, `tripListItemsProvider`, `tripAllocationsProvider`)
 - `lib/features/shopping_list/ui/shopping_list_screen.dart` (`Liste prüfen` Entry Point & Sheet Opening)
 - `lib/features/shopping_list/ui/widgets/item_row_widget.dart` (Contextual Inline Finding Hint)
 - `lib/l10n/app_de.arb` (19 neue Review-Schlüssel)
@@ -92,7 +128,7 @@ In Reaktion auf den unabhängigen Review vom 17.10.2026 wurden folgende Nachbess
 ### Lokale Verifikation:
 - `flutter analyze`: Authoritative Full-QA läuft über GitHub Actions CI (Owner-Rechner geschont).
 - `flutter test`: Gezielte lokale Tests erfolgreich ausgeführt:
-  - `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart`: 18/18 Tests erfolgreich.
+  - `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart`: 30/30 Tests erfolgreich.
   - `test/features/shopping_list/domain/catalog_validation_test.dart`: 1/1 Test erfolgreich.
   - `test/features/shopping_list/domain/pivot3b_water_and_setup_test.dart`: 8/8 Tests erfolgreich.
   - `test/features/shopping_list/domain/pivot1_assisted_list_test.dart`: 16/16 Tests erfolgreich.

@@ -135,6 +135,11 @@ class ProvisioningReviewRule {
   final String? thresholdField;
   final ProvisioningReviewAction action;
 
+  /// Unterstützte Threshold-Feld-Referenzen in Regelkonfigurationen.
+  static const Set<String> supportedThresholdFields = {
+    'quantities.rounding.durable_min_shelf_life_days',
+  };
+
   const ProvisioningReviewRule({
     required this.id,
     required this.type,
@@ -163,6 +168,11 @@ class ProvisioningReviewRule {
             .toList() ??
         const [];
     final threshold = json['threshold_field'] as String?;
+
+    if (threshold != null && !supportedThresholdFields.contains(threshold)) {
+      throw FormatException(
+          'provisioning_review_v0.1.json: Unbekanntes threshold_field "$threshold" in Regel "$id"');
+    }
 
     // Validierung der Pflichtfelder je Regeltyp
     switch (type) {

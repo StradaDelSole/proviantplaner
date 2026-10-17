@@ -88,6 +88,7 @@ class TripTimelineScreen extends ConsumerWidget {
       }
       ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
+      ref.invalidate(tripShoppingListProvider(tripId));
     }
   }
 
@@ -122,6 +123,7 @@ class TripTimelineScreen extends ConsumerWidget {
       await service.updateShoppingStop(stop.copyWith(name: result));
       ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
+      ref.invalidate(tripShoppingListProvider(tripId));
     }
   }
 
@@ -139,6 +141,7 @@ class TripTimelineScreen extends ConsumerWidget {
     if (success) {
       ref.invalidate(tripStopsByIdProvider(tripId));
       ref.invalidate(activeTripStopsProvider);
+      ref.invalidate(tripShoppingListProvider(tripId));
     }
   }
 
@@ -341,18 +344,21 @@ class TripTimelineScreen extends ConsumerWidget {
         await service.toggleLunchRestaurant(day);
         ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
+        ref.invalidate(tripShoppingListProvider(tripId));
       },
       onToggleEvening: () async {
         final service = ref.read(tripServiceProvider);
         await service.toggleEveningRestaurant(day);
         ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
+        ref.invalidate(tripShoppingListProvider(tripId));
       },
       onUpdatePortName: (name) async {
         final service = ref.read(tripServiceProvider);
         await service.updateDayInfo(day, portName: name);
         ref.invalidate(tripDaysByIdProvider(tripId));
         ref.invalidate(activeTripDaysProvider);
+        ref.invalidate(tripShoppingListProvider(tripId));
       },
     );
   }

@@ -38,6 +38,7 @@ import 'package:proviantplaner/features/shopping_list/domain/models/provisioning
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/add_or_edit_item_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/provisioning_review_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/ui/widgets/stop_allocation_sheet.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
@@ -202,6 +203,29 @@ void main() {
       expect(
         () => ProvisioningReviewConfig.fromJson(
             json.decode(missingActionJson) as Map<String, dynamic>),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('Unbekanntes threshold_field in Review-Regel wirft FormatException', () {
+      const unknownThresholdJson = '''
+      {
+        "version": "0.1",
+        "rules": [
+          {
+            "id": "bread_rule",
+            "type": "shelf_life_group_presence",
+            "severity": "check",
+            "group": "bread",
+            "threshold_field": "quantities.invalid.unknown_field",
+            "action": { "type": "no_action" }
+          }
+        ]
+      }
+      ''';
+      expect(
+        () => ProvisioningReviewConfig.fromJson(
+            json.decode(unknownThresholdJson) as Map<String, dynamic>),
         throwsA(isA<FormatException>()),
       );
     });
@@ -971,6 +995,120 @@ void main() {
         isFalse,
       );
     });
+
+    test('Trinkwasser-Bedarfsabgleich bei Stopps prüft Horizont und Stopp-Allokationen', () {
+      final trip = Trip(
+        id: 1,
+        name: 'Water Stops Trip',
+        startDate: DateTime(2026, 10, 18),
+        daysCount: 7,
+        region: 'mediterranean',
+        climate: 'warm', // 2.5 l/Person/Tag, 1 Person = 2.5 l/Tag
+        isCharter: true,
+        boatType: 'mono',
+        fridgeCapacity: 100,
+        hasFreezer: false,
+        freezerCapacity: 0,
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+        appetite: CrewAppetite.normal,
+        reserveDays: 'few_days',
+        drinkingHabit: CrewDrinking.normal,
+        hasStorageChecklist: true,
+        phase: TripPhase.plan,
+        isArchived: false,
+        currency: 'EUR',
+        kittyModel: KittyModel.sharedKitty,
+        createdAt: DateTime(2026, 10, 18),
+      );
+
+      // 2 Stopps: Stopp 1 an Tag 1 (Horizont 3 Tage: Tag 1, 2, 3), Stopp 2 an Tag 4 (Horizont 4 Tage: Tag 4, 5, 6, 7)
+      const stop1 = ShoppingStop(id: 101, tripId: 1, name: 'Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 102, tripId: 1, name: 'Zwischenstopp', dayNumber: 4, isInitial: false);
+
+      // Stopp 1 Horizont: 3 Tage * 2.5 l = 7.5 l
+      // Stopp 2 Horizont: 4 Tage * 2.5 l = 10.0 l
+      // Wasser-Position: 12 Packungen à 1.5 l = 18.0 l (Gesamtmenge reicht für 7 Tage = 17.5 l)
+      // Aber: 11 Packungen (16.5 l) sind Stopp 2 zugeordnet! Stopp 1 bekommt nur 1 Packung (1.5 l) Restmenge!
+      final waterItem = ShoppingListItemView(
+        item: const ListItem(
+          id: 1,
+          tripId: 1,
+          catalogId: 'water_15',
+          isCustom: false,
+          selected: true,
+          share: 1.0,
+          calculatedPackages: 12,
+          overriddenPackages: 12,
+          calculatedQuantity: 18.0,
+          checkState: CheckItemState.available,
+          isAdopted: true,
+        ),
+        variant: catalog.variants.firstWhere((v) => v.id == 'water_15'),
+        id: 'water_15',
+        name: 'Still 1.5L',
+        unit: 'l',
+        department: CatalogDepartment.getraenke,
+        categoryId: 'water',
+        calculatedPackages: 12,
+        overriddenPackages: 12,
+        calculatedQuantity: 18.0,
+        customPackageSize: 1.5,
+        isSelected: true,
+        share: 1.0,
+        isCustom: false,
+        shelfLifeDays: 360,
+        storageHints: const [],
+        isAdopted: true,
+        allocationsByStop: {
+          102: const ListItemAllocation(
+            id: 1,
+            listItemId: 1,
+            shoppingStopId: 102,
+            allocatedPackages: 11,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+        assistType: AssistType.needsBased,
+      );
+
+      final engine = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: trip,
+        crew: const [
+          CrewMember(
+            id: 1,
+            tripId: 1,
+            name: 'Adult',
+            isChild: false,
+            isVegetarian: false,
+            isNonDrinker: false,
+            categoryParticipation: '{"all":true}',
+            isSkipperFree: false,
+          )
+        ],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [waterItem],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final res = engine.evaluate();
+      // Es muss ein drinkingWaterCheck für Stopp 101 generiert werden (1.5 l < 7.5 l)
+      final stop1WaterFinding = res.findings.where((f) => f.id == 'water_undercoverage_check_stop_101').firstOrNull;
+      expect(stop1WaterFinding, isNotNull);
+      expect(stop1WaterFinding!.horizonDays, 3);
+      expect(stop1WaterFinding.estimatedValue, closeTo(7.5, 0.01));
+      expect(stop1WaterFinding.actualValue, closeTo(1.5, 0.01));
+
+      // Für Stopp 102 reicht das Wasser (11 * 1.5 l = 16.5 l >= 10.0 l) -> kein Finding für Stopp 102
+      final stop2WaterFinding = res.findings.where((f) => f.id == 'water_undercoverage_check_stop_102').firstOrNull;
+      expect(stop2WaterFinding, isNull);
+    });
   });
 
   group('PIVOT2 Kriterium 18-19: Frische & Haltbarkeit (Issue #8)', () {
@@ -1059,6 +1197,139 @@ void main() {
       // Kriterium 19: Review modifiziert keine Mengen oder Zuordnungen
       expect(rolls.effectivePackages, 5);
       expect(rolls.allocationsByStop.isEmpty, isTrue);
+    });
+
+    test('Restmenge bei Stopp-Allokationen wird implizit Stopp 1 zugeordnet und auf Haltbarkeit geprüft', () {
+      final trip = Trip(
+        id: 1,
+        name: 'Freshness Stop Trip',
+        startDate: DateTime(2026, 10, 18),
+        daysCount: 7,
+        region: 'mediterranean',
+        climate: 'warm',
+        isCharter: true,
+        boatType: 'mono',
+        fridgeCapacity: 100,
+        hasFreezer: false,
+        freezerCapacity: 0,
+        waterTankLiters: 0,
+        isWaterTankDrinkable: false,
+        hasWatermaker: false,
+        appetite: CrewAppetite.normal,
+        reserveDays: 'few_days',
+        drinkingHabit: CrewDrinking.normal,
+        hasStorageChecklist: true,
+        phase: TripPhase.plan,
+        isArchived: false,
+        currency: 'EUR',
+        kittyModel: KittyModel.sharedKitty,
+        createdAt: DateTime(2026, 10, 18),
+      );
+
+      // Stopp 1 an Tag 1, Stopp 2 an Tag 5.
+      // Stopp 1 Horizont bis Stopp 2 = 5 - 1 = 4 Tage.
+      // Stopp 2 Horizont bis Ende = (7 - 5) + 1 = 3 Tage.
+      const stop1 = ShoppingStop(id: 10, tripId: 1, name: 'Start', dayNumber: 1, isInitial: true);
+      const stop2 = ShoppingStop(id: 20, tripId: 1, name: 'Hafen', dayNumber: 5, isInitial: false);
+
+      // Artikel mit Haltbarkeit 3 Tage, 5 Packungen.
+      // Fall A: 2 Packungen sind Stopp 2 zugeordnet. 3 Packungen fallen implizit auf Stopp 1 (Horizont 4 Tage > Haltbarkeit 3 Tage!).
+      final itemWithResidual = ShoppingListItemView(
+        item: const ListItem(
+          id: 43,
+          tripId: 1,
+          catalogId: 'bread_white',
+          isCustom: false,
+          selected: true,
+          share: 1.0,
+          calculatedPackages: 5,
+          overriddenPackages: 5,
+          calculatedQuantity: 1000,
+          checkState: CheckItemState.available,
+          isAdopted: true,
+        ),
+        variant: catalog.variants.firstWhere((v) => v.id == 'bread_white'), // shelf_life_days = 3
+        id: 'bread_white',
+        name: 'Weißbrot',
+        unit: 'g',
+        department: CatalogDepartment.backwaren,
+        categoryId: 'bread',
+        calculatedPackages: 5,
+        overriddenPackages: 5,
+        calculatedQuantity: 1000,
+        customPackageSize: 500,
+        isSelected: true,
+        share: 1.0,
+        isCustom: false,
+        shelfLifeDays: 3,
+        storageHints: const [],
+        isAdopted: true,
+        allocationsByStop: {
+          20: const ListItemAllocation(
+            id: 1,
+            listItemId: 43,
+            shoppingStopId: 20,
+            allocatedPackages: 2,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+        assistType: AssistType.guided,
+      );
+
+      final engineA = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: trip,
+        crew: const [],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [itemWithResidual],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final resA = engineA.evaluate();
+      // Weil die Restmenge (3 Packungen) an Stopp 1 gekauft wird und der Horizont bis Stopp 2 4 Tage beträgt,
+      // muss ein Frische-Befund für Stopp 1 erzeugt werden (Haltbarkeit 3 < Horizont 4).
+      final findingA = resA.findings
+          .where((f) => f.kind == ProvisioningReviewKind.freshness && f.listItemId == 43)
+          .firstOrNull;
+      expect(findingA, isNotNull);
+      expect(findingA!.horizonDays, 4);
+
+      // Fall B: Alle 5 Packungen werden an Stopp 2 gekauft (Restmenge an Stopp 1 = 0).
+      // Stopp 2 Horizont ist 3 Tage <= Haltbarkeit 3 Tage -> kein Frische-Befund!
+      final itemFullyAtStop2 = itemWithResidual.copyWith(
+        allocationsByStop: {
+          20: const ListItemAllocation(
+            id: 1,
+            listItemId: 43,
+            shoppingStopId: 20,
+            allocatedPackages: 5,
+            tripId: 1,
+            isBought: false,
+            isStored: false,
+          ),
+        },
+      );
+
+      final engineB = ProvisioningReviewEngine(ProvisioningReviewInput(
+        trip: trip,
+        crew: const [],
+        tripDays: const [],
+        stops: const [stop1, stop2],
+        allItems: [itemFullyAtStop2],
+        catalog: catalog,
+        quantities: quantities,
+        config: reviewConfig,
+      ));
+
+      final resB = engineB.evaluate();
+      final findingB = resB.findings
+          .where((f) => f.kind == ProvisioningReviewKind.freshness && f.listItemId == 43)
+          .firstOrNull;
+      expect(findingB, isNull);
     });
   });
 
@@ -1749,16 +2020,40 @@ void main() {
       final hasMissingBreadBefore = initialReview.findings.any((f) => f.ruleId == 'durable_bread');
       expect(hasMissingBreadBefore, isTrue);
 
-      // Catalog-Item adoptieren:
+      // 1. Catalog-Item adoptieren:
       final items = await db.listItemDao.getListItemsForTrip(tripId);
       final crispbreadItem = items.firstWhere((i) => i.catalogId == 'crispbread');
       await shoppingListService.adoptItem(tripId: tripId, listItemId: crispbreadItem.id, packages: 2);
 
-      // Invalidate und neu auslesen
-      container.invalidate(tripShoppingListProvider(tripId));
+      // Reaktive Aktualisierung OHNE manuelles container.invalidate(...)
+      await Future<void>.delayed(const Duration(milliseconds: 10));
       final updatedReview = await container.read(provisioningReviewProvider(tripId).future);
       final hasMissingBreadAfter = updatedReview.findings.any((f) => f.ruleId == 'durable_bread');
-      expect(hasMissingBreadAfter, isFalse, reason: 'Durable bread finding must be resolved after adopting crispbread');
+      expect(hasMissingBreadAfter, isFalse, reason: 'Durable bread finding must be resolved reactively after adopting crispbread');
+
+      // 2. Boots- / Törn-Änderung (Kühlschrank auf 0 l setzen bei vorhandener Kühlware):
+      final milkItem = items.firstWhere((i) => i.catalogId == 'milk_fresh');
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: milkItem.id, packages: 1);
+
+      await tripService.updateTripDetails(
+        tripId: tripId,
+        fridgeCapacity: 0,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final reviewAfterFridgeChange = await container.read(provisioningReviewProvider(tripId).future);
+      final hasFridgeFinding = reviewAfterFridgeChange.findings.any((f) => f.kind == ProvisioningReviewKind.fridgeRequirement);
+      expect(hasFridgeFinding, isTrue, reason: 'Fridge requirement finding must appear reactively when fridge capacity is set to 0');
+
+      // 3. Crew-Änderung:
+      await db.tripDao.addCrewMember(
+        CrewMembersCompanion.insert(
+          tripId: tripId,
+          name: 'Sailor 2',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final reviewAfterCrewChange = await container.read(provisioningReviewProvider(tripId).future);
+      expect(reviewAfterCrewChange, isNotNull);
     });
 
     testWidgets('Finding E: Review-Aktionen führen zu echten Navigationen & Hand-offs', (tester) async {
@@ -1896,6 +2191,135 @@ void main() {
       expect(find.byType(StopAllocationSheet), findsOneWidget);
       expect(find.textContaining('Marina'), findsOneWidget);
       expect(find.textContaining('Bucht'), findsOneWidget);
+    });
+
+    testWidgets('Finding E2: Review -> Suche -> Treffer auswählen -> Add/Edit-Sheet -> bestätigte Übernahme', (tester) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final repo = CatalogRepository(
+        catalog: catalog,
+        quantities: quantities,
+        reviewConfig: reviewConfig,
+      );
+
+      final tripService = TripService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: repo,
+      );
+
+      final shoppingListService = ShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: repo,
+        tripService: tripService,
+      );
+
+      final tripId = await tripService.createTripWithCrew(
+        name: 'Search Handoff Trip',
+        startDate: DateTime(2026, 10, 18),
+        daysCount: 7,
+        crewMembers: const [
+          CrewMemberInput(
+            id: 'm1',
+            name: 'Skipper',
+            isAdult: true,
+            isVegetarian: false,
+            noAlcohol: false,
+          ),
+        ],
+      );
+
+      final listData = await shoppingListService.loadShoppingList(tripId);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            catalogRepositoryProvider.overrideWithValue(repo),
+            tripServiceProvider.overrideWithValue(tripService),
+            shoppingListServiceProvider.overrideWithValue(shoppingListService),
+            provisioningReviewProvider(tripId).overrideWith((ref) async {
+              return const ProvisioningReviewResult(
+                status: ProvisioningReviewStatus.check,
+                findings: [
+                  ProvisioningReviewFinding(
+                    id: 'missing_basic_durable_bread',
+                    ruleId: 'durable_bread',
+                    kind: ProvisioningReviewKind.missingBasic,
+                    severity: ProvisioningReviewSeverity.check,
+                    groupId: 'bread',
+                    action: ProvisioningReviewAction(
+                      type: ProvisioningReviewActionType.searchOrAdd,
+                      targetGroup: 'bread',
+                      targetVariants: ['crispbread', 'pumpernickel'],
+                    ),
+                  ),
+                ],
+                totalWeightKg: 0.0,
+                totalVolumeLiters: 0.0,
+                hasItemsWithoutWeight: false,
+                isCoolingAssessmentComplete: true,
+              );
+            }),
+          ],
+          child: MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => ProvisioningReviewSheet.show(context, data: listData),
+                  child: const Text('Open Review Sheet'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Review Sheet'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProvisioningReviewSheet), findsOneWidget);
+      expect(find.text('Suchen & hinzufügen'), findsOneWidget);
+
+      // Klick auf "Suchen & hinzufügen"
+      await tester.tap(find.text('Suchen & hinzufügen'));
+      await tester.pumpAndSettle();
+
+      // Review Sheet wurde geschlossen
+      expect(find.byType(ProvisioningReviewSheet), findsNothing);
+
+      // Knäckebrot (crispbread) wird priorisiert angezeigt
+      expect(find.text('Knäckebrot'), findsOneWidget);
+
+      // Knäckebrot antippen
+      await tester.tap(find.text('Knäckebrot'));
+      await tester.pumpAndSettle();
+
+      // AddOrEditItemSheet öffnet sich zuverlässig auf dem aktiven Parent-Context
+      expect(find.byType(AddOrEditItemSheet), findsOneWidget);
+      expect(find.byKey(const ValueKey('sheet_primary_action_btn')), findsOneWidget);
+
+      // Übernahme bestätigen ("Auf die Liste")
+      await tester.tap(find.byKey(const ValueKey('sheet_primary_action_btn')));
+      await tester.pumpAndSettle();
+
+      // AddOrEditItemSheet schließt sich nach erfolgreicher Übernahme
+      expect(find.byType(AddOrEditItemSheet), findsNothing);
+
+      // In der Datenbank ist Knäckebrot nun übernommen
+      final items = await db.listItemDao.getListItemsForTrip(tripId);
+      final crispbreadInDb = items.firstWhere((i) => i.catalogId == 'crispbread');
+      expect(crispbreadInDb.isAdopted, isTrue);
     });
   });
 }

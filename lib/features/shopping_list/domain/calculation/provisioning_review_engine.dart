@@ -88,7 +88,12 @@ class ProvisioningReviewEngine {
 
       switch (rule.type) {
         case ProvisioningReviewRuleType.shelfLifeGroupPresence:
-          final thresholdDays = input.quantities.durableMinShelfLifeDays;
+          final thresholdDays = switch (rule.thresholdField) {
+            'quantities.rounding.durable_min_shelf_life_days' =>
+              input.quantities.durableMinShelfLifeDays,
+            _ => throw FormatException(
+                'Nicht unterstütztes threshold_field: "${rule.thresholdField}"'),
+          };
           isSatisfied = adoptedCatalogItems.any((it) =>
               it.variant!.group == rule.group &&
               it.variant!.shelfLifeDays >= thresholdDays);
@@ -119,15 +124,6 @@ class ProvisioningReviewEngine {
     final climateStr = input.trip.climate;
     final climate = ClimateZone.fromString(climateStr);
 
-    final effectiveDays = input.daysUntilNextStop ?? input.trip.daysCount;
-
-    // Crew factor sum gemäß DATA1 / WATER1
-    double factorSum = 0.0;
-    for (final member in input.crew) {
-      final double personBase = !member.isChild ? 1.0 : input.quantities.factors.child;
-      factorSum += personBase;
-    }
-
     final key = climate.rawValue;
     final legacyKey = switch (climate) {
       ClimateZone.cool => 'temperate',
@@ -155,53 +151,160 @@ class ProvisioningReviewEngine {
     );
 
     final dailyLiters = waterConfig?.defaultValue ?? (catalogWaterGroup.need?.amount ?? 2.0);
-    final minimumDrinkingWater = dailyLiters * effectiveDays * factorSum;
 
-    // Berechne tatsächlich explizit übernommene Trinkwassermenge auf der Liste
-    double actualSelectedLiters = 0.0;
+    // Crew factor sum gemäß DATA1 / WATER1
+    double factorSum = 0.0;
+    for (final member in input.crew) {
+      final double personBase = !member.isChild ? 1.0 : input.quantities.factors.child;
+      factorSum += personBase;
+    }
+
+    // Ermittle alle übernommenen Artikel der Bedarfsgruppe 'water' mit effektivem AssistType 'needsBased'
+    final waterItems = <ShoppingListItemView>[];
     for (final item in input.allItems) {
       if (!item.isOnList) continue;
-      // Nur Artikel der Bedarfsgruppe 'water' berücksichtigen
       final isWaterGroup = item.variant?.group == 'water' || item.categoryId == 'water';
       if (!isWaterGroup) continue;
 
-      // Respektiere den effektiven AssistType (DATA1):
-      // Nur Positionen, die effektiv needsBased sind, zählen zur Bedarfsdeckung des Grund-Trinkwassers.
       final effectiveAssist = item.variant != null
           ? input.catalog.getEffectiveAssist(item.variant!)
           : item.assistType;
       if (effectiveAssist != AssistType.needsBased) continue;
 
-      final packages = item.effectivePackages;
-      if (packages <= 0) continue;
-
-      final packSize = item.effectivePackSize;
-      final packUnit = (item.variant?.pack.unit ?? item.unit).toLowerCase().trim();
-
-      if (packUnit == 'l') {
-        actualSelectedLiters += packages * packSize;
-      } else if (packUnit == 'ml') {
-        actualSelectedLiters += (packages * packSize) / 1000.0;
-      }
+      waterItems.add(item);
     }
 
-    // Wenn gewählte Trinkwassermenge unter dem geschätzten Richtwert liegt: CHECK
-    if (actualSelectedLiters + epsilon < minimumDrinkingWater) {
-      findings.add(ProvisioningReviewFinding(
-        id: 'water_undercoverage_check',
-        kind: ProvisioningReviewKind.drinkingWaterCheck,
-        severity: ProvisioningReviewSeverity.check,
-        groupId: 'water',
-        estimatedValue: minimumDrinkingWater,
-        actualValue: actualSelectedLiters,
-        unit: 'l',
-        hasPotableTank: input.trip.isWaterTankDrinkable && input.trip.waterTankLiters > 0,
-        hasWatermaker: input.trip.hasWatermaker,
-        action: const ProvisioningReviewAction(
-          type: ProvisioningReviewActionType.searchOrAdd,
-          targetGroup: 'water',
-        ),
-      ));
+    double itemLitersForPackages(ShoppingListItemView item, int packages) {
+      if (packages <= 0) return 0.0;
+      final packSize = item.effectivePackSize;
+      final packUnit = (item.variant?.pack.unit ?? item.unit).toLowerCase().trim();
+      if (packUnit == 'l') {
+        return packages * packSize;
+      } else if (packUnit == 'ml') {
+        return (packages * packSize) / 1000.0;
+      }
+      return 0.0;
+    }
+
+    final sortedStops = [...input.stops]..sort((a, b) => a.dayNumber.compareTo(b.dayNumber));
+    final hasStopWaterAllocations = sortedStops.length > 1 &&
+        waterItems.any((it) => it.allocationsByStop.values.any((a) => a.allocatedPackages > 0));
+
+    if (input.daysUntilNextStop != null) {
+      // Spezifischer Stopp-Horizont ist vorgegeben
+      final effectiveDays = input.daysUntilNextStop!;
+      final minimumDrinkingWater = dailyLiters * effectiveDays * factorSum;
+
+      double actualSelectedLiters = 0.0;
+      if (sortedStops.isNotEmpty && input.currentStopDayNumber != null) {
+        final currentStop = sortedStops.firstWhere(
+          (s) => s.dayNumber == input.currentStopDayNumber,
+          orElse: () => sortedStops.first,
+        );
+        final isFirst = currentStop.id == sortedStops.first.id;
+        for (final item in waterItems) {
+          final totalOther = item.allocationsByStop.entries
+              .where((e) => e.key != currentStop.id)
+              .fold(0, (sum, e) => sum + e.value.allocatedPackages);
+          final pkgs = item.packagesAtStop(currentStop.id, isFirstStop: isFirst, totalOtherAllocated: totalOther);
+          actualSelectedLiters += itemLitersForPackages(item, pkgs);
+        }
+      } else {
+        for (final item in waterItems) {
+          actualSelectedLiters += itemLitersForPackages(item, item.effectivePackages);
+        }
+      }
+
+      if (actualSelectedLiters + epsilon < minimumDrinkingWater) {
+        findings.add(ProvisioningReviewFinding(
+          id: 'water_undercoverage_check',
+          kind: ProvisioningReviewKind.drinkingWaterCheck,
+          severity: ProvisioningReviewSeverity.check,
+          groupId: 'water',
+          estimatedValue: minimumDrinkingWater,
+          actualValue: actualSelectedLiters,
+          unit: 'l',
+          horizonDays: effectiveDays,
+          hasPotableTank: input.trip.isWaterTankDrinkable && input.trip.waterTankLiters > 0,
+          hasWatermaker: input.trip.hasWatermaker,
+          action: const ProvisioningReviewAction(
+            type: ProvisioningReviewActionType.searchOrAdd,
+            targetGroup: 'water',
+          ),
+        ));
+      }
+    } else if (hasStopWaterAllocations) {
+      // Mehrere Stopps mit Wasser-Allokationen: prüfe jeden Stopp-Horizont
+      for (int i = 0; i < sortedStops.length; i++) {
+        final stop = sortedStops[i];
+        final int horizonDays;
+        if (i < sortedStops.length - 1) {
+          final diff = sortedStops[i + 1].dayNumber - stop.dayNumber;
+          horizonDays = diff > 0 ? diff : 1;
+        } else {
+          final diff = (input.trip.daysCount - stop.dayNumber) + 1;
+          horizonDays = diff > 0 ? diff : 1;
+        }
+
+        final horizonMinWater = dailyLiters * horizonDays * factorSum;
+        final isFirst = (i == 0);
+
+        double stopLiters = 0.0;
+        for (final item in waterItems) {
+          final totalOther = item.allocationsByStop.entries
+              .where((e) => e.key != stop.id)
+              .fold(0, (sum, e) => sum + e.value.allocatedPackages);
+          final pkgs = item.packagesAtStop(stop.id, isFirstStop: isFirst, totalOtherAllocated: totalOther);
+          stopLiters += itemLitersForPackages(item, pkgs);
+        }
+
+        if (stopLiters + epsilon < horizonMinWater) {
+          findings.add(ProvisioningReviewFinding(
+            id: 'water_undercoverage_check_stop_${stop.id}',
+            kind: ProvisioningReviewKind.drinkingWaterCheck,
+            severity: ProvisioningReviewSeverity.check,
+            groupId: 'water',
+            estimatedValue: horizonMinWater,
+            actualValue: stopLiters,
+            unit: 'l',
+            horizonDays: horizonDays,
+            hasPotableTank: input.trip.isWaterTankDrinkable && input.trip.waterTankLiters > 0,
+            hasWatermaker: input.trip.hasWatermaker,
+            action: const ProvisioningReviewAction(
+              type: ProvisioningReviewActionType.searchOrAdd,
+              targetGroup: 'water',
+            ),
+          ));
+        }
+      }
+    } else {
+      // Gesamter Törn (ohne spezifische Stopp-Allokationen)
+      final effectiveDays = input.trip.daysCount;
+      final minimumDrinkingWater = dailyLiters * effectiveDays * factorSum;
+
+      double actualSelectedLiters = 0.0;
+      for (final item in waterItems) {
+        actualSelectedLiters += itemLitersForPackages(item, item.effectivePackages);
+      }
+
+      if (actualSelectedLiters + epsilon < minimumDrinkingWater) {
+        findings.add(ProvisioningReviewFinding(
+          id: 'water_undercoverage_check',
+          kind: ProvisioningReviewKind.drinkingWaterCheck,
+          severity: ProvisioningReviewSeverity.check,
+          groupId: 'water',
+          estimatedValue: minimumDrinkingWater,
+          actualValue: actualSelectedLiters,
+          unit: 'l',
+          horizonDays: effectiveDays,
+          hasPotableTank: input.trip.isWaterTankDrinkable && input.trip.waterTankLiters > 0,
+          hasWatermaker: input.trip.hasWatermaker,
+          action: const ProvisioningReviewAction(
+            type: ProvisioningReviewActionType.searchOrAdd,
+            targetGroup: 'water',
+          ),
+        ));
+      }
     }
   }
 
@@ -218,25 +321,31 @@ class ProvisioningReviewEngine {
       return input.trip.daysCount;
     }
 
-    // Prüfe Allokationen des Artikels auf Einkaufsstopps
-    final allocatedStopIds = item.allocationsByStop.entries
-        .where((e) => e.value.allocatedPackages > 0)
-        .map((e) => e.key)
-        .toSet();
+    final firstStop = sortedStops[0];
+    int explicitlyAllocated = 0;
+    final activeStopIds = <int>{};
+    for (final entry in item.allocationsByStop.entries) {
+      if (entry.value.allocatedPackages > 0) {
+        activeStopIds.add(entry.key);
+        explicitlyAllocated += entry.value.allocatedPackages;
+      }
+    }
 
-    if (allocatedStopIds.isEmpty) {
-      // Standardmäßig beim ersten Stopp gekauft: Horizont bis zum zweiten Stopp
-      final firstStop = sortedStops[0];
-      final secondStop = sortedStops[1];
-      final diff = secondStop.dayNumber - firstStop.dayNumber;
-      return diff > 0 ? diff : 1;
+    // Restmenge, die nicht explizit Folge-Stopps zugeordnet ist, fällt implizit auf den ersten Stopp:
+    final residualPackages = item.effectivePackages - explicitlyAllocated;
+    if (residualPackages > 0) {
+      activeStopIds.add(firstStop.id);
+    }
+
+    if (activeStopIds.isEmpty) {
+      activeStopIds.add(firstStop.id);
     }
 
     // Maximaler Horizont über alle Stopps, an denen der Artikel gekauft wird
     int maxHorizon = 1;
     for (int i = 0; i < sortedStops.length; i++) {
       final stop = sortedStops[i];
-      if (allocatedStopIds.contains(stop.id)) {
+      if (activeStopIds.contains(stop.id)) {
         final int stopDuration;
         if (i < sortedStops.length - 1) {
           final nextStop = sortedStops[i + 1];

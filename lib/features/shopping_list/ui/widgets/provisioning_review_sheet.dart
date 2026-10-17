@@ -15,10 +15,12 @@ import 'stop_allocation_sheet.dart';
 
 class ProvisioningReviewSheet extends ConsumerWidget {
   final TripShoppingListData data;
+  final BuildContext? callerContext;
 
   const ProvisioningReviewSheet({
     super.key,
     required this.data,
+    this.callerContext,
   });
 
   static Future<void> show(BuildContext context, {required TripShoppingListData data}) {
@@ -26,7 +28,7 @@ class ProvisioningReviewSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => ProvisioningReviewSheet(data: data),
+      builder: (ctx) => ProvisioningReviewSheet(data: data, callerContext: context),
     );
   }
 
@@ -489,23 +491,25 @@ class ProvisioningReviewSheet extends ConsumerWidget {
             minimumSize: const Size(48, 36),
           ),
           onPressed: () {
+            final targetContext = (callerContext != null && callerContext!.mounted)
+                ? callerContext!
+                : context;
             Navigator.of(context).pop();
-            String? initialQuery;
-            if (action.targetVariants.isNotEmpty) {
-              final firstVarId = action.targetVariants.first;
-              final matchingItem = data.allItems.where((i) => i.id == firstVarId).firstOrNull;
-              initialQuery = matchingItem?.localizedName(context) ?? matchingItem?.name ?? firstVarId;
-            } else if (action.targetGroup != null) {
-              final matchingItem = data.allItems.where((i) => i.variant?.group == action.targetGroup).firstOrNull;
-              initialQuery = matchingItem?.localizedName(context) ?? action.targetGroup;
+
+            int? minShelfLife;
+            if (finding.ruleId == 'durable_bread' || finding.id.contains('durable_bread')) {
+              minShelfLife = 14;
             }
 
             showSearch(
-              context: context,
-              query: initialQuery,
+              context: targetContext,
+              query: '',
               delegate: CatalogSearchDelegate(
                 data: data,
-                parentContext: context,
+                parentContext: targetContext,
+                targetVariants: action.targetVariants,
+                targetGroup: action.targetGroup,
+                minShelfLifeDays: minShelfLife,
                 searchFieldLabel: l10n.searchCatalogPlaceholder,
               ),
             );
@@ -521,18 +525,21 @@ class ProvisioningReviewSheet extends ConsumerWidget {
             minimumSize: const Size(48, 36),
           ),
           onPressed: () {
+            final targetContext = (callerContext != null && callerContext!.mounted)
+                ? callerContext!
+                : context;
             Navigator.of(context).pop();
             final it = data.allItems.where((i) => i.item.id == action.listItemId).firstOrNull;
-            if (it != null) {
+            if (it != null && targetContext.mounted) {
               if (data.stops.length > 1) {
                 StopAllocationSheet.show(
-                  context,
+                  targetContext,
                   tripId: data.trip.id,
                   item: it,
                   stops: data.stops,
                 );
               } else {
-                AddOrEditItemSheet.show(context, data: data, item: it);
+                AddOrEditItemSheet.show(targetContext, data: data, item: it);
               }
             }
           },
@@ -547,10 +554,13 @@ class ProvisioningReviewSheet extends ConsumerWidget {
             minimumSize: const Size(48, 36),
           ),
           onPressed: () {
+            final targetContext = (callerContext != null && callerContext!.mounted)
+                ? callerContext!
+                : context;
             Navigator.of(context).pop();
             final it = data.allItems.where((i) => i.item.id == action.listItemId).firstOrNull;
-            if (it != null) {
-              AddOrEditItemSheet.show(context, data: data, item: it);
+            if (it != null && targetContext.mounted) {
+              AddOrEditItemSheet.show(targetContext, data: data, item: it);
             }
           },
         );

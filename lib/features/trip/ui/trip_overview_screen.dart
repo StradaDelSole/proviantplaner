@@ -1049,6 +1049,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
         customDrinkLevel: Value(input.customDrinkLevel?.rawValue),
       ));
       await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
+      ref.invalidate(tripCrewByIdProvider(widget.tripId));
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
       if (mounted) _loadTripDetails();
     }
   }
@@ -1092,6 +1094,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
         customDrinkLevel: Value(input.customDrinkLevel?.rawValue),
       ));
       await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
+      ref.invalidate(tripCrewByIdProvider(widget.tripId));
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
       if (mounted) _loadTripDetails();
     }
   }
@@ -1106,6 +1110,8 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     final tripService = ref.read(tripServiceProvider);
     try {
       await tripService.deleteCrewMemberSafely(member.id);
+      ref.invalidate(tripCrewByIdProvider(widget.tripId));
+      ref.invalidate(tripShoppingListProvider(widget.tripId));
       if (mounted) _loadTripDetails();
     } on CrewMemberHasFinancialHistoryException {
       if (mounted) {
@@ -1529,6 +1535,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         boatModel: Value(newBoatModel.isNotEmpty ? newBoatModel : null),
                         hasWatermaker: hasWatermaker,
                       );
+                      ref.invalidate(tripByIdProvider(widget.tripId));
+                      ref.invalidate(tripDaysByIdProvider(widget.tripId));
+                      ref.invalidate(tripShoppingListProvider(widget.tripId));
                       if (ctx.mounted) Navigator.of(ctx).pop();
                       if (mounted) _loadTripDetails();
                     },

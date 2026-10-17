@@ -10,7 +10,14 @@
       "threshold_field": "quantities.rounding.durable_min_shelf_life_days",
       "action": {
         "type": "search_or_add",
-        "target_group": "bread"
+        "target_group": "bread",
+        "target_variants": [
+          "crispbread",
+          "pumpernickel",
+          "bake_rolls",
+          "bread_longlife",
+          "wraps"
+        ]
       }
     },
     {

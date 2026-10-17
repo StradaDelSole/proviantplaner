@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
@@ -45,9 +46,30 @@ typedef ShoppingListViewMode = ShoppingListSortMode;
 /// Filter nach Einkaufsstopp (null = Alle Stopps).
 final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 
+/// Stream-Provider für alle ListItems eines Törns.
+final tripListItemsProvider = StreamProvider.family<List<ListItem>, int>((ref, tripId) {
+  final db = ref.watch(databaseProvider);
+  return db.listItemDao.watchListItemsForTrip(tripId);
+});
+
+/// Stream-Provider für alle Allocations eines Törns.
+final tripAllocationsProvider = StreamProvider.family<List<ListItemAllocation>, int>((ref, tripId) {
+  final db = ref.watch(databaseProvider);
+  return db.listItemDao.watchAllocationsForTrip(tripId);
+});
+
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
+/// Reaktiv verknüpft mit den Drift-Streams für Törn, Tage, Stopps, Crew, ListItems und Allocations,
+/// sodass jede Mutation in der Datenbank unmittelbar eine Neuberechnung auslöst.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
+  ref.watch(tripByIdProvider(tripId));
+  ref.watch(tripDaysByIdProvider(tripId));
+  ref.watch(tripStopsByIdProvider(tripId));
+  ref.watch(tripCrewByIdProvider(tripId));
+  ref.watch(tripListItemsProvider(tripId));
+  ref.watch(tripAllocationsProvider(tripId));
+
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadShoppingList(tripId);
 });

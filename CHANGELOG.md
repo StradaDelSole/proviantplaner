@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 2 (Findings A2, B2, E2, F2)
+
+- **Finding A2 (Production Reactivity):** Reaktivität der Drift-Streams (`watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, `watchShoppingStopsForTrip`, `watchListItemsForTrip`, `watchAllocationsForTrip`) im gesamten Provider-Graph verankert. Real durchgeführte Mutationen an ListItems, Bootsprofil, Crew oder Stopps aktualisieren `provisioningReviewProvider` automatisch ohne künstliche/manuelle Invalidation.
+- **Finding B2 (Strict Threshold Field Validation):** `ProvisioningReviewRule.fromJson` validiert `threshold_field` strikt gegen `supportedThresholdFields` (`shelf_life_days`, `volume_liters`, `weight_g`). Unbekannte Schwellenwertfelder werfen explizit eine `FormatException`.
+- **Finding E2 (Search Handoff & Disposed Context):** Verwendung eines aktiven `callerContext` / `parentContext` verhindert ungültige/disposed Kontexte beim Absprung aus dem Review in `CatalogSearchDelegate` und `AddOrEditItemSheet`. Haltbare Alternativen (`minShelfLifeDays: 14`) und `targetVariants` werden bei der Suche gegenüber kurz haltbaren Backwaren priorisiert. Vollständiger End-to-End-Flow getestet: Review → Suche → Treffer auswählen → Add/Edit-Sheet → bestätigte Übernahme.
+- **Finding F2 (Stop Allocations & Water Horizon):**
+  - Bei unvollständig auf Stopps verteilten Artikeln wird die Restmenge (`residualPackages = effectivePackages - explicitlyAllocated`) implizit Stopp 1 zugeordnet und auf Haltbarkeit gegen den Stopp-1-Horizont geprüft.
+  - Drinking-Water-Bedarfsprüfung berücksichtigt bei vorhandenen Stopp-Allokationen die Wasserdeckung je Stopp-Horizont.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Amendment (Findings A–G)
 
 - **Finding A (Stale Review Results & Reactivity):** `provisioningReviewProvider` reagiert reaktiv auf `tripShoppingListProvider(tripId)`, `tripCrewByIdProvider(tripId)` und `tripDaysByIdProvider(tripId)`. Jede Änderung an Artikeln, Packungszahlen, Stopps, Allokationen, Crew oder Tagen aktualisiert den Review automatisch und unterbrechungsfrei.
