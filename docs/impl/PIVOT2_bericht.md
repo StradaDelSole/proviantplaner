@@ -137,11 +137,27 @@ In Reaktion auf den Review-Befund zum dritten Amendment (HEAD `8c649725a6160af30
 
 ---
 
+## PIVOT2 Final Cleanup Amendment
+
+In Vorbereitung auf die abschließende Owner Acceptance wurde die nach dem A3 Micro-Amendment verbliebene obsolete Callback-Infrastruktur bereinigt:
+
+1. **Entfernung überflüssiger Callback-Infrastruktur:**
+   - Entfernung der Klasse `TripDataChangeNotifier` und des Providers `tripDataChangeCallbackProvider` aus `lib/features/trip/data/trip_provider.dart`.
+   - Entfernung des Aufrufs `ref.read(tripDataChangeCallbackProvider).call(tripId)` aus `tripServiceProvider`.
+   - Entfernung von `ref.watch(tripDataChangeCallbackProvider)`, der leeren Zuweisung `changeNotifier.callback = (tripId) {};` und des zugehörigen `ref.onDispose`-Blocks aus `lib/features/shopping_list/data/shopping_list_providers.dart`.
+   - Repository-weite Prüfung bestätigt: Es verbleiben keine Referenzen auf `TripDataChangeNotifier` oder `tripDataChangeCallbackProvider` im Codebase.
+2. **Reaktivität schlank & direkt erhalten:**
+   - `TripService` invalidiert die Törn-Provider (`tripCrewByIdProvider`, `tripDaysByIdProvider`, `tripStopsByIdProvider`, `tripByIdProvider`) und inkrementiert direkt `tripDataVersionProvider(tripId)` um genau 1.
+   - `ShoppingListService` inkrementiert `tripDataVersionProvider(tripId)` bei List-Mutationen ebenfalls direkt um genau 1.
+   - Alle 33 Tests in `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` (inklusive A3-, F3-, F4- und E2-Regressionen) mit originalen Provider-Factories bestehen unverändert.
+
+---
+
 ### Geänderte / neue Dateien:
 - `data/provisioning_review_v0.1.json` (neu / Re-Review Update)
 - `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md` (neu)
 - `lib/core/database/daos.dart` (Reaktivitäts-Streams `watchTripById`, `watchDaysForTrip`, `watchCrewForTrip`, etc.)
-- `lib/features/trip/data/trip_provider.dart` (`tripDataVersionProvider`, `TripDataChangeNotifier`, `tripDataChangeCallbackProvider`)
+- `lib/features/trip/data/trip_provider.dart` (`tripDataVersionProvider`; obsolete Callback-Klassen entfernt)
 - `lib/features/trip/ui/trip_overview_screen.dart` (Reaktive Invalidation nach Mutationen)
 - `lib/features/trip/ui/trip_timeline_screen.dart` (Reaktive Invalidation nach Mutationen)
 - `lib/features/shopping_list/domain/models/shopping_list_models.dart` (`packagesAtStop` berücksichtigt Restmengen an Stopp 1 auch bei expliziter Erststopp-Allokation)

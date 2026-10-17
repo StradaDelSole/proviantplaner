@@ -24,14 +24,6 @@ final Provider<ShoppingListService> shoppingListServiceProvider =
   final db = ref.watch(databaseProvider);
   final catalogRepo = ref.watch(catalogRepositoryProvider);
   final tripService = ref.watch(tripServiceProvider);
-  final changeNotifier = ref.watch(tripDataChangeCallbackProvider);
-
-  // TripService-Mutationen aktualisieren tripDataVersionProvider bereits direkt in tripServiceProvider.
-  // changeNotifier.callback steht für optionale zusätzliche Benachrichtigungen zur Verfügung ohne doppelte Inkrementierung.
-  changeNotifier.callback = (tripId) {};
-  ref.onDispose(() {
-    changeNotifier.callback = null;
-  });
 
   final service = ShoppingListService(
     tripDao: db.tripDao,

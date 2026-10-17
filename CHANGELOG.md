@@ -1,9 +1,16 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Final Cleanup Amendment
+
+- **Code Cleanup (Removal of Obsolete Callback Infrastructure):**
+  - Vollständige Entfernung der obsoleten Hilfsklasse `TripDataChangeNotifier` und des Providers `tripDataChangeCallbackProvider` aus `lib/features/trip/data/trip_provider.dart` sowie aller Bezüge in `lib/features/shopping_list/data/shopping_list_providers.dart`.
+  - Keine leeren Callbacks oder ungenutzte Infrastruktur gemäß Programmierregel 2.
+  - Reaktivität bleibt schlank und direkt gewahrt: `TripService` invalidiert die Törn-Provider und erhöht direkt `tripDataVersionProvider(tripId)` um genau 1; `ShoppingListService` aktualisiert `tripDataVersionProvider(tripId)` bei List-Mutationen ebenfalls direkt um 1.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Final A3 Micro-Amendment
 
 - **Finding A3 Micro-Amendment (Elimination of Duplicate Version Increment & Verified Reactive Assertions):**
-  - Beseitigung der doppelten Inkrementierung von `tripDataVersionProvider` durch Entkopplung: Der Default-Callback im `TripDataChangeNotifier` (`tripDataChangeCallbackProvider`) führt keine eigenständigen Inkrementierungen mehr aus, sodass eine abgeschlossene `TripService`-Mutation im produktiven Provider-Graph exakt eine wirksame Versionsaktualisierung auslöst (`versionBefore + 1`).
+  - Beseitigung der doppelten Inkrementierung von `tripDataVersionProvider`: Eine abgeschlossene `TripService`-Mutation im produktiven Provider-Graph löst exakt eine wirksame Versionsaktualisierung aus (`versionBefore + 1`).
   - Integrationstest `Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories` belegt unter Verwendung der originalen Provider-Factories mit konkreten Vorher-/Nachher-Assertions:
     1. Eine einzelne `TripService`-Mutation führt zu exakt einem Versionsinkrement (belegt für `updateTripDetails`, `addCrewMember` und `addShoppingStop`).
     2. Crew-Zuwachs (von 1 auf 2 Erwachsene) verdoppelt den berechneten Mindest-Trinkwasserbedarf reaktiv von 17,5 l auf 35,0 l.
@@ -13,8 +20,7 @@
 
 - **Finding A3 (Production Reactivity & Lifecycle Safety):**
   - Alle produktiven Mutationspfade in `ShoppingListService` (`allocateToStop`, `movePackagesBetweenStops`, `adoptAllSuggestions`, `adoptCategorySuggestions`, `handleUnboughtItems`, `addCustomItem`, `toggleBought`) lösen `onTripDataChanged?.call(tripId)` aus. Bei Batch-Operationen (`handleUnboughtItems`) erfolgt die Benachrichtigung konsistent einmalig nach Abschluss der Schleife.
-  - Entkopplung der Reaktivität über `tripDataVersionProvider` (StateProvider.family<int, int>) und den typisierten `TripDataChangeNotifier` (`tripDataChangeCallbackProvider`), wodurch Riverpod-Zyklen und Invalidation-Exceptions während Provider-Initialisierungen vollständig verhindert werden.
-  - `ref.onDispose` bereinigt den Callback im `TripDataChangeNotifier` für lückenlose Lifecycle-Sicherheit.
+  - Reaktivität über `tripDataVersionProvider` (StateProvider.family<int, int>) entkoppelt, wodurch Riverpod-Zyklen und Invalidation-Exceptions während Provider-Initialisierungen vollständig verhindert werden.
   - Integrationstest verwendet ausschließlich die originalen un-overriddeten Provider-Factories (`tripServiceProvider`, `shoppingListServiceProvider`) und belegt Reaktivität für Artikel-, Boots-, Crew- und Stopp-Allokationsänderungen.
 - **Finding F3 (Allocation Consistency):**
   - `packagesAtStop` in `ShoppingListItemView` stellt sicher, dass eine vorhandene explizite Allokation an Stopp 1 (`isFirstStop: true`) verbleibende, noch nicht zugewiesene Packungen nicht verschwinden lässt (`(alloc?.allocatedPackages ?? 0) + unallocated`).

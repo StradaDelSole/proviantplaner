@@ -11,21 +11,6 @@ import 'trip_service.dart';
 /// Versionierung für Törn-Daten zur reaktiven Invalidierung ohne zirkuläre Abhängigkeiten.
 final tripDataVersionProvider = StateProvider.family<int, int>((ref, tripId) => 0);
 
-/// Callback-Halter für Törn-Datenänderungen zur Vermeidung zirkulärer Provider-Abhängigkeiten.
-class TripDataChangeNotifier {
-  void Function(int tripId)? callback;
-  void call(int tripId) => callback?.call(tripId);
-}
-
-/// Provider für den TripDataChangeNotifier.
-final tripDataChangeCallbackProvider = Provider<TripDataChangeNotifier>((ref) {
-  final notifier = TripDataChangeNotifier();
-  ref.onDispose(() {
-    notifier.callback = null;
-  });
-  return notifier;
-});
-
 /// Singleton Provider für das CatalogRepository.
 final catalogRepositoryProvider = Provider<CatalogRepository>((ref) {
   final repo = CatalogRepository();
@@ -48,7 +33,6 @@ final tripServiceProvider = Provider<TripService>((ref) {
     ref.invalidate(tripStopsByIdProvider(tripId));
     ref.invalidate(tripByIdProvider(tripId));
     ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
-    ref.read(tripDataChangeCallbackProvider).call(tripId);
   };
   return service;
 });
