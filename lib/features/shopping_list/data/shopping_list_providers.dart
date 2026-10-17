@@ -26,10 +26,9 @@ final Provider<ShoppingListService> shoppingListServiceProvider =
   final tripService = ref.watch(tripServiceProvider);
   final changeNotifier = ref.watch(tripDataChangeCallbackProvider);
 
-  // Verknüpfe TripService-Änderungen reaktiv mit tripShoppingListProvider
-  changeNotifier.callback = (tripId) {
-    ref.read(tripDataVersionProvider(tripId).notifier).update((v) => v + 1);
-  };
+  // TripService-Mutationen aktualisieren tripDataVersionProvider bereits direkt in tripServiceProvider.
+  // changeNotifier.callback steht für optionale zusätzliche Benachrichtigungen zur Verfügung ohne doppelte Inkrementierung.
+  changeNotifier.callback = (tripId) {};
   ref.onDispose(() {
     changeNotifier.callback = null;
   });

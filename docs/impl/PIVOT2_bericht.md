@@ -121,6 +121,22 @@ In Reaktion auf den dritten unabhängigen Review vom 17.10.2026 wurden folgende 
 
 ---
 
+## PIVOT2 Final A3 Micro-Amendment
+
+In Reaktion auf den Review-Befund zum dritten Amendment (HEAD `8c649725a6160af3099f198b28d495c405231a30`) wurden folgende Nachbesserungen vorgenommen und automatisiert belegt:
+
+1. **Beseitigung der doppelten Inkrementierung von `tripDataVersionProvider`:**
+   - In `lib/features/shopping_list/data/shopping_list_providers.dart` wurde der doppelte Callback auf `tripDataChangeCallbackProvider` entfernt (`changeNotifier.callback = (tripId) {};`).
+   - Jede Mutation über `TripService` inkrementiert `tripDataVersionProvider(tripId)` im produktiven Provider-Graph nun um exakt 1 (`versionBefore + 1`).
+2. **Konkrete Vorher-/Nachher-Assertions im A3-Integrationstest:**
+   - Test `Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories` in `test/features/shopping_list/domain/pivot2_provisioning_review_test.dart` verwendet weiterhin die originalen Provider-Factories (`tripServiceProvider`, `shoppingListServiceProvider`) ohne manuelle Overrides oder künstliche Invalidierungen.
+   - Nachgewiesen:
+     - `updateTripDetails`, `addCrewMember` und `addShoppingStop` führen jeweils zu exakt einem Versionsinkrement.
+     - Crew-Zuwachs von 1 auf 2 Erwachsene verändert reaktiv den Mindest-Trinkwasserbedarf (von 17,5 l auf 35,0 l).
+     - Stopp-Wasserallokation verändert den korrekten stoppbezogenen Review-Befund (Unterdeckung an Stopp 2 bei 6,0 l vs 20,0 l Bedarf verschwindet reaktiv nach Allokation von 12 Packungen à 1,5 l).
+
+---
+
 ### Geänderte / neue Dateien:
 - `data/provisioning_review_v0.1.json` (neu / Re-Review Update)
 - `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md` (neu)

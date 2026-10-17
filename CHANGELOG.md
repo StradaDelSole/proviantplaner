@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Final A3 Micro-Amendment
+
+- **Finding A3 Micro-Amendment (Elimination of Duplicate Version Increment & Verified Reactive Assertions):**
+  - Beseitigung der doppelten Inkrementierung von `tripDataVersionProvider` durch Entkopplung: Der Default-Callback im `TripDataChangeNotifier` (`tripDataChangeCallbackProvider`) führt keine eigenständigen Inkrementierungen mehr aus, sodass eine abgeschlossene `TripService`-Mutation im produktiven Provider-Graph exakt eine wirksame Versionsaktualisierung auslöst (`versionBefore + 1`).
+  - Integrationstest `Finding A3: provisioningReviewProvider reagiert reaktiv auf State-Mutationen mit originalen Provider-Factories` belegt unter Verwendung der originalen Provider-Factories mit konkreten Vorher-/Nachher-Assertions:
+    1. Eine einzelne `TripService`-Mutation führt zu exakt einem Versionsinkrement (belegt für `updateTripDetails`, `addCrewMember` und `addShoppingStop`).
+    2. Crew-Zuwachs (von 1 auf 2 Erwachsene) verdoppelt den berechneten Mindest-Trinkwasserbedarf reaktiv von 17,5 l auf 35,0 l.
+    3. Eine Stopp-Wasserallokation verändert den korrekten stoppbezogenen Review-Befund (Unterdeckung an Stopp 2 bei 6,0 l vs 20,0 l Bedarf verschwindet reaktiv nach bedarfsgerechter Allokation).
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Re-Review Amendment 3 (Findings A3, F3, F4)
 
 - **Finding A3 (Production Reactivity & Lifecycle Safety):**

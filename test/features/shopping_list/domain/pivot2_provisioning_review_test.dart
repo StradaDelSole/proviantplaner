@@ -2361,6 +2361,13 @@ void main() {
       final hasMissingBreadBefore = initialReview.findings.any((f) => f.ruleId == 'durable_bread');
       expect(hasMissingBreadBefore, isTrue);
 
+      // Initialer Mindest-Trinkwasserbedarf: 1 Erwachsener * 2.5 l/Tag * 7 Tage = 17.5 l
+      final initialWaterFinding = initialReview.findings.firstWhere(
+        (f) => f.kind == ProvisioningReviewKind.drinkingWaterCheck,
+      );
+      expect(initialWaterFinding.estimatedValue, closeTo(17.5, 0.01));
+      expect(initialWaterFinding.actualValue, 0.0);
+
       // 1. Artikel-Mutation: Catalog-Item adoptieren:
       final items = await db.listItemDao.getListItemsForTrip(tripId);
       final crispbreadItem = items.firstWhere((i) => i.catalogId == 'crispbread');
@@ -2376,16 +2383,23 @@ void main() {
       final milkItem = items.firstWhere((i) => i.catalogId == 'milk_fresh');
       await shoppingListService.adoptItem(tripId: tripId, listItemId: milkItem.id, packages: 1);
 
+      final versionBeforeFridge = container.read(tripDataVersionProvider(tripId));
       await tripService.updateTripDetails(
         tripId: tripId,
         fridgeCapacity: 0,
       );
+      final versionAfterFridge = container.read(tripDataVersionProvider(tripId));
+      expect(versionAfterFridge, versionBeforeFridge + 1,
+          reason: 'Eine einzelne TripService-Mutation darf genau 1 Versionsinkrement auslösen');
+
       await Future<void>.delayed(const Duration(milliseconds: 10));
       final reviewAfterFridgeChange = await container.read(provisioningReviewProvider(tripId).future);
       final hasFridgeFinding = reviewAfterFridgeChange.findings.any((f) => f.kind == ProvisioningReviewKind.fridgeRequirement);
       expect(hasFridgeFinding, isTrue, reason: 'Fridge requirement finding must appear reactively when fridge capacity is set to 0');
 
       // 3. Crew-Änderung über TripService:
+      // Assertion 1: Einzelne TripService-Mutation führt zu genau 1 Versionsinkrement (keine doppelte Inkrementierung)
+      final versionBeforeCrew = container.read(tripDataVersionProvider(tripId));
       await tripService.addCrewMember(
         tripId,
         CrewMembersCompanion.insert(
@@ -2393,25 +2407,85 @@ void main() {
           name: 'Sailor 2',
         ),
       );
+      final versionAfterCrew = container.read(tripDataVersionProvider(tripId));
+      expect(versionAfterCrew, versionBeforeCrew + 1,
+          reason: 'TripService.addCrewMember darf tripDataVersionProvider um genau 1 inkrementieren');
+
+      // Assertion 2: Crew-Zuwachs (von 1 auf 2 Erwachsene) verändert den berechneten Mindest-Trinkwasserbedarf (von 17.5 l auf 35.0 l)
       await Future<void>.delayed(const Duration(milliseconds: 10));
       final reviewAfterCrewChange = await container.read(provisioningReviewProvider(tripId).future);
-      expect(reviewAfterCrewChange, isNotNull);
+      final waterFindingAfterCrew = reviewAfterCrewChange.findings.firstWhere(
+        (f) => f.kind == ProvisioningReviewKind.drinkingWaterCheck,
+      );
+      expect(waterFindingAfterCrew.estimatedValue, closeTo(35.0, 0.01),
+          reason: 'Crew-Zuwachs von 1 auf 2 Erwachsene muss Mindest-Trinkwasserbedarf von 17.5 l auf 35.0 l verdoppeln');
 
-      // 4. Stopp- & Allokations-Änderung über TripService & ShoppingListService:
+      // 4. Stopp- und Wasser-Allokation über TripService & ShoppingListService:
+      final versionBeforeStop = container.read(tripDataVersionProvider(tripId));
       final stop2Id = await tripService.addShoppingStop(
         tripId: tripId,
         name: 'Zwischenhafen',
-        dayNumber: 3,
+        dayNumber: 4,
+      );
+      final versionAfterStop = container.read(tripDataVersionProvider(tripId));
+      expect(versionAfterStop, versionBeforeStop + 1,
+          reason: 'TripService.addShoppingStop darf tripDataVersionProvider um genau 1 inkrementieren');
+
+      final stops = await db.tripDao.getShoppingStopsForTrip(tripId);
+      final stop1Id = stops.firstWhere((s) => s.dayNumber == 1).id;
+
+      // Wasser-Position adoptieren (14 Packungen à 1.5 l = 21.0 l)
+      // Stopp 1 Horizont: Tag 1 bis Tag 4 = 3 Tage * (2 Erwachsene * 2.5 l) = 15.0 l Bedarf
+      // Stopp 2 Horizont: Tag 4 bis Tag 7 = 4 Tage * (2 Erwachsene * 2.5 l) = 20.0 l Bedarf
+      final waterItem = items.firstWhere((i) => i.catalogId == 'water_15');
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: waterItem.id, packages: 14);
+
+      // Allokation Teil 1: 12 Packungen (18.0 l) an Stopp 1, 2 Packungen (3.0 l) an Stopp 2
+      // Stopp 1 hat 18.0 l >= 15.0 l -> Überschuss 3.0 l
+      // Stopp 2 hat 3.0 l + 3.0 l Übertrag = 6.0 l < 20.0 l Bedarf -> Unterdeckung an Stopp 2!
+      await shoppingListService.allocateToStop(
+        tripId: tripId,
+        listItemId: waterItem.id,
+        shoppingStopId: stop1Id,
+        packages: 12,
       );
       await shoppingListService.allocateToStop(
         tripId: tripId,
-        listItemId: milkItem.id,
+        listItemId: waterItem.id,
         shoppingStopId: stop2Id,
-        packages: 1,
+        packages: 2,
       );
+
       await Future<void>.delayed(const Duration(milliseconds: 10));
-      final reviewAfterStopAllocation = await container.read(provisioningReviewProvider(tripId).future);
-      expect(reviewAfterStopAllocation, isNotNull);
+      final reviewBeforeStop2FullAlloc = await container.read(provisioningReviewProvider(tripId).future);
+      final stop2WaterCheckBefore = reviewBeforeStop2FullAlloc.findings.where(
+        (f) => f.id == 'water_undercoverage_check_stop_$stop2Id',
+      ).firstOrNull;
+      expect(stop2WaterCheckBefore, isNotNull,
+          reason: 'Stopp 2 muss Unterdeckungsbefund aufweisen, solange nur 6.0 l statt 20.0 l verfügbar sind');
+      expect(stop2WaterCheckBefore!.actualValue, closeTo(6.0, 0.01));
+      expect(stop2WaterCheckBefore.estimatedValue, closeTo(20.0, 0.01));
+
+      // Assertion 3: Eine Stopp-Wasserallokation verändert den korrekten stoppbezogenen Review-Befund
+      // Adoptiere 24 Packungen insgesamt (36.0 l), damit an Stopp 2 12 Packungen allokiert werden können
+      // (12 an Stopp 1 + 12 an Stopp 2 = 24 Packungen).
+      // Stopp 1: 18.0 l (Bedarf 15.0 l -> 3.0 l Übertrag)
+      // Stopp 2: 18.0 l + 3.0 l Übertrag = 21.0 l >= 20.0 l Bedarf
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: waterItem.id, packages: 24);
+      await shoppingListService.allocateToStop(
+        tripId: tripId,
+        listItemId: waterItem.id,
+        shoppingStopId: stop2Id,
+        packages: 12,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final reviewAfterStop2FullAlloc = await container.read(provisioningReviewProvider(tripId).future);
+      final stop2WaterCheckAfter = reviewAfterStop2FullAlloc.findings.where(
+        (f) => f.id == 'water_undercoverage_check_stop_$stop2Id',
+      ).firstOrNull;
+      expect(stop2WaterCheckAfter, isNull,
+          reason: 'Nach ausreichender Wasserallokation an Stopp 2 (21.0 l >= 20.0 l) muss der Stopp-2-Befund reaktiv verschwinden');
     });
 
     testWidgets('Finding E: Review-Aktionen führen zu echten Navigationen & Hand-offs', (tester) async {
