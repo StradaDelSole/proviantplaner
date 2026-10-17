@@ -3,7 +3,7 @@
 Stand: 17.10.2026  
 Branch: `slice/pivot2-provisioning-review`  
 Baseline `origin/main` SHA: `d775c584c95a3a791587477dd6d4a9271bd8007c`  
-Status: **IMPLEMENTIERT / BEREIT FÜR FULL-QA CI**
+Status: **VOLLSTÄNDIG IMPLEMENTIERT / CI GRÜN / BEREIT FÜR REVIEW & OWNER ACCEPTANCE**
 
 ---
 
@@ -172,15 +172,18 @@ Status: **IMPLEMENTIERT / BEREIT FÜR FULL-QA CI**
     erfüllt – Nachweis: automatischer Test (`test/features/shopping_list/domain/pivot3b_water_and_setup_test.dart`, `PIVOT2 Kriterium 13-17: Trinkwasser-Abgleich (WATER1)`)
 
 38. **full GitHub Actions green on final PR HEAD**  
-    wartet auf CI-Durchlauf auf GitHub Actions nach PR-Erstellung.
+    erfüllt – Nachweis: GitHub Actions Run `38985212384` auf PR HEAD `0e9c6d36333cb55639b7b3c40148d39b6ca89232`  
+    - `Flutter Analyze & Test` (Job 117254974410): SUCCESS (409 Tests bestanden, 0 Warnungen/Fehler)  
+    - `Backend Typecheck & Vitest` (Job 117254974238): SUCCESS
 
 ---
 
 ### Offen / Risiken:
-- Keine offenen Code-Punkte.
-- Nach PR-Erstellung muss der finale GitHub Actions CI-Lauf auf dem finalen PR HEAD vollständig grün abgewartet werden.
-- PR wird nicht automatisch gemergt; Issues #26, #7 und #8 werden nicht geschlossen.
-- STOP für unabhängigen Review und Owner Acceptance.
+- Keine offenen Implementierungspunkte.
+- PR #33 wird gemäß Pflichtablauf **nicht** automatisch gemergt.
+- Issues #26, #7 und #8 werden **nicht** geschlossen.
+- Kein Folgeslice wird gestartet.
+- **STOP** für unabhängigen Review und Owner Acceptance.
 
 ---
 
@@ -212,4 +215,8 @@ Status: **IMPLEMENTIERT / BEREIT FÜR FULL-QA CI**
 - Branch: `slice/pivot2-provisioning-review`
 - PR: `#33` (https://github.com/StradaDelSole/proviantplaner/pull/33)
 - Initial Implementation Commit: `227a33777f9ae235c3a44d82f71887010f3c64c9`
+- Final Implementation / PR HEAD Commit: `0e9c6d36333cb55639b7b3c40148d39b6ca89232`
+- GitHub Actions Run: `38985212384` (https://github.com/StradaDelSole/proviantplaner/actions/runs/38985212384)
+  - `Flutter Analyze & Test`: SUCCESS (Job ID 117254974410)
+  - `Backend Typecheck & Vitest`: SUCCESS (Job ID 117254974238)
 
