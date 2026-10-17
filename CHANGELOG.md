@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-17 – PIVOT2 Provisioning Review Implementation (Issue #26)
+
+- **Reine Lese-Garantie (Read-Only Copilot):** `ProvisioningReviewEngine` und `ShoppingListService.reviewProvisioningList` arbeiten vollständig deterministisch und lesend; keine Mutationen von ListItems, Mengen, Zuweisungen, Stopps, Crew oder Boot in der Datenbank.
+- **Datengetriebene Prüfregeln (Missing Basics):** `data/provisioning_review_v0.1.json` definiert strikte Regeln für haltbares Brot (`durable_bread`, shelf_life >= 14 Tage), Speiseöl (`cooking_oil`: Oliven- oder Sonnenblumenöl), Hygiene-Grundausstattung (`hygiene_basic`), Spülmittel / Reiniger (`cleaning_basic`) und Müllbeutel (`trash_bags`). Alle Gruppen- und Varianten-IDs validieren strikt gegen Katalog v0.11; keine Namensheuristik für Custom Items.
+- **WATER1-Trinkwasser-Abgleich:** Berechnung des geschätzten Mindest-Trinkwasserbedarfs (`climateDailyLiters × crewFactorSum × effectiveDays`). Bei Unterschreitung durch explizit übernommenes Flaschenwasser wird der Befund mit Schweregrad `CHECK` (niemals `ACTION_NEEDED`) ausgewiesen; Tank und Watermaker werden als informativer Kontext aufgeführt, ohne den Richtwert rechnerisch zu reduzieren.
+- **Haltbarkeit & Frische (Issue #8):** Frische Artikel mit Haltbarkeit kürzer als der Törn- bzw. Stopphorizont (z. B. frische Brötchen mit 1 Tag) erhalten einen beratenden `CHECK`; keine automatische Verteilung oder Mengenänderung.
+- **Kühlung & Tiefkühlung Plausibilität:** Klare `ACTION_NEEDED`-Befunde bei harten technischen Widersprüchen (Kühlware bei 0 L Kühlschrank, Tiefkühlware ohne Tiefkühler, bekanntes Kühl- oder Gefriervolumen übersteigt Kapazität). Reine Stückwaren ohne Volumenbasis führen zu einem dezenten Unvollständigkeits-Hinweis ohne falsches „Passt“.
+- **Gewicht & Volumen:** Reines Info-Finding unter Wiederverwendung der bestehenden Mengen-Engine (`QuantityEngine.calculateWeightAndVolume`).
+- **Status-Aggregation & UI:** Dreistufiger Gesamtstatus (`READY`, `CHECK`, `ACTION_NEEDED`) ohne Scores oder Gamification. Einstieg über `Liste prüfen` im App-Bar-Menü und Icon-Button der Vorratsliste. Fokussiertes Modal Sheet (`ProvisioningReviewSheet`) mit Absprüngen in Suche (`search_or_add`), Stopp-Zuweisung (`assign_shopping_stop`) und Zeilenanpassung (`edit_item`). Maximal ein höchstpriorisierter Inline-Hinweis in `ShoppingListItemRow`.
+- **Lokalisierung:** Vollständige Parität aller neuen Texte in DE, EN, FR, ES, PT und HR.
+- **UX Benchmark Pass:** Vorab-Dokumentation gemäß UX Benchmark Strategy in `docs/design/PIVOT2_UX_BENCHMARK_PASS_2026-10-17.md`.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Release
 
 - Product Owner explicitly released PIVOT2 with `pivot2 go`.

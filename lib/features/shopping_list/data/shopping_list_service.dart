@@ -6,8 +6,10 @@ import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/calculation_result.dart';
+import 'package:proviantplaner/features/shopping_list/domain/calculation/provisioning_review_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/catalog_models.dart';
+import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/assist_type.dart';
@@ -698,5 +700,36 @@ class ShoppingListService {
     for (final it in entry.affectedItems) {
       await listItemDao.setStored(it.item.id, isStored);
     }
+  }
+
+  /// Führt eine reine, lesende Vorratsprüfung für den Törn durch (PIVOT2).
+  Future<ProvisioningReviewResult> reviewProvisioningList(int tripId) async {
+    final listData = await loadShoppingList(tripId);
+    final days = await tripDao.getDaysForTrip(tripId);
+    final crew = await tripDao.getCrewForTrip(tripId);
+
+    if (catalogRepository.catalog == null ||
+        catalogRepository.quantities == null ||
+        catalogRepository.reviewConfig == null) {
+      await catalogRepository.loadFromBundle();
+    }
+
+    final catalog = catalogRepository.catalog!;
+    final quantities = catalogRepository.quantities!;
+    final config = catalogRepository.reviewConfig!;
+
+    final input = ProvisioningReviewInput(
+      trip: listData.trip,
+      crew: crew,
+      tripDays: days,
+      stops: listData.stops,
+      allItems: listData.allItems,
+      catalog: catalog,
+      quantities: quantities,
+      config: config,
+    );
+
+    final engine = ProvisioningReviewEngine(input);
+    return engine.evaluate();
   }
 }

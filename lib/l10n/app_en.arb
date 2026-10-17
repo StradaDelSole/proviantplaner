@@ -992,5 +992,155 @@
   "technicalErrorTitle": "Technical error",
   "technicalErrorMessage": "An unexpected technical error occurred. Please try again.",
   "retry": "Try again",
-  "epcQrEurOnly": "GiroCode (EPC QR) is only available for payments in Euro (EUR)."
+  "epcQrEurOnly": "GiroCode (EPC QR) is only available for payments in Euro (EUR).",
+  "reviewButtonLabel": "Review list",
+  "reviewTitle": "Provisioning review",
+  "reviewStatusReady": "Provisioning list ready",
+  "reviewStatusReadySubtitle": "No open concerns or conflicts detected.",
+  "reviewStatusCheck": "Check items",
+  "reviewStatusCheckSubtitle": "Some provisions or amounts should be reviewed.",
+  "reviewStatusActionNeeded": "Action needed",
+  "reviewStatusActionNeededSubtitle": "Conflicts or capacity issues require adjustments.",
+  "reviewSectionActionNeeded": "Action needed",
+  "reviewSectionCheck": "Check items",
+  "reviewSectionInfo": "Information",
+  "reviewMissingBasicTitle": "{rule, select, durable_bread{Durable bread missing} cooking_oil{Cooking oil missing} hygiene_basic{Basic hygiene missing} cleaning_basic{Dish soap / cleaner missing} trash_bags{Trash bags missing} other{Basic provision missing}}",
+  "@reviewMissingBasicTitle": {
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewMissingBasicMessage": "{rule, select, durable_bread{No durable bread (min. 14 days shelf life) on the list. Recommended as an emergency reserve.} cooking_oil{No cooking oil (e.g. olive oil or sunflower oil) on the list.} hygiene_basic{No hygiene items from the hygiene group on the list.} cleaning_basic{No dish soap or all-purpose cleaner on the list.} trash_bags{No trash bags on the list.} other{A basic provision item is missing from the list.}}",
+  "@reviewMissingBasicMessage": {
+    "placeholders": {
+      "rule": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWaterCheckTitle": "Check drinking water estimate",
+  "reviewWaterCheckMessage": "Selected: approx. {actual} L drinking water (estimated baseline: {estimated} L). Tank, watermaker, and refill options may cover part or all of the difference. Please verify your water plan.",
+  "@reviewWaterCheckMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "estimated": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewWaterTankNote": "Boat tank is marked as potable.",
+  "reviewWatermakerNote": "Watermaker available on board.",
+  "reviewFreshnessTitle": "Check shelf life / freshness: {name}",
+  "@reviewFreshnessTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreshnessMessage": "{name} has a shelf life of approx. {shelfLife} days (planning horizon: {horizon} days). Plan for a later shopping stop or consume fresh.",
+  "@reviewFreshnessMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "shelfLife": {
+        "type": "int"
+      },
+      "horizon": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewFridgeNoCapacityTitle": "Fridge required: {name}",
+  "@reviewFridgeNoCapacityTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFridgeNoCapacityMessage": "{name} requires refrigeration, but the boat has no fridge capacity (0 L).",
+  "@reviewFridgeNoCapacityMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerNoFreezerTitle": "Freezer required: {name}",
+  "@reviewFreezerNoFreezerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerNoFreezerMessage": "{name} requires a freezer, but there is no freezer on board.",
+  "@reviewFreezerNoFreezerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFridgeOverloadedTitle": "Fridge overloaded",
+  "reviewFridgeOverloadedMessage": "The estimated chilled volume ({actual} L) exceeds fridge capacity ({capacity} L).",
+  "@reviewFridgeOverloadedMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "capacity": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewFreezerOverloadedTitle": "Freezer overloaded",
+  "reviewFreezerOverloadedMessage": "The estimated frozen volume ({actual} L) exceeds freezer capacity ({capacity} L).",
+  "@reviewFreezerOverloadedMessage": {
+    "placeholders": {
+      "actual": {
+        "type": "String"
+      },
+      "capacity": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewIncompleteCoolingTitle": "Cooling volume not fully quantifiable",
+  "reviewIncompleteCoolingMessage": "Some chilled items do not have volume data; total capacity utilization could not be fully assessed.",
+  "reviewTotalWeightVolumeTitle": "Total weight & volume",
+  "reviewTotalWeightVolumeMessage": "Estimated: approx. {weight} kg / {volume} L.",
+  "@reviewTotalWeightVolumeMessage": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewTotalWeightVolumeMessageWithNotice": "Estimated: approx. {weight} kg / {volume} L (excluding piece items without weight).",
+  "@reviewTotalWeightVolumeMessageWithNotice": {
+    "placeholders": {
+      "weight": {
+        "type": "String"
+      },
+      "volume": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewActionSearchAdd": "Search & add",
+  "reviewActionAssignStop": "Assign stop",
+  "reviewActionEditItem": "Adjust item",
+  "reviewInlineFreshnessHint": "Shelf life shorter than trip",
+  "reviewInlineFridgeHint": "Requires fridge",
+  "reviewInlineFreezerHint": "Requires freezer"
 }
