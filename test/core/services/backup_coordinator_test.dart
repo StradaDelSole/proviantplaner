@@ -156,7 +156,7 @@ void main() {
       expect(rawData, isNotNull);
 
       final decoded = jsonDecode(rawData!) as Map<String, dynamic>;
-      expect(decoded['version'], equals(2));
+      expect(decoded['version'], equals(3));
       expect(decoded['boatProfiles'], isNotNull);
       final trips = decoded['trips'] as List<dynamic>;
       expect(trips.length, equals(1));
@@ -305,7 +305,7 @@ void main() {
       expect(rawData, isNotNull);
 
       final decoded = jsonDecode(rawData!) as Map<String, dynamic>;
-      expect(decoded['version'], equals(2));
+      expect(decoded['version'], equals(3));
 
       // Bootsprofile prüfen (beide Profile inklusive des archivierten müssen vorhanden sein)
       final profiles = decoded['boatProfiles'] as List<dynamic>;
