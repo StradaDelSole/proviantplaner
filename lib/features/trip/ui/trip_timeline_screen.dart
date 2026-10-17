@@ -9,6 +9,7 @@ import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/shopping_list/data/delivery_order_service.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
 import '../data/trip_provider.dart';
 import 'widgets/day_card.dart';
 

@@ -43,9 +43,9 @@ final activeBoatProfilesProvider = FutureProvider<List<BoatProfile>>((ref) async
 final activeTripIdProvider = StateProvider<int?>((ref) => null);
 
 /// Provider für alle Törns.
-final allTripsProvider = StreamProvider<List<Trip>>((ref) {
+final allTripsProvider = FutureProvider<List<Trip>>((ref) async {
   final dao = ref.watch(tripDaoProvider);
-  return dao.watchAllTrips();
+  return dao.getAllTrips();
 });
 
 /// Provider für den aktuell aktiven Törn.
