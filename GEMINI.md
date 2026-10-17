@@ -31,28 +31,30 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.25 | 16.10.2026 | UX Benchmark Strategy owner-accepted: Instacart/Airbnb North Stars; Benchmark Pass Pflicht vor UX-D |
 | v0.26 | 17.10.2026 | WATER1 Owner Acceptance: COMPLETE; kein Folgeslice automatisch freigegeben |
 | v0.27 | 17.10.2026 | PIVOT2 nach FIX-B/DATA1/WATER1 reconciliert und als einziger Implementierungsslice freigegeben |
+| v0.28 | 17.10.2026 | PIVOT2 Owner Acceptance: COMPLETE; Issues #26, #7, #8 geschlossen; kein Folgeslice freigegeben |
 
 ## Aktueller Status
 
 Für post-Pivot-Slices gilt **Review-Gating statt altem Durchlauf über historische Freigaben**.
 
-**PIVOT2 – Provisioning Review (Issue #26) ist OWNER-ACCEPTED / IMPLEMENTATION RELEASED und aktuell der einzige freigegebene Implementierungsslice.**
+**PIVOT2 – Provisioning Review (Issue #26) ist OWNER-ACCEPTED / COMPLETE.** PR #33 gemergt (Merge-Commit: `3c75f0e6012ba8a80011504dce471cc97b71ed94`), Issues #26, #7 und #8 sind geschlossen.
 
 Canonical:
+- Acceptance: `docs/impl/PIVOT2_owner_acceptance_2026-10-17.md`
+- Acceptance Review: `docs/impl/PIVOT2_acceptance_review_2026-10-17.md`
 - Release: `docs/impl/PIVOT2_release_reconciliation_2026-10-17.md`
 - Reconciliation: `docs/impl/PIVOT2_reconciliation_2026-10-17.md`
 - Plan: `docs/impl/PIVOT2_plan_v0.2.md`
-- Session Prompt: `docs/PROMPT_SESSION_START_v0.12.md`
-- erwarteter Review-Branch: `slice/pivot2-provisioning-review`
 
 Verbindliche aktuelle Daten-/Domainwahrheit:
 - Catalog: `data/catalog_v0.11.json`
 - Quantities: `data/quantities_v0.6.json`
+- Provisioning Review Config: `data/provisioning_review_v0.1.json`
 - AssistType: DATA1 catalog-driven effective assist
 - WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
 - PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-Vor der neuen PIVOT2 Review-Surface ist der scoped Instacart-orientierte Benchmark Pass aus `docs/impl/PIVOT2_plan_v0.2.md` verpflichtend. Die frozen globale IA bleibt unverändert.
+**Aktuell ist KEIN Folge-Slice freigegeben.**
 
 Weiterhin nicht freigegeben:
 - RECEIPT1
@@ -63,12 +65,9 @@ Weiterhin nicht freigegeben:
 - B3/B4/B5
 - Store-Publikation
 
-Nach final grünem GitHub-Actions-PR:
-- nicht mergen;
-- Issue #26 nicht schließen;
-- Issues #7/#8 nicht schließen;
-- keinen Folgeslice starten;
-- STOP für unabhängigen Review / Owner Acceptance.
+Nach final grünem GitHub-Actions-PR gilt weiterhin:
+- keine automatischen Merges ohne Owner Acceptance;
+- keinen Folgeslice ohne ausdrückliche Freigabe starten.
 
 Plattform: Android zuerst (lokal nur gezielt testen), iOS später über Cloud-Build.
 
