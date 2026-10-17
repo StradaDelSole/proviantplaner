@@ -1372,6 +1372,39 @@
       }
     }
   },
-  "receiptsPdfTitle": "Belege"
+  "receiptsPdfTitle": "Belege",
+  "receiptMissingError": "Ein Belegbild fehlt oder konnte nicht geladen werden ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "Ein Belegbild ist beschädigt und kann nicht verarbeitet werden ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Ein Belegbild oder PDF-Paket ist zu groß für den Export (maximal {maxMb} MB).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "Das Backup überschreitet die maximale Größe von {maxMb} MB für Belege.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Ein Beleg fehlt im lokalen Speicher. Sicherung abgebrochen."
 }
 

@@ -8,7 +8,6 @@ import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'backup_coordinator.dart';
 import 'hullq_backup_service.dart';
 
-
 /// Provider für den [HullqBackupService] (Slice B2: HttpHullqBackupService).
 final hullqBackupServiceProvider = Provider<HullqBackupService>((ref) {
   final apiClient = ref.watch(hullqApiClientProvider);

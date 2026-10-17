@@ -878,12 +878,13 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
     KittyExpense exp,
   ) async {
     final service = ref.read(kittyServiceProvider);
-    await service.deleteExpense(exp.id);
+    await service.deleteExpense(exp.id, softDelete: true);
     ref.invalidate(tripKittyDataProvider(widget.tripId));
 
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).clearSnackBars();
+    var undone = false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 5),
@@ -891,12 +892,17 @@ class _KittyScreenState extends ConsumerState<KittyScreen> {
         action: SnackBarAction(
           label: l10n.undo,
           onPressed: () async {
+            undone = true;
             await service.restoreExpense(exp);
             ref.invalidate(tripKittyDataProvider(widget.tripId));
           },
         ),
       ),
-    );
+    ).closed.then((reason) {
+      if (!undone && reason != SnackBarClosedReason.action) {
+        service.purgeDeletedExpenseReceipts(exp.tripId, exp.id);
+      }
+    });
   }
 
   Widget _buildExpenseTile(

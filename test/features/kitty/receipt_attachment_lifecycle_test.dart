@@ -4,11 +4,14 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/kitty/domain/models/receipt_models.dart';
+import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -238,5 +241,178 @@ void main() {
       expect(dataWithReceipts.transfers[i].toMember.id, equals(dataWithoutReceipts.transfers[i].toMember.id));
       expect(dataWithReceipts.transfers[i].amountInCents, equals(dataWithoutReceipts.transfers[i].amountInCents));
     }
+  });
+
+  test('Finding D: Expense softDelete moves files to trash and restoreExpense restores them byte-exact', () async {
+    final photo = createDummyJpeg(120, 120, img.ColorRgb8(12, 34, 56));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Bunkern vor Abfahrt',
+        amountInCents: 8900,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'bunkern.jpg')],
+      ),
+    );
+
+    final receipts = await db.expenseDao.getReceiptsForExpense(expenseId);
+    expect(receipts.length, 1);
+    final receipt = receipts.first;
+    final activeFile = File(p.join(tempDir.path, receipt.filePath));
+    expect(await activeFile.exists(), isTrue);
+    final origBytes = await activeFile.readAsBytes();
+
+    final trashDir = Directory(p.join(tempDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
+    expect(await trashDir.exists(), isFalse);
+
+    final kittyData = await kittyService.loadKittyData(tripId);
+    final expense = kittyData.expenses.firstWhere((e) => e.id == expenseId);
+
+    // 1. Soft delete
+    await kittyService.deleteExpense(expenseId, softDelete: true);
+
+    // File moved out of active directory into trash directory
+    expect(await activeFile.exists(), isFalse);
+    expect(await trashDir.exists(), isTrue);
+    final trashedFiles = trashDir.listSync();
+    expect(trashedFiles.length, 1);
+
+    // 2. Restore
+    await kittyService.restoreExpense(expense);
+
+    // File restored to active path byte-exact and trash cleaned up
+    expect(await activeFile.exists(), isTrue);
+    expect(await activeFile.readAsBytes(), equals(origBytes));
+    expect(await trashDir.exists(), isFalse);
+  });
+
+  test('Finding D: purgeDeletedExpenseReceipts permanently purges trash directory', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(50, 60, 70));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Hafenkaffee',
+        amountInCents: 1500,
+        currency: 'EUR',
+        category: ExpenseCategory.other,
+        paidByMemberId: member2Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'kaffee.jpg')],
+      ),
+    );
+
+    await kittyService.deleteExpense(expenseId, softDelete: true);
+
+    final trashDir = Directory(p.join(tempDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
+    expect(await trashDir.exists(), isTrue);
+
+    // Purge after snackbar undo expires
+    await kittyService.purgeDeletedExpenseReceipts(tripId, expenseId);
+    expect(await trashDir.exists(), isFalse);
+  });
+
+  test('Finding D: TripService.deleteTrip removes all receipt files and trash from filesystem', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(80, 90, 100));
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Törn-Ausgabe vor Törnlöschung',
+        amountInCents: 4500,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'pre_delete.jpg')],
+      ),
+    );
+
+    final tripReceiptsDir = Directory(p.join(tempDir.path, 'receipts', 'trip_$tripId'));
+    expect(await tripReceiptsDir.exists(), isTrue);
+
+    final tripService = TripService(
+      tripDao: db.tripDao,
+      listItemDao: db.listItemDao,
+      catalogRepository: CatalogRepository(),
+      expenseDao: db.expenseDao,
+      receiptFileService: receiptFileService,
+    );
+
+    final deleted = await tripService.deleteTrip(tripId);
+    expect(deleted, isTrue);
+
+    // Receipts directory for trip must be completely gone
+    expect(await tripReceiptsDir.exists(), isFalse);
+  });
+
+  test('Finding G: addExpense rolls back DB and deletes files if draft receipt saving fails', () async {
+    final validPhoto = createDummyJpeg(100, 100, img.ColorRgb8(1, 2, 3));
+    final corruptBytes = Uint8List.fromList([0, 0, 0, 0]); // Not a valid image -> FormatException
+
+    final draftReceipts = [
+      DraftReceipt(bytes: validPhoto, fileName: 'valid.jpg'),
+      DraftReceipt(bytes: corruptBytes, fileName: 'corrupt.jpg'),
+    ];
+
+    expect(
+      () => kittyService.addExpense(
+        ExpenseInput(
+          tripId: tripId,
+          title: 'Fehlschlagende Ausgabe',
+          amountInCents: 5000,
+          currency: 'EUR',
+          category: ExpenseCategory.provisions,
+          paidByMemberId: member1Id,
+          isPaidFromKitty: false,
+          draftReceipts: draftReceipts,
+        ),
+      ),
+      throwsA(isA<FormatException>()),
+    );
+
+    // Verify DB rollback: no expenses created
+    final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+    expect(expenses.any((e) => e.note == 'Fehlschlagende Ausgabe'), isFalse);
+
+    // Verify disk cleanup: no lingering files
+    final tripReceiptsDir = Directory(p.join(tempDir.path, 'receipts', 'trip_$tripId'));
+    if (await tripReceiptsDir.exists()) {
+      final entries = tripReceiptsDir.listSync(recursive: true);
+      expect(entries, isEmpty);
+    }
+  });
+
+  test('Finding G: addReceiptToExpense throws ArgumentError on cross-trip expenseId', () async {
+    final trip2Id = await db.tripDao.createTrip(
+      TripsCompanion.insert(
+        name: 'Zweiter Törn',
+        startDate: DateTime(2026, 8, 1),
+      ),
+    );
+
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(1, 1, 1));
+    final expenseInTrip1Id = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Trip 1 Ausgabe',
+        amountInCents: 2000,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+      ),
+    );
+
+    // Attempt to add receipt targeting trip2Id with expense from tripId
+    expect(
+      () => kittyService.addReceiptToExpense(
+        tripId: trip2Id,
+        expenseId: expenseInTrip1Id,
+        imageBytes: photo,
+      ),
+      throwsA(isA<ArgumentError>()),
+    );
   });
 }

@@ -1074,6 +1074,39 @@
       }
     }
   },
-  "receiptsPdfTitle": "Reçus"
+  "receiptsPdfTitle": "Reçus",
+  "receiptMissingError": "Une image de reçu est manquante ou n'a pas pu être chargée ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "Une image de reçu est endommagée et ne peut pas être traitée ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Un reçu ou un paquet PDF est trop volumineux pour l'exportation (maximum {maxMb} Mo).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "La sauvegarde dépasse la taille maximale autorisée de {maxMb} Mo pour les reçus.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Un reçu est manquant dans le stockage local. Sauvegarde annulée."
 }
 

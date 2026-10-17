@@ -1186,6 +1186,39 @@
       }
     }
   },
-  "receiptsPdfTitle": "Receipts"
+  "receiptsPdfTitle": "Receipts",
+  "receiptMissingError": "A receipt image is missing or could not be loaded ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "A receipt image is damaged and cannot be processed ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "A receipt image or PDF package is too large for export (maximum {maxMb} MB).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "The backup exceeds the maximum size limit of {maxMb} MB for receipts.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "A receipt file is missing from local storage. Backup aborted."
 }
 

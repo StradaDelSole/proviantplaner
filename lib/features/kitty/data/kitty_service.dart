@@ -302,27 +302,38 @@ class KittyService {
       ),
     );
 
-    if (input.draftReceipts.isNotEmpty) {
-      for (var i = 0; i < input.draftReceipts.length; i++) {
-        final draft = input.draftReceipts[i];
-        final processed = await receiptFileService.saveReceiptImage(
-          tripId: input.tripId,
-          expenseId: expenseId,
-          imageBytes: draft.bytes,
-          preferredFileName: draft.fileName,
-        );
-        await expenseDao.addReceipt(
-          ExpenseReceiptsCompanion.insert(
+    final savedFiles = <String>[];
+    try {
+      if (input.draftReceipts.isNotEmpty) {
+        for (var i = 0; i < input.draftReceipts.length; i++) {
+          final draft = input.draftReceipts[i];
+          final processed = await receiptFileService.saveReceiptImage(
             tripId: input.tripId,
             expenseId: expenseId,
-            filePath: processed.filePath,
-            fileName: processed.fileName,
-            byteSize: Value(processed.byteSize),
-            sortOrder: Value(i),
-            createdAt: Value(draft.createdAt),
-          ),
-        );
+            imageBytes: draft.bytes,
+            preferredFileName: draft.fileName,
+          );
+          savedFiles.add(processed.relativePath);
+          await expenseDao.addReceipt(
+            ExpenseReceiptsCompanion.insert(
+              tripId: input.tripId,
+              expenseId: expenseId,
+              filePath: processed.filePath,
+              fileName: processed.fileName,
+              byteSize: Value(processed.byteSize),
+              sortOrder: Value(i),
+              createdAt: Value(draft.createdAt),
+            ),
+          );
+        }
       }
+    } catch (e) {
+      for (final f in savedFiles) {
+        await receiptFileService.deleteReceiptFile(f);
+      }
+      await receiptFileService.deleteExpenseReceiptFolder(input.tripId, expenseId);
+      await expenseDao.deleteExpense(expenseId);
+      rethrow;
     }
 
     return expenseId;
@@ -336,6 +347,16 @@ class KittyService {
     String? preferredFileName,
     int? sortOrder,
   }) async {
+    final expense = await expenseDao.getExpenseById(expenseId);
+    if (expense == null) {
+      throw ArgumentError('Ausgabe mit ID $expenseId existiert nicht.');
+    }
+    if (expense.tripId != tripId) {
+      throw ArgumentError(
+        'Ausgabe $expenseId gehört nicht zu Törn $tripId (sondern zu Törn ${expense.tripId}).',
+      );
+    }
+
     final existing = await expenseDao.getReceiptsForExpense(expenseId);
     final effectiveSortOrder = sortOrder ?? existing.length;
 
@@ -426,7 +447,24 @@ class KittyService {
   }
 
   /// Löscht eine Ausgabe.
-  Future<int> deleteExpense(int id) => expenseDao.deleteExpense(id);
+  /// Standardmäßig wird bei [softDelete] = true der Belegordner für das 5-Sekunden-Undo-Fenster
+  /// in den temporären Papierkorb verschoben statt sofort unwiderruflich gelöscht.
+  Future<int> deleteExpense(int id, {bool softDelete = true}) async {
+    final expense = await expenseDao.getExpenseById(id);
+    if (expense != null) {
+      if (softDelete) {
+        await receiptFileService.moveToTrash(expense.tripId, id);
+      } else {
+        await receiptFileService.deleteExpenseReceiptFolder(expense.tripId, id);
+      }
+    }
+    return expenseDao.deleteExpense(id);
+  }
+
+  /// Löscht Belege einer gelöschten Ausgabe endgültig aus dem Papierkorb nach Ablauf des Undo-Fensters.
+  Future<void> purgeDeletedExpenseReceipts(int tripId, int expenseId) {
+    return receiptFileService.purgeTrash(tripId: tripId, expenseId: expenseId);
+  }
 
   /// Aktualisiert eine bestehende Ausgabe (FEEDBACK_R1 Punkt 8).
   Future<bool> updateExpense({
@@ -493,6 +531,9 @@ class KittyService {
       ),
     );
 
+    // Belege im Dateisystem aus dem Papierkorb wiederherstellen
+    await receiptFileService.restoreFromTrash(exp.tripId, exp.id);
+
     // Belege wiederherstellen, falls vorhanden
     for (final r in exp.receipts) {
       await expenseDao.addReceipt(
@@ -508,7 +549,6 @@ class KittyService {
         ),
       );
     }
-
 
     return newId;
   }

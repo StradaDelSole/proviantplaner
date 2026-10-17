@@ -210,4 +210,131 @@ void main() {
     final totalBytes = package.allPdfs.fold<int>(0, (sum, p) => sum + p.bytes.length);
     expect(totalBytes, greaterThan(500));
   });
+
+  test('Finding B: generateReceiptsPdfs throws ReceiptImageMissingException if physical receipt file is missing', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(100, 100, 100));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Bäcker',
+        amountInCents: 1200,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [
+          DraftReceipt(bytes: photo, fileName: 'missing_bill.jpg'),
+        ],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+    final receipt = data.expenses.firstWhere((e) => e.id == expenseId).receipts.first;
+
+    // Delete the physical file from disk to simulate missing file
+    final absPath = await receiptFileService.resolveAbsolutePath(receipt.filePath);
+    await File(absPath).delete();
+
+    expect(
+      () => pdfExportService.generateReceiptsPdfs(
+        data: data,
+        receiptFileService: receiptFileService,
+      ),
+      throwsA(isA<ReceiptImageMissingException>()),
+    );
+  });
+
+  test('Finding B: generateReceiptsPdfs throws ReceiptImageCorruptException if physical receipt file is corrupted', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(100, 100, 100));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Tanken',
+        amountInCents: 15000,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.fuel,
+        draftReceipts: [
+          DraftReceipt(bytes: photo, fileName: 'diesel.jpg'),
+        ],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+    final receipt = data.expenses.firstWhere((e) => e.id == expenseId).receipts.first;
+
+    // Corrupt the physical file with garbage bytes
+    final absPath = await receiptFileService.resolveAbsolutePath(receipt.filePath);
+    await File(absPath).writeAsBytes([0, 1, 2, 3, 4, 5, 6, 7]);
+
+    expect(
+      () => pdfExportService.generateReceiptsPdfs(
+        data: data,
+        receiptFileService: receiptFileService,
+      ),
+      throwsA(isA<ReceiptImageCorruptException>()),
+    );
+  });
+
+  test('Finding F: generateReceiptsPdfs throws PdfReceiptOversizedException if single receipt exceeds maxPdfBytes', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(10, 20, 30));
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Hafenbar',
+        amountInCents: 5000,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.restaurant,
+        draftReceipts: [
+          DraftReceipt(bytes: photo, fileName: 'oversized_test.jpg'),
+        ],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+
+    // Pass maxPdfBytes smaller than the receipt image bytes
+    expect(
+      () => pdfExportService.generateReceiptsPdfs(
+        data: data,
+        receiptFileService: receiptFileService,
+        maxPdfBytes: 100, // smaller than image size
+      ),
+      throwsA(isA<PdfReceiptOversizedException>()),
+    );
+  });
+
+  test('Finding F: generateReceiptsPdfs throws PdfChunkOversizedException if generated PDF chunk exceeds limit', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(10, 20, 30));
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Supermarkt',
+        amountInCents: 7000,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [
+          DraftReceipt(bytes: photo, fileName: 'chunk_oversized.jpg'),
+        ],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+
+    // Pass maxPdfBytes that is larger than the image, but smaller than the resulting 8KB PDF document
+    expect(
+      () => pdfExportService.generateReceiptsPdfs(
+        data: data,
+        receiptFileService: receiptFileService,
+        maxPdfBytes: 3000, // larger than photo (~1KB), but smaller than full PDF page (~8KB)
+      ),
+      throwsA(isA<PdfChunkOversizedException>()),
+    );
+  });
 }
+

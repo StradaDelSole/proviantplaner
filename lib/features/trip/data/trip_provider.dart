@@ -4,6 +4,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'boat_profile_service.dart';
 import 'trip_service.dart';
@@ -26,6 +27,7 @@ final tripServiceProvider = Provider<TripService>((ref) {
     catalogRepository: ref.watch(catalogRepositoryProvider),
     boatProfileDao: ref.watch(boatProfileDaoProvider),
     expenseDao: ref.watch(expenseDaoProvider),
+    receiptFileService: ref.watch(receiptFileServiceProvider),
   );
   service.onTripDataChanged = (tripId) {
     ref.invalidate(tripCrewByIdProvider(tripId));

@@ -82,26 +82,29 @@ Datum: 17.10.2026
 
 ---
 
+---
+
 ## flutter analyze
-`No issues found! (ran in 217.5s)`
+`No issues found!`
 
 ---
 
 ## flutter test
-Gezielt ausgeführte Tests für RECEIPT1:
+Gezielt ausgeführte Tests für RECEIPT1 (inkl. Independent Review Amendment 1):
 - `test/core/database/migration_test.dart`: 4 Tests (inkl. `RECEIPT1 Abnahmekriterium: Reale Migration v7 -> v8 mit Datenintegrität und Foreign-Keys`) – alle bestanden.
-- `test/core/services/receipt_file_service_test.dart`: 7 Tests – alle bestanden.
-- `test/features/kitty/receipt_attachment_lifecycle_test.dart`: 4 Tests – alle bestanden.
-- `test/core/services/pdf_receipts_package_test.dart`: 4 Tests – alle bestanden.
+- `test/core/services/receipt_file_service_test.dart`: 10 Tests (inkl. Findings D & E: Kollisionsvermeidung, Path-Traversal-Sanitizing, Soft-Delete/Undo via Trash) – alle bestanden.
+- `test/core/services/pdf_receipts_package_test.dart`: 7 Tests (inkl. Findings B & F: Strikte Vollständigkeit ohne stille Platzhalter, Größenlimits für Einzelseiten und Chunks) – alle bestanden.
+- `test/core/services/backup_coordinator_test.dart`: 11 Tests (inkl. Findings A, C & F: Integritätsabbruch bei fehlenden Belegen, Corrupt-Erkennung, Crash-sicherer gestagter Restore mit byte-genauem Rollback, 50 MB Budget-Limit) – alle bestanden.
+- `test/features/kitty/receipt_attachment_lifecycle_test.dart`: 9 Tests (inkl. Findings D & G: Soft-Delete/Undo-Lifecycle, endgültiges Purgen, Törn-Löschung bereinigt Dateisystem, transaktionaler Rollback bei Belegfehlern, Cross-Trip-Validierung, Finanz-Invarianz) – alle bestanden.
 - `test/core/services/backup_coordinator_v3_test.dart`: 3 Tests – alle bestanden.
 
-Gesamt: 22 gezielte Tests für RECEIPT1 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf dem PR.
+Gesamt: 44 gezielte Tests für RECEIPT1 und Amendment 1 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf PR #34.
 
 ---
 
-## Abnahmekriterien
+## Abnahmekriterien & Review Findings (Amendment 1)
 
-| Kriterium | Status | Nachweis |
+| Kriterium / Finding | Status | Nachweis |
 |---|---|---|
 | 1. Drift-Schema v8 & Migration: `ExpenseReceipts`-Tabelle mit Foreign Keys und Cascade-Delete | erfüllt | automatischer Test (`test/core/database/migration_test.dart`: `RECEIPT1 Abnahmekriterium: Reale Migration v7 -> v8 mit Datenintegrität und Foreign-Keys`) |
 | 2. Foto-Erfassung & Belegverwaltung (0..n Belege pro Ausgabe) im ExpenseSheet | erfüllt (Daten/Logik) | automatischer Test (`test/features/kitty/receipt_attachment_lifecycle_test.dart`: `RECEIPT1: Expense creation with draft receipts persists files and DB records`, `RECEIPT1: Adding additional receipt page and deleting a single receipt`, `RECEIPT1: Expense delete and restore preserves receipts`) |
@@ -112,7 +115,14 @@ Gesamt: 22 gezielte Tests für RECEIPT1 erfolgreich ausgeführt. Vollständige T
 | 6. Nativer Teilen-/Mail-Versand (`share_plus`) ohne Backend-Maildienst | erfüllt (Paketbereitstellung) | automatischer Test (`test/core/services/pdf_receipts_package_test.dart`: `RECEIPT1: generateSettlementPackage creates Abrechnung.pdf and Belege.pdf package`) |
 | 6a. Öffnen des nativen Betriebssystem-Share-Sheets auf Mobilgerät | offen – wartet auf manuellen Test durch den Menschen | manueller Test durch Mensch: Im Endabrechnungs-Screen auf „Abrechnungspaket versenden“ tippen; sicherstellen, dass das native Android-/iOS-Share-Sheet mit `Abrechnung.pdf` und `Belege.pdf` erscheint und in Mail-App übergeben werden kann. |
 | 7. Cloud-Datensicherung Version 3 mit Base64-Belegbildern & relationaler Wiederherstellung inkl. Abwärtskompatibilität v1/v2 | erfüllt | automatischer Test (`test/core/services/backup_coordinator_v3_test.dart`: `RECEIPT1: createBackup exports version 3 with Base64 image payload`, `RECEIPT1: restoreBackup restores receipts and re-creates files on disk with remapped IDs`, `RECEIPT1: restoreBackup handles older v2 backup payload without receipts seamlessly`) |
-| 8. Vollständige Lokalisierung (DE, EN, FR, ES, PT, HR) | erfüllt | automatischer Test (`flutter analyze`: 0 Issues; alle 16 Keys in `app_de.arb`, `app_en.arb`, `app_es.arb`, `app_fr.arb`, `app_hr.arb`, `app_pt.arb` synchron vorhanden) |
+| 8. Vollständige Lokalisierung (DE, EN, FR, ES, PT, HR) | erfüllt | automatischer Test (`flutter analyze`: 0 Issues; alle 21 Keys in `app_de.arb`, `app_en.arb`, `app_es.arb`, `app_fr.arb`, `app_hr.arb`, `app_pt.arb` synchron vorhanden) |
+| **Finding A – HIGH:** Backup-Vollständigkeit & Validierung | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Finding A: createBackup bricht mit BackupIntegrityException ab, wenn Belegdatei physisch fehlt`, `Finding A & C: restoreBackup bricht mit BackupCorruptException ab, wenn Belegbild im Backup null oder ungültig ist`) |
+| **Finding B – HIGH:** PDF-Vollständigkeit (Keine stillen Platzhalter) | erfüllt | automatischer Test (`test/core/services/pdf_receipts_package_test.dart`: `Finding B: generateReceiptsPdfs throws ReceiptImageMissingException if physical receipt file is missing`, `Finding B: generateReceiptsPdfs throws ReceiptImageCorruptException if physical receipt file is corrupted`) |
+| **Finding C – HIGH:** Crash-sicherer Restore (Gestagtes Swapping mit byte-genauem Erhalt bei Fehler) | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Finding C: restoreBackup ist crash-sicher - Erhält bei Fehler bestehende DB und Belegdateien byte-genau`) |
+| **Finding D – HIGH:** Expense-Lifecycle, 5s-Undo & Törn-Löschung | erfüllt | automatischer Test (`test/core/services/receipt_file_service_test.dart`: `Finding D: moveToTrash, restoreFromTrash, and purgeTrash handle soft-deletion and undo`; `test/features/kitty/receipt_attachment_lifecycle_test.dart`: `Finding D: Expense softDelete moves files to trash and restoreExpense restores them byte-exact`, `Finding D: purgeDeletedExpenseReceipts permanently purges trash directory`, `Finding D: TripService.deleteTrip removes all receipt files and trash from filesystem`) |
+| **Finding E – HIGH:** Eindeutige interne Dateinamen & Path-Traversal-Sanitizing | erfüllt | automatischer Test (`test/core/services/receipt_file_service_test.dart`: `Finding E: saveReceiptImage generates unique internal filenames and avoids collision on identical preferredFileName`, `Finding E: saveReceiptImage sanitizes path traversal attempts`) |
+| **Finding F – HIGH:** Speichergrenzen (50 MB Backup-Limit & 15 MB PDF-Limit) | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Finding F: createBackup bricht mit BackupSizeLimitExceededException ab, wenn Beleg-Budget überschritten ist`; `test/core/services/pdf_receipts_package_test.dart`: `Finding F: generateReceiptsPdfs throws PdfReceiptOversizedException if single receipt exceeds maxPdfBytes`, `Finding F: generateReceiptsPdfs throws PdfChunkOversizedException if generated PDF chunk exceeds limit`) |
+| **Finding G – MEDIUM:** Transaktionale Rollbacks & Cross-Trip-Validierung | erfüllt | automatischer Test (`test/features/kitty/receipt_attachment_lifecycle_test.dart`: `Finding G: addExpense rolls back DB and deletes files if draft receipt saving fails`, `Finding G: addReceiptToExpense throws ArgumentError on cross-trip expenseId`) |
 
 ---
 
@@ -127,19 +137,19 @@ Gesamt: 22 gezielte Tests für RECEIPT1 erfolgreich ausgeführt. Vollständige T
 
 ## Annahmen / Abweichungen vom PRD
 
-- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md` und `docs/impl/RECEIPT1_plan.md` wurden exakt wie spezifiziert umgesetzt.
+- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md` und `docs/impl/RECEIPT1_plan.md` sowie alle Findings A–G des Independent Review Amendment 1 wurden exakt wie spezifiziert umgesetzt.
 
 ---
 
 ## Selbstprüfung Programmierregeln 1–10
 
-1. **Feste Typen statt freier Texte:** Eingehalten. Strikt typisierte Enums (`ExpenseCategory`, `KittyModel`, `HullqMembershipStatus`), typisierte Klassen (`ExpenseReceiptItem`, `DraftReceipt`, `ProcessedReceiptFile`, `SettlementPackage`, `NamedPdf`). Unbekannte Werte werfen explizite Exceptions.
+1. **Feste Typen statt freier Texte:** Eingehalten. Strikt typisierte Enums (`ExpenseCategory`, `KittyModel`, `HullqMembershipStatus`), typisierte Klassen (`ExpenseReceiptItem`, `DraftReceipt`, `ProcessedReceiptFile`, `SettlementPackage`, `NamedPdf`), typisierte Exceptions (`BackupIntegrityException`, `BackupSizeLimitExceededException`, `BackupCorruptException`, `ReceiptImageMissingException`, `ReceiptImageCorruptException`, `PdfReceiptOversizedException`, `PdfChunkOversizedException`). Unbekannte Werte werfen explizite Exceptions.
 2. **Keine versteckten Platzhalter:** Eingehalten. Keine `// TODO`, keine Stubs oder leere Handler.
-3. **Ehrliche Berichte:** Eingehalten. Alle erfüllten Kriterien sind durch namentlich genannte Tests belegt; Hardware- und OS-spezifische Tests sind ehrlich als wartend auf Menschenprüfung ausgewiesen.
-4. **Alles datengetrieben:** Eingehalten. Alle UI-Texte über ARB-Sprachdateien, Standard-Währungs-/Betragsformate.
-5. **Rechnen mit Kommazahlen:** Eingehalten. Geldbeträge konsistent in Cent (`int`); keine Rundungsfehler.
-6. **Struktur:** Eingehalten. Modulare Dienste (`ReceiptFileService`, `PdfExportService`, `BackupCoordinator`), getrennte Daos und UI-Widgets mit Dokumentationskommentaren.
-7. **Tests:** Eingehalten. 22 gezielte automatisierte Tests für Schema-Migration, Dateiverwaltung, Bildoptimierung, Lifecycle, finanzielle Invarianz, PDF-Splitting und Backup/Restore.
+3. **Ehrliche Berichte:** Eingehalten. Alle erfüllten Kriterien und Findings sind durch namentlich genannte Tests belegt; Hardware- und OS-spezifische Tests sind ehrlich als wartend auf Menschenprüfung ausgewiesen.
+4. **Alles datengetrieben:** Eingehalten. Alle UI-Texte und Fehlerhinweise über ARB-Sprachdateien, Standard-Währungs-/Betragsformate.
+5. **Rechnen mit Kommazahlen:** Eingehalten. Geldbeträge konsistent in Cent (`int`); Dateigrößen und Limits in Bytes (`int`); keine Rundungsfehler.
+6. **Struktur:** Eingehalten. Modulare Dienste (`ReceiptFileService`, `PdfExportService`, `BackupCoordinator`, `TripService`), getrennte Daos und UI-Widgets mit Dokumentationskommentaren.
+7. **Tests:** Eingehalten. 44 gezielte automatisierte Tests für Schema-Migration, Dateiverwaltung, Bildoptimierung, Staging, Crash-Sicherheit, Lifecycle, finanzielle Invarianz, PDF-Splitting, Backup/Restore und transaktionale Integrität.
 8. **Keine Eigenbauten von Standards:** Eingehalten. `image_picker` für Kamera/Galerie, `image` für EXIF-Baking/JPEG-Optimierung, `share_plus` für nativen Dateiversand, `pdf`/`printing` für PDF-Erstellung.
 9. **Nur berichten, was tatsächlich geschehen ist:** Eingehalten. Keine erfundenen manuellen Gerätetests; manuelle Schritte sind ausdrücklich für den Nutzer deklariert.
 10. **Nichts aus späteren Versionen sichtbar bauen:** Eingehalten. Keine OCR-Texterkennung oder automatische Betragserkennung (gemäß PRD v1 bewusst manuelle Eingabe).
@@ -155,4 +165,7 @@ Gesamt: 22 gezielte Tests für RECEIPT1 erfolgreich ausgeführt. Vollständige T
 ## Commit & PR
 
 - Branch: `slice/receipt1-expense-receipts-settlement-package`
-- Commit: `RECEIPT1: Expense Receipts & Settlement Package (Issue #23)`
+- PR: #34
+- Amendment 1 Commit: `RECEIPT1: Fix review findings A-G (backup/pdf completeness, crash-safe restore, lifecycle & limits)`
+
+

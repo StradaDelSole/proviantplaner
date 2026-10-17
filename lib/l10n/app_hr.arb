@@ -1074,6 +1074,39 @@
       }
     }
   },
-  "receiptsPdfTitle": "Računi"
+  "receiptsPdfTitle": "Računi",
+  "receiptMissingError": "Slika računa nedostaje ili se ne može učitati ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "Slika računa je oštećena i ne može se obraditi ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Slika računa ili PDF paket je prevelik za izvoz (maksimalno {maxMb} MB).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "Sigurnosna kopija premašuje maksimalnu veličinu od {maxMb} MB za račune.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Račun nedostaje u lokalnoj pohrani. Sigurnosno kopiranje prekinuto."
 }
 

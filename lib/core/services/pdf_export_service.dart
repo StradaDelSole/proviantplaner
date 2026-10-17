@@ -30,6 +30,76 @@ class NamedPdf {
   });
 }
 
+/// Exception wenn ein Belegbild nicht geladen werden kann oder auf der Festplatte fehlt (Finding B).
+class ReceiptImageMissingException implements Exception {
+  final String expenseTitle;
+  final int receiptId;
+  final String filePath;
+
+  const ReceiptImageMissingException({
+    required this.expenseTitle,
+    required this.receiptId,
+    required this.filePath,
+  });
+
+  @override
+  String toString() =>
+      'ReceiptImageMissingException: Belegbild $receiptId für Ausgabe "$expenseTitle" fehlt ($filePath).';
+}
+
+/// Exception wenn ein Belegbild beschädigt ist und nicht gerendert werden kann (Finding B).
+class ReceiptImageCorruptException implements Exception {
+  final String expenseTitle;
+  final int receiptId;
+  final String cause;
+
+  const ReceiptImageCorruptException({
+    required this.expenseTitle,
+    required this.receiptId,
+    required this.cause,
+  });
+
+  @override
+  String toString() =>
+      'ReceiptImageCorruptException: Belegbild $receiptId für Ausgabe "$expenseTitle" ist beschädigt: $cause.';
+}
+
+/// Exception wenn ein einzelnes Belegbild größer als das Chunk-Limit ist (Finding F).
+class PdfReceiptOversizedException implements Exception {
+  final String expenseTitle;
+  final int receiptId;
+  final int byteSize;
+  final int maxBytes;
+
+  const PdfReceiptOversizedException({
+    required this.expenseTitle,
+    required this.receiptId,
+    required this.byteSize,
+    required this.maxBytes,
+  });
+
+  @override
+  String toString() =>
+      'PdfReceiptOversizedException: Belegbild $receiptId für "$expenseTitle" ist mit $byteSize Bytes größer als das Chunk-Limit ($maxBytes Bytes).';
+}
+
+/// Exception wenn ein generierter Belege-PDF-Chunk die 15-MB-Grenze überschreitet (Finding F).
+class PdfChunkOversizedException implements Exception {
+  final String fileName;
+  final int byteSize;
+  final int maxBytes;
+
+  const PdfChunkOversizedException({
+    required this.fileName,
+    required this.byteSize,
+    required this.maxBytes,
+  });
+
+  @override
+  String toString() =>
+      'PdfChunkOversizedException: PDF-Chunk "$fileName" ist mit $byteSize Bytes größer als das Limit von $maxBytes Bytes.';
+}
+
 /// Vollständiges Versandpaket für die Endabrechnung (RECEIPT1).
 class SettlementPackage {
   final NamedPdf settlementPdf;
@@ -670,6 +740,7 @@ class PdfExportService {
     required TripKittyData data,
     required ReceiptFileService receiptFileService,
     int maxBytesPerChunk = 15 * 1024 * 1024,
+    int maxPdfBytes = 15 * 1024 * 1024,
   }) async {
     final expensesWithReceipts = data.expenses.where((e) => e.receipts.isNotEmpty).toList();
     if (expensesWithReceipts.isEmpty) {
@@ -692,19 +763,31 @@ class PdfExportService {
       for (var i = 0; i < exp.receipts.length; i++) {
         final receipt = exp.receipts[i];
         final bytes = await receiptFileService.readReceiptBytes(receipt.filePath);
-        if (bytes != null && bytes.isNotEmpty) {
-
-          allReceiptEntries.add(
-            _ReceiptPageEntry(
-              expense: exp,
-              receipt: receipt,
-              imageBytes: bytes,
-              photoIndex: i + 1,
-              totalPhotos: exp.receipts.length,
-              payerName: payerName,
-            ),
+        if (bytes == null || bytes.isEmpty) {
+          throw ReceiptImageMissingException(
+            expenseTitle: exp.title,
+            receiptId: receipt.id,
+            filePath: receipt.filePath,
           );
         }
+        if (bytes.length > maxPdfBytes) {
+          throw PdfReceiptOversizedException(
+            expenseTitle: exp.title,
+            receiptId: receipt.id,
+            byteSize: bytes.length,
+            maxBytes: maxPdfBytes,
+          );
+        }
+        allReceiptEntries.add(
+          _ReceiptPageEntry(
+            expense: exp,
+            receipt: receipt,
+            imageBytes: bytes,
+            photoIndex: i + 1,
+            totalPhotos: exp.receipts.length,
+            payerName: payerName,
+          ),
+        );
       }
     }
 
@@ -745,10 +828,16 @@ class PdfExportService {
       );
 
       for (final entry in chunkEntries) {
-        pw.MemoryImage? memImage;
+        final pw.MemoryImage memImage;
         try {
           memImage = pw.MemoryImage(entry.imageBytes);
-        } catch (_) {}
+        } catch (e) {
+          throw ReceiptImageCorruptException(
+            expenseTitle: entry.expense.title,
+            receiptId: entry.receipt.id,
+            cause: e.toString(),
+          );
+        }
 
         doc.addPage(
           pw.Page(
@@ -819,14 +908,7 @@ class PdfExportService {
                         border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
                         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                       ),
-                      child: memImage != null
-                          ? pw.Image(memImage, fit: pw.BoxFit.contain)
-                          : pw.Center(
-                              child: pw.Text(
-                                'Belegbild konnte nicht gerendert werden',
-                                style: pw.TextStyle(font: fontRegular, color: PdfColors.red800),
-                              ),
-                            ),
+                      child: pw.Image(memImage, fit: pw.BoxFit.contain),
                     ),
                   ),
                   pw.SizedBox(height: 8),
@@ -851,6 +933,13 @@ class PdfExportService {
       }
 
       final bytes = await doc.save();
+      if (bytes.length > maxPdfBytes) {
+        throw PdfChunkOversizedException(
+          fileName: fileName,
+          byteSize: bytes.length,
+          maxBytes: maxPdfBytes,
+        );
+      }
       resultList.add(NamedPdf(fileName: fileName, bytes: bytes));
     }
 
@@ -862,6 +951,7 @@ class PdfExportService {
     required TripKittyData data,
     required ReceiptFileService receiptFileService,
     int maxBytesPerChunk = 15 * 1024 * 1024,
+    int maxPdfBytes = 15 * 1024 * 1024,
     String settlementFilename = 'Abrechnung.pdf',
   }) async {
     final settlementBytes = await generateSettlementPdf(data: data);
@@ -871,6 +961,7 @@ class PdfExportService {
       data: data,
       receiptFileService: receiptFileService,
       maxBytesPerChunk: maxBytesPerChunk,
+      maxPdfBytes: maxPdfBytes,
     );
 
     return SettlementPackage(

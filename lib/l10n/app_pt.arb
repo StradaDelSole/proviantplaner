@@ -1074,6 +1074,39 @@
       }
     }
   },
-  "receiptsPdfTitle": "Comprovativos"
+  "receiptsPdfTitle": "Comprovativos",
+  "receiptMissingError": "A imagem do recibo está em falta ou não pôde ser carregada ({expenseTitle}).",
+  "@receiptMissingError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptCorruptError": "A imagem do recibo está danificada e não pode ser processada ({expenseTitle}).",
+  "@receiptCorruptError": {
+    "placeholders": {
+      "expenseTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptOversizedError": "Um recibo ou pacote PDF é demasiado grande para exportar (máximo {maxMb} MB).",
+  "@receiptOversizedError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupLimitExceededError": "A cópia de segurança excede o limite máximo de {maxMb} MB para recibos.",
+  "@backupLimitExceededError": {
+    "placeholders": {
+      "maxMb": {
+        "type": "int"
+      }
+    }
+  },
+  "backupReceiptMissingError": "Falta um recibo no armazenamento local. Cópia de segurança cancelada."
 }
 
