@@ -36,3 +36,17 @@ Erstelle einen vollständigen, unabhängigen Phase-A-Architekturentwurf für BAC
 5. Adversarial Self-Review: mindestens fünf gezielte mögliche Gegenbeispiele und wie das Design sie abwehrt.
 
 **STOP:** Nach Phase A keinen Produktionscode schreiben, keinen Release-Branch für Feature-Implementierung erstellen, keine externen Ressourcen anlegen, keine PRs mergen und keine Issues schließen. Ergebnisse zur unabhängigen Architekturprüfung vorlegen.
+
+## Verbindliche Zusatzprüfung – Independent Preflight P1–P5
+
+**Wichtig:** Nicht nur die Architekturvorlage bestätigen. Unabhängig nach Gegenbeispielen suchen und folgende Repo-konkret belegte Probleme beantworten:
+
+- **P1 – Backup Memory (kritisch):** `defaultMaxBackupReceiptBytes = 50 MiB` zählt nur Binärbelege; Base64 und ein zweites JSON-Envelope im HTTP-Client vergrößern den Payload. `backend/src/routes/backups.ts` benutzt `c.req.json()`. Workers haben derzeit 128 MB Memory/Isolate. Maximalgröße *aller* Repräsentationen, Limits, Speicherverdopplung und DoS-Schutz bewerten. Zwei praktikable Optionen inklusive Minimalvariante; präzise Teststrategie bei Grenzen. Quelle: https://developers.cloudflare.com/workers/platform/limits/.
+- **P2 – Backup-Inventar:** `SupplierService.saved_suppliers_json`, `DeliveryOrderService.delivery_orders_json` liegen in FlutterSecureStorage und fehlen offenbar aus Backup-v3. Suchen nach allen weiteren persistenten Quellen. Entscheide explizit Einschluss/Ausschluss, Datenschutz, Gerätewechsel und Migration.
+- **P3 – Delete-Identity:** `GET /v1/me` kann `ensureAccount` nach `DELETE /v1/me` erneut ausführen. Gemeinsame HullQ-Auth0-Identität und produktive Web-/App-Löschung mit Race-/Idempotenz-Garantie designen; Owner-Entscheidung sichtbar halten.
+- **P4 – Reale EU-Region:** D1-/R2-Jurisdiktionen werden bei Erstellung festgelegt und müssen am tatsächlichen Account nachgewiesen werden; Repo-Config allein ist kein Beweis. Quellen: https://developers.cloudflare.com/d1/configuration/data-location/ und https://developers.cloudflare.com/r2/reference/data-location/.
+- **P5 – Native Auth0:** Auth0 Flutter Universal Login/PKCE, Credentials Manager, Callback-/Logout-/Refresh-Lifecycle und Web-Portal-Session müssen auf echten Plattformen geprüft werden; JWT-JWKS-Mocks allein reichen nicht.
+
+**Zu P1–P5 jeweils liefern:** beobachtete Dateien/Zeilen, verletzbare Invariante, Optionen, Entscheidungsvorschlag, Failure-/Concurrency-Tests, benötigter Owner-Nachweis und verbleibendes Risiko. Nicht belegt ≠ grün.
+
+**Verbindliche Querschnittsprüfung:** Prüfe anschließend jeden API-Flow Ende-zu-Ende zwischen Flutter, Worker, D1, R2 und Portal. Suche vor allem State-Races und Fehler zwischen "R2 erledigt" und "D1 erledigt", zwischen "Daten gelöscht" und "Auth0-Sub noch gültig" sowie zwischen "Backup im Client bestätigt" und "vollständig wiederherstellbar". Phase-A-STOP bleibt erhalten.
