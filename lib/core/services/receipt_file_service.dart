@@ -33,9 +33,12 @@ class ReceiptFileService {
 
   final Future<Directory> Function() getDocsDir;
 
-  /// Optionaler Hook zur gezielten Fehler-Injektion in Tests (R1, R2, Amendment 3 A–D).
+  /// Optionaler Hook zur gezielten Fehler-Injektion in Tests (R1, R2, Amendment 3 A–D, Amendment 4 E–F).
   /// Wird vor Dateisystemoperationen mit dem Operationsnamen aufgerufen.
   void Function(String operation)? faultInjector;
+
+  /// Optionaler asynchroner Hook vor Ausführung der Recovery (für verzögerte Recovery-Tests, Amendment 4 Finding F).
+  Future<void> Function()? onBeforeRecoveryHook;
 
   bool _initialRecoveryCompleted = false;
   int _recoveryExecutionCount = 0;
@@ -50,13 +53,15 @@ class ReceiptFileService {
   ReceiptFileService({
     Future<Directory> Function()? docsDirProvider,
     this.faultInjector,
+    this.onBeforeRecoveryHook,
   }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
 
-  /// Prüft synchron, ob offene Restore- oder Lösch-Rollback-Artefakte auf dem Dateisystem vorliegen (Finding A, B, C).
+  /// Prüft synchron, ob offene Restore- oder Lösch-Rollback-Artefakte auf dem Dateisystem vorliegen (Finding A, B, C, E).
   bool hasPendingRecoveryArtifactsSync(Directory docsDir) {
     if (File(p.join(docsDir.path, 'restore_journal.json')).existsSync()) return true;
     if (Directory(p.join(docsDir.path, 'receipts_rollback')).existsSync()) return true;
     if (Directory(p.join(docsDir.path, 'receipts_staging_active')).existsSync()) return true;
+    if (Directory(p.join(docsDir.path, 'receipts_staging')).existsSync()) return true;
     final tripRollbackRoot = Directory(p.join(docsDir.path, 'receipts_trip_rollback'));
     if (tripRollbackRoot.existsSync() && tripRollbackRoot.listSync(recursive: false).isNotEmpty) {
       return true;
@@ -64,7 +69,7 @@ class ReceiptFileService {
     return false;
   }
 
-  /// Führt den Recovery-Vorgang Single-Flight (ohne parallele Doppelausführung) aus (Finding B).
+  /// Führt den Recovery-Vorgang Single-Flight (ohne parallele Doppelausführung) aus (Finding B & F).
   Future<void> runSingleFlightRecovery(Future<void> Function() task) async {
     if (_activeRecoveryFuture != null) {
       return _activeRecoveryFuture!;
@@ -72,6 +77,9 @@ class ReceiptFileService {
     final future = () async {
       _recoveryExecutionCount++;
       try {
+        if (onBeforeRecoveryHook != null) {
+          await onBeforeRecoveryHook!();
+        }
         await task();
         _initialRecoveryCompleted = true;
       } catch (e) {
@@ -499,7 +507,7 @@ class ReceiptFileService {
   }
 
   /// Phase 2 des Restore-Commits (wird NACH erfolgreichem SQLite-COMMIT ausgeführt, R1):
-  /// Entfernt das Rollback-Verzeichnis, das Staging-Verzeichnis und das Recovery-Journal.
+  /// Entfernt das Rollback-Verzeichnis, das Staging-Verzeichnis und zuletzt das Recovery-Journal.
   Future<void> finalizeRestoreStaging() async {
     faultInjector?.call('finalizeRestoreStaging');
     final docsDir = await getDocsDir();
@@ -507,7 +515,25 @@ class ReceiptFileService {
     if (rollbackDir.existsSync()) {
       rollbackDir.deleteSync(recursive: true);
     }
+    final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
+    if (stagedActiveDir.existsSync()) {
+      stagedActiveDir.deleteSync(recursive: true);
+    }
+    await cleanStagingDirectory();
     await deleteRestoreJournal();
+  }
+
+  /// Bereinigt verwaiste Staging-Artefakte (`receipts_staging_active/` und `receipts_staging/`),
+  /// wenn ein Prozessabbruch vor `writeRestoreJournal()` und vor `promoteStagedReceipts()` auftrat (Finding E).
+  /// Darf ausschließlich aufgerufen werden, nachdem verifiziert wurde, dass weder ein Journal noch ein
+  /// Rollback-Verzeichnis existiert und alle produktiven DB-Belegdateien in `receipts/` intakt sind.
+  Future<void> cleanPreJournalStagingArtifacts() async {
+    faultInjector?.call('cleanPreJournalStagingArtifacts');
+    final docsDir = await getDocsDir();
+    final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
+    if (stagedActiveDir.existsSync()) {
+      stagedActiveDir.deleteSync(recursive: true);
+    }
     await cleanStagingDirectory();
   }
 
@@ -523,6 +549,7 @@ class ReceiptFileService {
   Future<void> abortRestoreStaging({
     Directory? stagedActiveDir,
   }) async {
+    faultInjector?.call('abortRestoreStaging');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
@@ -539,8 +566,8 @@ class ReceiptFileService {
       await _moveDirectory(rollbackDir, activeDir);
     }
 
-    await deleteRestoreJournal();
     await cleanStagingDirectory();
+    await deleteRestoreJournal();
   }
 
   // --- Soft-Delete & Papierkorb für Expense-Undo (Finding D & R2) ---

@@ -2,9 +2,11 @@
 /// Verifiziert die transaktionssichere Sicherung aller 8 Entitäten und die vollständige Wiederherstellung.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
@@ -12,8 +14,11 @@ import 'package:proviantplaner/core/services/backup_coordinator.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/hullq_backup_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
+import 'package:proviantplaner/main.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
@@ -1415,6 +1420,349 @@ void main() {
       expect(origFile.readAsBytesSync(), equals(origBytes));
       expect(protectedRollbackFile.existsSync(), isTrue);
       expect(protectedRollbackFile.readAsBytesSync(), equals([4, 5, 6]));
+    });
+
+    test('Amendment 4 – Finding E: Crash nach Anlegen von receipts_staging_active vor writeRestoreJournal wird beim App-Neustart sicher, wiederholbar und ohne Gefährdung produktiver Daten bereinigt', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // 1. Zuerst einen Cloud-Backup-Stand erzeugen, der später wiederhergestellt werden soll
+      final cloudTripId = await seedCompleteTrip(db, 'Cloud-Stand für unterbrochenes Staging');
+      final cloudExpenses = await db.expenseDao.getExpensesForTrip(cloudTripId);
+      final cloudReceipt = await receiptService.saveReceiptImage(
+        tripId: cloudTripId,
+        expenseId: cloudExpenses.first.id,
+        preferredFileName: 'cloud_staged.jpg',
+        imageBytes: _createTestJpeg(width: 22, height: 22),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: cloudTripId,
+          expenseId: cloudExpenses.first.id,
+          fileName: cloudReceipt.fileName,
+          filePath: cloudReceipt.filePath,
+          byteSize: Value(cloudReceipt.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      expect(await coordinator.createBackup(), isTrue);
+
+      // 2. Lokalen produktiven Stand ("Originaler Törn vor Crash") mit Beleg aufbauen
+      await db.delete(db.expenseReceipts).go();
+      await db.delete(db.expenses).go();
+      await db.delete(db.trips).go();
+      final activeDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (activeDir.existsSync()) {
+        activeDir.deleteSync(recursive: true);
+      }
+
+      final origTripId = await seedCompleteTrip(db, 'Originaler Törn vor Crash');
+      final origExpenses = await db.expenseDao.getExpensesForTrip(origTripId);
+      final origReceipt = await receiptService.saveReceiptImage(
+        tripId: origTripId,
+        expenseId: origExpenses.first.id,
+        preferredFileName: 'orig_intact.jpg',
+        imageBytes: _createTestJpeg(width: 16, height: 16),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: origTripId,
+          expenseId: origExpenses.first.id,
+          fileName: origReceipt.fileName,
+          filePath: origReceipt.filePath,
+          byteSize: Value(origReceipt.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      final origFile = File(p.join(tempDir.path, origReceipt.filePath));
+      final origBytes = origFile.readAsBytesSync();
+
+      // 3. Simuliere harten Prozessabbruch unmittelbar VOR writeRestoreJournal() (nachdem receipts_staging_active/
+      // bereits mit den gestagten Dateien gefüllt wurde, aber bevor Journal oder Rollback-Ordner entstehen
+      // und ohne dass der in-process catch-Cleanup abortRestoreStaging ausführen kann).
+      receiptService.faultInjector = (op) {
+        if (op == 'writeRestoreJournal' || op == 'abortRestoreStaging') {
+          throw const FileSystemException('Simulated hard process crash before writeRestoreJournal');
+        }
+      };
+
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<FileSystemException>()),
+      );
+      receiptService.faultInjector = null;
+
+      final stagedActiveDir = Directory(p.join(tempDir.path, 'receipts_staging_active'));
+      final rollbackDir = Directory(p.join(tempDir.path, 'receipts_rollback'));
+      final journalFile = File(p.join(tempDir.path, 'restore_journal.json'));
+
+      // Nach dem Crash vor writeRestoreJournal existiert ausschließlich das Staging-Artefakt!
+      expect(stagedActiveDir.existsSync(), isTrue);
+      expect(stagedActiveDir.listSync(recursive: true).whereType<File>(), isNotEmpty);
+      expect(journalFile.existsSync(), isFalse);
+      expect(rollbackDir.existsSync(), isFalse);
+
+      // 4. Sicherheitsprüfung: Fehlt eine produktive DB-Belegdatei in receipts/, verweigert Recovery
+      // das Löschen der Staging-Artefakte zum Schutz vor potenziellem Datenverlust!
+      origFile.deleteSync();
+      final guardReceiptService = ReceiptFileService(docsDirProvider: () async => tempDir);
+      await expectLater(
+        BackupCoordinator.recoverStorageState(
+          db: db,
+          receiptFileService: guardReceiptService,
+        ),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      // Staging-Artefakt wurde NICHT gelöscht, solange die produktive Datei fehlte
+      expect(stagedActiveDir.existsSync(), isTrue);
+
+      // Produktive Originaldatei wiederherstellen (regulärer Zustand bei Crash vor writeRestoreJournal)
+      origFile.writeAsBytesSync(origBytes, flush: true);
+
+      // 5. Wiederholbare Recovery nach erneutem Prozessabbruch während cleanPreJournalStagingArtifacts:
+      final crashingRestartService = ReceiptFileService(
+        docsDirProvider: () async => tempDir,
+        faultInjector: (op) {
+          if (op == 'cleanPreJournalStagingArtifacts') {
+            throw const FileSystemException('Simulated second crash during staging cleanup');
+          }
+        },
+      );
+      await expectLater(
+        BackupCoordinator.recoverStorageState(
+          db: db,
+          receiptFileService: crashingRestartService,
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+
+      // 6. Simulierter regulärer App-Neustart: bereinigt receipts_staging_active automatisch,
+      // erhält originale DB + Belegdateien vollständig und macht die App normal nutzbar.
+      final restartReceiptService = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final restartContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(restartReceiptService),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(restartContainer.dispose);
+
+      await restartContainer.read(appStartupRecoveryProvider.future);
+      expect(stagedActiveDir.existsSync(), isFalse);
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+
+      final tripsAfterRecovery = await restartContainer.read(allTripsProvider.future);
+      expect(tripsAfterRecovery.length, equals(1));
+      expect(tripsAfterRecovery.single.name, equals('Originaler Törn vor Crash'));
+
+      // App ist normal für Lese- und Schreiboperationen nutzbar
+      final kittyData = await restartContainer.read(tripKittyDataProvider(origTripId).future);
+      expect(kittyData.expenses.single.receipts.length, equals(1));
+      final stopId = await restartContainer.read(tripServiceProvider).addShoppingStop(
+            tripId: origTripId,
+            name: 'Stopp nach erfolgreicher Vor-Journal-Recovery',
+            dayNumber: 2,
+          );
+      expect(stopId, greaterThan(0));
+    });
+
+    testWidgets('Amendment 4 – Finding F (Verzögerte Recovery): ProviantplanerApp zeigt während laufender Recovery den Initialisierungszustand, baut den Router erst danach auf und blockiert vorzeitige Datenmutationen', (WidgetTester tester) async {
+      final tripId = await seedCompleteTrip(db, 'Gate-Test-Törn');
+
+      final recoveryCompleter = Completer<void>();
+      final delayedReceiptService = ReceiptFileService(
+        docsDirProvider: () async => tempDir,
+        onBeforeRecoveryHook: () => recoveryCompleter.future,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(delayedReceiptService),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const ProviantplanerApp(locale: Locale('de')),
+        ),
+      );
+      await tester.pump();
+
+      // 1. Während die Recovery noch läuft, zeigt ProviantplanerApp den eindeutigen Initialisierungszustand
+      // und baut den Router / StartScreen noch NICHT auf!
+      expect(find.byKey(const Key('app_startup_recovery_loading')), findsOneWidget);
+      expect(find.byKey(const Key('app_startup_recovery_error')), findsNothing);
+      expect(find.text('Meine Törns'), findsNothing);
+
+      // 2. Vor erfolgreichem Abschluss der Recovery dürfen keine betroffenen Datenmutationen durchlaufen:
+      bool tripMutationFinished = false;
+      bool shoppingMutationFinished = false;
+      bool kittyMutationFinished = false;
+      bool boatProfileMutationFinished = false;
+
+      final tripMutationFuture = container
+          .read(tripServiceProvider)
+          .addShoppingStop(tripId: tripId, name: 'Vorzeitiger Stopp', dayNumber: 3)
+          .then((_) => tripMutationFinished = true);
+
+      final shoppingMutationFuture = container
+          .read(shoppingListServiceProvider)
+          .addCustomItem(
+            CustomItemInput(
+              tripId: tripId,
+              name: 'Vorzeitiges Item',
+              quantity: 1,
+              unit: 'Stück',
+              department: 'sonstiges',
+            ),
+          )
+          .then((_) => shoppingMutationFinished = true);
+
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      final kittyMutationFuture = container
+          .read(kittyServiceProvider)
+          .addDeposit(tripId: tripId, memberId: crew.first.id, amountInCents: 2500)
+          .then((_) => kittyMutationFinished = true);
+
+      final boatProfileMutationFuture = container
+          .read(boatProfileServiceProvider)
+          .createProfile(name: 'Vorzeitiges Boot')
+          .then((_) => boatProfileMutationFinished = true);
+
+      await tester.pump();
+
+      // Beweis: Keine einzige Mutation konnte vor Abschluss der Recovery ausgeführt werden!
+      expect(tripMutationFinished, isFalse);
+      expect(shoppingMutationFinished, isFalse);
+      expect(kittyMutationFinished, isFalse);
+      expect(boatProfileMutationFinished, isFalse);
+
+      final stopsWhileBlocked = await db.tripDao.getShoppingStopsForTrip(tripId);
+      expect(stopsWhileBlocked.where((s) => s.name == 'Vorzeitiger Stopp'), isEmpty);
+
+      // 3. Recovery erfolgreich abschließen -> normale Anwendung öffnet sich und wartende Operationen laufen durch
+      recoveryCompleter.complete();
+      await Future.wait([
+        tripMutationFuture,
+        shoppingMutationFuture,
+        kittyMutationFuture,
+        boatProfileMutationFuture,
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(tripMutationFinished, isTrue);
+      expect(shoppingMutationFinished, isTrue);
+      expect(kittyMutationFinished, isTrue);
+      expect(boatProfileMutationFinished, isTrue);
+
+      expect(find.byKey(const Key('app_startup_recovery_loading')), findsNothing);
+      expect(find.text('Meine Törns'), findsOneWidget);
+      expect(find.text('Gate-Test-Törn'), findsOneWidget);
+    });
+
+    testWidgets('Amendment 4 – Finding F (Nicht auflösbarer Recovery-Fehler): ProviantplanerApp zeigt bei RestoreRecoveryException den nicht-destruktiven Fehlerzustand, löscht keine Daten und blockiert Mutationen bis zur Behebung', (WidgetTester tester) async {
+      final tripId = await seedCompleteTrip(db, 'Geschützter Törn bei Recovery-Fehler');
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final processed = await receiptService.saveReceiptImage(
+        tripId: tripId,
+        expenseId: expenses.first.id,
+        preferredFileName: 'protected.jpg',
+        imageBytes: _createTestJpeg(width: 15, height: 15),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenses.first.id,
+          fileName: processed.fileName,
+          filePath: processed.filePath,
+          byteSize: Value(processed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      final origFile = File(p.join(tempDir.path, processed.filePath));
+      final origBytes = origFile.readAsBytesSync();
+
+      // Erzeuge nicht automatisch auflösbaren Recovery-Zustand:
+      // `receipts_rollback/` existiert, aber `restore_journal.json` fehlt!
+      final rollbackDir = Directory(p.join(tempDir.path, 'receipts_rollback'));
+      rollbackDir.createSync(recursive: true);
+      final rollbackFile = File(p.join(rollbackDir.path, 'important_rollback.jpg'));
+      rollbackFile.writeAsBytesSync([10, 20, 30]);
+
+      final errorReceiptService = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(errorReceiptService),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const ProviantplanerApp(locale: Locale('de')),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Nicht-destruktiver Fehlerzustand wird angezeigt; normale App / Router ist NICHT geöffnet
+      expect(find.byKey(const Key('app_startup_recovery_error')), findsOneWidget);
+      expect(find.byKey(const Key('app_startup_recovery_retry_button')), findsOneWidget);
+      expect(find.text('Meine Törns'), findsNothing);
+
+      // 2. Keine automatische Neuinitialisierung oder Datenbank-/Dateilöschung!
+      expect((await db.tripDao.getAllTrips()).single.name, equals('Geschützter Törn bei Recovery-Fehler'));
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+      expect(rollbackFile.existsSync(), isTrue);
+      expect(rollbackFile.readAsBytesSync(), equals([10, 20, 30]));
+
+      // 3. Sämtliche Mutationspfade sind bei unaufgelöstem Recovery-Fehler gesperrt
+      await expectLater(
+        container.read(tripServiceProvider).addShoppingStop(
+              tripId: tripId,
+              name: 'Verbotener Stopp',
+              dayNumber: 2,
+            ),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      await expectLater(
+        container.read(shoppingListServiceProvider).addCustomItem(
+              CustomItemInput(
+                tripId: tripId,
+                name: 'Verbotenes Item',
+                quantity: 1,
+                unit: 'Stück',
+                department: 'sonstiges',
+              ),
+            ),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      await expectLater(
+        container.read(boatProfileServiceProvider).createProfile(name: 'Verbotenes Boot'),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+
+      // 4. Nachdem der Konflikt behoben wurde, öffnet ein Tipp auf "Erneut versuchen" die normale Anwendung
+      rollbackDir.deleteSync(recursive: true);
+      await tester.tap(find.byKey(const Key('app_startup_recovery_retry_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('app_startup_recovery_error')), findsNothing);
+      expect(find.text('Meine Törns'), findsOneWidget);
+      expect(find.text('Geschützter Törn bei Recovery-Fehler'), findsOneWidget);
     });
   });
 }

@@ -66,6 +66,14 @@ class TripService {
     this.onTripDataChanged,
   }) : receiptFileService = receiptFileService ?? ReceiptFileService();
 
+  /// Zentraler Recovery-Gate-Check vor Lese-/Schreiboperationen (RECEIPT1 Amendment 3 Finding B & Amendment 4 Finding F).
+  Future<void> ensureStorageRecovered() async {
+    await BackupCoordinator.recoverStorageState(
+      db: tripDao.attachedDatabase,
+      receiptFileService: receiptFileService,
+    );
+  }
+
   /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
   /// Führt unmittelbar die Initial-Berechnung aller Vorräte durch.
   /// Falls [boatProfileId] angegeben ist, werden Identitäts- und Bootswerte als Snapshot übernommen.
@@ -94,6 +102,7 @@ class TripService {
     String? boatModel,
     bool? hasWatermaker,
   }) async {
+    await ensureStorageRecovered();
     final effectiveClimate = climate ??
         (region != null
             ? (region == 'temperate'
@@ -196,6 +205,7 @@ class TripService {
   /// Berechnet alle Vorräte für den Törn reaktiv neu.
   /// Bestehende manuelle Überschreibungen (overriddenPackages) bleiben unberührt erhalten!
   Future<void> recalculateTrip(int tripId) async {
+    await ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return;
 
@@ -301,6 +311,7 @@ class TripService {
 
   /// Schaltet Mittags-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
   Future<void> toggleLunchRestaurant(TripDay day) async {
+    await ensureStorageRecovered();
     final updated = day.copyWith(lunchRestaurant: !day.lunchRestaurant);
     await tripDao.updateTripDay(updated);
     await recalculateTrip(day.tripId);
@@ -308,6 +319,7 @@ class TripService {
 
   /// Schaltet Abends-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
   Future<void> toggleEveningRestaurant(TripDay day) async {
+    await ensureStorageRecovered();
     final updated = day.copyWith(dinnerRestaurant: !day.dinnerRestaurant);
     await tripDao.updateTripDay(updated);
     await recalculateTrip(day.tripId);
@@ -315,6 +327,7 @@ class TripService {
 
   /// Setzt die genaue Anzahl an Restaurant-Abendessen und -Mittagessen und berechnet Mengen sofort neu.
   Future<void> setRestaurantCounts(int tripId, {required int dinners, required int lunches}) async {
+    await ensureStorageRecovered();
     final days = await tripDao.getDaysForTrip(tripId);
     for (int i = 0; i < days.length; i++) {
       final shouldDinner = i < dinners;
@@ -331,6 +344,7 @@ class TripService {
 
   /// Aktualisiert Hafenname oder Tagestyp für einen Tag (reine Info, keine Rechenlogik).
   Future<void> updateDayInfo(TripDay day, {String? portName, String? dayType}) async {
+    await ensureStorageRecovered();
     final updated = day.copyWith(
       portName: Value(portName ?? day.portName),
       dayType: Value(dayType ?? day.dayType),
@@ -340,6 +354,7 @@ class TripService {
 
   /// Fügt ein Crew-Mitglied hinzu und berechnet den Törn neu.
   Future<int> addCrewMember(int tripId, CrewMembersCompanion member) async {
+    await ensureStorageRecovered();
     final id = await tripDao.addCrewMember(member);
     await recalculateTrip(tripId);
     return id;
@@ -353,6 +368,7 @@ class TripService {
     required String name,
     required int dayNumber,
   }) async {
+    await ensureStorageRecovered();
     final id = await tripDao.addShoppingStop(
       ShoppingStopsCompanion.insert(
         tripId: tripId,
@@ -367,6 +383,7 @@ class TripService {
 
   /// Aktualisiert einen Einkaufsstopp (z. B. Umbenennen).
   Future<bool> updateShoppingStop(ShoppingStop stop) async {
+    await ensureStorageRecovered();
     final result = await tripDao.updateShoppingStop(stop);
     onTripDataChanged?.call(stop.tripId);
     return result;
@@ -375,6 +392,7 @@ class TripService {
   /// Löscht einen Einkaufsstopp.
   /// Gibt false zurück, wenn es der initiale Stopp ist (dieser darf nicht gelöscht werden).
   Future<bool> deleteShoppingStop(int stopId) async {
+    await ensureStorageRecovered();
     final stop = await tripDao.getShoppingStopById(stopId);
     final result = await tripDao.deleteShoppingStop(stopId);
     if (stop != null) {
@@ -385,13 +403,15 @@ class TripService {
 
   /// Archiviert oder de-archiviert einen Törn.
   Future<bool> archiveTrip(int tripId, {bool archive = true}) async {
+    await ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return false;
     return tripDao.updateTrip(trip.copyWith(isArchived: archive));
   }
 
   /// Setzt die Phase des Törns (FIX-A).
-  Future<bool> setTripPhase(int tripId, TripPhase phase) {
+  Future<bool> setTripPhase(int tripId, TripPhase phase) async {
+    await ensureStorageRecovered();
     return tripDao.setTripPhase(tripId, phase);
   }
 
@@ -399,6 +419,7 @@ class TripService {
   /// Aktualisiert die Snapshot-Werte des Törns auf den aktuellen Stand des verknüpften Bootsprofils.
   /// Gibt false zurück, wenn kein Törn, keine boatProfileId oder kein passendes Profil gefunden wurde.
   Future<bool> resyncTripBoatProfile(int tripId) async {
+    await ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null || trip.boatProfileId == null || boatProfileDao == null) {
       return false;
@@ -443,6 +464,7 @@ class TripService {
     Value<String?> boatModel = const Value.absent(),
     bool? hasWatermaker,
   }) async {
+    await ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return;
 
@@ -509,6 +531,7 @@ class TripService {
   /// - in einem customSplit einer Ausgabe
   /// - als aktiver Kassenwart (treasurerMemberId)
   Future<bool> hasFinancialHistory(int crewMemberId) async {
+    await ensureStorageRecovered();
     final member = await tripDao.getCrewMemberById(crewMemberId);
     if (member == null) return false;
     final tripId = member.tripId;
@@ -553,6 +576,7 @@ class TripService {
   /// Wirft [CrewMemberHasFinancialHistoryException], falls finanzielle Referenzen existieren.
   /// Wirft [StateError], falls es das letzte verbleibende Crew-Mitglied ist.
   Future<void> deleteCrewMemberSafely(int crewMemberId) async {
+    await ensureStorageRecovered();
     final member = await tripDao.getCrewMemberById(crewMemberId);
     if (member == null) return;
     final tripId = member.tripId;
@@ -587,10 +611,7 @@ class TripService {
   ///    kein vollständiger DB-Rollback suggeriert wird. Beim nächsten Start/Recovery wird
   ///    das verbliebene Rollback-Verzeichnis automatisch bereinigt.
   Future<bool> deleteTrip(int tripId) async {
-    await BackupCoordinator.recoverStorageState(
-      db: tripDao.attachedDatabase,
-      receiptFileService: receiptFileService,
-    );
+    await ensureStorageRecovered();
 
     await receiptFileService.stageTripDeleteRollback(tripId);
 

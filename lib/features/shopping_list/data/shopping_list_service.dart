@@ -116,6 +116,7 @@ class ShoppingListService {
 
   /// Lädt alle Vorräte, Gruppierungen und Zuordnungen für den angegebenen Törn.
   Future<TripShoppingListData> loadShoppingList(int tripId) async {
+    await tripService.ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) {
       throw ArgumentError('Törn mit ID $tripId wurde nicht gefunden.');
@@ -364,6 +365,7 @@ class ShoppingListService {
 
   /// Erhöht die Packungsanzahl um 1 (+ Stepper). Übernimmt die Position, falls noch nicht auf der Liste.
   Future<void> incrementPackages(ShoppingListItemView itemView) async {
+    await tripService.ensureStorageRecovered();
     if (!itemView.isAdopted) {
       final initial = itemView.calculatedPackages > 0 ? itemView.calculatedPackages : 1;
       await listItemDao.adoptItem(itemView.item.id, packages: initial);
@@ -376,6 +378,7 @@ class ShoppingListService {
 
   /// Verringert die Packungsanzahl um 1 (− Stepper, bei <= 0 wird die Position entfernt).
   Future<void> decrementPackages(ShoppingListItemView itemView) async {
+    await tripService.ensureStorageRecovered();
     final next = itemView.effectivePackages - 1;
     if (next <= 0) {
       await listItemDao.unadoptItem(itemView.item.id);
@@ -387,12 +390,14 @@ class ShoppingListService {
 
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
   Future<void> resetOverride(ShoppingListItemView itemView) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.setOverriddenPackages(itemView.item.id, null);
     onTripDataChanged?.call(itemView.item.tripId);
   }
 
   /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
   Future<void> setPackages(ShoppingListItemView itemView, int packages) async {
+    await tripService.ensureStorageRecovered();
     if (packages <= 0) {
       await listItemDao.unadoptItem(itemView.item.id);
     } else {
@@ -403,18 +408,21 @@ class ShoppingListService {
 
   /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
   Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.adoptItem(listItemId, packages: packages);
     onTripDataChanged?.call(tripId);
   }
 
   /// Entfernt eine Position von der Vorratsliste (FB1-B).
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.unadoptItem(listItemId);
     onTripDataChanged?.call(tripId);
   }
 
   /// Übernimmt alle Vorschläge von Varianten mit default_selected == true (FB1-B).
   Future<void> adoptAllSuggestions(int tripId) async {
+    await tripService.ensureStorageRecovered();
     if (catalogRepository.catalog == null) {
       await catalogRepository.loadFromBundle();
     }
@@ -436,6 +444,7 @@ class ShoppingListService {
     required int tripId,
     required String categoryId,
   }) async {
+    await tripService.ensureStorageRecovered();
     if (catalogRepository.catalog == null) {
       await catalogRepository.loadFromBundle();
     }
@@ -459,6 +468,7 @@ class ShoppingListService {
     required int listItemId,
     required CheckItemState state,
   }) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.setCheckState(listItemId, state);
     await tripService.recalculateTrip(tripId);
   }
@@ -469,6 +479,7 @@ class ShoppingListService {
     required int listItemId,
     required double packSize,
   }) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.setCustomPackageSize(listItemId, packSize);
     await tripService.recalculateTrip(tripId);
   }
@@ -479,6 +490,7 @@ class ShoppingListService {
     required int listItemId,
     required bool isSelected,
   }) async {
+    await tripService.ensureStorageRecovered();
     if (isSelected) {
       await listItemDao.adoptItem(listItemId);
     } else {
@@ -493,6 +505,7 @@ class ShoppingListService {
     required int listItemId,
     required double share,
   }) async {
+    await tripService.ensureStorageRecovered();
     await listItemDao.setShare(listItemId, share);
     await tripService.recalculateTrip(tripId);
   }
@@ -504,6 +517,7 @@ class ShoppingListService {
     required int shoppingStopId,
     required int packages,
   }) async {
+    await tripService.ensureStorageRecovered();
     final result = await listItemDao.setAllocation(
       tripId: tripId,
       listItemId: listItemId,
@@ -521,6 +535,7 @@ class ShoppingListService {
     required int toStopId,
     required int packagesCount,
   }) async {
+    await tripService.ensureStorageRecovered();
     final currentFromAlloc = it.allocationsByStop[fromStopId]?.allocatedPackages ?? 0;
     final newFrom = (currentFromAlloc - packagesCount).clamp(0, it.effectivePackages);
     final currentToAlloc = it.allocationsByStop[toStopId]?.allocatedPackages ?? 0;
@@ -639,6 +654,7 @@ class ShoppingListService {
 
   /// Legt eine eigene Position an.
   Future<int> addCustomItem(CustomItemInput input) async {
+    await tripService.ensureStorageRecovered();
     final result = await listItemDao.addCustomItem(
       tripId: input.tripId,
       name: input.name,
@@ -659,6 +675,7 @@ class ShoppingListService {
     required int shoppingStopId,
     required bool isBought,
   }) async {
+    await tripService.ensureStorageRecovered();
     final result = await listItemDao.toggleBought(
       tripId: tripId,
       listItemId: listItemId,
@@ -715,6 +732,7 @@ class ShoppingListService {
 
   /// Markiert alle Elemente eines Lagerungshinweises als eingelagert.
   Future<void> toggleStorageHint(StorageChecklistEntry entry, bool isStored) async {
+    await tripService.ensureStorageRecovered();
     for (final it in entry.affectedItems) {
       await listItemDao.setStored(it.item.id, isStored);
     }

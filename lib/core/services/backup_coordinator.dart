@@ -149,127 +149,162 @@ class BackupCoordinator {
     final journal = await receiptFileService.readRestoreJournal();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
+    final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
 
     final hasJournal = journal != null;
     final hasRollback = rollbackDir.existsSync();
     final hasStagedActive = stagedActiveDir.existsSync();
+    final hasStaging = stagingDir.existsSync();
 
-    if (hasJournal || hasRollback || hasStagedActive) {
-      if (journal == null || journal['corrupt'] == true) {
-        throw const RestoreRecoveryException(
-          'Unklarer Restore-Zustand nach Prozessabbruch: Recovery-Journal fehlt oder ist beschädigt. '
-          'Keine destruktive Operation ausgeführt.',
-        );
-      }
-
-      final expectedRaw = journal['expectedReceiptPaths'];
-      if (expectedRaw is! List) {
-        throw const RestoreRecoveryException(
-          'Unklarer Restore-Zustand: expectedReceiptPaths im Recovery-Journal ungültig. '
-          'Keine destruktive Operation ausgeführt.',
-        );
-      }
-
-      final expectedPaths =
-          expectedRaw.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/'))).toSet();
-      final previousRaw = journal['previousReceiptPaths'] as List<dynamic>?;
-      final previousPaths = previousRaw
-          ?.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/')))
-          .toSet();
-      final journalToken = journal['restoreToken'] as String?;
-      final phase = journal['phase'] as String?;
-
-      final dbRestoreToken = await _readDbRestoreToken(db);
-      final currentDbReceipts = await db.select(db.expenseReceipts).get();
-      final currentDbPaths =
-          currentDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toSet();
-
-      final dbMatchesExpected =
-          currentDbPaths.length == expectedPaths.length && currentDbPaths.containsAll(expectedPaths);
-
-      // Belastbarer Commit-Nachweis:
-      // Wenn ein restoreToken im Journal hinterlegt ist, entscheidet der in derselben SQLite-Transaktion
-      // committete `_provy_restore_state`-Token (bzw. `phase == 'committed'`).
-      // Für Token-lose Legacy-Journale gilt der Abgleich gegen nicht-leere `expectedPaths`.
-      final bool isCommittedInDb;
-      if (journalToken != null) {
-        isCommittedInDb = (dbRestoreToken == journalToken) || (phase == 'committed' && dbMatchesExpected);
-      } else {
-        isCommittedInDb =
-            (phase == 'committed' && dbMatchesExpected) || (expectedPaths.isNotEmpty && dbMatchesExpected);
-      }
-
-      if (isCommittedInDb) {
-        // Fall 1: Erfolgreich committet -> ausschließlich Roll-Forward! Niemals alte Dateien aktivieren!
-        if (!dbMatchesExpected) {
-          throw const RestoreRecoveryException(
-            'Widersprüchlicher Post-Commit-Zustand: SQLite-Commit-Token liegt vor, aber DB-Belegpfade '
-            'weichen vom Journal ab. Keine destruktive Operation ausgeführt.',
-          );
-        }
-
-        final activeDir = Directory(p.join(docsDir.path, 'receipts'));
-        if (hasStagedActive && !activeDir.existsSync()) {
-          stagedActiveDir.renameSync(activeDir.path);
-        }
-
-        for (final relPath in expectedPaths) {
-          final bytes = await receiptFileService.readReceiptBytes(relPath);
-          if (bytes == null || bytes.isEmpty) {
+    if (hasJournal || hasRollback || hasStagedActive || hasStaging) {
+      // Amendment 4 – Finding E: Crash nach dem Anlegen von receipts_staging_active/ (bzw. receipts_staging/),
+      // aber VOR writeRestoreJournal() und VOR promoteStagedReceipts():
+      // Es existiert ausschließlich ein Staging-Artefakt ohne Journal und ohne Rollback-Verzeichnis.
+      if (!hasJournal && !hasRollback) {
+        final currentDbReceipts = await db.select(db.expenseReceipts).get();
+        for (final r in currentDbReceipts) {
+          final relPath = p.posix.normalize(r.filePath.replaceAll('\\', '/'));
+          if (relPath.startsWith('receipts_staging') || relPath.startsWith('receipts_rollback')) {
             throw RestoreRecoveryException(
-              'Unklarer Post-Commit-Zustand: Erwartete neue Belegdatei "$relPath" fehlt nach SQLite-Commit. '
-              'Keine destruktive Bereinigung ausgeführt.',
+              'Unklarer Staging-Zustand ohne Journal: DB-Beleg "$relPath" verweist auf ein Staging-/Rollback-Verzeichnis. '
+              'Keine destruktive Operation ausgeführt.',
+            );
+          }
+          final activeFile = File(p.join(docsDir.path, relPath));
+          if (!activeFile.existsSync() || activeFile.lengthSync() <= 0) {
+            throw RestoreRecoveryException(
+              'Unklarer Staging-Zustand ohne Journal: Produktive Belegdatei "$relPath" fehlt oder ist leer. '
+              'Staging-Artefakte werden zum Schutz vor Datenverlust nicht gelöscht.',
+            );
+          }
+          if (r.byteSize > 0 && activeFile.lengthSync() != r.byteSize) {
+            throw RestoreRecoveryException(
+              'Unklarer Staging-Zustand ohne Journal: Produktive Belegdatei "$relPath" weicht von der erwarteten Dateigröße ab. '
+              'Staging-Artefakte werden zum Schutz vor Datenverlust nicht gelöscht.',
             );
           }
         }
 
-        await receiptFileService.finalizeRestoreStaging();
+        // Alle produktiven DB-Belegdateien sind nachweislich vollständig und unverändert in receipts/ vorhanden ->
+        // Verwaiste Vor-Journal-Staging-Artefakte sicher und wiederholbar bereinigen.
+        await receiptFileService.cleanPreJournalStagingArtifacts();
       } else {
-        // Fall 2: Noch nicht in SQLite committet -> Vor-Commit-Prüfung vor einem Roll-Back
-        if (phase == 'committed') {
+        if (journal == null || journal['corrupt'] == true) {
           throw const RestoreRecoveryException(
-            'Widersprüchlicher Restore-Zustand: Journal ist als committed markiert, aber SQLite-Commit-Nachweis fehlt. '
+            'Unklarer Restore-Zustand nach Prozessabbruch: Recovery-Journal fehlt oder ist beschädigt. '
             'Keine destruktive Operation ausgeführt.',
           );
         }
 
-        if (previousPaths != null) {
-          final dbMatchesPrevious =
-              currentDbPaths.length == previousPaths.length && currentDbPaths.containsAll(previousPaths);
-          if (!dbMatchesPrevious) {
-            throw const RestoreRecoveryException(
-              'Unklarer Pre-Commit-Zustand: SQLite-Belegpfade stimmen nicht mit dem Vor-Restore-Zustand überein. '
-              'Kein blinder Rollback ausgeführt.',
-            );
-          }
-        } else if (journalToken == null && currentDbPaths.isEmpty) {
+        final expectedRaw = journal['expectedReceiptPaths'];
+        if (expectedRaw is! List) {
           throw const RestoreRecoveryException(
-            'Unklarer Restore-Zustand ohne Commit-Token und ohne DB-Belegreferenzen. '
-            'Kein blinder Rollback ausgeführt.',
+            'Unklarer Restore-Zustand: expectedReceiptPaths im Recovery-Journal ungültig. '
+            'Keine destruktive Operation ausgeführt.',
           );
         }
 
-        // Prüfe, dass alle von der aktuellen (nicht-committeten) DB benötigten bisherigen Dateien
-        // physisch wiederherstellbar vorhanden sind (in receipts_rollback/ bzw. receipts/)
-        for (final relPath in currentDbPaths) {
-          final File candidateFile;
-          if (hasRollback) {
-            final subPath = relPath.startsWith('receipts/')
-                ? relPath.substring('receipts/'.length)
-                : relPath;
-            candidateFile = File(p.join(rollbackDir.path, subPath));
-          } else {
-            candidateFile = File(p.join(docsDir.path, relPath));
+        final expectedPaths =
+            expectedRaw.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/'))).toSet();
+        final previousRaw = journal['previousReceiptPaths'] as List<dynamic>?;
+        final previousPaths = previousRaw
+            ?.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/')))
+            .toSet();
+        final journalToken = journal['restoreToken'] as String?;
+        final phase = journal['phase'] as String?;
+
+        final dbRestoreToken = await _readDbRestoreToken(db);
+        final currentDbReceipts = await db.select(db.expenseReceipts).get();
+        final currentDbPaths =
+            currentDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toSet();
+
+        final dbMatchesExpected =
+            currentDbPaths.length == expectedPaths.length && currentDbPaths.containsAll(expectedPaths);
+
+        // Belastbarer Commit-Nachweis:
+        // Wenn ein restoreToken im Journal hinterlegt ist, entscheidet der in derselben SQLite-Transaktion
+        // committete `_provy_restore_state`-Token (bzw. `phase == 'committed'`).
+        // Für Token-lose Legacy-Journale gilt der Abgleich gegen nicht-leere `expectedPaths`.
+        final bool isCommittedInDb;
+        if (journalToken != null) {
+          isCommittedInDb = (dbRestoreToken == journalToken) || (phase == 'committed' && dbMatchesExpected);
+        } else {
+          isCommittedInDb =
+              (phase == 'committed' && dbMatchesExpected) || (expectedPaths.isNotEmpty && dbMatchesExpected);
+        }
+
+        if (isCommittedInDb) {
+          // Fall 1: Erfolgreich committet -> ausschließlich Roll-Forward! Niemals alte Dateien aktivieren!
+          if (!dbMatchesExpected) {
+            throw const RestoreRecoveryException(
+              'Widersprüchlicher Post-Commit-Zustand: SQLite-Commit-Token liegt vor, aber DB-Belegpfade '
+              'weichen vom Journal ab. Keine destruktive Operation ausgeführt.',
+            );
           }
-          if (!candidateFile.existsSync() || candidateFile.lengthSync() <= 0) {
-            throw RestoreRecoveryException(
-              'Unklarer Pre-Commit-Zustand: Vorherige Belegdatei "$relPath" fehlt im Rollback-Verzeichnis. '
+
+          final activeDir = Directory(p.join(docsDir.path, 'receipts'));
+          if (hasStagedActive && !activeDir.existsSync()) {
+            stagedActiveDir.renameSync(activeDir.path);
+          }
+
+          for (final relPath in expectedPaths) {
+            final bytes = await receiptFileService.readReceiptBytes(relPath);
+            if (bytes == null || bytes.isEmpty) {
+              throw RestoreRecoveryException(
+                'Unklarer Post-Commit-Zustand: Erwartete neue Belegdatei "$relPath" fehlt nach SQLite-Commit. '
+                'Keine destruktive Bereinigung ausgeführt.',
+              );
+            }
+          }
+
+          await receiptFileService.finalizeRestoreStaging();
+        } else {
+          // Fall 2: Noch nicht in SQLite committet -> Vor-Commit-Prüfung vor einem Roll-Back
+          if (phase == 'committed') {
+            throw const RestoreRecoveryException(
+              'Widersprüchlicher Restore-Zustand: Journal ist als committed markiert, aber SQLite-Commit-Nachweis fehlt. '
+              'Keine destruktive Operation ausgeführt.',
+            );
+          }
+
+          if (previousPaths != null) {
+            final dbMatchesPrevious =
+                currentDbPaths.length == previousPaths.length && currentDbPaths.containsAll(previousPaths);
+            if (!dbMatchesPrevious) {
+              throw const RestoreRecoveryException(
+                'Unklarer Pre-Commit-Zustand: SQLite-Belegpfade stimmen nicht mit dem Vor-Restore-Zustand überein. '
+                'Kein blinder Rollback ausgeführt.',
+              );
+            }
+          } else if (journalToken == null && currentDbPaths.isEmpty) {
+            throw const RestoreRecoveryException(
+              'Unklarer Restore-Zustand ohne Commit-Token und ohne DB-Belegreferenzen. '
               'Kein blinder Rollback ausgeführt.',
             );
           }
-        }
 
-        await receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+          // Prüfe, dass alle von der aktuellen (nicht-committeten) DB benötigten bisherigen Dateien
+          // physisch wiederherstellbar vorhanden sind (in receipts_rollback/ bzw. receipts/)
+          for (final relPath in currentDbPaths) {
+            final File candidateFile;
+            if (hasRollback) {
+              final subPath = relPath.startsWith('receipts/')
+                  ? relPath.substring('receipts/'.length)
+                  : relPath;
+              candidateFile = File(p.join(rollbackDir.path, subPath));
+            } else {
+              candidateFile = File(p.join(docsDir.path, relPath));
+            }
+            if (!candidateFile.existsSync() || candidateFile.lengthSync() <= 0) {
+              throw RestoreRecoveryException(
+                'Unklarer Pre-Commit-Zustand: Vorherige Belegdatei "$relPath" fehlt im Rollback-Verzeichnis. '
+                'Kein blinder Rollback ausgeführt.',
+              );
+            }
+          }
+
+          await receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+        }
       }
     }
 

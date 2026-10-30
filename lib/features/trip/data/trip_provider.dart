@@ -44,6 +44,7 @@ final tripServiceProvider = Provider<TripService>((ref) {
 final boatProfileServiceProvider = Provider<BoatProfileService>((ref) {
   return BoatProfileService(
     boatProfileDao: ref.watch(boatProfileDaoProvider),
+    receiptFileService: ref.watch(receiptFileServiceProvider),
   );
 });
 

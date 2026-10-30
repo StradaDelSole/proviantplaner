@@ -771,7 +771,7 @@ void main() {
       throwsA(
         isA<ReceiptFileMissingOnDeleteException>()
             .having((e) => e.receiptId, 'receiptId', receipt.id)
-            .having((e) => e.filePath, 'filePath', receipt.filePath),
+            .having((e) => e.relativePath, 'relativePath', receipt.filePath),
       ),
     );
     // DB-Referenz wurde nicht stillschweigend als normal gelöscht behandelt

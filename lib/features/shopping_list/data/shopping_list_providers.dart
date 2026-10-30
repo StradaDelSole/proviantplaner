@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'shopping_list_service.dart';
@@ -53,6 +54,7 @@ final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   ref.watch(tripDataVersionProvider(tripId));
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadShoppingList(tripId);
@@ -61,6 +63,7 @@ final tripShoppingListProvider =
 /// Lädt die Einlagerungs-Checkliste für einen Törn.
 final storageChecklistProvider =
     FutureProvider.family<List<StorageChecklistEntry>, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final service = ref.watch(shoppingListServiceProvider);
   return service.loadStorageChecklist(tripId);
 });

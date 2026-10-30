@@ -19,6 +19,8 @@ class ReceiptFileMissingOnDeleteException implements Exception {
   final int receiptId;
   final String filePath;
 
+  String get relativePath => filePath;
+
   const ReceiptFileMissingOnDeleteException({
     required this.receiptId,
     required this.filePath,
@@ -493,7 +495,8 @@ class KittyService {
     required int tripId,
     required int memberId,
     required int amountInCents,
-  }) {
+  }) async {
+    await _ensureStorageRecovered();
     final euros = amountInCents / 100.0;
     return expenseDao.addKittyPayment(
       KittyPaymentsCompanion.insert(
@@ -507,6 +510,7 @@ class KittyService {
 
   /// Aktualisiert das Kassenmodell für den Törn (Bordkasse vs. Einzelabrechnung).
   Future<bool> switchKittyModel(int tripId, KittyModel newModel) async {
+    await _ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return false;
     return tripDao.updateTrip(trip.copyWith(kittyModel: newModel));
@@ -519,6 +523,7 @@ class KittyService {
     required bool isSkipperFree,
     String? skipperFreeScope,
   }) async {
+    await _ensureStorageRecovered();
     final crew = await tripDao.db.select(tripDao.db.crewMembers).get();
     final member = crew.where((c) => c.id == memberId).firstOrNull;
     if (member == null) return false;
@@ -568,7 +573,8 @@ class KittyService {
   }
 
   /// Löscht Belege einer gelöschten Ausgabe endgültig aus dem Papierkorb nach Ablauf des Undo-Fensters.
-  Future<void> purgeDeletedExpenseReceipts(int tripId, int expenseId) {
+  Future<void> purgeDeletedExpenseReceipts(int tripId, int expenseId) async {
+    await _ensureStorageRecovered();
     return receiptFileService.purgeTrash(tripId: tripId, expenseId: expenseId);
   }
 
@@ -577,6 +583,7 @@ class KittyService {
     required int id,
     required ExpenseInput input,
   }) async {
+    await _ensureStorageRecovered();
     final trip = await tripDao.getTripById(input.tripId);
     final crew = await tripDao.getCrewForTrip(input.tripId);
     final allExpenses = await expenseDao.getExpensesForTrip(input.tripId);
@@ -608,6 +615,7 @@ class KittyService {
 
   /// Stellt eine gelöschte Ausgabe samt Belegen transaktions- und dateisystemsicher wieder her (Undo, R2).
   Future<int> restoreExpense(KittyExpense exp) async {
+    await _ensureStorageRecovered();
     if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
       throw ArgumentError(
         'Ungültige Zahlungsquelle für Wiederherstellung: Kassenausgaben dürfen keinen persönlichen Zahler haben.',
@@ -688,7 +696,8 @@ class KittyService {
     String? iban,
     String? paypalLink,
     String? revolutLink,
-  }) {
+  }) async {
+    await _ensureStorageRecovered();
     return tripDao.updateCrewMemberPaymentDetails(
       memberId: memberId,
       iban: iban,
@@ -698,15 +707,20 @@ class KittyService {
   }
 
   /// Aktualisiert den Kassenwart eines Törns (FB1-D).
-  Future<bool> setTreasurer(int tripId, int? memberId) {
+  Future<bool> setTreasurer(int tripId, int? memberId) async {
+    await _ensureStorageRecovered();
     return tripDao.setTripTreasurer(tripId, memberId);
   }
 
   /// Löscht eine Einzahlung.
-  Future<int> deleteDeposit(int id) => expenseDao.deleteKittyPayment(id);
+  Future<int> deleteDeposit(int id) async {
+    await _ensureStorageRecovered();
+    return expenseDao.deleteKittyPayment(id);
+  }
 
   /// Archiviert den Törn nach erfolgreicher Kassenabrechnung.
   Future<bool> archiveTrip(int tripId) async {
+    await _ensureStorageRecovered();
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) return false;
     return tripDao.updateTrip(

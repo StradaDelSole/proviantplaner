@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Final Recovery Gate Amendment 4 (Findings E & F)
+
+- **Finding E – HIGH (Crash vor Journal-Erstellung):**
+  - Unterscheidung zwischen einem reinen Vor-Journal-Staging-Artefakt (`receipts_staging_active/` bzw. `receipts_staging/` ohne `restore_journal.json` und ohne `receipts_rollback/`) und einem tatsächlich unklaren Restore-Zustand in `BackupCoordinator.recoverStorageState()`.
+  - Vor einer Bereinigung durch `cleanPreJournalStagingArtifacts()` verifiziert Recovery für sämtliche in SQLite registrierten Belege, dass alle produktiven Belegdateien physisch und mit erwarteter Dateigröße in `receipts/` vorhanden sind; fehlt eine produktive Datei, wird keine Bereinigung ausgeführt und `RestoreRecoveryException` geworfen.
+  - `finalizeRestoreStaging()` und `abortRestoreStaging()` entfernen `restore_journal.json` stets als letzten Schritt nach den Rollback-/Staging-Verzeichnissen.
+- **Finding F – HIGH (Verbindliches App-Start-Gate):**
+  - `ProviantplanerApp.build()` wartet über `recoveryState.when(...)` verbindlich auf den Abschluss von `appStartupRecoveryProvider`, bevor `appRouterProvider` aufgebaut wird.
+  - Zeigt während laufender Recovery den Initialisierungszustand `AppStartupRecoveryLoadingScreen` (`Key('app_startup_recovery_loading')`) und bei `RestoreRecoveryException` den nicht-destruktiven Fehlerzustand `AppStartupRecoveryErrorScreen` (`Key('app_startup_recovery_error')`) mit Retry-Aktion (`Key('app_startup_recovery_retry_button')`) – ohne automatische Neuinitialisierung oder Datenbanklöschung.
+  - Reconciliiert sämtliche betroffenen Lese- und Schreibpfade in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und den zugehörigen Providern über den zentralen Single-Flight-Recovery-Gate, sodass vor erfolgreicher Recovery keine Datenmutationen möglich sind.
+
 ## 2026-10-17 – RECEIPT1 Final Integrity Amendment 3 (Findings A–D)
 
 - **A – BLOCKER (Post-Commit-Finalisierung in `BackupCoordinator.restoreBackup()`):**
