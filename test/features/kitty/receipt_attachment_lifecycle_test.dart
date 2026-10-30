@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
+import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
@@ -13,10 +14,57 @@ import 'package:proviantplaner/features/kitty/domain/models/receipt_models.dart'
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
+/// Test-Wrapper für [ExpenseDao] zur gezielten DB-Fehler-Injektion (R2).
+class _FaultyExpenseDao extends ExpenseDao {
+  bool failNextAddReceipt = false;
+  bool failNextDeleteReceipt = false;
+  bool failNextDeleteExpense = false;
+  bool failNextAddExpense = false;
+
+  _FaultyExpenseDao(super.db);
+
+  @override
+  Future<int> addReceipt(ExpenseReceiptsCompanion receipt) async {
+    if (failNextAddReceipt) {
+      failNextAddReceipt = false;
+      throw StateError('Simulated DB failure in addReceipt');
+    }
+    return super.addReceipt(receipt);
+  }
+
+  @override
+  Future<int> deleteReceipt(int id) async {
+    if (failNextDeleteReceipt) {
+      failNextDeleteReceipt = false;
+      throw StateError('Simulated DB failure in deleteReceipt');
+    }
+    return super.deleteReceipt(id);
+  }
+
+  @override
+  Future<int> deleteExpense(int id) async {
+    if (failNextDeleteExpense) {
+      failNextDeleteExpense = false;
+      throw StateError('Simulated DB failure in deleteExpense');
+    }
+    return super.deleteExpense(id);
+  }
+
+  @override
+  Future<int> addExpense(ExpensesCompanion expense) async {
+    if (failNextAddExpense) {
+      failNextAddExpense = false;
+      throw StateError('Simulated DB failure in addExpense');
+    }
+    return super.addExpense(expense);
+  }
+}
+
 void main() {
   late AppDatabase db;
   late Directory tempDir;
   late ReceiptFileService receiptFileService;
+  late _FaultyExpenseDao faultyExpenseDao;
   late KittyService kittyService;
   late int tripId;
   late int member1Id;
@@ -32,9 +80,10 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     tempDir = await Directory.systemTemp.createTemp('receipt_lifecycle_test_');
     receiptFileService = ReceiptFileService(docsDirProvider: () async => tempDir);
+    faultyExpenseDao = _FaultyExpenseDao(db);
     kittyService = KittyService(
       tripDao: db.tripDao,
-      expenseDao: db.expenseDao,
+      expenseDao: faultyExpenseDao,
       receiptFileService: receiptFileService,
     );
 
@@ -277,8 +326,12 @@ void main() {
     // File moved out of active directory into trash directory
     expect(await activeFile.exists(), isFalse);
     expect(await trashDir.exists(), isTrue);
-    final trashedFiles = trashDir.listSync();
-    expect(trashedFiles.length, 1);
+    final trashedReceiptFiles = trashDir
+        .listSync()
+        .whereType<File>()
+        .where((f) => !p.basename(f.path).startsWith('.'))
+        .toList();
+    expect(trashedReceiptFiles.length, 1);
 
     // 2. Restore
     await kittyService.restoreExpense(expense);
@@ -414,5 +467,221 @@ void main() {
       ),
       throwsA(isA<ArgumentError>()),
     );
+  });
+
+  test('R2: addReceiptToExpense löscht die erzeugte Bilddatei sofort, wenn das DB-Insert scheitert (keine verwaiste Datei)', () async {
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Ausgabe für DB-Fehler-Test',
+        amountInCents: 2500,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+      ),
+    );
+
+    faultyExpenseDao.failNextAddReceipt = true;
+
+    final photo = createDummyJpeg(80, 80, img.ColorRgb8(22, 44, 66));
+    await expectLater(
+      kittyService.addReceiptToExpense(
+        tripId: tripId,
+        expenseId: expenseId,
+        imageBytes: photo,
+        preferredFileName: 'orphan_candidate.jpg',
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    // Weder DB-Eintrag noch verwaiste Bilddatei auf der Platte!
+    final receipts = await db.expenseDao.getReceiptsForExpense(expenseId);
+    expect(receipts, isEmpty);
+
+    final expenseFolder = Directory(p.join(tempDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
+    if (await expenseFolder.exists()) {
+      expect(expenseFolder.listSync(recursive: true).whereType<File>(), isEmpty);
+    }
+  });
+
+  test('R2: deleteReceipt verschluckt Dateilöschfehler NICHT (keine stille DB-Löschung) und stellt die Datei wieder her, falls das DB-Delete scheitert', () async {
+    final photo = createDummyJpeg(90, 90, img.ColorRgb8(77, 88, 99));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'DeleteReceipt Fehlerpfade',
+        amountInCents: 3000,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'important.jpg')],
+      ),
+    );
+
+    final receipt = (await db.expenseDao.getReceiptsForExpense(expenseId)).single;
+    final receiptFile = File(p.join(tempDir.path, receipt.filePath));
+    final origBytes = await receiptFile.readAsBytes();
+
+    // Fall A: I/O-Fehler beim Löschen der Datei -> Fehler wird geworfen, DB-Eintrag bleibt erhalten!
+    receiptFileService.faultInjector = (op) {
+      if (op == 'deleteReceiptFile') {
+        throw const FileSystemException('Simulated file permission error on deleteReceiptFile');
+      }
+    };
+
+    await expectLater(
+      kittyService.deleteReceipt(receipt.id),
+      throwsA(isA<FileSystemException>()),
+    );
+    receiptFileService.faultInjector = null;
+
+    expect(await db.expenseDao.getReceiptById(receipt.id), isNotNull);
+    expect(await receiptFile.exists(), isTrue);
+
+    // Fall B: Dateilöschung klappt, aber DB-Delete scheitert -> Datei wird automatisch wiederhergestellt!
+    faultyExpenseDao.failNextDeleteReceipt = true;
+
+    await expectLater(
+      kittyService.deleteReceipt(receipt.id),
+      throwsA(isA<StateError>()),
+    );
+
+    expect(await db.expenseDao.getReceiptById(receipt.id), isNotNull);
+    expect(await receiptFile.exists(), isTrue);
+    expect(await receiptFile.readAsBytes(), equals(origBytes));
+  });
+
+  test('R2: deleteExpense und restoreExpense behandeln Datei- und DB-Fehler konsistent mit Rollback', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(111, 122, 133));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Undo & Delete Rollback Test',
+        amountInCents: 5500,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'rollback_test.jpg')],
+      ),
+    );
+
+    final receipt = (await db.expenseDao.getReceiptsForExpense(expenseId)).single;
+    final activeFile = File(p.join(tempDir.path, receipt.filePath));
+    final origBytes = await activeFile.readAsBytes();
+
+    // 1. deleteExpense: Wenn DB-Delete nach moveToTrash scheitert, werden die Dateien aus dem Papierkorb zurückgeholt!
+    faultyExpenseDao.failNextDeleteExpense = true;
+    await expectLater(
+      kittyService.deleteExpense(expenseId, softDelete: true),
+      throwsA(isA<StateError>()),
+    );
+    expect(await db.expenseDao.getExpenseById(expenseId), isNotNull);
+    expect(await activeFile.exists(), isTrue);
+    expect(await activeFile.readAsBytes(), equals(origBytes));
+
+    // 2. Reguläres Soft-Delete in den Papierkorb
+    final kittyData = await kittyService.loadKittyData(tripId);
+    final expenseSnapshot = kittyData.expenses.firstWhere((e) => e.id == expenseId);
+    await kittyService.deleteExpense(expenseId, softDelete: true);
+    expect(await activeFile.exists(), isFalse);
+
+    // 3. restoreExpense: Wenn restoreFromTrash wegen eines I/O-Fehlers scheitert, rollt auch die DB-Transaktion zurück!
+    receiptFileService.faultInjector = (op) {
+      if (op == 'restoreFromTrash') {
+        throw const FileSystemException('Simulated I/O error on restoreFromTrash');
+      }
+    };
+    await expectLater(
+      kittyService.restoreExpense(expenseSnapshot),
+      throwsA(isA<FileSystemException>()),
+    );
+    receiptFileService.faultInjector = null;
+
+    // Weder Ausgabe noch Beleg dürfen halbherzig in der DB stehen, solange die Datei noch im Papierkorb liegt!
+    expect(await db.expenseDao.getExpenseById(expenseId), isNull);
+    expect(await db.expenseDao.getReceiptsForExpense(expenseId), isEmpty);
+
+    // Anschließend funktioniert der reguläre Restore einwandfrei
+    await kittyService.restoreExpense(expenseSnapshot);
+    expect(await db.expenseDao.getExpenseById(expenseId), isNotNull);
+    expect(await activeFile.exists(), isTrue);
+    expect(await activeFile.readAsBytes(), equals(origBytes));
+  });
+
+  test('R2: Verwaiste temporäre Undo-Dateien im Papierkorb bleiben nach App-Absturz nicht dauerhaft zurück (TTL-Cleanup)', () async {
+    final photo = createDummyJpeg(80, 80, img.ColorRgb8(200, 100, 50));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Abgestürztes Undo',
+        amountInCents: 1900,
+        currency: 'EUR',
+        category: ExpenseCategory.other,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'crashed_undo.jpg')],
+      ),
+    );
+
+    // Simuliere Soft-Delete vor 10 Minuten, gefolgt von einem App-Absturz (kein Snackbar-Callback mehr)
+    final tenMinutesAgo = DateTime.now().subtract(const Duration(minutes: 10));
+    await receiptFileService.moveToTrash(tripId, expenseId, trashedAt: tenMinutesAgo);
+    await db.expenseDao.deleteExpense(expenseId);
+
+    final trashDir = Directory(p.join(tempDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
+    expect(await trashDir.exists(), isTrue);
+
+    // Beim nächsten Laden der Kassendaten (oder App-Start) räumt cleanupExpiredTrash verwaiste Undo-Ordner automatisch auf
+    await kittyService.loadKittyData(tripId);
+    expect(await trashDir.exists(), isFalse);
+  });
+
+  test('R2: TripService.deleteTrip verschluckt Bereinigungsfehler NICHT und rollt DB + Dateien bei I/O-Fehler zurück', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(33, 66, 99));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Ausgabe in zu löschendem Törn',
+        amountInCents: 4000,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'trip_delete_io.jpg')],
+      ),
+    );
+
+    final receipt = (await db.expenseDao.getReceiptsForExpense(expenseId)).single;
+    final receiptFile = File(p.join(tempDir.path, receipt.filePath));
+    final origBytes = await receiptFile.readAsBytes();
+
+    final tripService = TripService(
+      tripDao: db.tripDao,
+      listItemDao: db.listItemDao,
+      catalogRepository: CatalogRepository(),
+      expenseDao: db.expenseDao,
+      receiptFileService: receiptFileService,
+    );
+
+    // Injiziere I/O-Fehler beim finalen Löschen der Törn-Belege
+    receiptFileService.faultInjector = (op) {
+      if (op == 'deleteTripReceipts') {
+        throw const FileSystemException('Simulated I/O failure during trip receipt deletion');
+      }
+    };
+
+    await expectLater(
+      tripService.deleteTrip(tripId),
+      throwsA(isA<FileSystemException>()),
+    );
+    receiptFileService.faultInjector = null;
+
+    // Törn, Ausgabe und Belegdatei sind dank Rollback konsistent erhalten geblieben!
+    expect(await db.tripDao.getTripById(tripId), isNotNull);
+    expect(await receiptFile.exists(), isTrue);
+    expect(await receiptFile.readAsBytes(), equals(origBytes));
   });
 }

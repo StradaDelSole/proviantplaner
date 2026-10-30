@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Independent Re-Review Amendment 2 (R1–R4)
+
+- **R1 – BLOCKER (Restore-Konsistenz & Crash-Recovery):**
+  - Zwei-Phasen-Staging in `BackupCoordinator.restoreBackup()` und `ReceiptFileService`: Das Schreiben des Recovery-Journals (`restore_journal.json`) und die Datei-Promotion (`promoteStagedReceipts`: altes `receipts/` -> `receipts_rollback/`, neues `receipts_staging_active/` -> `receipts/`) erfolgen nun **innerhalb** der SQLite-Transaktion (`_db.transaction`) vor dem DB-`COMMIT`.
+  - Tritt während der Datei-Promotion ein Fehler auf, bricht die SQLite-Transaktion automatisch per Rollback ab und `abortRestoreStaging()` stellt `receipts_rollback/` nach `receipts/` wieder her.
+  - Erst nach erfolgreichem SQLite-`COMMIT` entfernt `finalizeRestoreStaging()` das Rollback-Verzeichnis und das Journal.
+  - Crash-/Restart-Recovery (`recoverInterruptedRestore()`): Gleicht nach einem Prozessabbruch die in SQLite committeten Belegpfade gegen `restore_journal.json` ab und führt deterministisch entweder ein Roll-Back (falls SQLite vor dem Commit abgebrochen ist) oder ein Roll-Forward (falls SQLite bereits committet hatte) durch.
+- **R2 – HIGH (Attachment-Lifecycle & Fehlerpropagierung):**
+  - `KittyService.addReceiptToExpense`: Löscht bei fehlgeschlagenem DB-Insert (`expenseDao.addReceipt`) die neu angelegte Bilddatei sofort wieder (keine verwaisten Dateien).
+  - `KittyService.deleteReceipt` & `ReceiptFileService.deleteReceiptFile`: Dateilöschfehler werden nicht mehr still verschluckt; scheitert das DB-Delete nach erfolgreichem Dateilöschen, wird die Datei aus dem Speicher-Backup wiederhergestellt.
+  - `KittyService.deleteExpense` & `restoreExpense`: Transaktionale und dateisystemseitige Rollbacks bei I/O- oder DB-Fehlern.
+  - Zeitstempel-basiertes TTL-Cleanup (`cleanupExpiredTrash`) in `ReceiptFileService` und `KittyService.loadKittyData` verhindert dauerhaft verwaiste temporäre Undo-Dateien in `receipts_trash` nach einem App-Absturz.
+  - `TripService.deleteTrip`: Nutzt Rollback-Staging (`stageTripDeleteRollback` / `finalizeTripDeleteRollback` / `restoreTripDeleteRollback`) innerhalb einer DB-Transaktion und propagiert Bereinigungsfehler statt sie zu verschlucken.
+- **R3 – HIGH (Restore-Vollständigkeit):**
+  - Jeder im Backup registrierte Beleg muss einer gültigen Ausgabe (`expenseId`) zugeordnet sein; fehlende oder nicht zuordenbare `expenseId`s führen sofort zu `BackupCorruptException` (kein stilles Überspringen mehr).
+  - Base64-Inhalte werden als dekodierbare Bilddaten (`img.decodeImage`) validiert und `byteSize` wird strikt gegen die tatsächliche Byte-Länge geprüft.
+- **R4 – MEDIUM (PDF-Aufteilung nach tatsächlicher PDF-Größe & Temp-Cleanup):**
+  - `PdfExportService.generateReceiptsPdfs`: Überschreitet ein gerenderter Multi-Beleg-Chunk (`doc.save()`) `maxPdfBytes` (15 MB), wird er automatisch per binärer Präfixsuche in kleinere Chunks (`Belege_1.pdf`, `Belege_2.pdf`, ...) aufgeteilt, ohne fehlende oder doppelte Seiten. Ein einzelner unteilbarer Beleg > `maxPdfBytes` wirft weiterhin explizit `PdfChunkOversizedException`.
+  - `PdfExportService.prepareSettlementExportDirectory` & `cleanupTemporaryExportDirectories`: Bereinigt frühere temporäre `settlement_export_*`-Verzeichnisse deterministisch vor jedem neuen Export.
+
+## 2026-10-17 – RECEIPT1 Independent Re-Review Amendment 2 (R1–R4)
+
+- **R1 – BLOCKER (Restore-Konsistenz & Crash-Recovery):**
+  - Zwei-Phasen-Staging in `BackupCoordinator.restoreBackup()` und `ReceiptFileService`: Das Schreiben des Recovery-Journals (`restore_journal.json`) und die Datei-Promotion (`promoteStagedReceipts`: altes `receipts/` -> `receipts_rollback/`, neues `receipts_staging_active/` -> `receipts/`) erfolgen nun **innerhalb** der SQLite-Transaktion (`_db.transaction`) vor dem DB-`COMMIT`.
+  - Tritt während der Datei-Promotion ein Fehler auf, bricht die SQLite-Transaktion automatisch per Rollback ab und `abortRestoreStaging()` stellt `receipts_rollback/` nach `receipts/` wieder her.
+  - Erst nach erfolgreichem SQLite-`COMMIT` entfernt `finalizeRestoreStaging()` das Rollback-Verzeichnis und das Journal.
+  - Crash-/Restart-Recovery (`recoverInterruptedRestore()`): Gleicht nach einem Prozessabbruch die in SQLite committeten Belegpfade gegen `restore_journal.json` ab und führt deterministisch entweder ein Roll-Back (falls SQLite vor dem Commit abgebrochen ist) oder ein Roll-Forward (falls SQLite bereits committet hatte) durch.
+- **R2 – HIGH (Attachment-Lifecycle & Fehlerpropagierung):**
+  - `KittyService.addReceiptToExpense`: Löscht bei fehlgeschlagenem DB-Insert (`expenseDao.addReceipt`) die neu angelegte Bilddatei sofort wieder (keine verwaisten Dateien).
+  - `KittyService.deleteReceipt` & `ReceiptFileService.deleteReceiptFile`: Dateilöschfehler werden nicht mehr still verschluckt; scheitert das DB-Delete nach erfolgreichem Dateilöschen, wird die Datei aus dem Speicher-Backup wiederhergestellt.
+  - `KittyService.deleteExpense` & `restoreExpense`: Transaktionale und dateisystemseitige Rollbacks bei I/O- oder DB-Fehlern.
+  - Zeitstempel-basiertes TTL-Cleanup (`cleanupExpiredTrash`) in `ReceiptFileService` und `KittyService.loadKittyData` verhindert dauerhaft verwaiste temporäre Undo-Dateien in `receipts_trash` nach einem App-Absturz.
+  - `TripService.deleteTrip`: Nutzt Rollback-Staging (`stageTripDeleteRollback` / `finalizeTripDeleteRollback` / `restoreTripDeleteRollback`) innerhalb einer DB-Transaktion und propagiert Bereinigungsfehler statt sie zu verschlucken.
+- **R3 – HIGH (Restore-Vollständigkeit):**
+  - Jeder im Backup registrierte Beleg muss einer gültigen Ausgabe (`expenseId`) zugeordnet sein; fehlende oder nicht zuordenbare `expenseId`s führen sofort zu `BackupCorruptException` (kein stilles Überspringen mehr).
+  - Base64-Inhalte werden als dekodierbare Bilddaten (`img.decodeImage`) validiert und `byteSize` wird strikt gegen die tatsächliche Byte-Länge geprüft.
+- **R4 – MEDIUM (PDF-Aufteilung nach tatsächlicher PDF-Größe & Temp-Cleanup):**
+  - `PdfExportService.generateReceiptsPdfs`: Überschreitet ein gerenderter Multi-Beleg-Chunk (`doc.save()`) `maxPdfBytes` (15 MB), wird er automatisch per binärer Präfixsuche in kleinere Chunks (`Belege_1.pdf`, `Belege_2.pdf`, ...) aufgeteilt, ohne fehlende oder doppelte Seiten. Ein einzelner unteilbarer Beleg > `maxPdfBytes` wirft weiterhin explizit `PdfChunkOversizedException`.
+  - `PdfExportService.prepareSettlementExportDirectory` & `cleanupTemporaryExportDirectories`: Bereinigt frühere temporäre `settlement_export_*`-Verzeichnisse deterministisch vor jedem neuen Export.
 ## 2026-10-17 – RECEIPT1 Independent Review Amendment 1 (Findings A–G)
 
 - **Finding A (Backup-Vollständigkeit & Validierung):**

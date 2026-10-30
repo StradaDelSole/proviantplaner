@@ -176,6 +176,8 @@ class SettlementPdfSummary {
 
 /// Dienst zur Generierung und zum Drucken/Teilen von PDF-Dokumenten.
 class PdfExportService {
+  static int _exportNonce = 0;
+
   /// Generiert ein mehrseitiges PDF der Einkaufsliste, gegliedert nach Abteilungen.
   Future<Uint8List> generateShoppingListPdf({
     required Trip trip,
@@ -733,9 +735,136 @@ class PdfExportService {
     );
   }
 
-  /// Generiert ein oder mehrere Belege-PDFs (RECEIPT1).
-  /// Falls die Gesamtgröße ein typisches Limit (z.B. 15 MB) überschreitet,
-  /// wird die Sammlung automatisch in nummerierte Dateien (Belege_1.pdf, Belege_2.pdf, ...) aufgeteilt.
+  /// Baut und rendert ein Belege-PDF-Dokument für die übergebenen [_ReceiptPageEntry]-Einträge.
+  Future<Uint8List> _renderReceiptDocument({
+    required String tripName,
+    required List<_ReceiptPageEntry> chunkEntries,
+    required pw.Font fontRegular,
+    required pw.Font fontBold,
+    required pw.Font fontMono,
+    required pw.Font fontMonoBold,
+    required DateFormat dateFormat,
+  }) async {
+    final doc = pw.Document(
+      title: 'Belege - $tripName',
+      author: 'Proviantplaner - powered by HullQ',
+    );
+
+    for (final entry in chunkEntries) {
+      final pw.MemoryImage memImage;
+      try {
+        memImage = pw.MemoryImage(entry.imageBytes);
+      } catch (e) {
+        throw ReceiptImageCorruptException(
+          expenseTitle: entry.expense.title,
+          receiptId: entry.receipt.id,
+          cause: e.toString(),
+        );
+      }
+
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          tripName,
+                          style: pw.TextStyle(font: fontBold, fontSize: 13, color: PdfColors.blueGrey800),
+                        ),
+                        pw.Text(
+                          'Beleg zur Ausgabe: ${entry.expense.title}',
+                          style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey700),
+                        ),
+                      ],
+                    ),
+                    pw.Text(
+                      dateFormat.format(entry.expense.createdAt),
+                      style: pw.TextStyle(font: fontMono, fontSize: 10, color: PdfColors.grey700),
+                    ),
+                  ],
+                ),
+                pw.SizedBox(height: 8),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blueGrey50,
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                    border: pw.Border.all(color: PdfColors.blueGrey200, width: 0.5),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'Kategorie: ${entry.expense.category.displayName}',
+                        style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
+                      ),
+                      pw.Text(
+                        'Bezahlt von: ${entry.payerName}',
+                        style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
+                      ),
+                      pw.Text(
+                        'Betrag: ${_formatCents(entry.expense.amountInCents, entry.expense.currency)}',
+                        style: pw.TextStyle(font: fontMonoBold, fontSize: 10),
+                      ),
+                      if (entry.totalPhotos > 1)
+                        pw.Text(
+                          'Foto ${entry.photoIndex} von ${entry.totalPhotos}',
+                          style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.grey600),
+                        ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+                pw.Expanded(
+                  child: pw.Container(
+                    alignment: pw.Alignment.center,
+                    decoration: pw.BoxDecoration(
+                      border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                    ),
+                    child: pw.Image(memImage, fit: pw.BoxFit.contain),
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      'Proviantplaner - powered by HullQ',
+                      style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
+                    ),
+                    pw.Text(
+                      'Seite ${context.pageNumber} von ${context.pagesCount}',
+                      style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    return doc.save();
+  }
+
+  /// Generiert ein oder mehrere Belege-PDFs (RECEIPT1 & R4).
+  /// Falls entweder die Rohbild-Summe ([maxBytesPerChunk]) oder das tatsächlich erzeugte
+  /// PDF-Dokument ([maxPdfBytes], Standard: 15 MB) das Limit überschreitet, wird die
+  /// Sammlung automatisch und ohne fehlende oder doppelte Seiten in nummerierte Dateien
+  /// (`Belege_1.pdf`, `Belege_2.pdf`, ...) aufgeteilt.
+  /// Überschreitet bereits ein einzelner, nicht weiter teilbarer Beleg für sich allein
+  /// [maxPdfBytes], schlägt der Export mit [PdfChunkOversizedException] bzw. [PdfReceiptOversizedException] fehl.
   Future<List<NamedPdf>> generateReceiptsPdfs({
     required TripKittyData data,
     required ReceiptFileService receiptFileService,
@@ -795,14 +924,14 @@ class PdfExportService {
       return const [];
     }
 
-    // Erzeuge Chunks bei Größenüberschreitung
-    final chunks = <List<_ReceiptPageEntry>>[];
+    // 1. Vor-Chunking anhand der Rohbild-Bytes (maxBytesPerChunk)
+    final initialChunks = <List<_ReceiptPageEntry>>[];
     var currentChunk = <_ReceiptPageEntry>[];
     var currentChunkBytes = 0;
 
     for (final entry in allReceiptEntries) {
       if (currentChunk.isNotEmpty && (currentChunkBytes + entry.imageBytes.length > maxBytesPerChunk)) {
-        chunks.add(currentChunk);
+        initialChunks.add(currentChunk);
         currentChunk = [entry];
         currentChunkBytes = entry.imageBytes.length;
       } else {
@@ -811,136 +940,95 @@ class PdfExportService {
       }
     }
     if (currentChunk.isNotEmpty) {
-      chunks.add(currentChunk);
+      initialChunks.add(currentChunk);
     }
 
-    final isMultiChunk = chunks.length > 1;
-    final resultList = <NamedPdf>[];
+    // 2. Rendern & automatisches Nach-Splitten anhand der tatsächlichen PDF-Bytes (maxPdfBytes, R4)
+    final renderedChunksBytes = <Uint8List>[];
 
-    for (var chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      final chunkEntries = chunks[chunkIndex];
-      final chunkNum = chunkIndex + 1;
-      final fileName = isMultiChunk ? 'Belege_$chunkNum.pdf' : 'Belege.pdf';
-
-      final doc = pw.Document(
-        title: '$fileName - ${data.trip.name}',
-        author: 'Proviantplaner - powered by HullQ',
+    Future<void> renderAndSplitIfNeeded(List<_ReceiptPageEntry> entries) async {
+      final bytes = await _renderReceiptDocument(
+        tripName: data.trip.name,
+        chunkEntries: entries,
+        fontRegular: fontRegular,
+        fontBold: fontBold,
+        fontMono: fontMono,
+        fontMonoBold: fontMonoBold,
+        dateFormat: dateFormat,
       );
 
-      for (final entry in chunkEntries) {
-        final pw.MemoryImage memImage;
-        try {
-          memImage = pw.MemoryImage(entry.imageBytes);
-        } catch (e) {
-          throw ReceiptImageCorruptException(
-            expenseTitle: entry.expense.title,
-            receiptId: entry.receipt.id,
-            cause: e.toString(),
-          );
-        }
-
-        doc.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat.a4,
-            margin: const pw.EdgeInsets.all(32),
-            build: (context) {
-              return pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                children: [
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          pw.Text(
-                            data.trip.name,
-                            style: pw.TextStyle(font: fontBold, fontSize: 13, color: PdfColors.blueGrey800),
-                          ),
-                          pw.Text(
-                            'Beleg zur Ausgabe: ${entry.expense.title}',
-                            style: pw.TextStyle(font: fontRegular, fontSize: 10, color: PdfColors.grey700),
-                          ),
-                        ],
-                      ),
-                      pw.Text(
-                        dateFormat.format(entry.expense.createdAt),
-                        style: pw.TextStyle(font: fontMono, fontSize: 10, color: PdfColors.grey700),
-                      ),
-                    ],
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.blueGrey50,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                      border: pw.Border.all(color: PdfColors.blueGrey200, width: 0.5),
-                    ),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text(
-                          'Kategorie: ${entry.expense.category.displayName}',
-                          style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
-                        ),
-                        pw.Text(
-                          'Bezahlt von: ${entry.payerName}',
-                          style: pw.TextStyle(font: fontRegular, fontSize: 9.5),
-                        ),
-                        pw.Text(
-                          'Betrag: ${_formatCents(entry.expense.amountInCents, entry.expense.currency)}',
-                          style: pw.TextStyle(font: fontMonoBold, fontSize: 10),
-                        ),
-                        if (entry.totalPhotos > 1)
-                          pw.Text(
-                            'Foto ${entry.photoIndex} von ${entry.totalPhotos}',
-                            style: pw.TextStyle(font: fontRegular, fontSize: 9, color: PdfColors.grey600),
-                          ),
-                      ],
-                    ),
-                  ),
-                  pw.SizedBox(height: 12),
-                  pw.Expanded(
-                    child: pw.Container(
-                      alignment: pw.Alignment.center,
-                      decoration: pw.BoxDecoration(
-                        border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
-                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-                      ),
-                      child: pw.Image(memImage, fit: pw.BoxFit.contain),
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text(
-                        'Proviantplaner - powered by HullQ',
-                        style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
-                      ),
-                      pw.Text(
-                        'Seite ${context.pageNumber} von ${context.pagesCount}',
-                        style: pw.TextStyle(font: fontRegular, fontSize: 8, color: PdfColors.grey500),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        );
+      if (bytes.length <= maxPdfBytes) {
+        renderedChunksBytes.add(bytes);
+        return;
       }
 
-      final bytes = await doc.save();
-      if (bytes.length > maxPdfBytes) {
+      if (entries.length == 1) {
         throw PdfChunkOversizedException(
-          fileName: fileName,
+          fileName: 'Belege.pdf',
           byteSize: bytes.length,
           maxBytes: maxPdfBytes,
         );
       }
-      resultList.add(NamedPdf(fileName: fileName, bytes: bytes));
+
+      // Finde das größte Präfix (mindestens 1 Eintrag), dessen gerendertes PDF <= maxPdfBytes ist
+      int low = 1;
+      int high = entries.length - 1;
+      int bestEnd = 0;
+      Uint8List? bestBytes;
+
+      while (low <= high) {
+        final mid = (low + high) ~/ 2;
+        final candidateEntries = entries.sublist(0, mid);
+        final candidateBytes = await _renderReceiptDocument(
+          tripName: data.trip.name,
+          chunkEntries: candidateEntries,
+          fontRegular: fontRegular,
+          fontBold: fontBold,
+          fontMono: fontMono,
+          fontMonoBold: fontMonoBold,
+          dateFormat: dateFormat,
+        );
+        if (candidateBytes.length <= maxPdfBytes) {
+          bestEnd = mid;
+          bestBytes = candidateBytes;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      if (bestEnd == 0 || bestBytes == null) {
+        // Selbst der allererste einzelne Beleg überschreitet als gerendertes 1-Seiten-PDF maxPdfBytes
+        final singleBytes = await _renderReceiptDocument(
+          tripName: data.trip.name,
+          chunkEntries: [entries.first],
+          fontRegular: fontRegular,
+          fontBold: fontBold,
+          fontMono: fontMono,
+          fontMonoBold: fontMonoBold,
+          dateFormat: dateFormat,
+        );
+        throw PdfChunkOversizedException(
+          fileName: 'Belege.pdf',
+          byteSize: singleBytes.length,
+          maxBytes: maxPdfBytes,
+        );
+      }
+
+      renderedChunksBytes.add(bestBytes);
+      await renderAndSplitIfNeeded(entries.sublist(bestEnd));
+    }
+
+    for (final chunkEntries in initialChunks) {
+      await renderAndSplitIfNeeded(chunkEntries);
+    }
+
+    final isMultiChunk = renderedChunksBytes.length > 1;
+    final resultList = <NamedPdf>[];
+    for (var i = 0; i < renderedChunksBytes.length; i++) {
+      final chunkNum = i + 1;
+      final fileName = isMultiChunk ? 'Belege_$chunkNum.pdf' : 'Belege.pdf';
+      resultList.add(NamedPdf(fileName: fileName, bytes: renderedChunksBytes[i]));
     }
 
     return resultList;
@@ -970,24 +1058,79 @@ class PdfExportService {
     );
   }
 
+  /// Bereinigt frühere temporäre `settlement_export_*`-Verzeichnisse im Temp-Ordner (R4).
+  /// Dadurch bleiben die Dateien des aktuellen Share-Vorgangs für das native OS-Share-Sheet
+  /// verfügbar, während frühere Exporte deterministisch aufgeräumt werden und sich nicht ansammeln.
+  Future<void> cleanupTemporaryExportDirectories({
+    Directory? baseTempDir,
+    Duration maxAge = Duration.zero,
+    DateTime? now,
+  }) async {
+    final tempDir = baseTempDir ?? await getTemporaryDirectory();
+    if (!await tempDir.exists()) return;
+
+    final effectiveNow = now ?? DateTime.now();
+    await for (final entity in tempDir.list(recursive: false)) {
+      if (entity is Directory && p.basename(entity.path).startsWith('settlement_export_')) {
+        try {
+          if (maxAge <= Duration.zero) {
+            await entity.delete(recursive: true);
+          } else {
+            final stat = await entity.stat();
+            if (effectiveNow.difference(stat.modified) >= maxAge) {
+              await entity.delete(recursive: true);
+            }
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Schreibt das Abrechnungspaket temporär auf das Dateisystem, bereinigt vorherige
+  /// temporäre Export-Verzeichnisse und öffnet den nativen Share-/Mail-Composer über `share_plus` (RECEIPT1 & R4).
+  Future<Directory> prepareSettlementExportDirectory({
+    required SettlementPackage package,
+    Future<Directory> Function()? tempDirProvider,
+    Duration cleanupMaxAge = Duration.zero,
+  }) async {
+    final tempDir = await (tempDirProvider ?? getTemporaryDirectory)();
+    await cleanupTemporaryExportDirectories(
+      baseTempDir: tempDir,
+      maxAge: cleanupMaxAge,
+    );
+
+    _exportNonce++;
+    final exportDir = Directory(
+      p.join(tempDir.path, 'settlement_export_${DateTime.now().millisecondsSinceEpoch}_$_exportNonce'),
+    );
+    if (!await exportDir.exists()) {
+      await exportDir.create(recursive: true);
+    }
+
+    for (final pdf in package.allPdfs) {
+      final file = File(p.join(exportDir.path, pdf.fileName));
+      await file.writeAsBytes(pdf.bytes, flush: true);
+    }
+
+    return exportDir;
+  }
+
   /// Schreibt das Abrechnungspaket temporär auf das Dateisystem und öffnet
-  /// den nativen Share-/Mail-Composer über `share_plus` (RECEIPT1).
+  /// den nativen Share-/Mail-Composer über `share_plus` (RECEIPT1 & R4).
   Future<void> shareSettlementPackage({
     required SettlementPackage package,
     required String subject,
     required String bodyText,
     Future<Directory> Function()? tempDirProvider,
   }) async {
-    final tempDir = await (tempDirProvider ?? getTemporaryDirectory)();
-    final exportDir = Directory(p.join(tempDir.path, 'settlement_export_${DateTime.now().millisecondsSinceEpoch}'));
-    if (!await exportDir.exists()) {
-      await exportDir.create(recursive: true);
-    }
+    final exportDir = await prepareSettlementExportDirectory(
+      package: package,
+      tempDirProvider: tempDirProvider,
+    );
 
     final xFiles = <XFile>[];
     for (final pdf in package.allPdfs) {
       final file = File(p.join(exportDir.path, pdf.fileName));
-      await file.writeAsBytes(pdf.bytes, flush: true);
       xFiles.add(XFile(file.path, name: pdf.fileName, mimeType: 'application/pdf'));
     }
 
@@ -1016,4 +1159,3 @@ class _ReceiptPageEntry {
     required this.payerName,
   });
 }
-

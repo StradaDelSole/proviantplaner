@@ -32,7 +32,7 @@ class TripService {
   final CatalogRepository catalogRepository;
   final BoatProfileDao? boatProfileDao;
   final ExpenseDao? expenseDao;
-  final ReceiptFileService? receiptFileService;
+  final ReceiptFileService receiptFileService;
   void Function(int tripId)? onTripDataChanged;
 
   TripService({
@@ -41,9 +41,9 @@ class TripService {
     required this.catalogRepository,
     this.boatProfileDao,
     this.expenseDao,
-    this.receiptFileService,
+    ReceiptFileService? receiptFileService,
     this.onTripDataChanged,
-  });
+  }) : receiptFileService = receiptFileService ?? ReceiptFileService();
 
   /// Erstellt einen vollständigen Törn mit Boot, Einstellungen, Crew und erstem Einkaufsstopp.
   /// Führt unmittelbar die Initial-Berechnung aller Vorräte durch.
@@ -552,14 +552,26 @@ class TripService {
     await recalculateTrip(tripId);
   }
 
-  /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem (RECEIPT1 Finding D).
+  /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem (RECEIPT1 Finding D & R2).
+  /// Dateilösch- oder Bereinigungsfehler werden nicht still verschluckt; scheitert die Dateisystem-Bereinigung
+  /// oder das DB-Delete, wird die Transaktion samt Dateisystem zurückgerollt.
   Future<bool> deleteTrip(int tripId) async {
-    final count = await tripDao.deleteTrip(tripId);
-    if (count > 0) {
-      await receiptFileService?.deleteTripReceipts(tripId);
-      return true;
+    await receiptFileService.stageTripDeleteRollback(tripId);
+    try {
+      return await tripDao.attachedDatabase.transaction(() async {
+        final count = await tripDao.deleteTrip(tripId);
+        if (count > 0) {
+          await receiptFileService.finalizeTripDeleteRollback(tripId);
+          return true;
+        }
+        await receiptFileService.restoreTripDeleteRollback(tripId);
+        return false;
+      });
+    } catch (e) {
+      try {
+        await receiptFileService.restoreTripDeleteRollback(tripId);
+      } catch (_) {}
+      rethrow;
     }
-    return false;
   }
 }
-

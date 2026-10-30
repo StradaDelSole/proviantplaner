@@ -2,6 +2,7 @@
 /// Speichert, skaliert, entfernt EXIF-Metadaten und verwaltet lokale Belegdateien.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
@@ -32,8 +33,13 @@ class ReceiptFileService {
 
   final Future<Directory> Function() getDocsDir;
 
+  /// Optionaler Hook zur gezielten Fehler-Injektion in Tests (R1, R2).
+  /// Wird vor Dateisystemoperationen mit dem Operationsnamen aufgerufen.
+  void Function(String operation)? faultInjector;
+
   ReceiptFileService({
     Future<Directory> Function()? docsDirProvider,
+    this.faultInjector,
   }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
 
   static Future<Directory> _resolveDefaultDocsDir() async {
@@ -103,6 +109,7 @@ class ReceiptFileService {
     required Uint8List imageBytes,
     String? preferredFileName,
   }) async {
+    faultInjector?.call('saveReceiptImage');
     final docsDir = await getDocsDir();
     final relativeFolder = p.join('receipts', 'trip_$tripId', 'expense_$expenseId');
     final targetDir = Directory(p.join(docsDir.path, relativeFolder));
@@ -140,6 +147,7 @@ class ReceiptFileService {
     required String fileName,
     bool generateUniqueName = true,
   }) async {
+    faultInjector?.call('saveRawReceiptBytes');
     final docsDir = await getDocsDir();
     final relativeFolder = p.join('receipts', 'trip_$tripId', 'expense_$expenseId');
     final targetDir = Directory(p.join(docsDir.path, relativeFolder));
@@ -168,6 +176,17 @@ class ReceiptFileService {
     );
   }
 
+  /// Schreibt Roh-Bytes exakt unter einem bekannten relativen Pfad (z.B. für Rollback bei DB-Fehler).
+  Future<void> writeReceiptBytesAtPath(String relativePath, Uint8List bytes) async {
+    final docsDir = await getDocsDir();
+    final targetFile = File(p.join(docsDir.path, relativePath));
+    if (!p.isWithin(docsDir.path, targetFile.path)) {
+      throw ArgumentError('Ungültiger Pfad: $relativePath');
+    }
+    await targetFile.parent.create(recursive: true);
+    await targetFile.writeAsBytes(bytes, flush: true);
+  }
+
   /// Liest die Bytes eines Belegs anhand seines relativen Pfads.
   Future<Uint8List?> readReceiptBytes(String relativePath) async {
     final docsDir = await getDocsDir();
@@ -185,49 +204,88 @@ class ReceiptFileService {
   }
 
   /// Löscht eine einzelne Belegdatei.
+  /// Wirft bei echten I/O-Fehlern eine [FileSystemException] statt sie zu verschlucken (R2).
   Future<bool> deleteReceiptFile(String relativePath) async {
-    try {
-      final docsDir = await getDocsDir();
-      final file = File(p.join(docsDir.path, relativePath));
-      if (await file.exists()) {
-        await file.delete();
-        return true;
-      }
-    } catch (_) {}
+    faultInjector?.call('deleteReceiptFile');
+    final docsDir = await getDocsDir();
+    final file = File(p.join(docsDir.path, relativePath));
+    if (await file.exists()) {
+      await file.delete();
+      return true;
+    }
     return false;
   }
 
   /// Löscht den gesamten Belegordner einer Ausgabe (aktiv und im Papierkorb).
+  /// Wirft bei echten I/O-Fehlern eine [FileSystemException] statt sie zu verschlucken (R2).
   Future<void> deleteExpenseReceiptFolder(int tripId, int expenseId) async {
-    try {
-      final docsDir = await getDocsDir();
-      final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
-      if (await activeDir.exists()) {
-        await activeDir.delete(recursive: true);
-      }
-      final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
-      if (await trashDir.exists()) {
-        await trashDir.delete(recursive: true);
-      }
-    } catch (_) {}
+    faultInjector?.call('deleteExpenseReceiptFolder');
+    final docsDir = await getDocsDir();
+    final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
+    if (await activeDir.exists()) {
+      await activeDir.delete(recursive: true);
+    }
+    final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
+    if (await trashDir.exists()) {
+      await trashDir.delete(recursive: true);
+    }
   }
 
   /// Löscht alle Belege eines Törns (bei Törn-Löschung aus Aktiv- und Papierkorb-Verzeichnis).
+  /// Wirft bei echten I/O-Fehlern eine [FileSystemException] statt sie zu verschlucken (R2).
   Future<void> deleteTripReceipts(int tripId) async {
-    try {
-      final docsDir = await getDocsDir();
-      final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
-      if (await activeDir.exists()) {
-        await activeDir.delete(recursive: true);
-      }
-      final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
-      if (await trashDir.exists()) {
-        await trashDir.delete(recursive: true);
-      }
-    } catch (_) {}
+    faultInjector?.call('deleteTripReceipts');
+    final docsDir = await getDocsDir();
+    final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
+    if (await activeDir.exists()) {
+      await activeDir.delete(recursive: true);
+    }
+    final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
+    if (await trashDir.exists()) {
+      await trashDir.delete(recursive: true);
+    }
   }
 
-  // --- Staging- und Rollback-Mechanismen für crash-sicheren Restore (Finding C) ---
+  /// Verschiebt alle Belege eines Törns vor einer Törn-Löschung in ein Rollback-Verzeichnis,
+  /// damit bei einem DB- oder I/O-Fehler ein konsistenter Rollback möglich ist (R2).
+  Future<void> stageTripDeleteRollback(int tripId) async {
+    faultInjector?.call('stageTripDeleteRollback');
+    final docsDir = await getDocsDir();
+    final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
+    final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
+    if (await rollbackDir.exists()) {
+      await rollbackDir.delete(recursive: true);
+    }
+    if (await activeDir.exists()) {
+      await _moveDirectory(activeDir, rollbackDir);
+    }
+  }
+
+  /// Stellt die Belege eines Törns aus dem Rollback-Verzeichnis wieder her, falls `deleteTrip` fehlschlägt (R2).
+  Future<void> restoreTripDeleteRollback(int tripId) async {
+    final docsDir = await getDocsDir();
+    final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
+    final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
+    if (await rollbackDir.exists()) {
+      await _moveDirectory(rollbackDir, activeDir);
+    }
+  }
+
+  /// Finalisiert die Törn-Löschung im Dateisystem nach erfolgreichem DB-Delete (R2).
+  Future<void> finalizeTripDeleteRollback(int tripId) async {
+    faultInjector?.call('deleteTripReceipts');
+    final docsDir = await getDocsDir();
+    final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
+    if (await rollbackDir.exists()) {
+      await rollbackDir.delete(recursive: true);
+    }
+    final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
+    if (await trashDir.exists()) {
+      await trashDir.delete(recursive: true);
+    }
+  }
+
+  // --- Zwei-Phasen-Staging, Recovery-Journal & Rollback für Restore (R1) ---
 
   /// Bereitet das Staging-Verzeichnis für einen Backup-Restore vor.
   Future<Directory> prepareStagingDirectory() async {
@@ -242,13 +300,11 @@ class ReceiptFileService {
 
   /// Bereinigt das Staging-Verzeichnis.
   Future<void> cleanStagingDirectory() async {
-    try {
-      final docsDir = await getDocsDir();
-      final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
-      if (await stagingDir.exists()) {
-        await stagingDir.delete(recursive: true);
-      }
-    } catch (_) {}
+    final docsDir = await getDocsDir();
+    final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
+    if (await stagingDir.exists()) {
+      await stagingDir.delete(recursive: true);
+    }
   }
 
   /// Schreibt Belegbytes in das Staging-Verzeichnis.
@@ -266,12 +322,51 @@ class ReceiptFileService {
     return file;
   }
 
-  /// Atomarer Commit des Restores:
-  /// Das bisherige Produktivverzeichnis wird bei Bedarf gesichert, das gestagte Verzeichnis
-  /// wird zum neuen Produktivverzeichnis `receipts`.
-  Future<void> commitRestoreStaging({
+  /// Schreibt das Restore-Recovery-Journal vor der Datei-Promotion und dem SQLite-Commit (R1).
+  Future<void> writeRestoreJournal({
+    required List<String> expectedReceiptPaths,
+  }) async {
+    faultInjector?.call('writeRestoreJournal');
+    final docsDir = await getDocsDir();
+    final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
+    final payload = jsonEncode({
+      'timestamp': DateTime.now().toIso8601String(),
+      'expectedReceiptPaths': expectedReceiptPaths,
+    });
+    await journalFile.writeAsString(payload, flush: true);
+  }
+
+  /// Liest das Restore-Recovery-Journal, falls ein unterbrochener Restore vorliegt (R1).
+  Future<Map<String, dynamic>?> readRestoreJournal() async {
+    final docsDir = await getDocsDir();
+    final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
+    if (!await journalFile.exists()) return null;
+    try {
+      final content = await journalFile.readAsString();
+      return jsonDecode(content) as Map<String, dynamic>;
+    } catch (_) {
+      return <String, dynamic>{'corrupt': true};
+    }
+  }
+
+  /// Löscht das Restore-Recovery-Journal.
+  Future<void> deleteRestoreJournal() async {
+    final docsDir = await getDocsDir();
+    final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
+    if (await journalFile.exists()) {
+      await journalFile.delete();
+    }
+  }
+
+  /// Phase 1 des Restore-Commits (wird INNERHALB der SQLite-Transaktion vor dem DB-COMMIT ausgeführt, R1):
+  /// Verschiebt das bestehende `receipts`-Verzeichnis nach `receipts_rollback` und aktiviert
+  /// `stagedActiveDir` als neues `receipts`-Verzeichnis, OHNE `receipts_rollback` bereits zu löschen.
+  /// Scheitert dieser Schritt, bricht die umgebende SQLite-Transaktion automatisch per Rollback ab,
+  /// und `abortRestoreStaging` stellt `receipts_rollback` wieder nach `receipts` her.
+  Future<void> promoteStagedReceipts({
     required Directory stagedActiveDir,
   }) async {
+    faultInjector?.call('promoteStagedReceipts_beforeBackupMove');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
@@ -284,18 +379,36 @@ class ReceiptFileService {
       await _moveDirectory(activeDir, rollbackDir);
     }
 
+    faultInjector?.call('promoteStagedReceipts_afterBackupMove');
+
     if (await stagedActiveDir.exists()) {
       await _moveDirectory(stagedActiveDir, activeDir);
     } else {
-      // Keine Belege im Backup -> leeres Verzeichnis erzeugen
       await activeDir.create(recursive: true);
     }
 
-    // Erfolgreich -> Rollback- und Staging-Verzeichnisse aufräumen
+    faultInjector?.call('promoteStagedReceipts_afterPromote');
+  }
+
+  /// Phase 2 des Restore-Commits (wird NACH erfolgreichem SQLite-COMMIT ausgeführt, R1):
+  /// Entfernt das Rollback-Verzeichnis, das Staging-Verzeichnis und das Recovery-Journal.
+  Future<void> finalizeRestoreStaging() async {
+    faultInjector?.call('finalizeRestoreStaging');
+    final docsDir = await getDocsDir();
+    final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
     if (await rollbackDir.exists()) {
       await rollbackDir.delete(recursive: true);
     }
+    await deleteRestoreJournal();
     await cleanStagingDirectory();
+  }
+
+  /// Kompatibilitätsmethode für einstufigen Commit (führt Promote + Finalize nacheinander aus).
+  Future<void> commitRestoreStaging({
+    required Directory stagedActiveDir,
+  }) async {
+    await promoteStagedReceipts(stagedActiveDir: stagedActiveDir);
+    await finalizeRestoreStaging();
   }
 
   /// Bricht den Restore ab und stellt den vorherigen Zustand aus dem Rollback-Verzeichnis wieder her.
@@ -305,9 +418,10 @@ class ReceiptFileService {
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
+    final defaultStagedActiveDir = stagedActiveDir ?? Directory(p.join(docsDir.path, 'receipts_staging_active'));
 
-    if (stagedActiveDir != null && await stagedActiveDir.exists()) {
-      await stagedActiveDir.delete(recursive: true);
+    if (await defaultStagedActiveDir.exists()) {
+      await defaultStagedActiveDir.delete(recursive: true);
     }
 
     if (await rollbackDir.exists()) {
@@ -317,26 +431,38 @@ class ReceiptFileService {
       await _moveDirectory(rollbackDir, activeDir);
     }
 
+    await deleteRestoreJournal();
     await cleanStagingDirectory();
   }
 
-  // --- Soft-Delete & Papierkorb für Expense-Undo (Finding D) ---
+  // --- Soft-Delete & Papierkorb für Expense-Undo (Finding D & R2) ---
 
-  /// Verschiebt die Belege einer Ausgabe in den Papierkorb für die Undo-Dauer.
-  Future<void> moveToTrash(int tripId, int expenseId) async {
+  /// Verschiebt die Belege einer Ausgabe in den Papierkorb für die Undo-Dauer
+  /// und hinterlegt einen Zeitstempel zur automatischen Bereinigung verwaister Undo-Dateien nach App-Crash (R2).
+  Future<void> moveToTrash(int tripId, int expenseId, {DateTime? trashedAt}) async {
+    faultInjector?.call('moveToTrash');
     final docsDir = await getDocsDir();
     final activeExpenseDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
     if (!await activeExpenseDir.exists()) return;
 
     final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
     await _moveDirectory(activeExpenseDir, trashExpenseDir);
+
+    final markerFile = File(p.join(trashExpenseDir.path, '.trashed_at'));
+    await markerFile.writeAsString((trashedAt ?? DateTime.now()).toIso8601String(), flush: true);
   }
 
   /// Stellt die Belege einer Ausgabe aus dem Papierkorb wieder her (Undo).
   Future<void> restoreFromTrash(int tripId, int expenseId) async {
+    faultInjector?.call('restoreFromTrash');
     final docsDir = await getDocsDir();
     final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
     if (!await trashExpenseDir.exists()) return;
+
+    final markerFile = File(p.join(trashExpenseDir.path, '.trashed_at'));
+    if (await markerFile.exists()) {
+      await markerFile.delete();
+    }
 
     final activeExpenseDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
     await _moveDirectory(trashExpenseDir, activeExpenseDir);
@@ -344,6 +470,7 @@ class ReceiptFileService {
 
   /// Löscht Belege im Papierkorb endgültig (nach Ablauf des Undo-Fensters).
   Future<void> purgeTrash({int? tripId, int? expenseId}) async {
+    faultInjector?.call('purgeTrash');
     final docsDir = await getDocsDir();
     if (tripId != null && expenseId != null) {
       final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
@@ -359,6 +486,49 @@ class ReceiptFileService {
       final trashDir = Directory(p.join(docsDir.path, 'receipts_trash'));
       if (await trashDir.exists()) {
         await trashDir.delete(recursive: true);
+      }
+    }
+  }
+
+  /// Bereinigt abgelaufene oder nach einem Prozessabbruch verwaiste temporäre Undo-Dateien im Papierkorb (R2).
+  Future<void> cleanupExpiredTrash({
+    Duration maxAge = const Duration(minutes: 2),
+    DateTime? now,
+  }) async {
+    final docsDir = await getDocsDir();
+    final trashRoot = Directory(p.join(docsDir.path, 'receipts_trash'));
+    if (!await trashRoot.exists()) return;
+
+    final effectiveNow = now ?? DateTime.now();
+
+    await for (final tripEntity in trashRoot.list(recursive: false)) {
+      if (tripEntity is Directory) {
+        await for (final expEntity in tripEntity.list(recursive: false)) {
+          if (expEntity is Directory) {
+            DateTime? trashedAt;
+            final markerFile = File(p.join(expEntity.path, '.trashed_at'));
+            if (await markerFile.exists()) {
+              try {
+                final raw = await markerFile.readAsString();
+                trashedAt = DateTime.tryParse(raw.trim());
+              } catch (_) {}
+            }
+            if (trashedAt == null) {
+              final stat = await expEntity.stat();
+              trashedAt = stat.modified;
+            }
+            if (effectiveNow.difference(trashedAt) >= maxAge) {
+              await expEntity.delete(recursive: true);
+            }
+          }
+        }
+        // Leeren Trip-Ordner im Papierkorb aufräumen
+        if (await tripEntity.exists()) {
+          final remaining = await tripEntity.list(recursive: false).toList();
+          if (remaining.isEmpty) {
+            await tripEntity.delete(recursive: true);
+          }
+        }
       }
     }
   }
@@ -388,5 +558,3 @@ class ReceiptFileService {
     }
   }
 }
-
-

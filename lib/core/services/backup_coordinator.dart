@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
@@ -14,7 +15,7 @@ import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
-/// Exception wenn eine referenzierte Belegdatei fehlt oder unlesbar ist (Finding A).
+/// Exception wenn eine referenzierte Belegdatei fehlt oder unlesbar ist (Finding A & R3).
 class BackupIntegrityException implements Exception {
   final String message;
   const BackupIntegrityException(this.message);
@@ -36,7 +37,7 @@ class BackupSizeLimitExceededException implements Exception {
   String toString() => 'BackupSizeLimitExceededException: $message';
 }
 
-/// Exception wenn ein Backup-Datensatz korrupt oder unvollständig ist (Finding A & C).
+/// Exception wenn ein Backup-Datensatz korrupt oder unvollständig ist (Finding A, C & R3).
 class BackupCorruptException implements Exception {
   final String message;
   const BackupCorruptException(this.message);
@@ -70,6 +71,89 @@ class BackupCoordinator {
   /// Maximale Gesamtgröße aller Belege in einem Cloud-Backup (50 MB) zum Schutz vor Speicher-/Worker-Limits.
   static const int defaultMaxBackupReceiptBytes = 50 * 1024 * 1024;
 
+  /// Prüft und behebt beim App-Start oder vor Backup-/Restore-Operationen einen durch
+  /// Prozessabbruch unterbrochenen Restore-Vorgang (R1).
+  ///
+  /// Da SQLite und das Dateisystem keine gemeinsame atomare OS-Transaktion teilen,
+  /// nutzt Provy ein Zwei-Phasen-Staging mit Recovery-Journal (`restore_journal.json`):
+  /// 1. Innerhalb der SQLite-Transaktion werden nach allen DB-Inserts die erwarteten
+  ///    neuen Belegpfade in `restore_journal.json` geschrieben und `promoteStagedReceipts`
+  ///    verschiebt das bisherige `receipts/` nach `receipts_rollback/` sowie
+  ///    `receipts_staging_active/` nach `receipts/`.
+  /// 2. Erst nach erfolgreichem SQLite-`COMMIT` löscht `finalizeRestoreStaging`
+  ///    das Rollback-Verzeichnis `receipts_rollback/` und `restore_journal.json`.
+  ///
+  /// Bei einem Prozessabbruch prüft `recoverInterruptedRestore()` beim nächsten Start,
+  /// ob die in SQLite committeten Belegpfade exakt mit `expectedReceiptPaths` aus dem
+  /// Journal übereinstimmen und alle neuen Dateien in `receipts/` existieren:
+  /// - Falls JA (Absturz nach SQLite-COMMIT, vor Finalize): Rollback-Ordner und Journal
+  ///   werden bereinigt (Roll-Forward zum neuen Zustand).
+  /// - Falls NEIN (Absturz vor SQLite-COMMIT; SQLite hat automatisch auf den alten Stand
+  ///   zurückgerollt): `abortRestoreStaging()` stellt `receipts_rollback/` nach `receipts/`
+  ///   wieder her (Roll-Back zum ursprünglichen Zustand).
+  Future<void> recoverInterruptedRestore() async {
+    final docsDir = await _receiptFileService.getDocsDir();
+    final journal = await _receiptFileService.readRestoreJournal();
+    final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
+    final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
+
+    final hasJournal = journal != null;
+    final hasRollback = await rollbackDir.exists();
+    final hasStagedActive = await stagedActiveDir.exists();
+
+    if (!hasJournal && !hasRollback && !hasStagedActive) {
+      return;
+    }
+
+    if (journal == null || journal['corrupt'] == true) {
+      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+      return;
+    }
+
+    final expectedRaw = journal['expectedReceiptPaths'] as List<dynamic>?;
+    if (expectedRaw == null) {
+      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+      return;
+    }
+
+    final expectedPaths = expectedRaw.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/'))).toSet();
+    final currentDbReceipts = await _db.select(_db.expenseReceipts).get();
+    final currentDbPaths = currentDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toSet();
+
+    final dbMatchesExpected =
+        currentDbPaths.length == expectedPaths.length && currentDbPaths.containsAll(expectedPaths);
+
+    if (dbMatchesExpected && !hasStagedActive) {
+      // Prüfe zusätzlich, dass jede erwartete Datei physisch in receipts/ liegt
+      bool allFilesPresent = true;
+      for (final relPath in expectedPaths) {
+        final bytes = await _receiptFileService.readReceiptBytes(relPath);
+        if (bytes == null || bytes.isEmpty) {
+          allFilesPresent = false;
+          break;
+        }
+      }
+      if (allFilesPresent) {
+        await _receiptFileService.finalizeRestoreStaging();
+        return;
+      }
+    }
+
+    // SQLite hat den Restore nicht committet -> Dateisystem auf den alten Stand zurückrollen
+    await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+  }
+
+  /// Validiert, dass übergebene Bytes ein unterstütztes, dekodierbares Bild sind (R3).
+  bool _isValidImageBytes(Uint8List bytes) {
+    if (bytes.isEmpty) return false;
+    try {
+      final decoded = img.decodeImage(bytes);
+      return decoded != null && decoded.width > 0 && decoded.height > 0;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Erstellt eine Sicherung aller Törns.
   /// Gemäß PRD nur für angemeldete Mitglieder verfügbar.
   Future<bool> createBackup({int maxBackupReceiptBytes = defaultMaxBackupReceiptBytes}) async {
@@ -77,6 +161,8 @@ class BackupCoordinator {
     if (status == HullqMembershipStatus.trial) {
       throw StateError('Sicherung ist nur für angemeldete HullQ-Mitglieder verfügbar.');
     }
+
+    await recoverInterruptedRestore();
 
     final allTrips = await _db.tripDao.getAllTrips();
     final allBoatProfiles = await _db.boatProfileDao.getAllProfiles(includeArchived: true);
@@ -96,15 +182,31 @@ class BackupCoordinator {
       }
 
       final expenses = await _db.expenseDao.getExpensesForTrip(trip.id);
+      final expenseIds = expenses.map((e) => e.id).toSet();
       final payments = await _db.expenseDao.getKittyPaymentsForTrip(trip.id);
       final receipts = await _db.expenseDao.getReceiptsForTrip(trip.id);
 
       final receiptsBackup = <Map<String, dynamic>>[];
       for (final r in receipts) {
+        if (!expenseIds.contains(r.expenseId)) {
+          throw BackupIntegrityException(
+            'Beleg ${r.id} verweist auf eine nicht existente Ausgabe ${r.expenseId} in Törn ${trip.id}.',
+          );
+        }
         final bytes = await _receiptFileService.readReceiptBytes(r.filePath);
         if (bytes == null || bytes.isEmpty) {
           throw BackupIntegrityException(
             'Belegdatei für Beleg ${r.id} fehlt oder ist leer: ${r.filePath}. Ein unvollständiges Backup wird nicht erstellt.',
+          );
+        }
+        if (r.byteSize > 0 && bytes.length != r.byteSize) {
+          throw BackupIntegrityException(
+            'Belegdatei für Beleg ${r.id} hat abweichende Dateigröße (${bytes.length} statt erwartet ${r.byteSize} Bytes).',
+          );
+        }
+        if (!_isValidImageBytes(bytes)) {
+          throw BackupIntegrityException(
+            'Belegdatei für Beleg ${r.id} enthält keine gültigen Bilddaten: ${r.filePath}.',
           );
         }
         totalReceiptBytes += bytes.length;
@@ -160,6 +262,8 @@ class BackupCoordinator {
       throw StateError('Wiederherstellung ist nur für angemeldete HullQ-Mitglieder verfügbar.');
     }
 
+    await recoverInterruptedRestore();
+
     final jsonStr = await _backupService.restoreData();
     if (jsonStr == null || jsonStr.isEmpty) {
       return false;
@@ -169,30 +273,73 @@ class BackupCoordinator {
     final rawProfiles = decoded['boatProfiles'] as List<dynamic>? ?? [];
     final tripsList = decoded['trips'] as List<dynamic>? ?? [];
 
-    // Pre-Flight-Validierung aller Belege (Finding A & C):
-    // Kein Restore startet und keine aktiven Daten werden verändert, wenn ein Beleg korrupt ist.
+    // Pre-Flight-Validierung aller Belege und ihrer Zuordnungen (Finding A, C & R3):
+    // Kein Restore startet und keine aktiven Daten werden verändert, wenn ein Beleg korrupt,
+    // nicht dekodierbar oder keiner gültigen Ausgabe zugeordnet ist.
     for (final rawTripData in tripsList) {
       final tripData = rawTripData as Map<String, dynamic>;
+      final tMap = tripData['trip'] as Map<String, dynamic>?;
+      final oldTripId = tMap?['id'] as int?;
+      final expenses = tripData['expenses'] as List<dynamic>? ?? [];
+      final validOldExpenseIds = <int>{};
+      for (final e in expenses) {
+        final eMap = e as Map<String, dynamic>;
+        final expId = eMap['id'];
+        if (expId is int) {
+          validOldExpenseIds.add(expId);
+        }
+      }
+
       final receipts = tripData['receipts'] as List<dynamic>? ?? [];
       for (final r in receipts) {
         final rMap = r as Map<String, dynamic>;
+        final receiptId = rMap['id'];
+        final oldExpenseId = rMap['expenseId'];
+        if (oldExpenseId is! int || !validOldExpenseIds.contains(oldExpenseId)) {
+          throw BackupCorruptException(
+            'Beleg $receiptId verweist auf eine fehlende oder ungültige Ausgabe (expenseId: $oldExpenseId).',
+          );
+        }
+        final receiptTripId = rMap['tripId'];
+        if (receiptTripId != null && oldTripId != null && receiptTripId != oldTripId) {
+          throw BackupCorruptException(
+            'Beleg $receiptId gehört zu Törn $receiptTripId, befindet sich aber im Backup-Block von Törn $oldTripId.',
+          );
+        }
+
         final b64 = rMap['imageBase64'] as String?;
         if (b64 == null || b64.trim().isEmpty) {
           throw BackupCorruptException(
-            'Beleg ${rMap['id']} im Backup enthält keine Bilddaten (imageBase64 fehlt oder ist leer).',
+            'Beleg $receiptId im Backup enthält keine Bilddaten (imageBase64 fehlt oder ist leer).',
           );
         }
+        Uint8List decodedBytes;
         try {
-          final decodedBytes = base64Decode(b64);
+          decodedBytes = base64Decode(b64);
           if (decodedBytes.isEmpty) {
             throw BackupCorruptException(
-              'Beleg ${rMap['id']} im Backup enthält leere Bilddaten.',
+              'Beleg $receiptId im Backup enthält leere Bilddaten.',
             );
           }
         } catch (e) {
           if (e is BackupCorruptException) rethrow;
           throw BackupCorruptException(
-            'Belegbild für Beleg ${rMap['id']} im Backup konnte nicht dekodiert werden.',
+            'Belegbild für Beleg $receiptId im Backup konnte nicht als Base64 dekodiert werden.',
+          );
+        }
+
+        final storedByteSize = rMap['byteSize'];
+        if (storedByteSize != null) {
+          if (storedByteSize is! int || storedByteSize <= 0 || storedByteSize != decodedBytes.length) {
+            throw BackupCorruptException(
+              'Beleg $receiptId hat inkonsistente Größenangabe (byteSize: $storedByteSize, tatsächliche Bytes: ${decodedBytes.length}).',
+            );
+          }
+        }
+
+        if (!_isValidImageBytes(decodedBytes)) {
+          throw BackupCorruptException(
+            'Beleg $receiptId im Backup enthält kein unterstütztes, dekodierbares Bildformat.',
           );
         }
       }
@@ -207,6 +354,7 @@ class BackupCoordinator {
 
     try {
       await _db.transaction(() async {
+        final expectedReceiptPaths = <String>[];
         // Vorhandene Daten bereinigen
         await _db.customStatement('PRAGMA foreign_keys = OFF');
         try {
@@ -246,6 +394,7 @@ class BackupCoordinator {
             profileIdMap[oldProfileId] = newProfileId;
           }
 
+          int receiptCounter = 0;
           for (final rawTripData in tripsList) {
             final tripData = rawTripData as Map<String, dynamic>;
             final tMap = tripData['trip'] as Map<String, dynamic>;
@@ -489,56 +638,81 @@ class BackupCoordinator {
               );
             }
 
-            // 9. Receipts einfügen (RECEIPT1)
+            // 9. Receipts einfügen (RECEIPT1 & R3: kein stilles Überspringen!)
             final receipts = tripData['receipts'] as List<dynamic>? ?? [];
             for (final r in receipts) {
               final rMap = r as Map<String, dynamic>;
-              final oldExpenseId = rMap['expenseId'] as int;
-              final newExpenseId = expenseIdMap[oldExpenseId];
-              if (newExpenseId != null) {
-                final base64Image = rMap['imageBase64'] as String;
-                final fileName = _receiptFileService.sanitizeFileName(rMap['fileName'] as String?);
-                final imageBytes = base64Decode(base64Image);
-
-                // Kollisionsfreie interne Datei im Staging-Ordner erzeugen
-                final uniqueInternalName = 'rcpt_${DateTime.now().microsecondsSinceEpoch}_${rMap['id'] ?? 0}.jpg';
-                final stagedExpenseDir = Directory(
-                  p.join(stagedActiveDir.path, 'trip_$newTripId', 'expense_$newExpenseId'),
-                );
-                if (!await stagedExpenseDir.exists()) {
-                  await stagedExpenseDir.create(recursive: true);
-                }
-                final stagedFile = File(p.join(stagedExpenseDir.path, uniqueInternalName));
-                await stagedFile.writeAsBytes(imageBytes, flush: true);
-
-                final relativeFilePath = p.join('receipts', 'trip_$newTripId', 'expense_$newExpenseId', uniqueInternalName);
-
-                await _db.into(_db.expenseReceipts).insert(
-                  ExpenseReceiptsCompanion.insert(
-                    tripId: newTripId,
-                    expenseId: newExpenseId,
-                    filePath: relativeFilePath,
-                    fileName: fileName,
-                    byteSize: Value(imageBytes.length),
-                    sortOrder: Value(rMap['sortOrder'] as int? ?? 0),
-                    createdAt: rMap['createdAt'] != null
-                        ? Value(DateTime.parse(rMap['createdAt'] as String))
-                        : const Value.absent(),
-                  ),
+              final oldExpenseId = rMap['expenseId'] as int?;
+              final newExpenseId = oldExpenseId != null ? expenseIdMap[oldExpenseId] : null;
+              if (newExpenseId == null) {
+                throw BackupCorruptException(
+                  'Beleg ${rMap['id']} konnte keiner wiederhergestellten Ausgabe zugeordnet werden (expenseId: $oldExpenseId).',
                 );
               }
+
+              final base64Image = rMap['imageBase64'] as String;
+              final fileName = _receiptFileService.sanitizeFileName(rMap['fileName'] as String?);
+              final imageBytes = base64Decode(base64Image);
+
+              // Kollisionsfreie interne Datei im Staging-Ordner erzeugen
+              receiptCounter++;
+              final uniqueInternalName =
+                  'rcpt_${DateTime.now().microsecondsSinceEpoch}_${rMap['id'] ?? 0}_$receiptCounter.jpg';
+              final stagedExpenseDir = Directory(
+                p.join(stagedActiveDir.path, 'trip_$newTripId', 'expense_$newExpenseId'),
+              );
+              if (!await stagedExpenseDir.exists()) {
+                await stagedExpenseDir.create(recursive: true);
+              }
+              final stagedFile = File(p.join(stagedExpenseDir.path, uniqueInternalName));
+              await stagedFile.writeAsBytes(imageBytes, flush: true);
+
+              final relativeFilePath = p.posix.join(
+                'receipts',
+                'trip_$newTripId',
+                'expense_$newExpenseId',
+                uniqueInternalName,
+              );
+              expectedReceiptPaths.add(relativeFilePath);
+
+              await _db.into(_db.expenseReceipts).insert(
+                ExpenseReceiptsCompanion.insert(
+                  tripId: newTripId,
+                  expenseId: newExpenseId,
+                  filePath: relativeFilePath,
+                  fileName: fileName,
+                  byteSize: Value(imageBytes.length),
+                  sortOrder: Value(rMap['sortOrder'] as int? ?? 0),
+                  createdAt: rMap['createdAt'] != null
+                      ? Value(DateTime.parse(rMap['createdAt'] as String))
+                      : const Value.absent(),
+                ),
+              );
             }
           }
         } finally {
           await _db.customStatement('PRAGMA foreign_keys = ON');
         }
+
+        // R1: Zwei-Phasen-Promotion INNERHALB der SQLite-Transaktion.
+        // Schreibt zuerst das Recovery-Journal und promoviert danach die gestagten Dateien
+        // nach `receipts/`, während die alten Dateien in `receipts_rollback/` verbleiben.
+        // Scheitert `promoteStagedReceipts`, wirft es innerhalb von `_db.transaction`,
+        // wodurch Drift die SQLite-Transaktion automatisch zurückrollt!
+        await _receiptFileService.writeRestoreJournal(
+          expectedReceiptPaths: expectedReceiptPaths,
+        );
+        await _receiptFileService.promoteStagedReceipts(
+          stagedActiveDir: stagedActiveDir,
+        );
       });
 
-      // DB-Transaktion war erfolgreich -> Staged Files atomar zum neuen Produktivstand machen
-      await _receiptFileService.commitRestoreStaging(stagedActiveDir: stagedActiveDir);
+      // DB-Transaktion UND Datei-Promotion waren erfolgreich -> Rollback-Verzeichnis & Journal entfernen
+      await _receiptFileService.finalizeRestoreStaging();
       return true;
     } catch (e) {
-      // Bei Fehler: Abort und Rollback des Dateisystems
+      // Bei Fehler (während DB-Operationen, Datei-Promotion oder DB-Commit):
+      // Rollback des Dateisystems aus `receipts_rollback/`
       await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
       rethrow;
     }

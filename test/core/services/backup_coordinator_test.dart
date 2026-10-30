@@ -801,5 +801,312 @@ void main() {
         throwsA(isA<BackupSizeLimitExceededException>()),
       );
     });
+
+    test('R1: restoreBackup rollt SQLite UND Dateisystem vollständig zurück, wenn ein Fehler WÄHREND der Datei-Promotion (nach erfolgreicher Preflight-Validierung) auftritt', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // 1. Einen gültigen Backup-Stand ("Cloud-Stand B") mit Beleg erzeugen
+      final cloudTripId = await seedCompleteTrip(db, 'Cloud Törn B');
+      final cloudExpenses = await db.expenseDao.getExpensesForTrip(cloudTripId);
+      final cloudExpenseId = cloudExpenses.first.id;
+      final cloudPhoto = _createTestJpeg(width: 24, height: 24);
+      final cloudProcessed = await receiptService.saveReceiptImage(
+        tripId: cloudTripId,
+        expenseId: cloudExpenseId,
+        preferredFileName: 'cloud_receipt.jpg',
+        imageBytes: cloudPhoto,
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: cloudTripId,
+          expenseId: cloudExpenseId,
+          fileName: cloudProcessed.fileName,
+          filePath: cloudProcessed.filePath,
+          byteSize: Value(cloudProcessed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      expect(await coordinator.createBackup(), isTrue);
+
+      // 2. Lokal auf dem Gerät einen komplett anderen aktiven Zustand ("Lokaler Stand A") aufbauen
+      await db.delete(db.expenseReceipts).go();
+      await db.delete(db.expenses).go();
+      await db.delete(db.trips).go();
+      final activeDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (await activeDir.exists()) {
+        await activeDir.delete(recursive: true);
+      }
+
+      final localTripId = await seedCompleteTrip(db, 'Lokaler Original-Törn A');
+      final localExpenses = await db.expenseDao.getExpensesForTrip(localTripId);
+      final localExpenseId = localExpenses.first.id;
+      final localPhoto = _createTestJpeg(width: 16, height: 16);
+      final localProcessed = await receiptService.saveReceiptImage(
+        tripId: localTripId,
+        expenseId: localExpenseId,
+        preferredFileName: 'local_orig_a.jpg',
+        imageBytes: localPhoto,
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: localTripId,
+          expenseId: localExpenseId,
+          fileName: localProcessed.fileName,
+          filePath: localProcessed.filePath,
+          byteSize: Value(localProcessed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      final localFile = File(p.join(tempDir.path, localProcessed.filePath));
+      final savedLocalBytes = await localFile.readAsBytes();
+
+      // 3. Injiziere einen I/O-Fehler mitten in der Datei-Promotion
+      // (nachdem Preflight-Validierung und alle SQLite-Inserts gelaufen sind und
+      // nachdem `receipts` bereits nach `receipts_rollback` verschoben wurde!)
+      receiptService.faultInjector = (op) {
+        if (op == 'promoteStagedReceipts_afterBackupMove') {
+          throw const FileSystemException('Simulated disk full / I/O failure during file promotion');
+        }
+      };
+
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<FileSystemException>()),
+      );
+      receiptService.faultInjector = null;
+
+      // 4. Beweis: Weder DB noch Dateien sind auf "Cloud Törn B" gewechselt;
+      // "Lokaler Original-Törn A" und seine Bilddatei sind vollständig und byte-genau erhalten!
+      final remainingTrips = await db.tripDao.getAllTrips();
+      expect(remainingTrips.length, equals(1));
+      expect(remainingTrips.first.name, equals('Lokaler Original-Törn A'));
+
+      final remainingReceipts = await db.expenseDao.getReceiptsForTrip(localTripId);
+      expect(remainingReceipts.length, equals(1));
+      expect(remainingReceipts.first.filePath, equals(localProcessed.filePath));
+
+      expect(await localFile.exists(), isTrue);
+      expect(await localFile.readAsBytes(), equals(savedLocalBytes));
+
+      // Rollback-, Staging- und Journal-Artefakte sind sauber bereinigt
+      expect(await Directory(p.join(tempDir.path, 'receipts_rollback')).exists(), isFalse);
+      expect(await Directory(p.join(tempDir.path, 'receipts_staging_active')).exists(), isFalse);
+      expect(await File(p.join(tempDir.path, 'restore_journal.json')).exists(), isFalse);
+    });
+
+    test('R1: Prozessabbruch / App-Neustart Recovery stellt Konsistenz wieder her (Roll-Back vor DB-Commit & Roll-Forward nach DB-Commit)', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Ausgangszustand A aufbauen
+      final tripIdA = await seedCompleteTrip(db, 'Stand A Vor Crash');
+      final expensesA = await db.expenseDao.getExpensesForTrip(tripIdA);
+      final processedA = await receiptService.saveReceiptImage(
+        tripId: tripIdA,
+        expenseId: expensesA.first.id,
+        preferredFileName: 'stand_a.jpg',
+        imageBytes: _createTestJpeg(width: 14, height: 14),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripIdA,
+          expenseId: expensesA.first.id,
+          fileName: processedA.fileName,
+          filePath: processedA.filePath,
+          byteSize: Value(processedA.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      final fileA = File(p.join(tempDir.path, processedA.filePath));
+      final bytesA = await fileA.readAsBytes();
+
+      // Fall 1: Simulierter harter Prozessabbruch NACH Datei-Promotion nach `receipts/`,
+      // aber VOR SQLite-Transaktions-Commit (d.h. SQLite hat beim Neustart Stand A,
+      // während Stand-A-Dateien noch in `receipts_rollback/` liegen und `restore_journal.json` auf Stand B zeigt).
+      final activeDir = Directory(p.join(tempDir.path, 'receipts'));
+      final rollbackDir = Directory(p.join(tempDir.path, 'receipts_rollback'));
+      await activeDir.rename(rollbackDir.path);
+      await activeDir.create(recursive: true);
+      final fakePromotedFile = File(p.join(activeDir.path, 'trip_999', 'expense_999', 'crashed_b.jpg'));
+      await fakePromotedFile.parent.create(recursive: true);
+      await fakePromotedFile.writeAsBytes([1, 2, 3]);
+      await receiptService.writeRestoreJournal(
+        expectedReceiptPaths: ['receipts/trip_999/expense_999/crashed_b.jpg'],
+      );
+
+      // Beim App-Neustart / nächster Operation läuft recoverInterruptedRestore()
+      await coordinator.recoverInterruptedRestore();
+
+      // Beweis Fall 1: Da SQLite noch auf Stand A ist, hat Recovery `receipts_rollback`
+      // automatisch nach `receipts` zurückgerollt!
+      expect(await fileA.exists(), isTrue);
+      expect(await fileA.readAsBytes(), equals(bytesA));
+      expect(await fakePromotedFile.exists(), isFalse);
+      expect(await rollbackDir.exists(), isFalse);
+      expect(await File(p.join(tempDir.path, 'restore_journal.json')).exists(), isFalse);
+
+      // Fall 2: Simulierter Prozessabbruch unmittelbar NACH erfolgreichem SQLite-Commit,
+      // aber VOR `finalizeRestoreStaging()` (d.h. SQLite und `receipts/` sind bereits konsistent,
+      // aber `receipts_rollback/` und `restore_journal.json` liegen noch auf der Platte).
+      await rollbackDir.create(recursive: true);
+      await File(p.join(rollbackDir.path, 'old_leftover.jpg')).writeAsBytes([9, 9, 9]);
+      await receiptService.writeRestoreJournal(
+        expectedReceiptPaths: [processedA.filePath],
+      );
+
+      await coordinator.recoverInterruptedRestore();
+
+      // Beweis Fall 2: Da SQLite exakt mit dem Journal und den vorhandenen Dateien in `receipts/`
+      // übereinstimmt, führt Recovery den Roll-Forward zu Ende und räumt `receipts_rollback` + Journal auf!
+      expect(await fileA.exists(), isTrue);
+      expect(await fileA.readAsBytes(), equals(bytesA));
+      expect(await rollbackDir.exists(), isFalse);
+      expect(await File(p.join(tempDir.path, 'restore_journal.json')).exists(), isFalse);
+    });
+
+    test('R3: restoreBackup weist verwaiste Belege (fehlende expenseId-Zuordnung), Nicht-Bild-Base64 und byteSize-Abweichungen mit BackupCorruptException zurück', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Vorhandenen lokalen Zustand anlegen, der geschützt bleiben muss
+      await seedCompleteTrip(db, 'Geschützter Lokal-Törn');
+
+      final validJpeg = _createTestJpeg(width: 12, height: 12);
+      final validB64 = base64Encode(validJpeg);
+
+      // 1. Beleg mit expenseId 999, die in expenses nicht existiert (darf NICHT still übersprungen werden!)
+      final unmappedExpensePayload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-18T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 1,
+              'name': 'Unmapped Receipt Trip',
+              'startDate': '2026-10-18T00:00:00.000Z',
+              'daysCount': 7,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+            },
+            'expenses': [
+              {
+                'id': 10,
+                'tripId': 1,
+                'amount': 20.0,
+                'category': 'provisions',
+                'isPaidFromKitty': true,
+              }
+            ],
+            'receipts': [
+              {
+                'id': 501,
+                'tripId': 1,
+                'expenseId': 999, // Existiert nicht in expenses!
+                'fileName': 'orphan.jpg',
+                'filePath': 'receipts/trip_1/expense_999/orphan.jpg',
+                'byteSize': validJpeg.length,
+                'imageBase64': validB64,
+              }
+            ],
+          }
+        ],
+      });
+      await backupService.backupData(unmappedExpensePayload);
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+
+      // 2. Beleg mit gültigem Base64, das aber KEIN dekodierbares Bild ist (z.B. Textbytes)
+      final nonImageBytes = utf8.encode('This is plain text, not a JPEG or PNG image');
+      final nonImagePayload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-18T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 1,
+              'name': 'Non Image Receipt Trip',
+              'startDate': '2026-10-18T00:00:00.000Z',
+              'daysCount': 7,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+            },
+            'expenses': [
+              {
+                'id': 10,
+                'tripId': 1,
+                'amount': 20.0,
+                'category': 'provisions',
+                'isPaidFromKitty': true,
+              }
+            ],
+            'receipts': [
+              {
+                'id': 502,
+                'tripId': 1,
+                'expenseId': 10,
+                'fileName': 'fake.jpg',
+                'filePath': 'receipts/trip_1/expense_10/fake.jpg',
+                'byteSize': nonImageBytes.length,
+                'imageBase64': base64Encode(nonImageBytes),
+              }
+            ],
+          }
+        ],
+      });
+      await backupService.backupData(nonImagePayload);
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+
+      // 3. Beleg mit gültigem Bild, dessen gespeicherte byteSize aber nicht zur tatsächlichen Datenlänge passt
+      final sizeMismatchPayload = jsonEncode({
+        'version': 3,
+        'exportedAt': '2026-10-18T12:00:00.000Z',
+        'trips': [
+          {
+            'trip': {
+              'id': 1,
+              'name': 'Size Mismatch Trip',
+              'startDate': '2026-10-18T00:00:00.000Z',
+              'daysCount': 7,
+              'currency': 'EUR',
+              'kittyModel': 'shared_kitty',
+            },
+            'expenses': [
+              {
+                'id': 10,
+                'tripId': 1,
+                'amount': 20.0,
+                'category': 'provisions',
+                'isPaidFromKitty': true,
+              }
+            ],
+            'receipts': [
+              {
+                'id': 503,
+                'tripId': 1,
+                'expenseId': 10,
+                'fileName': 'mismatch.jpg',
+                'filePath': 'receipts/trip_1/expense_10/mismatch.jpg',
+                'byteSize': validJpeg.length + 42, // Inkonsistente byteSize!
+                'imageBase64': validB64,
+              }
+            ],
+          }
+        ],
+      });
+      await backupService.backupData(sizeMismatchPayload);
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<BackupCorruptException>()),
+      );
+
+      // Lokal geschützter Törn ist nach allen drei abgelehnten Restores unverändert vorhanden
+      final localTrips = await db.tripDao.getAllTrips();
+      expect(localTrips.length, equals(1));
+      expect(localTrips.first.name, equals('Geschützter Lokal-Törn'));
+    });
   });
 }

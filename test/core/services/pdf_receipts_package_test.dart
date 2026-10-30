@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/services/pdf_export_service.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
@@ -336,5 +337,137 @@ void main() {
       throwsA(isA<PdfChunkOversizedException>()),
     );
   });
-}
 
+  test('R4: generateReceiptsPdfs teilt einen Multi-Beleg-Chunk automatisch anhand der tatsächlichen PDF-Bytegröße (maxPdfBytes) ohne fehlende oder doppelte Seiten auf', () async {
+    final photo1 = createDummyJpeg(120, 120, img.ColorRgb8(15, 25, 35));
+    final photo2 = createDummyJpeg(120, 120, img.ColorRgb8(45, 55, 65));
+    final photo3 = createDummyJpeg(120, 120, img.ColorRgb8(75, 85, 95));
+
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Einkauf Alpha',
+        amountInCents: 1100,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [DraftReceipt(bytes: photo1, fileName: 'alpha.jpg')],
+      ),
+    );
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Einkauf Beta',
+        amountInCents: 2200,
+        currency: 'EUR',
+        paidByMemberId: member2Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [DraftReceipt(bytes: photo2, fileName: 'beta.jpg')],
+      ),
+    );
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Einkauf Gamma',
+        amountInCents: 3300,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [DraftReceipt(bytes: photo3, fileName: 'gamma.jpg')],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+
+    // Zuerst ungeteilte Gesamtgröße messen (alle 3 Belege in 1 PDF)
+    final unsplitPdfs = await pdfExportService.generateReceiptsPdfs(
+      data: data,
+      receiptFileService: receiptFileService,
+    );
+    expect(unsplitPdfs.length, equals(1));
+    final threePagePdfBytes = unsplitPdfs.single.bytes.length;
+
+    // Nun maxBytesPerChunk sehr groß lassen (15 MB), aber maxPdfBytes so wählen, dass
+    // 1 oder 2 Seiten hineinpassen, alle 3 Seiten zusammen (threePagePdfBytes) jedoch das PDF-Limit überschreiten!
+    final targetMaxPdfBytes = threePagePdfBytes - 500;
+
+    final splitPdfs = await pdfExportService.generateReceiptsPdfs(
+      data: data,
+      receiptFileService: receiptFileService,
+      maxBytesPerChunk: 15 * 1024 * 1024, // Rohbilder würden in 1 Chunk passen!
+      maxPdfBytes: targetMaxPdfBytes,     // Tatsächliches PDF erzwingt automatische Aufteilung!
+    );
+
+    expect(splitPdfs.length, greaterThan(1));
+    for (var i = 0; i < splitPdfs.length; i++) {
+      expect(splitPdfs[i].fileName, equals('Belege_${i + 1}.pdf'));
+      expect(splitPdfs[i].bytes.length, lessThanOrEqualTo(targetMaxPdfBytes));
+    }
+
+    // Prüfe Seitenanzahl über alle erzeugten PDF-Dateien (exakt 3 Seiten insgesamt, keine fehlenden oder doppelten Seiten)
+    int countPdfPages(Uint8List pdfBytes) {
+      final rawLatin1 = String.fromCharCodes(pdfBytes);
+      return RegExp(r'/Type\s*/Page\b').allMatches(rawLatin1).length;
+    }
+
+    final totalPagesAcrossChunks =
+        splitPdfs.fold<int>(0, (sum, pdf) => sum + countPdfPages(pdf.bytes));
+    expect(totalPagesAcrossChunks, equals(3));
+  });
+
+  test('R4: prepareSettlementExportDirectory bereinigt frühere temporäre settlement_export_* Verzeichnisse zuverlässig', () async {
+    final photo = createDummyJpeg(100, 100, img.ColorRgb8(10, 20, 30));
+    await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Export Cleanup Test',
+        amountInCents: 1500,
+        currency: 'EUR',
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        category: ExpenseCategory.provisions,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'cleanup.jpg')],
+      ),
+    );
+
+    final data = await kittyService.loadKittyData(tripId);
+    final package = await pdfExportService.generateSettlementPackage(
+      data: data,
+      receiptFileService: receiptFileService,
+    );
+
+    final exportTempBase = await Directory.systemTemp.createTemp('pdf_export_temp_base_');
+    addTearDown(() async {
+      if (await exportTempBase.exists()) {
+        await exportTempBase.delete(recursive: true);
+      }
+    });
+
+    // Erster Export legt erstes Verzeichnis an
+    final exportDir1 = await pdfExportService.prepareSettlementExportDirectory(
+      package: package,
+      tempDirProvider: () async => exportTempBase,
+    );
+    expect(await exportDir1.exists(), isTrue);
+    expect(await File(p.join(exportDir1.path, 'Abrechnung.pdf')).exists(), isTrue);
+    expect(await File(p.join(exportDir1.path, 'Belege.pdf')).exists(), isTrue);
+
+    // Zweiter Export räumt das vorherige temporäre Verzeichnis auf und legt nur das aktuelle bereit
+    final exportDir2 = await pdfExportService.prepareSettlementExportDirectory(
+      package: package,
+      tempDirProvider: () async => exportTempBase,
+    );
+    expect(await exportDir1.exists(), isFalse);
+    expect(await exportDir2.exists(), isTrue);
+
+    final remainingDirs = exportTempBase
+        .listSync()
+        .whereType<Directory>()
+        .where((d) => p.basename(d.path).startsWith('settlement_export_'))
+        .toList();
+    expect(remainingDirs.length, equals(1));
+  });
+}

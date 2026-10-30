@@ -95,7 +95,12 @@ class KittyService {
   }) : receiptFileService = receiptFileService ?? ReceiptFileService();
 
   /// Lädt den vollständigen Kassenstand inklusive Salden und Abrechnung.
+  /// Bereinigt dabei automatisch abgelaufene/verwaiste temporäre Undo-Dateien (R2).
   Future<TripKittyData> loadKittyData(int tripId) async {
+    try {
+      await receiptFileService.cleanupExpiredTrash();
+    } catch (_) {}
+
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) {
       throw TripNotFoundException('Törn $tripId nicht gefunden.');
@@ -329,9 +334,13 @@ class KittyService {
       }
     } catch (e) {
       for (final f in savedFiles) {
-        await receiptFileService.deleteReceiptFile(f);
+        try {
+          await receiptFileService.deleteReceiptFile(f);
+        } catch (_) {}
       }
-      await receiptFileService.deleteExpenseReceiptFolder(input.tripId, expenseId);
+      try {
+        await receiptFileService.deleteExpenseReceiptFolder(input.tripId, expenseId);
+      } catch (_) {}
       await expenseDao.deleteExpense(expenseId);
       rethrow;
     }
@@ -339,7 +348,7 @@ class KittyService {
     return expenseId;
   }
 
-  /// Fügt einer bestehenden Ausgabe einen Beleg hinzu (RECEIPT1).
+  /// Fügt einer bestehenden Ausgabe einen Beleg hinzu (RECEIPT1 & R2: Rollback der Datei bei DB-Fehler).
   Future<ExpenseReceiptItem> addReceiptToExpense({
     required int tripId,
     required int expenseId,
@@ -367,17 +376,29 @@ class KittyService {
       preferredFileName: preferredFileName,
     );
 
-    final id = await expenseDao.addReceipt(
-      ExpenseReceiptsCompanion.insert(
-        tripId: tripId,
-        expenseId: expenseId,
-        filePath: processed.filePath,
-        fileName: processed.fileName,
-        byteSize: Value(processed.byteSize),
-        sortOrder: Value(effectiveSortOrder),
-        createdAt: Value(DateTime.now()),
-      ),
-    );
+    final int id;
+    try {
+      id = await expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenseId,
+          filePath: processed.filePath,
+          fileName: processed.fileName,
+          byteSize: Value(processed.byteSize),
+          sortOrder: Value(effectiveSortOrder),
+          createdAt: Value(DateTime.now()),
+        ),
+      );
+    } catch (e) {
+      // R2: Wenn das DB-Insert scheitert, darf keine neue verwaiste Bilddatei zurückbleiben.
+      try {
+        await receiptFileService.deleteReceiptFile(processed.filePath);
+        if (existing.isEmpty) {
+          await receiptFileService.deleteExpenseReceiptFolder(tripId, expenseId);
+        }
+      } catch (_) {}
+      rethrow;
+    }
 
     return ExpenseReceiptItem(
       id: id,
@@ -391,14 +412,27 @@ class KittyService {
     );
   }
 
-  /// Löscht einen Beleg aus DB und Dateisystem (RECEIPT1).
+  /// Löscht einen Beleg aus DB und Dateisystem (RECEIPT1 & R2).
+  /// Dateilöschfehler werden nicht verschluckt; scheitert das DB-Delete nach erfolgreichem
+  /// Dateilöschen, wird die Datei wiederhergestellt.
   Future<bool> deleteReceipt(int receiptId) async {
     final receipt = await expenseDao.getReceiptById(receiptId);
     if (receipt == null) return false;
 
+    final backupBytes = await receiptFileService.readReceiptBytes(receipt.filePath);
     await receiptFileService.deleteReceiptFile(receipt.filePath);
-    final count = await expenseDao.deleteReceipt(receiptId);
-    return count > 0;
+
+    try {
+      final count = await expenseDao.deleteReceipt(receiptId);
+      return count > 0;
+    } catch (e) {
+      if (backupBytes != null) {
+        try {
+          await receiptFileService.writeReceiptBytesAtPath(receipt.filePath, backupBytes);
+        } catch (_) {}
+      }
+      rethrow;
+    }
   }
 
 
@@ -446,19 +480,38 @@ class KittyService {
     return tripDao.updateCrewMember(updated);
   }
 
-  /// Löscht eine Ausgabe.
-  /// Standardmäßig wird bei [softDelete] = true der Belegordner für das 5-Sekunden-Undo-Fenster
-  /// in den temporären Papierkorb verschoben statt sofort unwiderruflich gelöscht.
+  /// Löscht eine Ausgabe (R2: konsistente Behandlung von Datei- und DB-Fehlern).
+  /// Standardmäßig wird bei [softDelete] = true der Belegordner für das Undo-Fenster
+  /// in den temporären Papierkorb verschoben; bei [softDelete] = false wird nach
+  /// erfolgreichem DB-Delete auch der Papierkorb geleert.
   Future<int> deleteExpense(int id, {bool softDelete = true}) async {
     final expense = await expenseDao.getExpenseById(id);
-    if (expense != null) {
-      if (softDelete) {
-        await receiptFileService.moveToTrash(expense.tripId, id);
-      } else {
-        await receiptFileService.deleteExpenseReceiptFolder(expense.tripId, id);
+    if (expense == null) {
+      return expenseDao.deleteExpense(id);
+    }
+
+    await receiptFileService.moveToTrash(expense.tripId, id);
+
+    final int deletedCount;
+    try {
+      deletedCount = await expenseDao.deleteExpense(id);
+    } catch (e) {
+      try {
+        await receiptFileService.restoreFromTrash(expense.tripId, id);
+      } catch (_) {}
+      rethrow;
+    }
+
+    if (!softDelete) {
+      try {
+        await receiptFileService.purgeTrash(tripId: expense.tripId, expenseId: id);
+      } catch (e) {
+        // DB ist bereits gelöscht, Fehler weitergeben
+        rethrow;
       }
     }
-    return expenseDao.deleteExpense(id);
+
+    return deletedCount;
   }
 
   /// Löscht Belege einer gelöschten Ausgabe endgültig aus dem Papierkorb nach Ablauf des Undo-Fensters.
@@ -500,7 +553,7 @@ class KittyService {
     );
   }
 
-  /// Stellt eine gelöschte Ausgabe wieder her (Rückgängig-Funktion).
+  /// Stellt eine gelöschte Ausgabe samt Belegen transaktions- und dateisystemsicher wieder her (Undo, R2).
   Future<int> restoreExpense(KittyExpense exp) async {
     if (exp.isPaidFromKitty && exp.paidByMemberId != null) {
       throw ArgumentError(
@@ -512,45 +565,68 @@ class KittyService {
         'Ungültige Zahlungsquelle für Wiederherstellung: Personenausgaben müssen ein Crew-Mitglied als Zahler haben.',
       );
     }
-    final newId = await expenseDao.addExpense(
-      ExpensesCompanion.insert(
-        id: Value(exp.id),
-        tripId: exp.tripId,
-        amount: exp.amountInCents / 100.0,
-        currency: Value(exp.currency),
-        category: exp.category,
-        note: Value(exp.title),
-        isPaidFromKitty: Value(exp.isPaidFromKitty),
-        paidByCrewMemberId: Value(exp.paidByMemberId),
-        customSplit: Value(
-          exp.customSplitInCents != null
-              ? json.encode(exp.customSplitInCents!.map((k, v) => MapEntry(k.toString(), v)))
-              : null,
-        ),
-        createdAt: Value(exp.createdAt),
-      ),
-    );
 
-    // Belege im Dateisystem aus dem Papierkorb wiederherstellen
-    await receiptFileService.restoreFromTrash(exp.tripId, exp.id);
+    bool filesRestored = false;
+    try {
+      return await expenseDao.db.transaction(() async {
+        final newId = await expenseDao.addExpense(
+          ExpensesCompanion.insert(
+            id: Value(exp.id),
+            tripId: exp.tripId,
+            amount: exp.amountInCents / 100.0,
+            currency: Value(exp.currency),
+            category: exp.category,
+            note: Value(exp.title),
+            isPaidFromKitty: Value(exp.isPaidFromKitty),
+            paidByCrewMemberId: Value(exp.paidByMemberId),
+            customSplit: Value(
+              exp.customSplitInCents != null
+                  ? json.encode(exp.customSplitInCents!.map((k, v) => MapEntry(k.toString(), v)))
+                  : null,
+            ),
+            createdAt: Value(exp.createdAt),
+          ),
+        );
 
-    // Belege wiederherstellen, falls vorhanden
-    for (final r in exp.receipts) {
-      await expenseDao.addReceipt(
-        ExpenseReceiptsCompanion.insert(
-          id: Value(r.id),
-          tripId: exp.tripId,
-          expenseId: exp.id,
-          filePath: r.filePath,
-          fileName: r.fileName,
-          byteSize: Value(r.byteSize),
-          sortOrder: Value(r.sortOrder),
-          createdAt: Value(r.createdAt),
-        ),
-      );
+        for (final r in exp.receipts) {
+          await expenseDao.addReceipt(
+            ExpenseReceiptsCompanion.insert(
+              id: Value(r.id),
+              tripId: exp.tripId,
+              expenseId: exp.id,
+              filePath: r.filePath,
+              fileName: r.fileName,
+              byteSize: Value(r.byteSize),
+              sortOrder: Value(r.sortOrder),
+              createdAt: Value(r.createdAt),
+            ),
+          );
+        }
+
+        // Belege im Dateisystem aus dem Papierkorb wiederherstellen
+        await receiptFileService.restoreFromTrash(exp.tripId, exp.id);
+        filesRestored = true;
+
+        // Prüfe, dass alle erwarteten Belegdateien tatsächlich im aktiven Verzeichnis existieren
+        for (final r in exp.receipts) {
+          final bytes = await receiptFileService.readReceiptBytes(r.filePath);
+          if (bytes == null || bytes.isEmpty) {
+            throw StateError(
+              'Wiederherstellung fehlgeschlagen: Belegdatei ${r.filePath} für Ausgabe ${exp.id} wurde im Papierkorb nicht gefunden.',
+            );
+          }
+        }
+
+        return newId;
+      });
+    } catch (e) {
+      if (filesRestored) {
+        try {
+          await receiptFileService.moveToTrash(exp.tripId, exp.id);
+        } catch (_) {}
+      }
+      rethrow;
     }
-
-    return newId;
   }
 
   /// Aktualisiert die Zahlungsdaten eines Crew-Mitglieds (FEEDBACK_R1 Punkt 10).
