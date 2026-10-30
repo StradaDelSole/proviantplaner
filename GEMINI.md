@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.27
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.29
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -32,6 +32,17 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.26 | 17.10.2026 | WATER1 Owner Acceptance: COMPLETE; kein Folgeslice automatisch freigegeben |
 | v0.27 | 17.10.2026 | PIVOT2 nach FIX-B/DATA1/WATER1 reconciliert und als einziger Implementierungsslice freigegeben |
 | v0.28 | 17.10.2026 | PIVOT2 Owner Acceptance: COMPLETE; Issues #26, #7, #8 geschlossen; kein Folgeslice freigegeben |
+| v0.29 | 30.10.2026 | Owner-accepted Architecture-First-Engineering-Standard, verpflichtendes zweistufiges High-Risk-Gate; RECEIPT1-Status reconciliiert |
+
+## Verbindlicher Engineering-Prozess ab 30.10.2026
+
+**Vor jeder neuen oder wiederaufgenommenen Sitzung** zuerst AGENTS.md und docs/ENGINEERING_STANDARD_v1.0.md vollständig lesen; neben dem aktuellen GitHub-Stand sind beide bindende Prozessquellen. Für High-Risk-Aufgaben (DB/Dateisystem/Backup, Concurrency, Auth/Security, Backend/APIs, Finanzen, Offline-Sync, Migration) sind **zwei getrennte Phasen Pflicht**:
+
+- **Phase A – Architecture Gate:** zuerst vollständige Repository-Reconciliation, Alternativen, Invarianten, Failure-/Crash-/Concurrency-Matrix, Testdesign und offene Entscheidungen nach docs/templates/ARCHITECTURE_GATE_TEMPLATE.md; **kein Produktionscode**. Unabhängige Architekturprüfung und nötige Owner-Entscheidungen vor dem Coding.
+- **Phase B – Implementation Gate:** ausschließlich nach dokumentiertem Gate A und weiter geltender Slice-Freigabe; Implementierung gemäß docs/templates/IMPLEMENTATION_BRIEF_TEMPLATE.md, Negativ-/Failure-/Race-Tests, adversarial self-review, CI am exakten PR-HEAD, dann STOP für Independent Review.
+- **Nach zwei verwandten Amendments:** kein weiterer isolierter Patch ohne erneute architektonische Ursachenprüfung. Kein neuer Scope, keine automatischen Merges oder Folgeslices.
+
+Dieser Prozess ergänzt die untenstehenden Programmierregeln 1–10 und kann keine fehlende Owner-Freigabe ersetzen. Bei rein dokumentarischen oder unkritischen UX-Änderungen ist eine begründete, kürzere Phase A zulässig.
 
 ## Aktueller Status
 
@@ -54,10 +65,11 @@ Verbindliche aktuelle Daten-/Domainwahrheit:
 - WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
 - PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-**Aktuell ist KEIN Folge-Slice freigegeben.**
+**RECEIPT1 ist am 30.10.2026 vom Owner zur Implementierung freigegeben worden; PR #34 ist offen und NICHT gemergt.** Stand der letzten verifizierten unabhängigen Prüfung: PR-HEAD `34fa2dce32dd634435705b3d30d8c36b2d368e29`, GitHub Actions 41102054917 SUCCESS; Amendment 4 E/F geschlossen. Das Concurrency-Finding G bleibt im Review. **Vor seiner Implementierung ist Phase A (Operationskoordination/Restore vs. Recovery) verbindlich.** Dies ist ein datierter Hinweis; live PR-HEAD und Owner-Status beim Sitzungsstart neu prüfen.
+
+**Kein weiterer Feature-Slice nach RECEIPT1 ist freigegeben.**
 
 Weiterhin nicht freigegeben:
-- RECEIPT1
 - GUEST1
 - UX-D
 - Provider Assortment / Charter Provisioning
@@ -138,20 +150,20 @@ Diese Reconciliation muss die owner-accepted Provider-Assortment-Entscheidung au
 
 Der globale Provy-Katalog bleibt die fachliche Produkt-Ontologie; Provider-Sortimente sind ein Overlay für reale Lieferfähigkeit. Nicht verfügbare Produkte dürfen nicht still aus der Crew-Planung verschwinden.
 
-Dieses Zukunfts-Gate ändert den aktuellen Implementierungsslice nicht: WATER1 bleibt derzeit der einzige freigegebene Slice.
+Dieses Zukunfts-Gate gibt keinen zusätzlichen Slice frei und ändert nichts an den jeweils aktuellen README-/Owner-Gates.
 
 ## Wiederaufnahme nach Unterbrechung (Kontingent, Absturz, neue Sitzung)
 
 1. `git status` prüfen. Gibt es unkommittete Änderungen, gehören sie zum unterbrochenen Slice: Plan in `docs/impl/<Slice>_plan.md` lesen, Änderungen prüfen und den Slice regulär fertigstellen. Nichts verwerfen, ohne es im Bericht zu begründen.
 2. `git pull --rebase`, dann README.md, GEMINI.md und die Slice-Datei mit der höchsten Versionsnummer neu lesen (Dokumente können sich während der Pause geändert haben).
-3. Der nächste Slice ist der erste in der Freigabe-Reihenfolge des README, für den es noch keinen `docs/impl/<Slice>_bericht.md` gibt.
+3. Den nächsten Schritt nur aus dem neuesten ausdrücklich freigegebenen Gate im README und in Owner-Entscheidungen bestimmen; das Vorhandensein oder Fehlen eines Berichts gibt keinen Slice frei. Bei High Risk zuerst Phase A prüfen.
 4. Im Bericht vermerken: "Wiederaufnahme nach Unterbrechung am <Datum>".
 
 ## Pflichtablauf: Review-gated Post-Pivot-Slices
 
 Für aktuell und künftig explizit review-gegatete Slices gilt:
 
-1. `git status` prüfen, `git fetch origin`, README, GEMINI.md, Reconciliation und den freigegebenen Slice-Plan vollständig lesen.
+1. `git status` prüfen, `git fetch origin`, AGENTS.md, README, GEMINI.md, docs/ENGINEERING_STANDARD_v1.0.md, Reconciliation und den freigegebenen Slice-Plan vollständig lesen; bei High Risk zuerst Phase A inklusive unabhängiger Architekturprüfung.
 2. Nur den **einen ausdrücklich freigegebenen Slice** auf einem eigenen Review-Branch umsetzen.
 3. Lokal nur kleine gezielte Tests ausführen, wenn sie den Owner-Rechner nicht relevant belasten. **Keine vollständige lokale Flutter-Suite als Gate.**
 4. `CHANGELOG.md` ergänzen und Abschlussbericht in `docs/impl/<Slice>_bericht.md` ablegen.
