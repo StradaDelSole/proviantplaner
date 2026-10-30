@@ -98,8 +98,8 @@ class BackupCoordinator {
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
 
     final hasJournal = journal != null;
-    final hasRollback = await rollbackDir.exists();
-    final hasStagedActive = await stagedActiveDir.exists();
+    final hasRollback = rollbackDir.existsSync();
+    final hasStagedActive = stagedActiveDir.existsSync();
 
     if (!hasJournal && !hasRollback && !hasStagedActive) {
       return;
@@ -347,10 +347,10 @@ class BackupCoordinator {
 
     final docsDir = await _receiptFileService.getDocsDir();
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
-    if (await stagedActiveDir.exists()) {
-      await stagedActiveDir.delete(recursive: true);
+    if (stagedActiveDir.existsSync()) {
+      stagedActiveDir.deleteSync(recursive: true);
     }
-    await stagedActiveDir.create(recursive: true);
+    stagedActiveDir.createSync(recursive: true);
 
     try {
       await _db.transaction(() async {
@@ -661,11 +661,11 @@ class BackupCoordinator {
               final stagedExpenseDir = Directory(
                 p.join(stagedActiveDir.path, 'trip_$newTripId', 'expense_$newExpenseId'),
               );
-              if (!await stagedExpenseDir.exists()) {
-                await stagedExpenseDir.create(recursive: true);
+              if (!stagedExpenseDir.existsSync()) {
+                stagedExpenseDir.createSync(recursive: true);
               }
               final stagedFile = File(p.join(stagedExpenseDir.path, uniqueInternalName));
-              await stagedFile.writeAsBytes(imageBytes, flush: true);
+              stagedFile.writeAsBytesSync(imageBytes, flush: true);
 
               final relativeFilePath = p.posix.join(
                 'receipts',

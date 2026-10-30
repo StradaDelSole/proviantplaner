@@ -1058,6 +1058,17 @@ class PdfExportService {
     );
   }
 
+  static Future<Directory> _resolveDefaultTempDir() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return Directory.systemTemp;
+    }
+    try {
+      return await getTemporaryDirectory();
+    } catch (_) {
+      return Directory.systemTemp;
+    }
+  }
+
   /// Bereinigt frühere temporäre `settlement_export_*`-Verzeichnisse im Temp-Ordner (R4).
   /// Dadurch bleiben die Dateien des aktuellen Share-Vorgangs für das native OS-Share-Sheet
   /// verfügbar, während frühere Exporte deterministisch aufgeräumt werden und sich nicht ansammeln.
@@ -1066,19 +1077,19 @@ class PdfExportService {
     Duration maxAge = Duration.zero,
     DateTime? now,
   }) async {
-    final tempDir = baseTempDir ?? await getTemporaryDirectory();
-    if (!await tempDir.exists()) return;
+    final tempDir = baseTempDir ?? await _resolveDefaultTempDir();
+    if (!tempDir.existsSync()) return;
 
     final effectiveNow = now ?? DateTime.now();
-    await for (final entity in tempDir.list(recursive: false)) {
+    for (final entity in tempDir.listSync(recursive: false)) {
       if (entity is Directory && p.basename(entity.path).startsWith('settlement_export_')) {
         try {
           if (maxAge <= Duration.zero) {
-            await entity.delete(recursive: true);
+            entity.deleteSync(recursive: true);
           } else {
-            final stat = await entity.stat();
+            final stat = entity.statSync();
             if (effectiveNow.difference(stat.modified) >= maxAge) {
-              await entity.delete(recursive: true);
+              entity.deleteSync(recursive: true);
             }
           }
         } catch (_) {}
@@ -1093,7 +1104,7 @@ class PdfExportService {
     Future<Directory> Function()? tempDirProvider,
     Duration cleanupMaxAge = Duration.zero,
   }) async {
-    final tempDir = await (tempDirProvider ?? getTemporaryDirectory)();
+    final tempDir = await (tempDirProvider ?? _resolveDefaultTempDir)();
     await cleanupTemporaryExportDirectories(
       baseTempDir: tempDir,
       maxAge: cleanupMaxAge,
@@ -1103,13 +1114,13 @@ class PdfExportService {
     final exportDir = Directory(
       p.join(tempDir.path, 'settlement_export_${DateTime.now().millisecondsSinceEpoch}_$_exportNonce'),
     );
-    if (!await exportDir.exists()) {
-      await exportDir.create(recursive: true);
+    if (!exportDir.existsSync()) {
+      exportDir.createSync(recursive: true);
     }
 
     for (final pdf in package.allPdfs) {
       final file = File(p.join(exportDir.path, pdf.fileName));
-      await file.writeAsBytes(pdf.bytes, flush: true);
+      file.writeAsBytesSync(pdf.bytes, flush: true);
     }
 
     return exportDir;

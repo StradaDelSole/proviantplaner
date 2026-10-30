@@ -43,6 +43,9 @@ class ReceiptFileService {
   }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
 
   static Future<Directory> _resolveDefaultDocsDir() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return Directory.systemTemp;
+    }
     try {
       return await getApplicationDocumentsDirectory();
     } catch (_) {
@@ -114,8 +117,8 @@ class ReceiptFileService {
     final relativeFolder = p.join('receipts', 'trip_$tripId', 'expense_$expenseId');
     final targetDir = Directory(p.join(docsDir.path, relativeFolder));
 
-    if (!await targetDir.exists()) {
-      await targetDir.create(recursive: true);
+    if (!targetDir.existsSync()) {
+      targetDir.createSync(recursive: true);
     }
 
     final optimized = optimizeImageBytes(imageBytes);
@@ -128,7 +131,7 @@ class ReceiptFileService {
       throw ArgumentError('Ungültiger Pfad (Path Traversal erkannt): $preferredFileName');
     }
 
-    await targetFile.writeAsBytes(optimized, flush: true);
+    targetFile.writeAsBytesSync(optimized, flush: true);
 
     return ProcessedReceiptFile(
       relativePath: targetRelativePath,
@@ -152,8 +155,8 @@ class ReceiptFileService {
     final relativeFolder = p.join('receipts', 'trip_$tripId', 'expense_$expenseId');
     final targetDir = Directory(p.join(docsDir.path, relativeFolder));
 
-    if (!await targetDir.exists()) {
-      await targetDir.create(recursive: true);
+    if (!targetDir.existsSync()) {
+      targetDir.createSync(recursive: true);
     }
 
     final sanitizedDisplayName = sanitizeFileName(fileName);
@@ -165,7 +168,7 @@ class ReceiptFileService {
       throw ArgumentError('Ungültiger Pfad (Path Traversal erkannt): $fileName');
     }
 
-    await targetFile.writeAsBytes(bytes, flush: true);
+    targetFile.writeAsBytesSync(bytes, flush: true);
 
     return ProcessedReceiptFile(
       relativePath: targetRelativePath,
@@ -183,16 +186,16 @@ class ReceiptFileService {
     if (!p.isWithin(docsDir.path, targetFile.path)) {
       throw ArgumentError('Ungültiger Pfad: $relativePath');
     }
-    await targetFile.parent.create(recursive: true);
-    await targetFile.writeAsBytes(bytes, flush: true);
+    targetFile.parent.createSync(recursive: true);
+    targetFile.writeAsBytesSync(bytes, flush: true);
   }
 
   /// Liest die Bytes eines Belegs anhand seines relativen Pfads.
   Future<Uint8List?> readReceiptBytes(String relativePath) async {
     final docsDir = await getDocsDir();
     final file = File(p.join(docsDir.path, relativePath));
-    if (await file.exists()) {
-      return file.readAsBytes();
+    if (file.existsSync()) {
+      return file.readAsBytesSync();
     }
     return null;
   }
@@ -209,8 +212,8 @@ class ReceiptFileService {
     faultInjector?.call('deleteReceiptFile');
     final docsDir = await getDocsDir();
     final file = File(p.join(docsDir.path, relativePath));
-    if (await file.exists()) {
-      await file.delete();
+    if (file.existsSync()) {
+      file.deleteSync();
       return true;
     }
     return false;
@@ -222,12 +225,12 @@ class ReceiptFileService {
     faultInjector?.call('deleteExpenseReceiptFolder');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
-    if (await activeDir.exists()) {
-      await activeDir.delete(recursive: true);
+    if (activeDir.existsSync()) {
+      activeDir.deleteSync(recursive: true);
     }
     final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
-    if (await trashDir.exists()) {
-      await trashDir.delete(recursive: true);
+    if (trashDir.existsSync()) {
+      trashDir.deleteSync(recursive: true);
     }
   }
 
@@ -237,12 +240,12 @@ class ReceiptFileService {
     faultInjector?.call('deleteTripReceipts');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
-    if (await activeDir.exists()) {
-      await activeDir.delete(recursive: true);
+    if (activeDir.existsSync()) {
+      activeDir.deleteSync(recursive: true);
     }
     final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
-    if (await trashDir.exists()) {
-      await trashDir.delete(recursive: true);
+    if (trashDir.existsSync()) {
+      trashDir.deleteSync(recursive: true);
     }
   }
 
@@ -253,10 +256,10 @@ class ReceiptFileService {
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
-    if (await rollbackDir.exists()) {
-      await rollbackDir.delete(recursive: true);
+    if (rollbackDir.existsSync()) {
+      rollbackDir.deleteSync(recursive: true);
     }
-    if (await activeDir.exists()) {
+    if (activeDir.existsSync()) {
       await _moveDirectory(activeDir, rollbackDir);
     }
   }
@@ -266,7 +269,7 @@ class ReceiptFileService {
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
-    if (await rollbackDir.exists()) {
+    if (rollbackDir.existsSync()) {
       await _moveDirectory(rollbackDir, activeDir);
     }
   }
@@ -276,12 +279,12 @@ class ReceiptFileService {
     faultInjector?.call('deleteTripReceipts');
     final docsDir = await getDocsDir();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
-    if (await rollbackDir.exists()) {
-      await rollbackDir.delete(recursive: true);
+    if (rollbackDir.existsSync()) {
+      rollbackDir.deleteSync(recursive: true);
     }
     final trashDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
-    if (await trashDir.exists()) {
-      await trashDir.delete(recursive: true);
+    if (trashDir.existsSync()) {
+      trashDir.deleteSync(recursive: true);
     }
   }
 
@@ -291,10 +294,10 @@ class ReceiptFileService {
   Future<Directory> prepareStagingDirectory() async {
     final docsDir = await getDocsDir();
     final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
-    if (await stagingDir.exists()) {
-      await stagingDir.delete(recursive: true);
+    if (stagingDir.existsSync()) {
+      stagingDir.deleteSync(recursive: true);
     }
-    await stagingDir.create(recursive: true);
+    stagingDir.createSync(recursive: true);
     return stagingDir;
   }
 
@@ -302,8 +305,8 @@ class ReceiptFileService {
   Future<void> cleanStagingDirectory() async {
     final docsDir = await getDocsDir();
     final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
-    if (await stagingDir.exists()) {
-      await stagingDir.delete(recursive: true);
+    if (stagingDir.existsSync()) {
+      stagingDir.deleteSync(recursive: true);
     }
   }
 
@@ -314,11 +317,11 @@ class ReceiptFileService {
   }) async {
     final docsDir = await getDocsDir();
     final stagingDir = Directory(p.join(docsDir.path, 'receipts_staging'));
-    if (!await stagingDir.exists()) {
-      await stagingDir.create(recursive: true);
+    if (!stagingDir.existsSync()) {
+      stagingDir.createSync(recursive: true);
     }
     final file = File(p.join(stagingDir.path, 'staged_rcpt_$stagedIndex.jpg'));
-    await file.writeAsBytes(bytes, flush: true);
+    file.writeAsBytesSync(bytes, flush: true);
     return file;
   }
 
@@ -333,16 +336,16 @@ class ReceiptFileService {
       'timestamp': DateTime.now().toIso8601String(),
       'expectedReceiptPaths': expectedReceiptPaths,
     });
-    await journalFile.writeAsString(payload, flush: true);
+    journalFile.writeAsStringSync(payload, flush: true);
   }
 
   /// Liest das Restore-Recovery-Journal, falls ein unterbrochener Restore vorliegt (R1).
   Future<Map<String, dynamic>?> readRestoreJournal() async {
     final docsDir = await getDocsDir();
     final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
-    if (!await journalFile.exists()) return null;
+    if (!journalFile.existsSync()) return null;
     try {
-      final content = await journalFile.readAsString();
+      final content = journalFile.readAsStringSync();
       return jsonDecode(content) as Map<String, dynamic>;
     } catch (_) {
       return <String, dynamic>{'corrupt': true};
@@ -353,8 +356,8 @@ class ReceiptFileService {
   Future<void> deleteRestoreJournal() async {
     final docsDir = await getDocsDir();
     final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
-    if (await journalFile.exists()) {
-      await journalFile.delete();
+    if (journalFile.existsSync()) {
+      journalFile.deleteSync();
     }
   }
 
@@ -371,20 +374,20 @@ class ReceiptFileService {
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
 
-    if (await rollbackDir.exists()) {
-      await rollbackDir.delete(recursive: true);
+    if (rollbackDir.existsSync()) {
+      rollbackDir.deleteSync(recursive: true);
     }
 
-    if (await activeDir.exists()) {
+    if (activeDir.existsSync()) {
       await _moveDirectory(activeDir, rollbackDir);
     }
 
     faultInjector?.call('promoteStagedReceipts_afterBackupMove');
 
-    if (await stagedActiveDir.exists()) {
+    if (stagedActiveDir.existsSync()) {
       await _moveDirectory(stagedActiveDir, activeDir);
     } else {
-      await activeDir.create(recursive: true);
+      activeDir.createSync(recursive: true);
     }
 
     faultInjector?.call('promoteStagedReceipts_afterPromote');
@@ -396,8 +399,8 @@ class ReceiptFileService {
     faultInjector?.call('finalizeRestoreStaging');
     final docsDir = await getDocsDir();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
-    if (await rollbackDir.exists()) {
-      await rollbackDir.delete(recursive: true);
+    if (rollbackDir.existsSync()) {
+      rollbackDir.deleteSync(recursive: true);
     }
     await deleteRestoreJournal();
     await cleanStagingDirectory();
@@ -420,13 +423,13 @@ class ReceiptFileService {
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
     final defaultStagedActiveDir = stagedActiveDir ?? Directory(p.join(docsDir.path, 'receipts_staging_active'));
 
-    if (await defaultStagedActiveDir.exists()) {
-      await defaultStagedActiveDir.delete(recursive: true);
+    if (defaultStagedActiveDir.existsSync()) {
+      defaultStagedActiveDir.deleteSync(recursive: true);
     }
 
-    if (await rollbackDir.exists()) {
-      if (await activeDir.exists()) {
-        await activeDir.delete(recursive: true);
+    if (rollbackDir.existsSync()) {
+      if (activeDir.existsSync()) {
+        activeDir.deleteSync(recursive: true);
       }
       await _moveDirectory(rollbackDir, activeDir);
     }
@@ -443,13 +446,13 @@ class ReceiptFileService {
     faultInjector?.call('moveToTrash');
     final docsDir = await getDocsDir();
     final activeExpenseDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
-    if (!await activeExpenseDir.exists()) return;
+    if (!activeExpenseDir.existsSync()) return;
 
     final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
     await _moveDirectory(activeExpenseDir, trashExpenseDir);
 
     final markerFile = File(p.join(trashExpenseDir.path, '.trashed_at'));
-    await markerFile.writeAsString((trashedAt ?? DateTime.now()).toIso8601String(), flush: true);
+    markerFile.writeAsStringSync((trashedAt ?? DateTime.now()).toIso8601String(), flush: true);
   }
 
   /// Stellt die Belege einer Ausgabe aus dem Papierkorb wieder her (Undo).
@@ -457,11 +460,11 @@ class ReceiptFileService {
     faultInjector?.call('restoreFromTrash');
     final docsDir = await getDocsDir();
     final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
-    if (!await trashExpenseDir.exists()) return;
+    if (!trashExpenseDir.existsSync()) return;
 
     final markerFile = File(p.join(trashExpenseDir.path, '.trashed_at'));
-    if (await markerFile.exists()) {
-      await markerFile.delete();
+    if (markerFile.existsSync()) {
+      markerFile.deleteSync();
     }
 
     final activeExpenseDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId', 'expense_$expenseId'));
@@ -474,18 +477,18 @@ class ReceiptFileService {
     final docsDir = await getDocsDir();
     if (tripId != null && expenseId != null) {
       final trashExpenseDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId', 'expense_$expenseId'));
-      if (await trashExpenseDir.exists()) {
-        await trashExpenseDir.delete(recursive: true);
+      if (trashExpenseDir.existsSync()) {
+        trashExpenseDir.deleteSync(recursive: true);
       }
     } else if (tripId != null) {
       final trashTripDir = Directory(p.join(docsDir.path, 'receipts_trash', 'trip_$tripId'));
-      if (await trashTripDir.exists()) {
-        await trashTripDir.delete(recursive: true);
+      if (trashTripDir.existsSync()) {
+        trashTripDir.deleteSync(recursive: true);
       }
     } else {
       final trashDir = Directory(p.join(docsDir.path, 'receipts_trash'));
-      if (await trashDir.exists()) {
-        await trashDir.delete(recursive: true);
+      if (trashDir.existsSync()) {
+        trashDir.deleteSync(recursive: true);
       }
     }
   }
@@ -497,36 +500,36 @@ class ReceiptFileService {
   }) async {
     final docsDir = await getDocsDir();
     final trashRoot = Directory(p.join(docsDir.path, 'receipts_trash'));
-    if (!await trashRoot.exists()) return;
+    if (!trashRoot.existsSync()) return;
 
     final effectiveNow = now ?? DateTime.now();
 
-    await for (final tripEntity in trashRoot.list(recursive: false)) {
+    for (final tripEntity in trashRoot.listSync(recursive: false)) {
       if (tripEntity is Directory) {
-        await for (final expEntity in tripEntity.list(recursive: false)) {
+        for (final expEntity in tripEntity.listSync(recursive: false)) {
           if (expEntity is Directory) {
             DateTime? trashedAt;
             final markerFile = File(p.join(expEntity.path, '.trashed_at'));
-            if (await markerFile.exists()) {
+            if (markerFile.existsSync()) {
               try {
-                final raw = await markerFile.readAsString();
+                final raw = markerFile.readAsStringSync();
                 trashedAt = DateTime.tryParse(raw.trim());
               } catch (_) {}
             }
             if (trashedAt == null) {
-              final stat = await expEntity.stat();
+              final stat = expEntity.statSync();
               trashedAt = stat.modified;
             }
             if (effectiveNow.difference(trashedAt) >= maxAge) {
-              await expEntity.delete(recursive: true);
+              expEntity.deleteSync(recursive: true);
             }
           }
         }
         // Leeren Trip-Ordner im Papierkorb aufräumen
-        if (await tripEntity.exists()) {
-          final remaining = await tripEntity.list(recursive: false).toList();
+        if (tripEntity.existsSync()) {
+          final remaining = tripEntity.listSync(recursive: false);
           if (remaining.isEmpty) {
-            await tripEntity.delete(recursive: true);
+            tripEntity.deleteSync(recursive: true);
           }
         }
       }
@@ -534,26 +537,26 @@ class ReceiptFileService {
   }
 
   Future<void> _moveDirectory(Directory src, Directory dst) async {
-    if (!await src.exists()) return;
-    if (await dst.exists()) {
-      await dst.delete(recursive: true);
+    if (!src.existsSync()) return;
+    if (dst.existsSync()) {
+      dst.deleteSync(recursive: true);
     }
-    await dst.parent.create(recursive: true);
+    dst.parent.createSync(recursive: true);
     try {
-      await src.rename(dst.path);
+      src.renameSync(dst.path);
     } catch (_) {
-      await _copyDirectory(src, dst);
-      await src.delete(recursive: true);
+      _copyDirectorySync(src, dst);
+      src.deleteSync(recursive: true);
     }
   }
 
-  Future<void> _copyDirectory(Directory src, Directory dst) async {
-    await dst.create(recursive: true);
-    await for (final entity in src.list(recursive: false)) {
+  void _copyDirectorySync(Directory src, Directory dst) {
+    dst.createSync(recursive: true);
+    for (final entity in src.listSync(recursive: false)) {
       if (entity is Directory) {
-        await _copyDirectory(entity, Directory(p.join(dst.path, p.basename(entity.path))));
+        _copyDirectorySync(entity, Directory(p.join(dst.path, p.basename(entity.path))));
       } else if (entity is File) {
-        await entity.copy(p.join(dst.path, p.basename(entity.path)));
+        entity.copySync(p.join(dst.path, p.basename(entity.path)));
       }
     }
   }
