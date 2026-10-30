@@ -45,8 +45,21 @@ class BackupCorruptException implements Exception {
   String toString() => 'BackupCorruptException: $message';
 }
 
+/// Exception wenn nach einem Prozessabbruch ein unklarer oder widersprüchlicher
+/// Restore-Zustand vorliegt, der nicht eindeutig sicher aufgelöst werden kann (Amendment 3 Finding A & B).
+/// In diesem Fall wird keine destruktive Operation ausgeführt und der Datenzugriff
+/// explizit als nicht verfügbar gemeldet.
+class RestoreRecoveryException implements Exception {
+  final String message;
+  const RestoreRecoveryException(this.message);
+  @override
+  String toString() => 'RestoreRecoveryException: $message';
+}
+
 /// Verwaltet den Export aller lokalen Törndaten in die Cloud und den Import daraus.
 class BackupCoordinator {
+  static int _restoreNonce = 0;
+
   final AppDatabase _db;
   final HullqBackupService _backupService;
   final HullqAuthService _authService;
@@ -71,29 +84,69 @@ class BackupCoordinator {
   /// Maximale Gesamtgröße aller Belege in einem Cloud-Backup (50 MB) zum Schutz vor Speicher-/Worker-Limits.
   static const int defaultMaxBackupReceiptBytes = 50 * 1024 * 1024;
 
-  /// Prüft und behebt beim App-Start oder vor Backup-/Restore-Operationen einen durch
-  /// Prozessabbruch unterbrochenen Restore-Vorgang (R1).
+  static Future<void> _writeDbRestoreToken(AppDatabase db, String restoreToken) async {
+    await db.customStatement(
+      'CREATE TABLE IF NOT EXISTS _provy_restore_state ('
+      'id INTEGER PRIMARY KEY CHECK (id = 1), '
+      'restore_token TEXT NOT NULL, '
+      'committed_at TEXT NOT NULL'
+      ')',
+    );
+    await db.customStatement(
+      'INSERT OR REPLACE INTO _provy_restore_state (id, restore_token, committed_at) VALUES (1, ?, ?)',
+      [restoreToken, DateTime.now().toIso8601String()],
+    );
+  }
+
+  static Future<String?> _readDbRestoreToken(AppDatabase db) async {
+    try {
+      final row = await db
+          .customSelect('SELECT restore_token FROM _provy_restore_state WHERE id = 1')
+          .getSingleOrNull();
+      return row?.read<String>('restore_token');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Statischer, einmalig beim App-Start sowie vor Lese-/Schreibzugriffen ausgeführter
+  /// Recovery-Pfad (R1, Amendment 3 Finding A, B, C).
   ///
-  /// Da SQLite und das Dateisystem keine gemeinsame atomare OS-Transaktion teilen,
-  /// nutzt Provy ein Zwei-Phasen-Staging mit Recovery-Journal (`restore_journal.json`):
-  /// 1. Innerhalb der SQLite-Transaktion werden nach allen DB-Inserts die erwarteten
-  ///    neuen Belegpfade in `restore_journal.json` geschrieben und `promoteStagedReceipts`
-  ///    verschiebt das bisherige `receipts/` nach `receipts_rollback/` sowie
-  ///    `receipts_staging_active/` nach `receipts/`.
-  /// 2. Erst nach erfolgreichem SQLite-`COMMIT` löscht `finalizeRestoreStaging`
-  ///    das Rollback-Verzeichnis `receipts_rollback/` und `restore_journal.json`.
-  ///
-  /// Bei einem Prozessabbruch prüft `recoverInterruptedRestore()` beim nächsten Start,
-  /// ob die in SQLite committeten Belegpfade exakt mit `expectedReceiptPaths` aus dem
-  /// Journal übereinstimmen und alle neuen Dateien in `receipts/` existieren:
-  /// - Falls JA (Absturz nach SQLite-COMMIT, vor Finalize): Rollback-Ordner und Journal
-  ///   werden bereinigt (Roll-Forward zum neuen Zustand).
-  /// - Falls NEIN (Absturz vor SQLite-COMMIT; SQLite hat automatisch auf den alten Stand
-  ///   zurückgerollt): `abortRestoreStaging()` stellt `receipts_rollback/` nach `receipts/`
-  ///   wieder her (Roll-Back zum ursprünglichen Zustand).
-  Future<void> recoverInterruptedRestore() async {
-    final docsDir = await _receiptFileService.getDocsDir();
-    final journal = await _receiptFileService.readRestoreJournal();
+  /// Trennt strikt zwischen:
+  /// 1. **Erfolgreich committet (Roll-Forward):** Der SQLite-Commit-Nachweis (`_provy_restore_state.restore_token`
+  ///    bzw. konsistente erwartete Belegpfade) liegt vor und alle neuen Dateien sind in `receipts/` vorhanden
+  ///    -> bereinigt `receipts_rollback/` und `restore_journal.json`.
+  /// 2. **Noch nicht committet (Roll-Back):** SQLite hat die Transaktion nicht committet, die DB-Belegpfade
+  ///    entsprechen dem Vor-Restore-Zustand und alle vorherigen Dateien sind in `receipts_rollback/`
+  ///    vollständig vorhanden -> stellt `receipts_rollback/` nach `receipts/` wieder her.
+  /// 3. **Unklarer Zustand nach Crash:** Fehlt das Journal bei vorhandenem Rollback-Ordner, ist das Journal
+  ///    beschädigt oder fehlen für den jeweiligen Pfad benötigte Belegdateien -> **niemals blind zurückrollen
+  ///    oder löschen**; wirft [RestoreRecoveryException].
+  static Future<void> recoverStorageState({
+    required AppDatabase db,
+    required ReceiptFileService receiptFileService,
+  }) async {
+    final docsDir = await receiptFileService.getDocsDir();
+    final hasArtifacts = receiptFileService.hasPendingRecoveryArtifactsSync(docsDir);
+    if (!hasArtifacts && receiptFileService.isInitialRecoveryCompleted) {
+      return;
+    }
+
+    await receiptFileService.runSingleFlightRecovery(() async {
+      await _performRestoreAndTripDeleteRecovery(
+        db: db,
+        receiptFileService: receiptFileService,
+        docsDir: docsDir,
+      );
+    });
+  }
+
+  static Future<void> _performRestoreAndTripDeleteRecovery({
+    required AppDatabase db,
+    required ReceiptFileService receiptFileService,
+    required Directory docsDir,
+  }) async {
+    final journal = await receiptFileService.readRestoreJournal();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
 
@@ -101,46 +154,150 @@ class BackupCoordinator {
     final hasRollback = rollbackDir.existsSync();
     final hasStagedActive = stagedActiveDir.existsSync();
 
-    if (!hasJournal && !hasRollback && !hasStagedActive) {
-      return;
-    }
+    if (hasJournal || hasRollback || hasStagedActive) {
+      if (journal == null || journal['corrupt'] == true) {
+        throw const RestoreRecoveryException(
+          'Unklarer Restore-Zustand nach Prozessabbruch: Recovery-Journal fehlt oder ist beschädigt. '
+          'Keine destruktive Operation ausgeführt.',
+        );
+      }
 
-    if (journal == null || journal['corrupt'] == true) {
-      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
-      return;
-    }
+      final expectedRaw = journal['expectedReceiptPaths'];
+      if (expectedRaw is! List) {
+        throw const RestoreRecoveryException(
+          'Unklarer Restore-Zustand: expectedReceiptPaths im Recovery-Journal ungültig. '
+          'Keine destruktive Operation ausgeführt.',
+        );
+      }
 
-    final expectedRaw = journal['expectedReceiptPaths'] as List<dynamic>?;
-    if (expectedRaw == null) {
-      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
-      return;
-    }
+      final expectedPaths =
+          expectedRaw.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/'))).toSet();
+      final previousRaw = journal['previousReceiptPaths'] as List<dynamic>?;
+      final previousPaths = previousRaw
+          ?.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/')))
+          .toSet();
+      final journalToken = journal['restoreToken'] as String?;
+      final phase = journal['phase'] as String?;
 
-    final expectedPaths = expectedRaw.map((e) => p.posix.normalize(e.toString().replaceAll('\\', '/'))).toSet();
-    final currentDbReceipts = await _db.select(_db.expenseReceipts).get();
-    final currentDbPaths = currentDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toSet();
+      final dbRestoreToken = await _readDbRestoreToken(db);
+      final currentDbReceipts = await db.select(db.expenseReceipts).get();
+      final currentDbPaths =
+          currentDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toSet();
 
-    final dbMatchesExpected =
-        currentDbPaths.length == expectedPaths.length && currentDbPaths.containsAll(expectedPaths);
+      final dbMatchesExpected =
+          currentDbPaths.length == expectedPaths.length && currentDbPaths.containsAll(expectedPaths);
 
-    if (dbMatchesExpected && !hasStagedActive) {
-      // Prüfe zusätzlich, dass jede erwartete Datei physisch in receipts/ liegt
-      bool allFilesPresent = true;
-      for (final relPath in expectedPaths) {
-        final bytes = await _receiptFileService.readReceiptBytes(relPath);
-        if (bytes == null || bytes.isEmpty) {
-          allFilesPresent = false;
-          break;
+      // Belastbarer Commit-Nachweis:
+      // Wenn ein restoreToken im Journal hinterlegt ist, entscheidet der in derselben SQLite-Transaktion
+      // committete `_provy_restore_state`-Token (bzw. `phase == 'committed'`).
+      // Für Token-lose Legacy-Journale gilt der Abgleich gegen nicht-leere `expectedPaths`.
+      final bool isCommittedInDb;
+      if (journalToken != null) {
+        isCommittedInDb = (dbRestoreToken == journalToken) || (phase == 'committed' && dbMatchesExpected);
+      } else {
+        isCommittedInDb =
+            (phase == 'committed' && dbMatchesExpected) || (expectedPaths.isNotEmpty && dbMatchesExpected);
+      }
+
+      if (isCommittedInDb) {
+        // Fall 1: Erfolgreich committet -> ausschließlich Roll-Forward! Niemals alte Dateien aktivieren!
+        if (!dbMatchesExpected) {
+          throw const RestoreRecoveryException(
+            'Widersprüchlicher Post-Commit-Zustand: SQLite-Commit-Token liegt vor, aber DB-Belegpfade '
+            'weichen vom Journal ab. Keine destruktive Operation ausgeführt.',
+          );
         }
-      }
-      if (allFilesPresent) {
-        await _receiptFileService.finalizeRestoreStaging();
-        return;
+
+        final activeDir = Directory(p.join(docsDir.path, 'receipts'));
+        if (hasStagedActive && !activeDir.existsSync()) {
+          stagedActiveDir.renameSync(activeDir.path);
+        }
+
+        for (final relPath in expectedPaths) {
+          final bytes = await receiptFileService.readReceiptBytes(relPath);
+          if (bytes == null || bytes.isEmpty) {
+            throw RestoreRecoveryException(
+              'Unklarer Post-Commit-Zustand: Erwartete neue Belegdatei "$relPath" fehlt nach SQLite-Commit. '
+              'Keine destruktive Bereinigung ausgeführt.',
+            );
+          }
+        }
+
+        await receiptFileService.finalizeRestoreStaging();
+      } else {
+        // Fall 2: Noch nicht in SQLite committet -> Vor-Commit-Prüfung vor einem Roll-Back
+        if (phase == 'committed') {
+          throw const RestoreRecoveryException(
+            'Widersprüchlicher Restore-Zustand: Journal ist als committed markiert, aber SQLite-Commit-Nachweis fehlt. '
+            'Keine destruktive Operation ausgeführt.',
+          );
+        }
+
+        if (previousPaths != null) {
+          final dbMatchesPrevious =
+              currentDbPaths.length == previousPaths.length && currentDbPaths.containsAll(previousPaths);
+          if (!dbMatchesPrevious) {
+            throw const RestoreRecoveryException(
+              'Unklarer Pre-Commit-Zustand: SQLite-Belegpfade stimmen nicht mit dem Vor-Restore-Zustand überein. '
+              'Kein blinder Rollback ausgeführt.',
+            );
+          }
+        } else if (journalToken == null && currentDbPaths.isEmpty) {
+          throw const RestoreRecoveryException(
+            'Unklarer Restore-Zustand ohne Commit-Token und ohne DB-Belegreferenzen. '
+            'Kein blinder Rollback ausgeführt.',
+          );
+        }
+
+        // Prüfe, dass alle von der aktuellen (nicht-committeten) DB benötigten bisherigen Dateien
+        // physisch wiederherstellbar vorhanden sind (in receipts_rollback/ bzw. receipts/)
+        for (final relPath in currentDbPaths) {
+          final File candidateFile;
+          if (hasRollback) {
+            final subPath = relPath.startsWith('receipts/')
+                ? relPath.substring('receipts/'.length)
+                : relPath;
+            candidateFile = File(p.join(rollbackDir.path, subPath));
+          } else {
+            candidateFile = File(p.join(docsDir.path, relPath));
+          }
+          if (!candidateFile.existsSync() || candidateFile.lengthSync() <= 0) {
+            throw RestoreRecoveryException(
+              'Unklarer Pre-Commit-Zustand: Vorherige Belegdatei "$relPath" fehlt im Rollback-Verzeichnis. '
+              'Kein blinder Rollback ausgeführt.',
+            );
+          }
+        }
+
+        await receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
       }
     }
 
-    // SQLite hat den Restore nicht committet -> Dateisystem auf den alten Stand zurückrollen
-    await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+    // Unterbrochene Trip-Löschungen konsistent gegen den SQLite-Stand auflösen (Finding C):
+    // - Existiert der Trip noch in SQLite (Absturz vor DB-Commit): Dateien wiederherstellen.
+    // - Existiert der Trip nicht mehr in SQLite (Absturz nach DB-Commit / fehlgeschlagenes Cleanup): final löschen.
+    final pendingTripIds = await receiptFileService.listPendingTripDeleteRollbackIds();
+    for (final tripId in pendingTripIds) {
+      final trip = await db.tripDao.getTripById(tripId);
+      if (trip != null) {
+        await receiptFileService.restoreTripDeleteRollback(tripId);
+      } else {
+        await receiptFileService.finalizeTripDeleteRollback(tripId);
+      }
+    }
+
+    try {
+      await receiptFileService.cleanupExpiredTrash();
+    } catch (_) {}
+  }
+
+  /// Prüft und behebt beim App-Start oder vor Backup-/Restore-Operationen einen durch
+  /// Prozessabbruch unterbrochenen Restore- oder Lösch-Vorgang (R1, Amendment 3 Finding A, B, C).
+  Future<void> recoverInterruptedRestore() async {
+    await recoverStorageState(
+      db: _db,
+      receiptFileService: _receiptFileService,
+    );
   }
 
   /// Validiert, dass übergebene Bytes ein unterstütztes, dekodierbares Bild sind (R3).
@@ -352,9 +509,16 @@ class BackupCoordinator {
     }
     stagedActiveDir.createSync(recursive: true);
 
+    final previousDbReceipts = await _db.select(_db.expenseReceipts).get();
+    final previousReceiptPaths =
+        previousDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toList();
+    _restoreNonce++;
+    final restoreToken = 'restore_${DateTime.now().microsecondsSinceEpoch}_$_restoreNonce';
+    final expectedReceiptPaths = <String>[];
+
+    bool dbCommitted = false;
     try {
       await _db.transaction(() async {
-        final expectedReceiptPaths = <String>[];
         // Vorhandene Daten bereinigen
         await _db.customStatement('PRAGMA foreign_keys = OFF');
         try {
@@ -694,28 +858,47 @@ class BackupCoordinator {
           await _db.customStatement('PRAGMA foreign_keys = ON');
         }
 
-        // R1: Zwei-Phasen-Promotion INNERHALB der SQLite-Transaktion.
-        // Schreibt zuerst das Recovery-Journal und promoviert danach die gestagten Dateien
-        // nach `receipts/`, während die alten Dateien in `receipts_rollback/` verbleiben.
-        // Scheitert `promoteStagedReceipts`, wirft es innerhalb von `_db.transaction`,
-        // wodurch Drift die SQLite-Transaktion automatisch zurückrollt!
+        // R1 & Amendment 3 Finding A:
+        // Zwei-Phasen-Promotion INNERHALB der SQLite-Transaktion mit belastbarem Commit-Nachweis.
+        // 1. Schreibt den eindeutigen `restoreToken` in die SQLite-Tabelle `_provy_restore_state`
+        //    (wird exakt mit der SQLite-Transaktion committet oder zurückgerollt).
+        // 2. Schreibt das Recovery-Journal (`restore_journal.json`) mit `restoreToken`,
+        //    `previousReceiptPaths` und `expectedReceiptPaths`.
+        // 3. Promoviert die gestagten Dateien nach `receipts/`, während die bisherigen Dateien
+        //    in `receipts_rollback/` verbleiben.
+        await _writeDbRestoreToken(_db, restoreToken);
         await _receiptFileService.writeRestoreJournal(
           expectedReceiptPaths: expectedReceiptPaths,
+          restoreToken: restoreToken,
+          phase: 'promoting',
+          previousReceiptPaths: previousReceiptPaths,
         );
         await _receiptFileService.promoteStagedReceipts(
           stagedActiveDir: stagedActiveDir,
         );
       });
-
-      // DB-Transaktion UND Datei-Promotion waren erfolgreich -> Rollback-Verzeichnis & Journal entfernen
-      await _receiptFileService.finalizeRestoreStaging();
-      return true;
+      dbCommitted = true;
     } catch (e) {
-      // Bei Fehler (während DB-Operationen, Datei-Promotion oder DB-Commit):
-      // Rollback des Dateisystems aus `receipts_rollback/`
-      await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+      // Phase 1 (Noch nicht committet): Rückabwicklung auf den vorherigen Dateistand ist zulässig.
+      if (!dbCommitted) {
+        await _receiptFileService.abortRestoreStaging(stagedActiveDir: stagedActiveDir);
+      }
       rethrow;
     }
+
+    // Phase 2 (Erfolgreich in SQLite committet, dbCommitted == true):
+    // Ab hier darf NIEMALS mehr abortRestoreStaging() aufgerufen werden oder der alte Dateistand
+    // aktiviert werden! Ausschließlicher Roll-Forward / Finalisierung (Amendment 3 Finding A):
+    try {
+      await _receiptFileService.markRestoreJournalCommitted(
+        restoreToken: restoreToken,
+        expectedReceiptPaths: expectedReceiptPaths,
+        previousReceiptPaths: previousReceiptPaths,
+      );
+    } catch (_) {}
+
+    await _receiptFileService.finalizeRestoreStaging();
+    return true;
   }
 
   Map<String, dynamic> _serializeTrip(Trip t) => {

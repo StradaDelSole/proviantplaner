@@ -17,9 +17,15 @@ import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
+import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
+import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
+import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
+import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 
 Uint8List _createTestJpeg({int width = 10, int height = 10}) {
   final image = img.Image(width: width, height: height);
@@ -1107,6 +1113,308 @@ void main() {
       final localTrips = await db.tripDao.getAllTrips();
       expect(localTrips.length, equals(1));
       expect(localTrips.first.name, equals('Geschützter Lokal-Törn'));
+    });
+
+    test('Amendment 3 – Pflichttest A: finalizeRestoreStaging wirft nach erfolgreichem SQLite-Commit eine Exception -> Neuer DB-Stand und alle neuen Bilddateien bleiben erhalten, spätere Recovery bereinigt Artefakte', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // 1. Cloud-Stand B mit zwei Belegen anlegen und sichern
+      final cloudTripId = await seedCompleteTrip(db, 'Neuer Cloud-Stand B');
+      final cloudExpenses = await db.expenseDao.getExpensesForTrip(cloudTripId);
+      final cloudExpenseId = cloudExpenses.first.id;
+
+      final cloudBytes1 = _createTestJpeg(width: 20, height: 20);
+      final cloudBytes2 = _createTestJpeg(width: 28, height: 28);
+
+      final cloudFile1 = await receiptService.saveReceiptImage(
+        tripId: cloudTripId,
+        expenseId: cloudExpenseId,
+        preferredFileName: 'cloud_b_1.jpg',
+        imageBytes: cloudBytes1,
+      );
+      final cloudFile2 = await receiptService.saveReceiptImage(
+        tripId: cloudTripId,
+        expenseId: cloudExpenseId,
+        preferredFileName: 'cloud_b_2.jpg',
+        imageBytes: cloudBytes2,
+      );
+
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: cloudTripId,
+          expenseId: cloudExpenseId,
+          fileName: cloudFile1.fileName,
+          filePath: cloudFile1.filePath,
+          byteSize: Value(cloudFile1.byteSize),
+          sortOrder: const Value(0),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: cloudTripId,
+          expenseId: cloudExpenseId,
+          fileName: cloudFile2.fileName,
+          filePath: cloudFile2.filePath,
+          byteSize: Value(cloudFile2.byteSize),
+          sortOrder: const Value(1),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      final expectedCloudBytes1 = await File(p.join(tempDir.path, cloudFile1.filePath)).readAsBytes();
+      final expectedCloudBytes2 = await File(p.join(tempDir.path, cloudFile2.filePath)).readAsBytes();
+
+      expect(await coordinator.createBackup(), isTrue);
+
+      // 2. Lokal auf dem Gerät einen abweichenden alten Stand A aufbauen
+      await db.delete(db.expenseReceipts).go();
+      await db.delete(db.expenses).go();
+      await db.delete(db.trips).go();
+      final activeDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (activeDir.existsSync()) {
+        activeDir.deleteSync(recursive: true);
+      }
+
+      final oldTripId = await seedCompleteTrip(db, 'Alter Stand A');
+      final oldExpenses = await db.expenseDao.getExpensesForTrip(oldTripId);
+      final oldFile = await receiptService.saveReceiptImage(
+        tripId: oldTripId,
+        expenseId: oldExpenses.first.id,
+        preferredFileName: 'old_a.jpg',
+        imageBytes: _createTestJpeg(width: 10, height: 10),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: oldTripId,
+          expenseId: oldExpenses.first.id,
+          fileName: oldFile.fileName,
+          filePath: oldFile.filePath,
+          byteSize: Value(oldFile.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      // 3. Injiziere Fehler in `finalizeRestoreStaging` (erst NACH erfolgreichem SQLite-Commit!)
+      receiptService.faultInjector = (op) {
+        if (op == 'finalizeRestoreStaging') {
+          throw const FileSystemException('Simulated failure during post-commit finalizeRestoreStaging');
+        }
+      };
+
+      await expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<FileSystemException>()),
+      );
+      receiptService.faultInjector = null;
+
+      // 4. Beweis: Da SQLite bereits committet hat, wurden die alten Dateien NICHT wieder aktiviert!
+      // Der neue Datenbankstand ("Neuer Cloud-Stand B") und sämtliche neuen Bilddateien sind vollständig erhalten!
+      final tripsAfterFailedFinalize = await db.tripDao.getAllTrips();
+      expect(tripsAfterFailedFinalize.length, equals(1));
+      expect(tripsAfterFailedFinalize.single.name, equals('Neuer Cloud-Stand B'));
+
+      final newTripId = tripsAfterFailedFinalize.single.id;
+      final receiptsAfterFailedFinalize = await db.expenseDao.getReceiptsForTrip(newTripId);
+      expect(receiptsAfterFailedFinalize.length, equals(2));
+
+      final restoredFile1 = File(p.join(tempDir.path, receiptsAfterFailedFinalize[0].filePath));
+      final restoredFile2 = File(p.join(tempDir.path, receiptsAfterFailedFinalize[1].filePath));
+      expect(restoredFile1.existsSync(), isTrue);
+      expect(restoredFile2.existsSync(), isTrue);
+      expect(restoredFile1.readAsBytesSync(), equals(expectedCloudBytes1));
+      expect(restoredFile2.readAsBytesSync(), equals(expectedCloudBytes2));
+
+      // Alte Datei aus Stand A wurde NICHT in receipts/ zurückgeholt
+      expect(File(p.join(tempDir.path, oldFile.filePath)).existsSync(), isFalse);
+
+      // Rollback-Verzeichnis und Journal existieren noch wegen des Finalize-Fehlers
+      expect(Directory(p.join(tempDir.path, 'receipts_rollback')).existsSync(), isTrue);
+      expect(File(p.join(tempDir.path, 'restore_journal.json')).existsSync(), isTrue);
+
+      // 5. Spätere Recovery bereinigt die verbleibenden Artefakte sicher (Roll-Forward),
+      // während neuer DB-Stand und neue Bilddateien unversehrt bleiben.
+      await coordinator.recoverInterruptedRestore();
+
+      expect(Directory(p.join(tempDir.path, 'receipts_rollback')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'restore_journal.json')).existsSync(), isFalse);
+      expect(restoredFile1.existsSync(), isTrue);
+      expect(restoredFile2.existsSync(), isTrue);
+      expect(restoredFile1.readAsBytesSync(), equals(expectedCloudBytes1));
+      expect(restoredFile2.readAsBytesSync(), equals(expectedCloudBytes2));
+      expect((await db.tripDao.getAllTrips()).single.name, equals('Neuer Cloud-Stand B'));
+    });
+
+    test('Amendment 3 – Finding A & B: App-Start-Recovery über appStartupRecoveryProvider ist einmalig, löst Pre-/Post-Commit-Crash auf und blockiert unklare Zustände ohne destruktive Operation', () async {
+      await authService.loginWithEmail('owner@provy.app', newsletterOptIn: true);
+
+      // Ausgangsstand aufbauen
+      final tripId = await seedCompleteTrip(db, 'AppStart Recovery Törn');
+      final expenses = await db.expenseDao.getExpensesForTrip(tripId);
+      final processed = await receiptService.saveReceiptImage(
+        tripId: tripId,
+        expenseId: expenses.first.id,
+        preferredFileName: 'startup.jpg',
+        imageBytes: _createTestJpeg(width: 18, height: 18),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripId,
+          expenseId: expenses.first.id,
+          fileName: processed.fileName,
+          filePath: processed.filePath,
+          byteSize: Value(processed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      final origFile = File(p.join(tempDir.path, processed.filePath));
+      final origBytes = origFile.readAsBytesSync();
+
+      // 1. Einmalige Ausführung beim App-Start überprüfen (auch wenn mehrere Provider gelesen werden)
+      final freshReceiptService1 = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final container1 = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(freshReceiptService1),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container1.dispose);
+
+      expect(freshReceiptService1.recoveryExecutionCount, equals(0));
+      final loadedTrips = await container1.read(allTripsProvider.future);
+      expect(loadedTrips.length, equals(1));
+      expect(freshReceiptService1.isInitialRecoveryCompleted, isTrue);
+      expect(freshReceiptService1.recoveryExecutionCount, equals(1));
+
+      // Weitere Provider-Zugriffe innerhalb derselben App-Session führen Recovery NICHT mehrfach aus
+      await container1.read(activeBoatProfilesProvider.future);
+      await container1.read(tripByIdProvider(tripId).future);
+      await container1.read(tripKittyDataProvider(tripId).future);
+      expect(freshReceiptService1.recoveryExecutionCount, equals(1));
+
+      // 2. App-Start nach Crash VOR SQLite-Commit (Pre-Commit):
+      // Alte Dateien liegen in receipts_rollback/, Journal hat nicht-committeten Token 'uncommitted_token_99'
+      final activeDir = Directory(p.join(tempDir.path, 'receipts'));
+      final rollbackDir = Directory(p.join(tempDir.path, 'receipts_rollback'));
+      activeDir.renameSync(rollbackDir.path);
+      activeDir.createSync(recursive: true);
+      final uncommittedFile = File(p.join(activeDir.path, 'trip_999', 'expense_999', 'uncommitted.jpg'));
+      uncommittedFile.parent.createSync(recursive: true);
+      uncommittedFile.writeAsBytesSync([7, 8, 9]);
+      await freshReceiptService1.writeRestoreJournal(
+        restoreToken: 'uncommitted_token_99',
+        phase: 'promoting',
+        previousReceiptPaths: [processed.filePath],
+        expectedReceiptPaths: ['receipts/trip_999/expense_999/uncommitted.jpg'],
+      );
+
+      // Neuer App-Start (neuer ProviderContainer + frischer ReceiptFileService)
+      final freshReceiptService2 = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final container2 = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(freshReceiptService2),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container2.dispose);
+
+      // Das Lesen von allTripsProvider triggert automatisch zuerst appStartupRecoveryProvider -> Roll-Back!
+      final tripsAfterPreCommitCrash = await container2.read(allTripsProvider.future);
+      expect(tripsAfterPreCommitCrash.single.name, equals('AppStart Recovery Törn'));
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+      expect(uncommittedFile.existsSync(), isFalse);
+      expect(rollbackDir.existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'restore_journal.json')).existsSync(), isFalse);
+
+      // 3. App-Start nach Crash NACH SQLite-Commit, aber VOR Finalisierung (Post-Commit):
+      // SQLite hat `_provy_restore_state` mit Token 'committed_token_100', neue Datei liegt in receipts/,
+      // aber receipts_rollback/ und restore_journal.json sind noch vorhanden.
+      await db.customStatement(
+        'CREATE TABLE IF NOT EXISTS _provy_restore_state ('
+        'id INTEGER PRIMARY KEY CHECK (id = 1), '
+        'restore_token TEXT NOT NULL, '
+        'committed_at TEXT NOT NULL'
+        ')',
+      );
+      await db.customStatement(
+        'INSERT OR REPLACE INTO _provy_restore_state (id, restore_token, committed_at) VALUES (1, ?, ?)',
+        ['committed_token_100', DateTime.now().toIso8601String()],
+      );
+      rollbackDir.createSync(recursive: true);
+      File(p.join(rollbackDir.path, 'stale_old.jpg')).writeAsBytesSync([1, 1, 1]);
+      await freshReceiptService2.writeRestoreJournal(
+        restoreToken: 'committed_token_100',
+        phase: 'promoting',
+        previousReceiptPaths: ['receipts/trip_1/expense_1/stale_old.jpg'],
+        expectedReceiptPaths: [processed.filePath],
+      );
+
+      final freshReceiptService3 = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final container3 = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(freshReceiptService3),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container3.dispose);
+
+      final tripsAfterPostCommitCrash = await container3.read(allTripsProvider.future);
+      expect(tripsAfterPostCommitCrash.single.name, equals('AppStart Recovery Törn'));
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+      expect(rollbackDir.existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'restore_journal.json')).existsSync(), isFalse);
+
+      // 4. Unklarer / nicht eindeutig sicher auflösbarer Zustand nach Crash:
+      // `receipts_rollback/` existiert mit einer Datei, aber `restore_journal.json` ist korrupt.
+      // Weder Roll-Back noch Roll-Forward darf blind ausgeführt werden; keine destruktive Operation!
+      rollbackDir.createSync(recursive: true);
+      final protectedRollbackFile = File(p.join(rollbackDir.path, 'protected_rollback.jpg'));
+      protectedRollbackFile.writeAsBytesSync([4, 5, 6]);
+      final corruptJournalFile = File(p.join(tempDir.path, 'restore_journal.json'));
+      corruptJournalFile.writeAsStringSync('{not-valid-json');
+
+      final freshReceiptService4 = ReceiptFileService(docsDirProvider: () async => tempDir);
+      final container4 = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          receiptFileServiceProvider.overrideWithValue(freshReceiptService4),
+          hullqAuthServiceProvider.overrideWithValue(authService),
+          hullqBackupServiceProvider.overrideWithValue(backupService),
+        ],
+      );
+      addTearDown(container4.dispose);
+
+      // Sowohl App-Start-Provider als auch Daten-Provider und Services melden explizit RestoreRecoveryException
+      await expectLater(
+        container4.read(appStartupRecoveryProvider.future),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      await expectLater(
+        container4.read(allTripsProvider.future),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      await expectLater(
+        container4.read(tripKittyDataProvider(tripId).future),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+      await expectLater(
+        container4.read(backupCoordinatorProvider).createBackup(),
+        throwsA(isA<RestoreRecoveryException>()),
+      );
+
+      // Keine destruktive Operation wurde ausgeführt: sowohl aktive Datei als auch Rollback-Datei sind unversehrt!
+      expect(origFile.existsSync(), isTrue);
+      expect(origFile.readAsBytesSync(), equals(origBytes));
+      expect(protectedRollbackFile.existsSync(), isTrue);
+      expect(protectedRollbackFile.readAsBytesSync(), equals([4, 5, 6]));
     });
   });
 }

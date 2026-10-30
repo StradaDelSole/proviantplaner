@@ -3,7 +3,7 @@
 Slice: RECEIPT1 – Expense Receipts & Settlement Package (Issue #23)  
 Branch: `slice/receipt1-expense-receipts-settlement-package`  
 Basis: `origin/main` (`7bc0e145657411d5b032e168d97958c85c31fc71`)  
-Datum: 17.10.2026 (inkl. Independent Review Amendment 1 & Amendment 2)
+Datum: 17.10.2026 (inkl. Independent Review Amendment 1, Amendment 2 & Final Integrity Amendment 3)
 
 ---
 
@@ -21,22 +21,29 @@ Datum: 17.10.2026 (inkl. Independent Review Amendment 1 & Amendment 2)
    - Keine still verschluckten Dateisystemfehler (`deleteReceiptFile`, `deleteExpenseReceiptFolder`, `deleteTripReceipts`, `purgeTrash` propagieren echte I/O-Fehler).
    - Zeitgestempelter Papierkorb (`.trashed_at` in `receipts_trash`) und automatisches Aufräumen verwaister temporärer Undo-Dateien nach Prozessabbruch (`cleanupExpiredTrash`).
 
-3. **Zwei-Phasen-Staging & Crash-Recovery für Backup-Restore (R1 – Restore-Konsistenz):**
-   - Da SQLite und das Dateisystem keine gemeinsame atomare Betriebssystem-Transaktion besitzen, verwendet Provy ein explizites **Zwei-Phasen-Staging mit Recovery-Journal (`restore_journal.json`)**:
+3. **Zwei-Phasen-Staging, Post-Commit-Finalisierung & App-Start-Recovery für Backup-Restore (R1 + Amendment 3 Findings A & B):**
+   - Da SQLite und das Dateisystem keine gemeinsame atomare Betriebssystem-Transaktion besitzen, trennt Provy den Restore-Ablauf strikt in drei Zustände mit kryptografisch/eindeutig gekoppeltem Commit-Nachweis (`restoreToken` in `restore_journal.json` sowie in der internen SQLite-Tabelle `_provy_restore_state` innerhalb derselben SQLite-Transaktion):
      1. **Pre-Flight-Validierung (vor jeder Änderung):** Prüft alle Belege im Backup auf gültige Zuordnung zu einer existierenden Ausgabe (`expenseId`), Übereinstimmung der `tripId`, gültiges Base64, exakte Übereinstimmung von `byteSize` mit den dekodierten Bytes sowie Dekodierbarkeit als unterstütztes Bildformat (`img.decodeImage`).
-     2. **Phase 1 (innerhalb der SQLite-Transaktion `_db.transaction`, vor `COMMIT`):** Nach dem Einfügen aller Datensätze und dem Schreiben der neuen Belegdateien in `receipts_staging_active/` wird `restore_journal.json` mit der Liste aller erwarteten neuen Belegpfade (`expectedReceiptPaths`) geschrieben. Unmittelbar danach – noch vor dem SQLite-`COMMIT` – führt `promoteStagedReceipts()` den Verzeichnistausch durch: Das bisherige `receipts/` wird nach `receipts_rollback/` verschoben und `receipts_staging_active/` wird zu `receipts/`, **ohne** `receipts_rollback/` bereits zu löschen.
-        - Tritt während der Datei-Promotion ein Fehler auf, wirft `promoteStagedReceipts` innerhalb von `_db.transaction`, sodass Drift die SQLite-Transaktion automatisch zurückrollt. Der `catch`-Block ruft `abortRestoreStaging()` auf und stellt `receipts_rollback/` nach `receipts/` wieder her.
-        - Tritt beim anschließenden SQLite-`COMMIT` ein Fehler auf, stellt `abortRestoreStaging()` ebenfalls `receipts_rollback/` nach `receipts/` wieder her.
-     3. **Phase 2 (nach erfolgreichem SQLite-`COMMIT`):** `finalizeRestoreStaging()` löscht `receipts_rollback/`, `restore_journal.json` und temporäre Staging-Ordner.
-     4. **Recovery nach Prozessabbruch / App-Neustart (`recoverInterruptedRestore()`):** Findet die App beim nächsten Start (bzw. vor dem nächsten Backup/Restore) ein `restore_journal.json` oder `receipts_rollback/` vor, gleicht sie die tatsächlich in SQLite committeten `expense_receipts.filePath`-Einträge und die physischen Dateien in `receipts/` mit `expectedReceiptPaths` aus dem Journal ab:
-        - **Fall A (Prozessabbruch vor SQLite-`COMMIT`):** SQLite hat beim erneuten Öffnen automatisch auf den alten Datenbankstand zurückgerollt (`currentDbPaths != expectedReceiptPaths`). `recoverInterruptedRestore()` führt `abortRestoreStaging()` aus und stellt `receipts_rollback/` vollständig nach `receipts/` wieder her (**Roll-Back**).
-        - **Fall B (Prozessabbruch nach SQLite-`COMMIT`, vor Finalize):** SQLite enthält bereits die neuen Datensätze und alle erwarteten Dateien liegen in `receipts/`. `recoverInterruptedRestore()` führt `finalizeRestoreStaging()` aus und entfernt `receipts_rollback/` sowie `restore_journal.json` (**Roll-Forward**).
+     2. **Noch nicht committet (`dbCommitted == false` innerhalb von `_db.transaction`):** Nach dem Schreiben der neuen Datensätze, dem Persistieren des `restoreToken` in `_provy_restore_state` und dem Schreiben der neuen Belegdateien in `receipts_staging_active/` wird `restore_journal.json` (`phase: "promoting"`, `restoreToken`, `previousReceiptPaths`, `expectedReceiptPaths`) geschrieben und `promoteStagedReceipts()` tauscht `receipts/` -> `receipts_rollback/` sowie `receipts_staging_active/` -> `receipts/`. Tritt vor oder während des SQLite-`COMMIT` ein Fehler auf, ist die Rückabwicklung (`abortRestoreStaging()`) zulässig und stellt `receipts_rollback/` vollständig nach `receipts/` wieder her.
+     3. **Erfolgreich committet (`dbCommitted == true` nach Abschluss von `_db.transaction` – Finding A):** Sobald die SQLite-Transaktion committet ist, wird **niemals** mehr `abortRestoreStaging()` aufgerufen (keine Reaktivierung alter Dateien nach DB-Commit). Ab diesem Punkt ist ausschließlich **Roll-Forward** bzw. die sichere, idempotente und wiederholbare Finalisierung (`finalizeRestoreStaging()`) zulässig. Wirft `finalizeRestoreStaging()` einen I/O-Fehler, bleibt der neue Datenbankstand samt allen neuen Bilddateien in `receipts/` unangetastet erhalten; die verbleibenden Rollback-/Journal-Artefakte werden beim nächsten Recovery-Lauf per Roll-Forward bereinigt.
+     4. **App-Start-Recovery & Unklarer Zustand nach Crash (`appStartupRecoveryProvider` / `BackupCoordinator.recoverStorageState` – Finding B):**
+        - `appStartupRecoveryProvider` ist in den produktiven Initialisierungs- und Datenpfad (`ProviantplanerApp`, `allTripsProvider`, `activeBoatProfilesProvider`, `tripByIdProvider`, `tripDaysByIdProvider`, `tripStopsByIdProvider`, `tripCrewByIdProvider` sowie via Single-Flight-Guard `_ensureStorageRecovered()` in `KittyService` und `TripService`) eingebunden und wird pro `ReceiptFileService`-Instanz genau einmal initial ausgeführt, bevor betroffene Daten gelesen oder geändert werden.
+        - **Eindeutiger Post-Commit-Nachweis:** Stimmt das in SQLite committete `_provy_restore_state.restore_token` mit `restore_journal.json` überein (oder ist der DB-Bestand deckungsgleich mit `expectedReceiptPaths` bei Phase `committed`) und liegen alle erwarteten neuen Belegdateien in `receipts/`, führt Recovery deterministisch **Roll-Forward** (`finalizeRestoreStaging()`) aus.
+        - **Eindeutiger Pre-Commit-Nachweis:** Wurde die SQLite-Transaktion vor dem Commit abgebrochen (`dbRestoreToken != journalToken`, `phase != 'committed'`, DB-Bestand deckungsgleich mit `previousReceiptPaths` und vollständiges `receipts_rollback/`), führt Recovery deterministisch **Roll-Back** (`abortRestoreStaging()`) aus.
+        - **Unklarer / widersprüchlicher Zustand nach Crash:** Fehlt bei vorhandenen Rollback-Artefakten ein lesbares Journal oder widersprechen sich DB-Token und vorhandene physische Dateien, wird **niemals blind zurückgerollt** und **keine destruktive Operation** ausgeführt; stattdessen wird explizit `RestoreRecoveryException` geworfen.
 
-4. **Bordkassen- & Attachment-Lifecycle (`KittyService`, `TripService`, R2):**
+4. **Bordkassen- & Attachment-Lifecycle (`KittyService`, `TripService`, R2 + Amendment 3 Findings C & D):**
    - `addReceiptToExpense`: Scheitert das DB-Insert (`expenseDao.addReceipt`), wird die zuvor geschriebene Bilddatei sofort wieder gelöscht, sodass keine verwaiste Datei entsteht.
-   - `deleteReceipt`: Dateilöschfehler werden nicht verschluckt (keine stille DB-Löschung bei Dateifehlern); scheitert das anschließende DB-Delete, wird die gelöschte Datei aus dem Arbeitsspeicher-Backup byte-genau wiederhergestellt.
+   - `deleteReceipt` (**Finding D**):
+     - Prüft den `bool`-Rückgabewert von `receiptFileService.deleteReceiptFile(receipt.filePath)`.
+     - **Explizit dokumentierte Architekturentscheidung für defekte Beleg-Referenzen:** Fehlt die physische Datei eines in der Datenbank registrierten Belegs (`fileDeleted == false`), wird im regulären Löschpfad **keine** normale vollständige Löschung gemeldet, sondern explizit `ReceiptFileMissingOnDeleteException` geworfen (der DB-Eintrag bleibt für Diagnose/Recovery erhalten). Für eine gezielte Bereinigung bereits bekannter verwaister Referenzen steht der explizite Parameter `allowBrokenReferenceCleanup: true` zur Verfügung.
+     - Scheitert das anschließende DB-Delete (`expenseDao.deleteReceipt` wirft oder gibt `<= 0` zurück), wird die zuvor gelöschte physische Datei aus dem Arbeitsspeicher-Backup (`writeReceiptBytesAtPath`) byte-genau wiederhergestellt.
    - `deleteExpense` & `restoreExpense`: Transaktionale und dateisystemseitige Rollbacks bei I/O- oder DB-Fehlern; automatisches Aufräumen abgelaufener Papierkorb-Einträge (`cleanupExpiredTrash`) nach App-Crash.
-   - `TripService.deleteTrip`: Nutzt ein Rollback-Staging (`stageTripDeleteRollback` / `finalizeTripDeleteRollback` / `restoreTripDeleteRollback`) innerhalb einer DB-Transaktion und propagiert Bereinigungsfehler statt sie zu verschlucken.
+   - `TripService.deleteTrip` (**Finding C**):
+     - Löscht die letzte wiederherstellbare Kopie der Törn-Belege **nicht** vor dem DB-Commit: Vor der DB-Transaktion hält `stageTripDeleteRollback(tripId)` die Belege in `receipts_trip_rollback/trip_<id>` zurück (bei Fehler vor DB-Commit sofortiger Rollback via `restoreTripDeleteRollback`).
+     - Erst **nach** erfolgreichem DB-Commit (`_db.transaction`) entfernt `finalizeTripDeleteRollback(tripId)` die zurückgehaltenen Dateien endgültig.
+     - Schlägt diese nachgelagerte Bereinigung nach erfolgreichem DB-Commit fehl, werden die Dateien des bereits gelöschten Törns **nicht** wieder in `receipts/` reaktiviert und es wird **kein** DB-Rollback vorgetäuscht; stattdessen wirft `deleteTrip` explizit `TripDeleteCleanupException(tripId: tripId, tripDeletedInDb: true, cause: e)`.
+     - Nach einem Prozessabbruch während `deleteTrip` gleicht `BackupCoordinator.recoverStorageState` beim nächsten App-Start `receipts_trip_rollback/trip_<id>` gegen SQLite ab: Existiert der Törn noch in der DB (Crash vor DB-Commit), werden die Belege via `restoreTripDeleteRollback` wiederhergestellt; ist der Törn bereits gelöscht (Crash nach DB-Commit), wird `receipts_trip_rollback/trip_<id>` via `finalizeTripDeleteRollback` final bereinigt.
    - Finanzmathematische Invarianz: Belegfotos verändern den FIX-B Ledger, Salden, Anteile oder Ausgleichszahlungen in keiner Weise.
 
 5. **Multi-File PDF-Abrechnungspaket & PDF-Splitting (`PdfExportService`, R4):**
@@ -59,6 +66,7 @@ Datum: 17.10.2026 (inkl. Independent Review Amendment 1 & Amendment 2)
 
 - `docs/impl/RECEIPT1_release_reconciliation_2026-10-17.md`
 - `docs/impl/RECEIPT1_bericht.md`
+- `lib/main.dart`
 - `lib/core/database/tables.dart`
 - `lib/core/database/app_database.dart`
 - `lib/core/database/daos.dart`
@@ -97,19 +105,19 @@ Datum: 17.10.2026 (inkl. Independent Review Amendment 1 & Amendment 2)
 ---
 
 ## flutter test
-Gezielt ausgeführte Tests für RECEIPT1 (inkl. Amendment 1 & Amendment 2):
+Gezielt ausgeführte Tests für RECEIPT1 (inkl. Amendment 1, Amendment 2 & Final Integrity Amendment 3):
 - `test/core/database/migration_test.dart`: 4 Tests – alle bestanden.
 - `test/core/services/receipt_file_service_test.dart`: 10 Tests – alle bestanden.
 - `test/core/services/pdf_receipts_package_test.dart`: 10 Tests (inkl. R4: automatisches PDF-Splitting anhand realer PDF-Bytegröße ohne fehlende/doppelte Seiten, Bereinigung temporärer Export-Verzeichnisse) – alle bestanden.
-- `test/core/services/backup_coordinator_test.dart`: 12 Tests (inkl. R1: Fehler-Injektion während Datei-Promotion nach Preflight mit vollständigem DB- und Datei-Rollback, Prozessabbruch-/App-Neustart-Recovery für Roll-Back & Roll-Forward; R3: Ablehnung verwaister `expenseId`, Nicht-Bild-Base64 und `byteSize`-Abweichung) – alle bestanden.
-- `test/features/kitty/receipt_attachment_lifecycle_test.dart`: 14 Tests (inkl. R2: Rollback bei `addReceiptToExpense`-DB-Fehler, Fehlerpropagierung & Datei-Wiederherstellung bei `deleteReceipt`, Fehler-Rollbacks bei `deleteExpense`/`restoreExpense`, TTL-Cleanup verwaister Undo-Dateien nach App-Crash, Fehlerpropagierung & Rollback bei `TripService.deleteTrip`) – alle bestanden.
+- `test/core/services/backup_coordinator_test.dart`: 16 Tests (inkl. R1, R3 sowie Amendment 3 Pflichttest A: Fehler-Injektion in `finalizeRestoreStaging` nach erfolgreichem SQLite-Commit erhält neuen DB-Stand + neue Bilddateien und bereinigt Rest-Artefakte bei nachfolgender Recovery; Amendment 3 Finding A & B: einmalige App-Start-Recovery über `appStartupRecoveryProvider`, Pre-/Post-Commit-Crash-Auflösung und Blockieren unklarer Crash-Zustände via `RestoreRecoveryException` ohne destruktive Operation) – alle bestanden.
+- `test/features/kitty/receipt_attachment_lifecycle_test.dart`: 15 Tests (inkl. R2 sowie Amendment 3 Finding C: `TripService.deleteTrip` hält Belege vor DB-Commit zurück, meldet Post-Commit-Cleanup-Fehler als `TripDeleteCleanupException` und löst Crash vor/nach DB-Commit via Startup-Recovery auf; Amendment 3 Finding D: `KittyService.deleteReceipt` prüft `deleteReceiptFile`-Rückgabewert, wirft `ReceiptFileMissingOnDeleteException` bei fehlender physischer Datei, stellt Datei bei DB-Delete `== 0` wieder her und unterstützt explizites `allowBrokenReferenceCleanup: true`) – alle bestanden.
 - `test/core/services/backup_coordinator_v3_test.dart`: 3 Tests – alle bestanden.
 
-Gesamt: 53 gezielte Tests für RECEIPT1, Amendment 1 und Amendment 2 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf PR #34.
+Gesamt: 58 gezielte Tests für RECEIPT1, Amendment 1, Amendment 2 und Amendment 3 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf PR #34.
 
 ---
 
-## Abnahmekriterien & Review Findings (Amendment 1 & Amendment 2)
+## Abnahmekriterien & Review Findings (Amendment 1, Amendment 2 & Amendment 3)
 
 | Kriterium / Finding | Status | Nachweis |
 |---|---|---|
@@ -124,10 +132,11 @@ Gesamt: 53 gezielte Tests für RECEIPT1, Amendment 1 und Amendment 2 erfolgreich
 | 7. Cloud-Datensicherung Version 3 mit Base64-Belegbildern & relationaler Wiederherstellung inkl. Abwärtskompatibilität v1/v2 | erfüllt | automatischer Test (`test/core/services/backup_coordinator_v3_test.dart`) |
 | 8. Vollständige Lokalisierung (DE, EN, FR, ES, PT, HR) | erfüllt | automatischer Test (`flutter analyze`: 0 Issues; alle Keys in `app_de.arb`, `app_en.arb`, `app_es.arb`, `app_fr.arb`, `app_hr.arb`, `app_pt.arb` synchron vorhanden) |
 | **Finding A–G (Amendment 1)** | erfüllt | automatische Tests in `backup_coordinator_test.dart`, `pdf_receipts_package_test.dart`, `receipt_file_service_test.dart`, `receipt_attachment_lifecycle_test.dart` |
-| **R1 – BLOCKER (Restore-Konsistenz & Crash-Recovery):** Zwei-Phasen-Promotion innerhalb der DB-Transaktion + Journal-Recovery nach Prozessabbruch | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `R1: restoreBackup rollt SQLite UND Dateisystem vollständig zurück, wenn ein Fehler WÄHREND der Datei-Promotion (nach erfolgreicher Preflight-Validierung) auftritt`, `R1: Prozessabbruch / App-Neustart Recovery stellt Konsistenz wieder her (Roll-Back vor DB-Commit & Roll-Forward nach DB-Commit)`) |
-| **R2 – HIGH (Attachment-Lifecycle):** Kein verwaister Beleg bei `addReceiptToExpense`-DB-Fehler, keine verschluckten Löschfehler bei `deleteReceipt` / `deleteTrip`, konsistenter Rollback bei `deleteExpense` / `restoreExpense`, TTL-Cleanup verwaister Undo-Dateien | erfüllt | automatischer Test (`test/features/kitty/receipt_attachment_lifecycle_test.dart`: `R2: addReceiptToExpense löscht die erzeugte Bilddatei sofort, wenn das DB-Insert scheitert (keine verwaiste Datei)`, `R2: deleteReceipt verschluckt Dateilöschfehler NICHT (keine stille DB-Löschung) und stellt die Datei wieder her, falls das DB-Delete scheitert`, `R2: deleteExpense und restoreExpense behandeln Datei- und DB-Fehler konsistent mit Rollback`, `R2: Verwaiste temporäre Undo-Dateien im Papierkorb bleiben nach App-Absturz nicht dauerhaft zurück (TTL-Cleanup)`, `R2: TripService.deleteTrip verschluckt Bereinigungsfehler NICHT und rollt DB + Dateien bei I/O-Fehler zurück`) |
-| **R3 – HIGH (Restore-Vollständigkeit):** Keine still übersprungenen Belege bei fehlender `expenseId`, Bild-Dekodierprüfung, `byteSize`-Abgleich | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `R3: restoreBackup weist verwaiste Belege (fehlende expenseId-Zuordnung), Nicht-Bild-Base64 und byteSize-Abweichungen mit BackupCorruptException zurück`) |
-| **R4 – MEDIUM (PDF-Aufteilung & Temp-Cleanup):** Automatisches Splitten von Multi-Beleg-Chunks anhand realer PDF-Bytegröße (`maxPdfBytes`), Temp-Ordner-Bereinigung | erfüllt | automatischer Test (`test/core/services/pdf_receipts_package_test.dart`: `R4: generateReceiptsPdfs teilt einen Multi-Beleg-Chunk automatisch anhand der tatsächlichen PDF-Bytegröße (maxPdfBytes) ohne fehlende oder doppelte Seiten auf`, `R4: prepareSettlementExportDirectory bereinigt frühere temporäre settlement_export_* Verzeichnisse zuverlässig`) |
+| **R1–R4 (Amendment 2)** | erfüllt | automatische Tests in `backup_coordinator_test.dart`, `receipt_attachment_lifecycle_test.dart`, `pdf_receipts_package_test.dart` |
+| **Amendment 3 – A (BLOCKER: Post-Commit-Finalisierung):** Nach erfolgreichem SQLite-Commit niemals alte Dateien reaktivieren; strikte Trennung Pre-Commit / Post-Commit Roll-Forward / Crash-Recovery mit Commit-Nachweis | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Amendment 3 – Pflichttest A: finalizeRestoreStaging wirft nach erfolgreichem SQLite-Commit eine Exception -> neuer DB-Stand und alle neuen Bilddateien bleiben erhalten, spätere Recovery bereinigt Rest-Artefakte`) |
+| **Amendment 3 – B (HIGH: Recovery beim App-Start):** Einmalige produktive App-Initialisierung (`appStartupRecoveryProvider`) vor Datenzugriff; Pre-/Post-Commit-Crash-Auflösung und nicht-destruktive Blockierung (`RestoreRecoveryException`) bei unklarem Zustand | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Amendment 3 – Finding A & B: App-Start-Recovery über appStartupRecoveryProvider ist einmalig, löst Pre-/Post-Commit-Crash auf und blockiert unklare Zustände ohne destruktive Operation`) |
+| **Amendment 3 – C (HIGH: Trip-Delete):** Letzte wiederherstellbare Belegkopie erst nach DB-Commit löschen; Post-Commit-Cleanup-Fehler als `TripDeleteCleanupException` ohne vorgetäuschten DB-Rollback; Crash-/Restart-Recovery vor/nach DB-Commit | erfüllt | automatischer Test (`test/features/kitty/receipt_attachment_lifecycle_test.dart`: `R2 & Amendment 3 – Finding C: TripService.deleteTrip löscht letzte Belegkopie erst nach DB-Commit, meldet Post-Commit-Cleanup-Fehler als TripDeleteCleanupException und löst Crash vor/nach DB-Commit sauber auf`) |
+| **Amendment 3 – D (HIGH: Einzelbeleg-Löschung):** Prüfung des bool-Rückgabewerts von `deleteReceiptFile`; `ReceiptFileMissingOnDeleteException` bei fehlender physischer Datei; Datei-Wiederherstellung bei DB-Delete `== 0`; expliziter Cleanup-Pfad `allowBrokenReferenceCleanup: true` | erfüllt | automatischer Test (`test/features/kitty/receipt_attachment_lifecycle_test.dart`: `Amendment 3 – Finding D: Einzelbeleg-Löschung prüft Rückgabewert von deleteReceiptFile, meldet fehlende physische Datei als ReceiptFileMissingOnDeleteException und erlaubt explizite Bereinigung defekter Referenzen`) |
 
 ---
 
@@ -142,7 +151,8 @@ Gesamt: 53 gezielte Tests für RECEIPT1, Amendment 1 und Amendment 2 erfolgreich
 
 ## Annahmen / Abweichungen vom PRD
 
-- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`, `docs/impl/RECEIPT1_plan.md`, Amendment 1 (Findings A–G) und Amendment 2 (R1–R4) wurden vollständig umgesetzt.
+- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`, `docs/impl/RECEIPT1_plan.md`, Amendment 1 (Findings A–G), Amendment 2 (R1–R4) und Final Integrity Amendment 3 (Findings A–D) wurden vollständig umgesetzt.
+- **Begründung zur Test-Erweiterung gemäß Programmierregel 7:** Der in Amendment 2 angelegte Test `R2: TripService.deleteTrip...` in `test/features/kitty/receipt_attachment_lifecycle_test.dart` hatte einen `deleteTripReceipts`-Fehler noch innerhalb der DB-Transaktion erwartet. Da Finding C in Amendment 3 vorschreibt, dass die endgültige Dateilöschung (`finalizeTripDeleteRollback` / `deleteTripReceipts`) erst **nach** erfolgreichem DB-Commit erfolgen darf und Post-Commit-Cleanup-Fehler keinen DB-Rollback vortäuschen dürfen, prüft der aktualisierte Test `R2 & Amendment 3 – Finding C` nun sowohl den Pre-Commit-Fehler (`stageTripDeleteRollback` mit vollständigem DB- und Datei-Erhalt), den Crash vor/nach DB-Commit als auch den Post-Commit-Cleanup-Fehler (`deleteTripReceipts` -> `TripDeleteCleanupException(tripDeletedInDb: true)`).
 
 ---
 
@@ -154,7 +164,7 @@ Gesamt: 53 gezielte Tests für RECEIPT1, Amendment 1 und Amendment 2 erfolgreich
 4. **Alles datengetrieben:** Eingehalten.
 5. **Rechnen mit Kommazahlen:** Eingehalten.
 6. **Struktur:** Eingehalten.
-7. **Tests:** Eingehalten.
+7. **Tests:** Eingehalten (inkl. dokumentierter Begründung der Test-Erweiterung für Finding C).
 8. **Keine Eigenbauten von Standards:** Eingehalten.
 9. **Nur berichten, was tatsächlich geschehen ist:** Eingehalten.
 10. **Nichts aus späteren Versionen sichtbar bauen:** Eingehalten.
@@ -171,4 +181,4 @@ Gesamt: 53 gezielte Tests für RECEIPT1, Amendment 1 und Amendment 2 erfolgreich
 
 - Branch: `slice/receipt1-expense-receipts-settlement-package`
 - PR: #34
-- Amendment 2 Commit: `RECEIPT1: Address re-review amendment 2 (R1-R4 restore consistency, lifecycle, completeness & PDF splitting)`
+- Amendment 3 Commit: `RECEIPT1: Address final integrity amendment 3 (A-D post-commit finalization, startup recovery, trip & receipt delete)`

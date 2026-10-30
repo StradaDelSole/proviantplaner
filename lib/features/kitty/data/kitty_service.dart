@@ -5,11 +5,30 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/services/backup_coordinator.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
 import '../domain/calculation/kitty_engine.dart';
 import '../domain/models/kitty_models.dart';
 import '../domain/models/receipt_models.dart';
+
+/// Exception wenn beim Löschen eines einzelnen Belegs die physische Bilddatei
+/// bereits fehlt (defekte Belegreferenz) und keine explizite Referenzbereinigung
+/// (`allowBrokenReferenceCleanup: true`) angefordert wurde (Amendment 3 Finding D).
+class ReceiptFileMissingOnDeleteException implements Exception {
+  final int receiptId;
+  final String filePath;
+
+  const ReceiptFileMissingOnDeleteException({
+    required this.receiptId,
+    required this.filePath,
+  });
+
+  @override
+  String toString() =>
+      'ReceiptFileMissingOnDeleteException: Physische Belegdatei für Beleg $receiptId fehlt ($filePath). '
+      'Keine stille vollständige Löschung gemeldet.';
+}
 
 
 /// Aggregiertes Kassen-Datenobjekt für die Benutzeroberfläche.
@@ -94,12 +113,18 @@ class KittyService {
     this.engine = const KittyEngine(),
   }) : receiptFileService = receiptFileService ?? ReceiptFileService();
 
+  Future<void> _ensureStorageRecovered() async {
+    await BackupCoordinator.recoverStorageState(
+      db: tripDao.attachedDatabase,
+      receiptFileService: receiptFileService,
+    );
+  }
+
   /// Lädt den vollständigen Kassenstand inklusive Salden und Abrechnung.
-  /// Bereinigt dabei automatisch abgelaufene/verwaiste temporäre Undo-Dateien (R2).
+  /// Führt vor dem ersten Datenzugriff die App-/Storage-Recovery (inkl. Papierkorb-TTL) aus (R2, Amendment 3 Finding B).
   Future<TripKittyData> loadKittyData(int tripId) async {
-    try {
-      await receiptFileService.cleanupExpiredTrash();
-    } catch (_) {}
+    await _ensureStorageRecovered();
+    await receiptFileService.cleanupExpiredTrash();
 
     final trip = await tripDao.getTripById(tripId);
     if (trip == null) {
@@ -282,6 +307,7 @@ class KittyService {
 
   /// Erfasst eine neue Ausgabe (SC-KAS-02, RECEIPT1).
   Future<int> addExpense(ExpenseInput input) async {
+    await _ensureStorageRecovered();
     final trip = await tripDao.getTripById(input.tripId);
     final crew = await tripDao.getCrewForTrip(input.tripId);
     _validateExpenseInput(input, crew, trip?.currency);
@@ -356,6 +382,7 @@ class KittyService {
     String? preferredFileName,
     int? sortOrder,
   }) async {
+    await _ensureStorageRecovered();
     final expense = await expenseDao.getExpenseById(expenseId);
     if (expense == null) {
       throw ArgumentError('Ausgabe mit ID $expenseId existiert nicht.');
@@ -412,25 +439,50 @@ class KittyService {
     );
   }
 
-  /// Löscht einen Beleg aus DB und Dateisystem (RECEIPT1 & R2).
-  /// Dateilöschfehler werden nicht verschluckt; scheitert das DB-Delete nach erfolgreichem
-  /// Dateilöschen, wird die Datei wiederhergestellt.
-  Future<bool> deleteReceipt(int receiptId) async {
+  /// Löscht einen Beleg aus DB und Dateisystem (RECEIPT1, R2 & Amendment 3 Finding D).
+  ///
+  /// Dokumentierte Architekturentscheidung für defekte Belegreferenzen (Finding D):
+  /// - `deleteReceiptFile()` liefert `true`, wenn die physische Datei existierte und gelöscht wurde,
+  ///   und `false`, wenn die physische Datei bereits fehlte (defekte Belegreferenz).
+  /// - Im Standardbetrieb ([allowBrokenReferenceCleanup] == `false`) wird bei fehlender physischer Datei
+  ///   KEINE unbemerkte erfolgreiche Löschung gemeldet und der DB-Datensatz nicht still gelöscht,
+  ///   sondern [ReceiptFileMissingOnDeleteException] geworfen.
+  /// - Soll eine bereits als defekt erkannte Belegreferenz gezielt bereinigt werden, kann der Aufrufer
+  ///   explizit `allowBrokenReferenceCleanup: true` übergeben.
+  /// - Scheitert die DB-Löschung (Exception oder `count == 0`), nachdem die physische Datei gelöscht wurde,
+  ///   werden die zuvor gesicherten Datei-Bytes über `writeReceiptBytesAtPath` konsistent wiederhergestellt.
+  Future<bool> deleteReceipt(
+    int receiptId, {
+    bool allowBrokenReferenceCleanup = false,
+  }) async {
+    await _ensureStorageRecovered();
+
     final receipt = await expenseDao.getReceiptById(receiptId);
     if (receipt == null) return false;
 
     final backupBytes = await receiptFileService.readReceiptBytes(receipt.filePath);
-    await receiptFileService.deleteReceiptFile(receipt.filePath);
+    final fileDeleted = await receiptFileService.deleteReceiptFile(receipt.filePath);
+
+    if (!fileDeleted || backupBytes == null) {
+      if (!allowBrokenReferenceCleanup) {
+        throw ReceiptFileMissingOnDeleteException(
+          receiptId: receiptId,
+          filePath: receipt.filePath,
+        );
+      }
+      final count = await expenseDao.deleteReceipt(receiptId);
+      return count > 0;
+    }
 
     try {
       final count = await expenseDao.deleteReceipt(receiptId);
-      return count > 0;
-    } catch (e) {
-      if (backupBytes != null) {
-        try {
-          await receiptFileService.writeReceiptBytesAtPath(receipt.filePath, backupBytes);
-        } catch (_) {}
+      if (count <= 0) {
+        await receiptFileService.writeReceiptBytesAtPath(receipt.filePath, backupBytes);
+        return false;
       }
+      return true;
+    } catch (e) {
+      await receiptFileService.writeReceiptBytesAtPath(receipt.filePath, backupBytes);
       rethrow;
     }
   }
@@ -485,6 +537,7 @@ class KittyService {
   /// in den temporären Papierkorb verschoben; bei [softDelete] = false wird nach
   /// erfolgreichem DB-Delete auch der Papierkorb geleert.
   Future<int> deleteExpense(int id, {bool softDelete = true}) async {
+    await _ensureStorageRecovered();
     final expense = await expenseDao.getExpenseById(id);
     if (expense == null) {
       return expenseDao.deleteExpense(id);

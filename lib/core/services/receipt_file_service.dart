@@ -33,14 +33,57 @@ class ReceiptFileService {
 
   final Future<Directory> Function() getDocsDir;
 
-  /// Optionaler Hook zur gezielten Fehler-Injektion in Tests (R1, R2).
+  /// Optionaler Hook zur gezielten Fehler-Injektion in Tests (R1, R2, Amendment 3 A–D).
   /// Wird vor Dateisystemoperationen mit dem Operationsnamen aufgerufen.
   void Function(String operation)? faultInjector;
+
+  bool _initialRecoveryCompleted = false;
+  int _recoveryExecutionCount = 0;
+  Future<void>? _activeRecoveryFuture;
+
+  /// Gibt an, ob die initiale App-Start-Recovery für diese Instanz erfolgreich abgeschlossen wurde (Finding B).
+  bool get isInitialRecoveryCompleted => _initialRecoveryCompleted;
+
+  /// Anzahl der tatsächlich ausgeführten Recovery-Durchläufe dieser Instanz (für Tests überprüfbar, Finding B).
+  int get recoveryExecutionCount => _recoveryExecutionCount;
 
   ReceiptFileService({
     Future<Directory> Function()? docsDirProvider,
     this.faultInjector,
   }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
+
+  /// Prüft synchron, ob offene Restore- oder Lösch-Rollback-Artefakte auf dem Dateisystem vorliegen (Finding A, B, C).
+  bool hasPendingRecoveryArtifactsSync(Directory docsDir) {
+    if (File(p.join(docsDir.path, 'restore_journal.json')).existsSync()) return true;
+    if (Directory(p.join(docsDir.path, 'receipts_rollback')).existsSync()) return true;
+    if (Directory(p.join(docsDir.path, 'receipts_staging_active')).existsSync()) return true;
+    final tripRollbackRoot = Directory(p.join(docsDir.path, 'receipts_trip_rollback'));
+    if (tripRollbackRoot.existsSync() && tripRollbackRoot.listSync(recursive: false).isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Führt den Recovery-Vorgang Single-Flight (ohne parallele Doppelausführung) aus (Finding B).
+  Future<void> runSingleFlightRecovery(Future<void> Function() task) async {
+    if (_activeRecoveryFuture != null) {
+      return _activeRecoveryFuture!;
+    }
+    final future = () async {
+      _recoveryExecutionCount++;
+      try {
+        await task();
+        _initialRecoveryCompleted = true;
+      } catch (e) {
+        _initialRecoveryCompleted = false;
+        rethrow;
+      } finally {
+        _activeRecoveryFuture = null;
+      }
+    }();
+    _activeRecoveryFuture = future;
+    return future;
+  }
 
   static Future<Directory> _resolveDefaultDocsDir() async {
     if (Platform.environment.containsKey('FLUTTER_TEST')) {
@@ -250,13 +293,14 @@ class ReceiptFileService {
   }
 
   /// Verschiebt alle Belege eines Törns vor einer Törn-Löschung in ein Rollback-Verzeichnis,
-  /// damit bei einem DB- oder I/O-Fehler ein konsistenter Rollback möglich ist (R2).
+  /// damit die letzte wiederherstellbare Kopie bis nach dem erfolgreichen DB-Commit erhalten bleibt (Finding C).
   Future<void> stageTripDeleteRollback(int tripId) async {
     faultInjector?.call('stageTripDeleteRollback');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
-    if (rollbackDir.existsSync()) {
+    if (rollbackDir.existsSync() && activeDir.existsSync()) {
+      _copyDirectorySync(rollbackDir, activeDir);
       rollbackDir.deleteSync(recursive: true);
     }
     if (activeDir.existsSync()) {
@@ -264,19 +308,26 @@ class ReceiptFileService {
     }
   }
 
-  /// Stellt die Belege eines Törns aus dem Rollback-Verzeichnis wieder her, falls `deleteTrip` fehlschlägt (R2).
+  /// Stellt die Belege eines Törns aus dem Rollback-Verzeichnis wieder her, falls `deleteTrip` vor dem DB-Commit fehlschlägt (Finding C).
   Future<void> restoreTripDeleteRollback(int tripId) async {
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
     if (rollbackDir.existsSync()) {
-      await _moveDirectory(rollbackDir, activeDir);
+      if (activeDir.existsSync()) {
+        _copyDirectorySync(rollbackDir, activeDir);
+        rollbackDir.deleteSync(recursive: true);
+      } else {
+        await _moveDirectory(rollbackDir, activeDir);
+      }
     }
+    _cleanEmptyTripRollbackRootSync(docsDir);
   }
 
-  /// Finalisiert die Törn-Löschung im Dateisystem nach erfolgreichem DB-Delete (R2).
+  /// Finalisiert die Törn-Löschung im Dateisystem erst NACH erfolgreichem DB-Commit (Finding C).
   Future<void> finalizeTripDeleteRollback(int tripId) async {
     faultInjector?.call('deleteTripReceipts');
+    faultInjector?.call('finalizeTripDeleteRollback');
     final docsDir = await getDocsDir();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
     if (rollbackDir.existsSync()) {
@@ -286,9 +337,39 @@ class ReceiptFileService {
     if (trashDir.existsSync()) {
       trashDir.deleteSync(recursive: true);
     }
+    _cleanEmptyTripRollbackRootSync(docsDir);
   }
 
-  // --- Zwei-Phasen-Staging, Recovery-Journal & Rollback für Restore (R1) ---
+  /// Gibt alle Trip-IDs zurück, für die noch ein offenes `receipts_trip_rollback/trip_<id>`-Verzeichnis existiert (Finding C).
+  Future<List<int>> listPendingTripDeleteRollbackIds() async {
+    final docsDir = await getDocsDir();
+    final root = Directory(p.join(docsDir.path, 'receipts_trip_rollback'));
+    if (!root.existsSync()) return const [];
+    final ids = <int>[];
+    for (final entity in root.listSync(recursive: false)) {
+      if (entity is Directory) {
+        final name = p.basename(entity.path);
+        if (name.startsWith('trip_')) {
+          final parsed = int.tryParse(name.substring('trip_'.length));
+          if (parsed != null) {
+            ids.add(parsed);
+          }
+        }
+      }
+    }
+    return ids;
+  }
+
+  void _cleanEmptyTripRollbackRootSync(Directory docsDir) {
+    final root = Directory(p.join(docsDir.path, 'receipts_trip_rollback'));
+    if (root.existsSync() && root.listSync(recursive: false).isEmpty) {
+      try {
+        root.deleteSync(recursive: true);
+      } catch (_) {}
+    }
+  }
+
+  // --- Zwei-Phasen-Staging, Recovery-Journal & Rollback für Restore (R1, Finding A & B) ---
 
   /// Bereitet das Staging-Verzeichnis für einen Backup-Restore vor.
   Future<Directory> prepareStagingDirectory() async {
@@ -325,18 +406,42 @@ class ReceiptFileService {
     return file;
   }
 
-  /// Schreibt das Restore-Recovery-Journal vor der Datei-Promotion und dem SQLite-Commit (R1).
+  /// Schreibt das Restore-Recovery-Journal vor der Datei-Promotion und dem SQLite-Commit (R1, Finding A & B).
   Future<void> writeRestoreJournal({
     required List<String> expectedReceiptPaths,
+    String? restoreToken,
+    String phase = 'promoting',
+    List<String>? previousReceiptPaths,
   }) async {
     faultInjector?.call('writeRestoreJournal');
     final docsDir = await getDocsDir();
     final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
-    final payload = jsonEncode({
+    final map = <String, dynamic>{
       'timestamp': DateTime.now().toIso8601String(),
+      'phase': phase,
       'expectedReceiptPaths': expectedReceiptPaths,
-    });
-    journalFile.writeAsStringSync(payload, flush: true);
+    };
+    if (restoreToken != null) {
+      map['restoreToken'] = restoreToken;
+    }
+    if (previousReceiptPaths != null) {
+      map['previousReceiptPaths'] = previousReceiptPaths;
+    }
+    journalFile.writeAsStringSync(jsonEncode(map), flush: true);
+  }
+
+  /// Markiert das Recovery-Journal nach erfolgreichem SQLite-Commit ausdrücklich als `committed` (Finding A).
+  Future<void> markRestoreJournalCommitted({
+    required String restoreToken,
+    required List<String> expectedReceiptPaths,
+    List<String>? previousReceiptPaths,
+  }) async {
+    await writeRestoreJournal(
+      expectedReceiptPaths: expectedReceiptPaths,
+      restoreToken: restoreToken,
+      phase: 'committed',
+      previousReceiptPaths: previousReceiptPaths,
+    );
   }
 
   /// Liest das Restore-Recovery-Journal, falls ein unterbrochener Restore vorliegt (R1).

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Final Integrity Amendment 3 (Findings A–D)
+
+- **A – BLOCKER (Post-Commit-Finalisierung in `BackupCoordinator.restoreBackup()`):**
+  - Strikte Trennung des Restore-Ablaufs in drei Phasen anhand von `dbCommitted` und dem in SQLite (`_provy_restore_state`) sowie in `restore_journal.json` gespeicherten `restoreToken`:
+    - *Noch nicht committet (`dbCommitted == false`):* Rückabwicklung via `abortRestoreStaging()` ist zulässig.
+    - *Erfolgreich committet (`dbCommitted == true`):* **Niemals** werden nach einem erfolgreichen SQLite-Commit die alten Dateien via `abortRestoreStaging()` reaktiviert; ab diesem Punkt ist ausschließlich **Roll-Forward** bzw. die idempotente, wiederholbare Finalisierung (`finalizeRestoreStaging()`) zulässig.
+    - *Unklarer Zustand nach Crash:* Recovery prüft den belastbaren Commit-Nachweis (`_provy_restore_state` vs. `restore_journal.json`) und rollt bei fehlendem/widersprüchlichem Nachweis niemals blind zurück (`RestoreRecoveryException` ohne destruktive Operation).
+- **B – HIGH (Recovery beim App-Start):**
+  - Einbindung von `BackupCoordinator.recoverStorageState()` in den produktiven App-Initialisierungs- und Datenpfad (`appStartupRecoveryProvider` in `ProviantplanerApp`, `allTripsProvider`, `activeBoatProfilesProvider`, `tripByIdProvider` usw. sowie Single-Flight-Guard `_ensureStorageRecovered()` in `KittyService` und `TripService`).
+  - Einmalige initiale Ausführung pro `ReceiptFileService`-Instanz vor dem Lesen oder Ändern betroffener Daten; Pre-Commit- und Post-Commit-Crash-Zustände werden deterministisch aufgelöst, unklare Zustände nicht-destruktiv mit `RestoreRecoveryException` gemeldet.
+- **C – HIGH (`TripService.deleteTrip` & Crash-/Post-Commit-Sicherheit):**
+  - `TripService.deleteTrip()` löscht die letzte wiederherstellbare Kopie der Törn-Belege erst **nach** erfolgreichem DB-Commit (`stageTripDeleteRollback` vor der DB-Transaktion, `finalizeTripDeleteRollback` nach dem DB-Commit).
+  - Nachgelagerte Bereinigungsfehler nach erfolgreichem DB-Commit werfen `TripDeleteCleanupException(tripId: tripId, tripDeletedInDb: true)`, ohne einen DB-Rollback vorzutäuschen oder gelöschte Törn-Dateien wieder in `receipts/` zu aktivieren.
+  - App-Start-Recovery (`recoverStorageState`) löst einen Prozessabbruch vor bzw. nach dem DB-Commit von `deleteTrip` deterministisch anhand der Törn-Existenz in SQLite auf.
+- **D – HIGH (`KittyService.deleteReceipt` & defekte Belegreferenzen):**
+  - `KittyService.deleteReceipt()` wertet den `bool`-Rückgabewert von `receiptFileService.deleteReceiptFile()` aus.
+  - Fehlt die physische Datei eines registrierten Belegs (`!fileDeleted`), wird keine normale vollständige Löschung gemeldet, sondern `ReceiptFileMissingOnDeleteException` geworfen (explizite Bereinigung verwaister Referenzen über `allowBrokenReferenceCleanup: true`).
+  - Scheitert die DB-Löschung (`expenseDao.deleteReceipt` wirft oder gibt `<= 0` zurück), wird die physische Datei byte-genau wiederhergestellt.
+
 ## 2026-10-17 – RECEIPT1 Independent Re-Review Amendment 2 (R1–R4)
 
 - **R1 – BLOCKER (Restore-Konsistenz & Crash-Recovery):**

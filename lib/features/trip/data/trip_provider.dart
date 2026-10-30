@@ -4,6 +4,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'boat_profile_service.dart';
@@ -48,6 +49,7 @@ final boatProfileServiceProvider = Provider<BoatProfileService>((ref) {
 
 /// Provider für alle aktiven Bootsprofile.
 final activeBoatProfilesProvider = FutureProvider<List<BoatProfile>>((ref) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final service = ref.watch(boatProfileServiceProvider);
   return service.getActiveProfiles();
 });
@@ -57,12 +59,14 @@ final activeTripIdProvider = StateProvider<int?>((ref) => null);
 
 /// Provider für alle Törns.
 final allTripsProvider = FutureProvider<List<Trip>>((ref) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final dao = ref.watch(tripDaoProvider);
   return dao.getAllTrips();
 });
 
 /// Provider für den aktuell aktiven Törn.
 final activeTripProvider = FutureProvider<Trip?>((ref) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final tripId = ref.watch(activeTripIdProvider);
   if (tripId == null) {
     final all = await ref.watch(allTripsProvider.future);
@@ -98,24 +102,28 @@ final activeTripCrewProvider = FutureProvider<List<CrewMember>>((ref) async {
 
 /// Provider für einen Törn nach ID (FB2-B).
 final tripByIdProvider = FutureProvider.family<Trip?, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final dao = ref.watch(tripDaoProvider);
   return dao.getTripById(tripId);
 });
 
 /// Provider für die Tage eines Törns nach ID (FB2-B).
 final tripDaysByIdProvider = FutureProvider.family<List<TripDay>, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final dao = ref.watch(tripDaoProvider);
   return dao.getDaysForTrip(tripId);
 });
 
 /// Provider für die Einkaufsstopps eines Törns nach ID (FB2-B).
 final tripStopsByIdProvider = FutureProvider.family<List<ShoppingStop>, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final dao = ref.watch(tripDaoProvider);
   return dao.getShoppingStopsForTrip(tripId);
 });
 
 /// Provider für die Crew eines Törns nach ID (PIVOT2).
 final tripCrewByIdProvider = FutureProvider.family<List<CrewMember>, int>((ref, tripId) async {
+  await ref.watch(appStartupRecoveryProvider.future);
   final dao = ref.watch(tripDaoProvider);
   return dao.getCrewForTrip(tripId);
 });

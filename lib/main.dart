@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/app_router.dart';
+import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/core/theme/theme_controller.dart';
 
@@ -23,6 +24,8 @@ class ProviantplanerApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Einmaligen App-Start-Recovery-Initializer anstoßen (RECEIPT1 Amendment 3 Finding B)
+    ref.watch(appStartupRecoveryProvider);
     final router = ref.watch(appRouterProvider);
     final appThemeMode = ref.watch(themeControllerProvider);
 

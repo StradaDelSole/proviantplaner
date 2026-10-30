@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/services/backup_coordinator.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
 import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
@@ -18,6 +19,7 @@ import 'package:proviantplaner/features/trip/data/trip_service.dart';
 class _FaultyExpenseDao extends ExpenseDao {
   bool failNextAddReceipt = false;
   bool failNextDeleteReceipt = false;
+  bool returnZeroNextDeleteReceipt = false;
   bool failNextDeleteExpense = false;
   bool failNextAddExpense = false;
 
@@ -37,6 +39,10 @@ class _FaultyExpenseDao extends ExpenseDao {
     if (failNextDeleteReceipt) {
       failNextDeleteReceipt = false;
       throw StateError('Simulated DB failure in deleteReceipt');
+    }
+    if (returnZeroNextDeleteReceipt) {
+      returnZeroNextDeleteReceipt = false;
+      return 0;
     }
     return super.deleteReceipt(id);
   }
@@ -639,7 +645,7 @@ void main() {
     expect(await trashDir.exists(), isFalse);
   });
 
-  test('R2: TripService.deleteTrip verschluckt Bereinigungsfehler NICHT und rollt DB + Dateien bei I/O-Fehler zurück', () async {
+  test('R2 & Amendment 3 – Finding C: TripService.deleteTrip löscht letzte Belegkopie erst nach DB-Commit, meldet Post-Commit-Cleanup-Fehler als TripDeleteCleanupException und löst Crash vor/nach DB-Commit sauber auf', () async {
     final photo = createDummyJpeg(100, 100, img.ColorRgb8(33, 66, 99));
     final expenseId = await kittyService.addExpense(
       ExpenseInput(
@@ -666,10 +672,10 @@ void main() {
       receiptFileService: receiptFileService,
     );
 
-    // Injiziere I/O-Fehler beim finalen Löschen der Törn-Belege
+    // 1. Pre-Commit-Fehler beim Zurückhalten der Dateien -> weder DB noch letzte Belegkopie werden gelöscht!
     receiptFileService.faultInjector = (op) {
-      if (op == 'deleteTripReceipts') {
-        throw const FileSystemException('Simulated I/O failure during trip receipt deletion');
+      if (op == 'stageTripDeleteRollback') {
+        throw const FileSystemException('Simulated I/O failure before DB commit');
       }
     };
 
@@ -679,9 +685,104 @@ void main() {
     );
     receiptFileService.faultInjector = null;
 
-    // Törn, Ausgabe und Belegdatei sind dank Rollback konsistent erhalten geblieben!
     expect(await db.tripDao.getTripById(tripId), isNotNull);
     expect(await receiptFile.exists(), isTrue);
     expect(await receiptFile.readAsBytes(), equals(origBytes));
+
+    // 2. Simulierter Prozessabbruch VOR DB-Commit (stageTripDeleteRollback abgeschlossen, aber Törn noch in DB):
+    // Beim Neustart erkennt recoverStorageState den noch existierenden Törn und stellt die Belegdateien wieder her.
+    await receiptFileService.stageTripDeleteRollback(tripId);
+    expect(await receiptFile.exists(), isFalse);
+    final rollbackDir = Directory(p.join(tempDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
+    expect(await rollbackDir.exists(), isTrue);
+
+    await BackupCoordinator.recoverStorageState(
+      db: db,
+      receiptFileService: receiptFileService,
+    );
+    expect(await receiptFile.exists(), isTrue);
+    expect(await receiptFile.readAsBytes(), equals(origBytes));
+    expect(await rollbackDir.exists(), isFalse);
+
+    // 3. Post-Commit-Cleanup-Fehler (DB-Commit erfolgreich, aber finalizeTripDeleteRollback / deleteTripReceipts wirft Fehler):
+    // Wirft TripDeleteCleanupException(tripDeletedInDb: true), täuscht KEINEN DB-Rollback vor und stellt gelöschte Dateien NICHT aktiv wieder her!
+    receiptFileService.faultInjector = (op) {
+      if (op == 'deleteTripReceipts') {
+        throw const FileSystemException('Simulated I/O failure during post-commit trip receipt cleanup');
+      }
+    };
+
+    await expectLater(
+      tripService.deleteTrip(tripId),
+      throwsA(
+        isA<TripDeleteCleanupException>()
+            .having((e) => e.tripId, 'tripId', tripId)
+            .having((e) => e.tripDeletedInDb, 'tripDeletedInDb', isTrue),
+      ),
+    );
+    receiptFileService.faultInjector = null;
+
+    expect(await db.tripDao.getTripById(tripId), isNull);
+    expect(await receiptFile.exists(), isFalse);
+    expect(await rollbackDir.exists(), isTrue);
+
+    // 4. Beim nächsten App-Start / Recovery-Lauf nach dem DB-Commit wird das verbleibende Rollback-Verzeichnis sauber final entfernt:
+    await BackupCoordinator.recoverStorageState(
+      db: db,
+      receiptFileService: receiptFileService,
+    );
+    expect(await rollbackDir.exists(), isFalse);
+  });
+
+  test('Amendment 3 – Finding D: Einzelbeleg-Löschung prüft Rückgabewert von deleteReceiptFile, meldet fehlende physische Datei als ReceiptFileMissingOnDeleteException und erlaubt explizite Bereinigung defekter Referenzen', () async {
+    final photo = createDummyJpeg(85, 85, img.ColorRgb8(45, 90, 135));
+    final expenseId = await kittyService.addExpense(
+      ExpenseInput(
+        tripId: tripId,
+        title: 'Ausgabe für Finding D',
+        amountInCents: 2200,
+        currency: 'EUR',
+        category: ExpenseCategory.provisions,
+        paidByMemberId: member1Id,
+        isPaidFromKitty: false,
+        draftReceipts: [DraftReceipt(bytes: photo, fileName: 'finding_d.jpg')],
+      ),
+    );
+
+    final receipt = (await db.expenseDao.getReceiptsForExpense(expenseId)).single;
+    final receiptFile = File(p.join(tempDir.path, receipt.filePath));
+    final origBytes = await receiptFile.readAsBytes();
+
+    // 1. Wenn deleteReceipt in der DB 0 gelöschte Zeilen zurückgibt (ohne Exception), wird die physische Datei wiederhergestellt
+    faultyExpenseDao.returnZeroNextDeleteReceipt = true;
+    final deletedWhenDbZero = await kittyService.deleteReceipt(receipt.id);
+    expect(deletedWhenDbZero, isFalse);
+    expect(await db.expenseDao.getReceiptById(receipt.id), isNotNull);
+    expect(await receiptFile.exists(), isTrue);
+    expect(await receiptFile.readAsBytes(), equals(origBytes));
+
+    // 2. Fehlt die physische Datei eines registrierten Belegs auf dem Dateisystem, gibt deleteReceiptFile false zurück:
+    // Standardaufruf meldet KEINE normale vollständige Löschung, sondern wirft ReceiptFileMissingOnDeleteException!
+    await receiptFile.delete();
+    expect(await receiptFile.exists(), isFalse);
+
+    await expectLater(
+      kittyService.deleteReceipt(receipt.id),
+      throwsA(
+        isA<ReceiptFileMissingOnDeleteException>()
+            .having((e) => e.receiptId, 'receiptId', receipt.id)
+            .having((e) => e.filePath, 'filePath', receipt.filePath),
+      ),
+    );
+    // DB-Referenz wurde nicht stillschweigend als normal gelöscht behandelt
+    expect(await db.expenseDao.getReceiptById(receipt.id), isNotNull);
+
+    // 3. Expliziter Reparaturpfad (allowBrokenReferenceCleanup: true) bereinigt die bereits verwaiste DB-Referenz gezielt
+    final cleanedUp = await kittyService.deleteReceipt(
+      receipt.id,
+      allowBrokenReferenceCleanup: true,
+    );
+    expect(cleanedUp, isTrue);
+    expect(await db.expenseDao.getReceiptById(receipt.id), isNull);
   });
 }

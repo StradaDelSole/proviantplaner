@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
+import 'package:proviantplaner/core/services/backup_coordinator.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
@@ -24,6 +25,26 @@ class CrewMemberHasFinancialHistoryException implements Exception {
   @override
   String toString() =>
       'CrewMemberHasFinancialHistoryException: Crew-Mitglied $crewMemberId hat Finanzhistorie in Törn $tripId.';
+}
+
+/// Exception wenn ein Törn in der Datenbank erfolgreich gelöscht (committet) wurde,
+/// die anschließende Nachbereinigung der zurückgehaltenen Belegdateien jedoch fehlschlug (Amendment 3 Finding C).
+/// Suggeriert ausdrücklich KEINEN Datenbank-Rollback ([tripDeletedInDb] ist immer `true`).
+class TripDeleteCleanupException implements Exception {
+  final int tripId;
+  final bool tripDeletedInDb;
+  final Object cause;
+
+  const TripDeleteCleanupException({
+    required this.tripId,
+    this.tripDeletedInDb = true,
+    required this.cause,
+  });
+
+  @override
+  String toString() =>
+      'TripDeleteCleanupException(tripId: $tripId, tripDeletedInDb: $tripDeletedInDb): '
+      'Törn wurde in SQLite gelöscht, aber die Datei-Nachbereinigung schlug fehl: $cause';
 }
 
 class TripService {
@@ -552,20 +573,31 @@ class TripService {
     await recalculateTrip(tripId);
   }
 
-  /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem (RECEIPT1 Finding D & R2).
-  /// Dateilösch- oder Bereinigungsfehler werden nicht still verschluckt; scheitert die Dateisystem-Bereinigung
-  /// oder das DB-Delete, wird die Transaktion samt Dateisystem zurückgerollt.
+  /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem
+  /// (RECEIPT1 Finding D, R2 & Amendment 3 Finding C).
+  ///
+  /// Ablauf:
+  /// 1. Belegdateien werden vorab sicher in `receipts_trip_rollback/trip_<id>` zurückgehalten;
+  ///    die letzte wiederherstellbare Kopie wird niemals vor dem erfolgreichen DB-Commit gelöscht.
+  /// 2. Erst wird die Datenbank-Löschung committet. Scheitert das DB-Delete vor dem Commit,
+  ///    werden die zurückgehaltenen Dateien wieder nach `receipts/trip_<id>` hergestellt.
+  /// 3. Erst NACH erfolgreichem DB-Commit erfolgt die endgültige Datei-Nachbereinigung.
+  ///    Scheitert diese Nachbereinigung, werden die Dateien nicht wieder in `receipts/` aktiviert
+  ///    und es wird [TripDeleteCleanupException] (`tripDeletedInDb: true`) geworfen, sodass
+  ///    kein vollständiger DB-Rollback suggeriert wird. Beim nächsten Start/Recovery wird
+  ///    das verbliebene Rollback-Verzeichnis automatisch bereinigt.
   Future<bool> deleteTrip(int tripId) async {
+    await BackupCoordinator.recoverStorageState(
+      db: tripDao.attachedDatabase,
+      receiptFileService: receiptFileService,
+    );
+
     await receiptFileService.stageTripDeleteRollback(tripId);
+
+    int deletedCount = 0;
     try {
-      return await tripDao.attachedDatabase.transaction(() async {
-        final count = await tripDao.deleteTrip(tripId);
-        if (count > 0) {
-          await receiptFileService.finalizeTripDeleteRollback(tripId);
-          return true;
-        }
-        await receiptFileService.restoreTripDeleteRollback(tripId);
-        return false;
+      deletedCount = await tripDao.attachedDatabase.transaction(() async {
+        return await tripDao.deleteTrip(tripId);
       });
     } catch (e) {
       try {
@@ -573,5 +605,22 @@ class TripService {
       } catch (_) {}
       rethrow;
     }
+
+    if (deletedCount <= 0) {
+      await receiptFileService.restoreTripDeleteRollback(tripId);
+      return false;
+    }
+
+    try {
+      await receiptFileService.finalizeTripDeleteRollback(tripId);
+    } catch (e) {
+      throw TripDeleteCleanupException(
+        tripId: tripId,
+        tripDeletedInDb: true,
+        cause: e,
+      );
+    }
+
+    return true;
   }
 }
