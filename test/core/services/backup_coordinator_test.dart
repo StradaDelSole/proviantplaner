@@ -2128,7 +2128,7 @@ void main() {
       await authService.loginWithEmail('deletetrip-concurrency@example.com', newsletterOptIn: false);
 
       // 1. Erstelle Backup für späteren parallelen Restore
-      final backupTripId = await seedCompleteTrip(db, 'Backup-Törn Nach Delete');
+      await seedCompleteTrip(db, 'Backup-Törn Nach Delete');
       await coordinator.createBackup();
 
       // 2. Erstelle zwei lokale Törns; Törn 1 hat einen Beleg und soll gelöscht werden
