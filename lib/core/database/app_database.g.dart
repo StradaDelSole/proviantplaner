@@ -5285,6 +5285,464 @@ class KittyPaymentsCompanion extends UpdateCompanion<KittyPayment> {
   }
 }
 
+class $ExpenseReceiptsTable extends ExpenseReceipts
+    with TableInfo<$ExpenseReceiptsTable, ExpenseReceipt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExpenseReceiptsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _expenseIdMeta =
+      const VerificationMeta('expenseId');
+  @override
+  late final GeneratedColumn<int> expenseId = GeneratedColumn<int>(
+      'expense_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES expenses (id) ON DELETE CASCADE'));
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+      'trip_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trips (id) ON DELETE CASCADE'));
+  static const VerificationMeta _filePathMeta =
+      const VerificationMeta('filePath');
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+      'file_path', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fileNameMeta =
+      const VerificationMeta('fileName');
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+      'file_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _byteSizeMeta =
+      const VerificationMeta('byteSize');
+  @override
+  late final GeneratedColumn<int> byteSize = GeneratedColumn<int>(
+      'byte_size', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _mimeTypeMeta =
+      const VerificationMeta('mimeType');
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+      'mime_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('image/jpeg'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        expenseId,
+        tripId,
+        filePath,
+        fileName,
+        sortOrder,
+        byteSize,
+        mimeType,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'expense_receipts';
+  @override
+  VerificationContext validateIntegrity(Insertable<ExpenseReceipt> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('expense_id')) {
+      context.handle(_expenseIdMeta,
+          expenseId.isAcceptableOrUnknown(data['expense_id']!, _expenseIdMeta));
+    } else if (isInserting) {
+      context.missing(_expenseIdMeta);
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(_tripIdMeta,
+          tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta));
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(_filePathMeta,
+          filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta));
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(_fileNameMeta,
+          fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    if (data.containsKey('byte_size')) {
+      context.handle(_byteSizeMeta,
+          byteSize.isAcceptableOrUnknown(data['byte_size']!, _byteSizeMeta));
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(_mimeTypeMeta,
+          mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExpenseReceipt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExpenseReceipt(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      expenseId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}expense_id'])!,
+      tripId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trip_id'])!,
+      filePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_path'])!,
+      fileName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      byteSize: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}byte_size'])!,
+      mimeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mime_type'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ExpenseReceiptsTable createAlias(String alias) {
+    return $ExpenseReceiptsTable(attachedDatabase, alias);
+  }
+}
+
+class ExpenseReceipt extends DataClass implements Insertable<ExpenseReceipt> {
+  final int id;
+  final int expenseId;
+  final int tripId;
+  final String filePath;
+  final String fileName;
+  final int sortOrder;
+  final int byteSize;
+  final String mimeType;
+  final DateTime createdAt;
+  const ExpenseReceipt(
+      {required this.id,
+      required this.expenseId,
+      required this.tripId,
+      required this.filePath,
+      required this.fileName,
+      required this.sortOrder,
+      required this.byteSize,
+      required this.mimeType,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['expense_id'] = Variable<int>(expenseId);
+    map['trip_id'] = Variable<int>(tripId);
+    map['file_path'] = Variable<String>(filePath);
+    map['file_name'] = Variable<String>(fileName);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['byte_size'] = Variable<int>(byteSize);
+    map['mime_type'] = Variable<String>(mimeType);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ExpenseReceiptsCompanion toCompanion(bool nullToAbsent) {
+    return ExpenseReceiptsCompanion(
+      id: Value(id),
+      expenseId: Value(expenseId),
+      tripId: Value(tripId),
+      filePath: Value(filePath),
+      fileName: Value(fileName),
+      sortOrder: Value(sortOrder),
+      byteSize: Value(byteSize),
+      mimeType: Value(mimeType),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ExpenseReceipt.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExpenseReceipt(
+      id: serializer.fromJson<int>(json['id']),
+      expenseId: serializer.fromJson<int>(json['expenseId']),
+      tripId: serializer.fromJson<int>(json['tripId']),
+      filePath: serializer.fromJson<String>(json['filePath']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      byteSize: serializer.fromJson<int>(json['byteSize']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'expenseId': serializer.toJson<int>(expenseId),
+      'tripId': serializer.toJson<int>(tripId),
+      'filePath': serializer.toJson<String>(filePath),
+      'fileName': serializer.toJson<String>(fileName),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'byteSize': serializer.toJson<int>(byteSize),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ExpenseReceipt copyWith(
+          {int? id,
+          int? expenseId,
+          int? tripId,
+          String? filePath,
+          String? fileName,
+          int? sortOrder,
+          int? byteSize,
+          String? mimeType,
+          DateTime? createdAt}) =>
+      ExpenseReceipt(
+        id: id ?? this.id,
+        expenseId: expenseId ?? this.expenseId,
+        tripId: tripId ?? this.tripId,
+        filePath: filePath ?? this.filePath,
+        fileName: fileName ?? this.fileName,
+        sortOrder: sortOrder ?? this.sortOrder,
+        byteSize: byteSize ?? this.byteSize,
+        mimeType: mimeType ?? this.mimeType,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ExpenseReceipt copyWithCompanion(ExpenseReceiptsCompanion data) {
+    return ExpenseReceipt(
+      id: data.id.present ? data.id.value : this.id,
+      expenseId: data.expenseId.present ? data.expenseId.value : this.expenseId,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      byteSize: data.byteSize.present ? data.byteSize.value : this.byteSize,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseReceipt(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('tripId: $tripId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, expenseId, tripId, filePath, fileName,
+      sortOrder, byteSize, mimeType, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseReceipt &&
+          other.id == this.id &&
+          other.expenseId == this.expenseId &&
+          other.tripId == this.tripId &&
+          other.filePath == this.filePath &&
+          other.fileName == this.fileName &&
+          other.sortOrder == this.sortOrder &&
+          other.byteSize == this.byteSize &&
+          other.mimeType == this.mimeType &&
+          other.createdAt == this.createdAt);
+}
+
+class ExpenseReceiptsCompanion extends UpdateCompanion<ExpenseReceipt> {
+  final Value<int> id;
+  final Value<int> expenseId;
+  final Value<int> tripId;
+  final Value<String> filePath;
+  final Value<String> fileName;
+  final Value<int> sortOrder;
+  final Value<int> byteSize;
+  final Value<String> mimeType;
+  final Value<DateTime> createdAt;
+  const ExpenseReceiptsCompanion({
+    this.id = const Value.absent(),
+    this.expenseId = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.byteSize = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ExpenseReceiptsCompanion.insert({
+    this.id = const Value.absent(),
+    required int expenseId,
+    required int tripId,
+    required String filePath,
+    required String fileName,
+    this.sortOrder = const Value.absent(),
+    this.byteSize = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : expenseId = Value(expenseId),
+        tripId = Value(tripId),
+        filePath = Value(filePath),
+        fileName = Value(fileName);
+  static Insertable<ExpenseReceipt> custom({
+    Expression<int>? id,
+    Expression<int>? expenseId,
+    Expression<int>? tripId,
+    Expression<String>? filePath,
+    Expression<String>? fileName,
+    Expression<int>? sortOrder,
+    Expression<int>? byteSize,
+    Expression<String>? mimeType,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (expenseId != null) 'expense_id': expenseId,
+      if (tripId != null) 'trip_id': tripId,
+      if (filePath != null) 'file_path': filePath,
+      if (fileName != null) 'file_name': fileName,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (byteSize != null) 'byte_size': byteSize,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ExpenseReceiptsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? expenseId,
+      Value<int>? tripId,
+      Value<String>? filePath,
+      Value<String>? fileName,
+      Value<int>? sortOrder,
+      Value<int>? byteSize,
+      Value<String>? mimeType,
+      Value<DateTime>? createdAt}) {
+    return ExpenseReceiptsCompanion(
+      id: id ?? this.id,
+      expenseId: expenseId ?? this.expenseId,
+      tripId: tripId ?? this.tripId,
+      filePath: filePath ?? this.filePath,
+      fileName: fileName ?? this.fileName,
+      sortOrder: sortOrder ?? this.sortOrder,
+      byteSize: byteSize ?? this.byteSize,
+      mimeType: mimeType ?? this.mimeType,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (expenseId.present) {
+      map['expense_id'] = Variable<int>(expenseId.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (byteSize.present) {
+      map['byte_size'] = Variable<int>(byteSize.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExpenseReceiptsCompanion(')
+          ..write('id: $id, ')
+          ..write('expenseId: $expenseId, ')
+          ..write('tripId: $tripId, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('byteSize: $byteSize, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5298,6 +5756,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ListItemAllocationsTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
   late final $KittyPaymentsTable kittyPayments = $KittyPaymentsTable(this);
+  late final $ExpenseReceiptsTable expenseReceipts =
+      $ExpenseReceiptsTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ListItemDao listItemDao = ListItemDao(this as AppDatabase);
   late final ExpenseDao expenseDao = ExpenseDao(this as AppDatabase);
@@ -5316,7 +5776,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         listItems,
         listItemAllocations,
         expenses,
-        kittyPayments
+        kittyPayments,
+        expenseReceipts
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -5403,6 +5864,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('kitty_payments', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('expenses',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('expense_receipts', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trips',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('expense_receipts', kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -5954,6 +6429,23 @@ final class $$TripsTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$ExpenseReceiptsTable, List<ExpenseReceipt>>
+      _expenseReceiptsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.expenseReceipts,
+              aliasName:
+                  $_aliasNameGenerator(db.trips.id, db.expenseReceipts.tripId));
+
+  $$ExpenseReceiptsTableProcessedTableManager get expenseReceiptsRefs {
+    final manager =
+        $$ExpenseReceiptsTableTableManager($_db, $_db.expenseReceipts)
+            .filter((f) => f.tripId.id($_item.id));
+
+    final cache =
+        $_typedResult.readTableOrNull(_expenseReceiptsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
@@ -6219,6 +6711,27 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
             $$KittyPaymentsTableFilterComposer(
               $db: $db,
               $table: $db.kittyPayments,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> expenseReceiptsRefs(
+      Expression<bool> Function($$ExpenseReceiptsTableFilterComposer f) f) {
+    final $$ExpenseReceiptsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.expenseReceipts,
+        getReferencedColumn: (t) => t.tripId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpenseReceiptsTableFilterComposer(
+              $db: $db,
+              $table: $db.expenseReceipts,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -6608,6 +7121,27 @@ class $$TripsTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> expenseReceiptsRefs<T extends Object>(
+      Expression<T> Function($$ExpenseReceiptsTableAnnotationComposer a) f) {
+    final $$ExpenseReceiptsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.expenseReceipts,
+        getReferencedColumn: (t) => t.tripId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpenseReceiptsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.expenseReceipts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager extends RootTableManager<
@@ -6629,7 +7163,8 @@ class $$TripsTableTableManager extends RootTableManager<
         bool listItemsRefs,
         bool listItemAllocationsRefs,
         bool expensesRefs,
-        bool kittyPaymentsRefs})> {
+        bool kittyPaymentsRefs,
+        bool expenseReceiptsRefs})> {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
       : super(TableManagerState(
           db: db,
@@ -6772,7 +7307,8 @@ class $$TripsTableTableManager extends RootTableManager<
               listItemsRefs = false,
               listItemAllocationsRefs = false,
               expensesRefs = false,
-              kittyPaymentsRefs = false}) {
+              kittyPaymentsRefs = false,
+              expenseReceiptsRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
@@ -6782,7 +7318,8 @@ class $$TripsTableTableManager extends RootTableManager<
                 if (listItemsRefs) db.listItems,
                 if (listItemAllocationsRefs) db.listItemAllocations,
                 if (expensesRefs) db.expenses,
-                if (kittyPaymentsRefs) db.kittyPayments
+                if (kittyPaymentsRefs) db.kittyPayments,
+                if (expenseReceiptsRefs) db.expenseReceipts
               ],
               addJoins: <
                   T extends TableManagerState<
@@ -6892,6 +7429,18 @@ class $$TripsTableTableManager extends RootTableManager<
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.tripId == item.id),
+                        typedResults: items),
+                  if (expenseReceiptsRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable: $$TripsTableReferences
+                            ._expenseReceiptsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$TripsTableReferences(db, table, p0)
+                                .expenseReceiptsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.tripId == item.id),
                         typedResults: items)
                 ];
               },
@@ -6919,7 +7468,8 @@ typedef $$TripsTableProcessedTableManager = ProcessedTableManager<
         bool listItemsRefs,
         bool listItemAllocationsRefs,
         bool expensesRefs,
-        bool kittyPaymentsRefs})>;
+        bool kittyPaymentsRefs,
+        bool expenseReceiptsRefs})>;
 typedef $$TripDaysTableCreateCompanionBuilder = TripDaysCompanion Function({
   Value<int> id,
   required int tripId,
@@ -9134,6 +9684,23 @@ final class $$ExpensesTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
   }
+
+  static MultiTypedResultKey<$ExpenseReceiptsTable, List<ExpenseReceipt>>
+      _expenseReceiptsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.expenseReceipts,
+              aliasName: $_aliasNameGenerator(
+                  db.expenses.id, db.expenseReceipts.expenseId));
+
+  $$ExpenseReceiptsTableProcessedTableManager get expenseReceiptsRefs {
+    final manager =
+        $$ExpenseReceiptsTableTableManager($_db, $_db.expenseReceipts)
+            .filter((f) => f.expenseId.id($_item.id));
+
+    final cache =
+        $_typedResult.readTableOrNull(_expenseReceiptsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$ExpensesTableFilterComposer
@@ -9210,6 +9777,27 @@ class $$ExpensesTableFilterComposer
                   $removeJoinBuilderFromRootComposer,
             ));
     return composer;
+  }
+
+  Expression<bool> expenseReceiptsRefs(
+      Expression<bool> Function($$ExpenseReceiptsTableFilterComposer f) f) {
+    final $$ExpenseReceiptsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.expenseReceipts,
+        getReferencedColumn: (t) => t.expenseId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpenseReceiptsTableFilterComposer(
+              $db: $db,
+              $table: $db.expenseReceipts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
   }
 }
 
@@ -9360,6 +9948,27 @@ class $$ExpensesTableAnnotationComposer
             ));
     return composer;
   }
+
+  Expression<T> expenseReceiptsRefs<T extends Object>(
+      Expression<T> Function($$ExpenseReceiptsTableAnnotationComposer a) f) {
+    final $$ExpenseReceiptsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.expenseReceipts,
+        getReferencedColumn: (t) => t.expenseId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpenseReceiptsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.expenseReceipts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$ExpensesTableTableManager extends RootTableManager<
@@ -9373,7 +9982,8 @@ class $$ExpensesTableTableManager extends RootTableManager<
     $$ExpensesTableUpdateCompanionBuilder,
     (Expense, $$ExpensesTableReferences),
     Expense,
-    PrefetchHooks Function({bool tripId, bool paidByCrewMemberId})> {
+    PrefetchHooks Function(
+        {bool tripId, bool paidByCrewMemberId, bool expenseReceiptsRefs})> {
   $$ExpensesTableTableManager(_$AppDatabase db, $ExpensesTable table)
       : super(TableManagerState(
           db: db,
@@ -9437,10 +10047,14 @@ class $$ExpensesTableTableManager extends RootTableManager<
                   (e.readTable(table), $$ExpensesTableReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: (
-              {tripId = false, paidByCrewMemberId = false}) {
+              {tripId = false,
+              paidByCrewMemberId = false,
+              expenseReceiptsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [
+                if (expenseReceiptsRefs) db.expenseReceipts
+              ],
               addJoins: <
                   T extends TableManagerState<
                       dynamic,
@@ -9478,7 +10092,20 @@ class $$ExpensesTableTableManager extends RootTableManager<
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (expenseReceiptsRefs)
+                    await $_getPrefetchedData(
+                        currentTable: table,
+                        referencedTable: $$ExpensesTableReferences
+                            ._expenseReceiptsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ExpensesTableReferences(db, table, p0)
+                                .expenseReceiptsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.expenseId == item.id),
+                        typedResults: items)
+                ];
               },
             );
           },
@@ -9496,7 +10123,8 @@ typedef $$ExpensesTableProcessedTableManager = ProcessedTableManager<
     $$ExpensesTableUpdateCompanionBuilder,
     (Expense, $$ExpensesTableReferences),
     Expense,
-    PrefetchHooks Function({bool tripId, bool paidByCrewMemberId})>;
+    PrefetchHooks Function(
+        {bool tripId, bool paidByCrewMemberId, bool expenseReceiptsRefs})>;
 typedef $$KittyPaymentsTableCreateCompanionBuilder = KittyPaymentsCompanion
     Function({
   Value<int> id,
@@ -9839,6 +10467,408 @@ typedef $$KittyPaymentsTableProcessedTableManager = ProcessedTableManager<
     (KittyPayment, $$KittyPaymentsTableReferences),
     KittyPayment,
     PrefetchHooks Function({bool tripId, bool crewMemberId})>;
+typedef $$ExpenseReceiptsTableCreateCompanionBuilder = ExpenseReceiptsCompanion
+    Function({
+  Value<int> id,
+  required int expenseId,
+  required int tripId,
+  required String filePath,
+  required String fileName,
+  Value<int> sortOrder,
+  Value<int> byteSize,
+  Value<String> mimeType,
+  Value<DateTime> createdAt,
+});
+typedef $$ExpenseReceiptsTableUpdateCompanionBuilder = ExpenseReceiptsCompanion
+    Function({
+  Value<int> id,
+  Value<int> expenseId,
+  Value<int> tripId,
+  Value<String> filePath,
+  Value<String> fileName,
+  Value<int> sortOrder,
+  Value<int> byteSize,
+  Value<String> mimeType,
+  Value<DateTime> createdAt,
+});
+
+final class $$ExpenseReceiptsTableReferences extends BaseReferences<
+    _$AppDatabase, $ExpenseReceiptsTable, ExpenseReceipt> {
+  $$ExpenseReceiptsTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $ExpensesTable _expenseIdTable(_$AppDatabase db) =>
+      db.expenses.createAlias(
+          $_aliasNameGenerator(db.expenseReceipts.expenseId, db.expenses.id));
+
+  $$ExpensesTableProcessedTableManager get expenseId {
+    final manager = $$ExpensesTableTableManager($_db, $_db.expenses)
+        .filter((f) => f.id($_item.expenseId));
+    final item = $_typedResult.readTableOrNull(_expenseIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) => db.trips.createAlias(
+      $_aliasNameGenerator(db.expenseReceipts.tripId, db.trips.id));
+
+  $$TripsTableProcessedTableManager get tripId {
+    final manager = $$TripsTableTableManager($_db, $_db.trips)
+        .filter((f) => f.id($_item.tripId));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$ExpenseReceiptsTableFilterComposer
+    extends Composer<_$AppDatabase, $ExpenseReceiptsTable> {
+  $$ExpenseReceiptsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get byteSize => $composableBuilder(
+      column: $table.byteSize, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+      column: $table.mimeType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  $$ExpensesTableFilterComposer get expenseId {
+    final $$ExpensesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.expenseId,
+        referencedTable: $db.expenses,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpensesTableFilterComposer(
+              $db: $db,
+              $table: $db.expenses,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.tripId,
+        referencedTable: $db.trips,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$TripsTableFilterComposer(
+              $db: $db,
+              $table: $db.trips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExpenseReceiptsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExpenseReceiptsTable> {
+  $$ExpenseReceiptsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+      column: $table.filePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+      column: $table.fileName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get byteSize => $composableBuilder(
+      column: $table.byteSize, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+      column: $table.mimeType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  $$ExpensesTableOrderingComposer get expenseId {
+    final $$ExpensesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.expenseId,
+        referencedTable: $db.expenses,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpensesTableOrderingComposer(
+              $db: $db,
+              $table: $db.expenses,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.tripId,
+        referencedTable: $db.trips,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$TripsTableOrderingComposer(
+              $db: $db,
+              $table: $db.trips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExpenseReceiptsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExpenseReceiptsTable> {
+  $$ExpenseReceiptsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<int> get byteSize =>
+      $composableBuilder(column: $table.byteSize, builder: (column) => column);
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ExpensesTableAnnotationComposer get expenseId {
+    final $$ExpensesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.expenseId,
+        referencedTable: $db.expenses,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExpensesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.expenses,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.tripId,
+        referencedTable: $db.trips,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$TripsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.trips,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExpenseReceiptsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ExpenseReceiptsTable,
+    ExpenseReceipt,
+    $$ExpenseReceiptsTableFilterComposer,
+    $$ExpenseReceiptsTableOrderingComposer,
+    $$ExpenseReceiptsTableAnnotationComposer,
+    $$ExpenseReceiptsTableCreateCompanionBuilder,
+    $$ExpenseReceiptsTableUpdateCompanionBuilder,
+    (ExpenseReceipt, $$ExpenseReceiptsTableReferences),
+    ExpenseReceipt,
+    PrefetchHooks Function({bool expenseId, bool tripId})> {
+  $$ExpenseReceiptsTableTableManager(
+      _$AppDatabase db, $ExpenseReceiptsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExpenseReceiptsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExpenseReceiptsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExpenseReceiptsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> expenseId = const Value.absent(),
+            Value<int> tripId = const Value.absent(),
+            Value<String> filePath = const Value.absent(),
+            Value<String> fileName = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<int> byteSize = const Value.absent(),
+            Value<String> mimeType = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ExpenseReceiptsCompanion(
+            id: id,
+            expenseId: expenseId,
+            tripId: tripId,
+            filePath: filePath,
+            fileName: fileName,
+            sortOrder: sortOrder,
+            byteSize: byteSize,
+            mimeType: mimeType,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int expenseId,
+            required int tripId,
+            required String filePath,
+            required String fileName,
+            Value<int> sortOrder = const Value.absent(),
+            Value<int> byteSize = const Value.absent(),
+            Value<String> mimeType = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ExpenseReceiptsCompanion.insert(
+            id: id,
+            expenseId: expenseId,
+            tripId: tripId,
+            filePath: filePath,
+            fileName: fileName,
+            sortOrder: sortOrder,
+            byteSize: byteSize,
+            mimeType: mimeType,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$ExpenseReceiptsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({expenseId = false, tripId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (expenseId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.expenseId,
+                    referencedTable:
+                        $$ExpenseReceiptsTableReferences._expenseIdTable(db),
+                    referencedColumn:
+                        $$ExpenseReceiptsTableReferences._expenseIdTable(db).id,
+                  ) as T;
+                }
+                if (tripId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.tripId,
+                    referencedTable:
+                        $$ExpenseReceiptsTableReferences._tripIdTable(db),
+                    referencedColumn:
+                        $$ExpenseReceiptsTableReferences._tripIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ExpenseReceiptsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ExpenseReceiptsTable,
+    ExpenseReceipt,
+    $$ExpenseReceiptsTableFilterComposer,
+    $$ExpenseReceiptsTableOrderingComposer,
+    $$ExpenseReceiptsTableAnnotationComposer,
+    $$ExpenseReceiptsTableCreateCompanionBuilder,
+    $$ExpenseReceiptsTableUpdateCompanionBuilder,
+    (ExpenseReceipt, $$ExpenseReceiptsTableReferences),
+    ExpenseReceipt,
+    PrefetchHooks Function({bool expenseId, bool tripId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9861,4 +10891,6 @@ class $AppDatabaseManager {
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$KittyPaymentsTableTableManager get kittyPayments =>
       $$KittyPaymentsTableTableManager(_db, _db.kittyPayments);
+  $$ExpenseReceiptsTableTableManager get expenseReceipts =>
+      $$ExpenseReceiptsTableTableManager(_db, _db.expenseReceipts);
 }

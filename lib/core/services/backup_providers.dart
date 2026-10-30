@@ -4,6 +4,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
 import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
+import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'backup_coordinator.dart';
 import 'hullq_backup_service.dart';
 
@@ -19,14 +20,26 @@ final hullqBackupServiceProvider = Provider<HullqBackupService>((ref) {
 
 /// Provider für den [BackupCoordinator].
 final backupCoordinatorProvider = Provider<BackupCoordinator>((ref) {
-  final db = ref.watch(databaseProvider);
+  final db = ref.watch(tripDaoProvider).attachedDatabase;
   final backupService = ref.watch(hullqBackupServiceProvider);
   final authService = ref.watch(hullqAuthServiceProvider);
+  final receiptFileService = ref.watch(receiptFileServiceProvider);
   return BackupCoordinator(
     db: db,
     backupService: backupService,
     authService: authService,
+    receiptFileService: receiptFileService,
   );
+});
+
+/// Einmalig beim App-Start ausgeführter, überprüfbarer Recovery-Pfad (RECEIPT1 Amendment 3 Finding B).
+/// Stellt vor dem ersten Lesen oder Ändern betroffener Daten sicher, dass ein offener
+/// Restore- oder Lösch-Zustand entweder konsistent bereinigt (Roll-Back vor SQLite-Commit
+/// bzw. Roll-Forward nach SQLite-Commit) oder bei unklarem Zustand explizit mit
+/// [RestoreRecoveryException] als nicht verfügbar gemeldet wird.
+final appStartupRecoveryProvider = FutureProvider<void>((ref) async {
+  final coordinator = ref.watch(backupCoordinatorProvider);
+  await coordinator.recoverInterruptedRestore();
 });
 
 /// Provider für den Zeitstempel der letzten Sicherung.

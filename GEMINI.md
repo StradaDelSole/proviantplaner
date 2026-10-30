@@ -33,6 +33,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.27 | 17.10.2026 | PIVOT2 nach FIX-B/DATA1/WATER1 reconciliert und als einziger Implementierungsslice freigegeben |
 | v0.28 | 17.10.2026 | PIVOT2 Owner Acceptance: COMPLETE; Issues #26, #7, #8 geschlossen; kein Folgeslice freigegeben |
 | v0.29 | 30.10.2026 | Owner-accepted Architecture-First-Engineering-Standard, verpflichtendes zweistufiges High-Risk-Gate; RECEIPT1-Status reconciliiert |
+| v0.30 | 30.10.2026 | RECEIPT1 technische Owner Acceptance nach Independent Review, manueller Store-v1-Gate offen; Phase A für BACKEND-CORE vorbereitet |
 
 ## Verbindlicher Engineering-Prozess ab 30.10.2026
 
@@ -65,7 +66,7 @@ Verbindliche aktuelle Daten-/Domainwahrheit:
 - WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
 - PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-**RECEIPT1 ist am 30.10.2026 vom Owner zur Implementierung freigegeben worden; PR #34 ist offen und NICHT gemergt.** Stand der letzten verifizierten unabhängigen Prüfung: PR-HEAD `34fa2dce32dd634435705b3d30d8c36b2d368e29`, GitHub Actions 41102054917 SUCCESS; Amendment 4 E/F geschlossen. Das Concurrency-Finding G bleibt im Review. **Vor seiner Implementierung ist Phase A (Operationskoordination/Restore vs. Recovery) verbindlich.** Dies ist ein datierter Hinweis; live PR-HEAD und Owner-Status beim Sitzungsstart neu prüfen.
+**RECEIPT1 ist am 30.10.2026 vom Owner nach unabhängigem Exact-HEAD-Review zur Integration akzeptiert worden.** Geprüfter PR #34-Implementierungsstand `fb74f4cfcd039fca0c1cfa59b36a074ffa7b987c`, GitHub Actions 41124052591 SUCCESS (478 Flutter-, 21 Backend-Tests); Findings A–G geschlossen. Merge-/Issue-Status stets live prüfen. **Manuelle Kamera-/Galerie- und native Share-/Mail-Gerätetests sind weiterhin OFFENE Store-v1-Gates, nicht als ausgeführt melden.** Acceptance: `docs/impl/RECEIPT1_owner_acceptance_2026-10-30.md`. Dieser Status ersetzt nicht die aktuelle GitHub-Wahrheit.
 
 **Kein weiterer Feature-Slice nach RECEIPT1 ist freigegeben.**
 

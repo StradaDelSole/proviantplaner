@@ -220,3 +220,16 @@ class KittyPayments extends Table {
   RealColumn get amount => real()();
   DateTimeColumn get paidAt => dateTime().withDefault(currentDateAndTime)();
 }
+
+/// 9. ExpenseReceipt: Belegfotos zu einer Ausgabe (RECEIPT1).
+class ExpenseReceipts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get expenseId => integer().references(Expenses, #id, onDelete: KeyAction.cascade)();
+  IntColumn get tripId => integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+  TextColumn get filePath => text()(); // Relativer Pfad im App-Dokumentenverzeichnis
+  TextColumn get fileName => text()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  IntColumn get byteSize => integer().withDefault(const Constant(0))();
+  TextColumn get mimeType => text().withDefault(const Constant('image/jpeg'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}

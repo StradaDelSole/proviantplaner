@@ -4,6 +4,7 @@ library;
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
+import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/calculation_result.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/provisioning_review_engine.dart';
@@ -114,93 +115,108 @@ class ShoppingListService {
     this.onTripDataChanged,
   });
 
+  Future<T> _runGuarded<T>(String operationName, Future<T> Function() action) {
+    return tripService.runGuarded<T>(action, operationName: operationName);
+  }
+
+  void _notifyTripDataChanged(int tripId) {
+    final callback = onTripDataChanged;
+    if (callback != null) {
+      StorageOperationCoordinator.runOutsideOperationZoneSync(() {
+        callback(tripId);
+      });
+    }
+  }
+
   /// Lädt alle Vorräte, Gruppierungen und Zuordnungen für den angegebenen Törn.
   Future<TripShoppingListData> loadShoppingList(int tripId) async {
-    final trip = await tripDao.getTripById(tripId);
-    if (trip == null) {
-      throw ArgumentError('Törn mit ID $tripId wurde nicht gefunden.');
-    }
+    return _runGuarded('loadShoppingList', () async {
+      final trip = await tripDao.getTripById(tripId);
+      if (trip == null) {
+        throw ArgumentError('Törn mit ID $tripId wurde nicht gefunden.');
+      }
 
-    final stops = await tripDao.getShoppingStopsForTrip(tripId);
-    final rawItems = await listItemDao.getListItemsForTrip(tripId);
+      final stops = await tripDao.getShoppingStopsForTrip(tripId);
+      final rawItems = await listItemDao.getListItemsForTrip(tripId);
 
-    if (catalogRepository.catalog == null) {
-      await catalogRepository.loadFromBundle();
-    }
-    final catalog = catalogRepository.catalog!;
+      if (catalogRepository.catalog == null) {
+        await catalogRepository.loadFromBundle();
+      }
+      final catalog = catalogRepository.catalog!;
 
-    final allAllocations = await (listItemDao.select(listItemDao.listItemAllocations)
-          ..where((tbl) => tbl.tripId.equals(tripId)))
-        .get();
+      final allAllocations = await (listItemDao.select(listItemDao.listItemAllocations)
+            ..where((tbl) => tbl.tripId.equals(tripId)))
+          .get();
 
-    final allocationsByItem = <int, Map<int, ListItemAllocation>>{};
-    for (final alloc in allAllocations) {
-      allocationsByItem.putIfAbsent(alloc.listItemId, () => {})[alloc.shoppingStopId] = alloc;
-    }
+      final allocationsByItem = <int, Map<int, ListItemAllocation>>{};
+      for (final alloc in allAllocations) {
+        allocationsByItem.putIfAbsent(alloc.listItemId, () => {})[alloc.shoppingStopId] = alloc;
+      }
 
-    final days = await tripDao.getDaysForTrip(tripId);
-    final crew = await tripDao.getCrewForTrip(tripId);
+      final days = await tripDao.getDaysForTrip(tripId);
+      final crew = await tripDao.getCrewForTrip(tripId);
 
-    TripCalculationResult? calcResult;
-    if (catalogRepository.quantities != null) {
-      final engine = QuantityEngine(
-        catalog: catalog,
-        quantities: catalogRepository.quantities!,
-      );
-      final tripDayInputs = days.map((d) => TripDayInput(
-        dayNumber: d.dayNumber,
-        isLunchRestaurant: d.lunchRestaurant,
-        isEveningRestaurant: d.dinnerRestaurant,
-      )).toList();
-      final crewInputs = crew.map((c) => CrewMemberInput(
-        id: c.id.toString(),
-        name: c.name,
-        isAdult: !c.isChild,
-        isVegetarian: c.isVegetarian,
-        noAlcohol: c.isNonDrinker,
-        customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
-        customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
-      )).toList();
-      final userItemStates = <String, UserItemState>{};
-      for (final it in rawItems) {
-        userItemStates[it.catalogId] = UserItemState(
-          isSelected: it.selected,
-          share: it.share,
-          customPackSize: it.customPackageSize,
+      TripCalculationResult? calcResult;
+      if (catalogRepository.quantities != null) {
+        final engine = QuantityEngine(
+          catalog: catalog,
+          quantities: catalogRepository.quantities!,
+        );
+        final tripDayInputs = days.map((d) => TripDayInput(
+          dayNumber: d.dayNumber,
+          isLunchRestaurant: d.lunchRestaurant,
+          isEveningRestaurant: d.dinnerRestaurant,
+        )).toList();
+        final crewInputs = crew.map((c) => CrewMemberInput(
+          id: c.id.toString(),
+          name: c.name,
+          isAdult: !c.isChild,
+          isVegetarian: c.isVegetarian,
+          noAlcohol: c.isNonDrinker,
+          customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
+          customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
+        )).toList();
+        final userItemStates = <String, UserItemState>{};
+        for (final it in rawItems) {
+          userItemStates[it.catalogId] = UserItemState(
+            isSelected: it.selected,
+            share: it.share,
+            customPackSize: it.customPackageSize,
+          );
+        }
+        calcResult = engine.calculateTrip(
+          QuantityCalculationInput(
+            daysCount: trip.daysCount,
+            climate: trip.climate,
+            region: trip.climate,
+            fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
+            hasFreezer: trip.hasFreezer,
+            freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
+            waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
+            isWaterTankDrinkable: trip.isWaterTankDrinkable,
+            hasWatermaker: trip.hasWatermaker,
+            crewAppetite: trip.appetite,
+            crewReserve: trip.reserveDays == 'all_anchoring_days',
+            crewDrinking: trip.drinkingHabit,
+            tripDays: tripDayInputs,
+            crewMembers: crewInputs,
+            userItemStates: userItemStates,
+          ),
         );
       }
-      calcResult = engine.calculateTrip(
-        QuantityCalculationInput(
-          daysCount: trip.daysCount,
-          climate: trip.climate,
-          region: trip.climate,
-          fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
-          hasFreezer: trip.hasFreezer,
-          freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
-          waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
-          isWaterTankDrinkable: trip.isWaterTankDrinkable,
-          hasWatermaker: trip.hasWatermaker,
-          crewAppetite: trip.appetite,
-          crewReserve: trip.reserveDays == 'all_anchoring_days',
-          crewDrinking: trip.drinkingHabit,
-          tripDays: tripDayInputs,
-          crewMembers: crewInputs,
-          userItemStates: userItemStates,
-        ),
+
+      final itemViews = _buildItemViews(rawItems, catalog, allocationsByItem, calcResult);
+      final categories = _buildCategoryViews(catalog, itemViews, calcResult);
+      final departments = _buildDepartmentViews(itemViews);
+
+      return TripShoppingListData(
+        trip: trip,
+        stops: stops,
+        allItems: itemViews,
+        categories: categories,
+        departments: departments,
       );
-    }
-
-    final itemViews = _buildItemViews(rawItems, catalog, allocationsByItem, calcResult);
-    final categories = _buildCategoryViews(catalog, itemViews, calcResult);
-    final departments = _buildDepartmentViews(itemViews);
-
-    return TripShoppingListData(
-      trip: trip,
-      stops: stops,
-      allItems: itemViews,
-      categories: categories,
-      departments: departments,
-    );
+    });
   }
 
   /// Erzeugt die flache Liste aller ItemViews.
@@ -364,71 +380,85 @@ class ShoppingListService {
 
   /// Erhöht die Packungsanzahl um 1 (+ Stepper). Übernimmt die Position, falls noch nicht auf der Liste.
   Future<void> incrementPackages(ShoppingListItemView itemView) async {
-    if (!itemView.isAdopted) {
-      final initial = itemView.calculatedPackages > 0 ? itemView.calculatedPackages : 1;
-      await listItemDao.adoptItem(itemView.item.id, packages: initial);
-    } else {
-      final next = itemView.effectivePackages + 1;
-      await listItemDao.adoptItem(itemView.item.id, packages: next);
-    }
-    onTripDataChanged?.call(itemView.item.tripId);
+    return _runGuarded('incrementPackages', () async {
+      if (!itemView.isAdopted) {
+        final initial = itemView.calculatedPackages > 0 ? itemView.calculatedPackages : 1;
+        await listItemDao.adoptItem(itemView.item.id, packages: initial);
+      } else {
+        final next = itemView.effectivePackages + 1;
+        await listItemDao.adoptItem(itemView.item.id, packages: next);
+      }
+      _notifyTripDataChanged(itemView.item.tripId);
+    });
   }
 
   /// Verringert die Packungsanzahl um 1 (− Stepper, bei <= 0 wird die Position entfernt).
   Future<void> decrementPackages(ShoppingListItemView itemView) async {
-    final next = itemView.effectivePackages - 1;
-    if (next <= 0) {
-      await listItemDao.unadoptItem(itemView.item.id);
-    } else {
-      await listItemDao.adoptItem(itemView.item.id, packages: next);
-    }
-    onTripDataChanged?.call(itemView.item.tripId);
+    return _runGuarded('decrementPackages', () async {
+      final next = itemView.effectivePackages - 1;
+      if (next <= 0) {
+        await listItemDao.unadoptItem(itemView.item.id);
+      } else {
+        await listItemDao.adoptItem(itemView.item.id, packages: next);
+      }
+      _notifyTripDataChanged(itemView.item.tripId);
+    });
   }
 
   /// Setzt eine manuelle Überschreibung zurück ("zurücksetzen").
   Future<void> resetOverride(ShoppingListItemView itemView) async {
-    await listItemDao.setOverriddenPackages(itemView.item.id, null);
-    onTripDataChanged?.call(itemView.item.tripId);
+    return _runGuarded('resetOverride', () async {
+      await listItemDao.setOverriddenPackages(itemView.item.id, null);
+      _notifyTripDataChanged(itemView.item.tripId);
+    });
   }
 
   /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
   Future<void> setPackages(ShoppingListItemView itemView, int packages) async {
-    if (packages <= 0) {
-      await listItemDao.unadoptItem(itemView.item.id);
-    } else {
-      await listItemDao.adoptItem(itemView.item.id, packages: packages);
-    }
-    onTripDataChanged?.call(itemView.item.tripId);
+    return _runGuarded('setPackages', () async {
+      if (packages <= 0) {
+        await listItemDao.unadoptItem(itemView.item.id);
+      } else {
+        await listItemDao.adoptItem(itemView.item.id, packages: packages);
+      }
+      _notifyTripDataChanged(itemView.item.tripId);
+    });
   }
 
   /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
   Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
-    await listItemDao.adoptItem(listItemId, packages: packages);
-    onTripDataChanged?.call(tripId);
+    return _runGuarded('adoptItem', () async {
+      await listItemDao.adoptItem(listItemId, packages: packages);
+      _notifyTripDataChanged(tripId);
+    });
   }
 
   /// Entfernt eine Position von der Vorratsliste (FB1-B).
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
-    await listItemDao.unadoptItem(listItemId);
-    onTripDataChanged?.call(tripId);
+    return _runGuarded('unadoptItem', () async {
+      await listItemDao.unadoptItem(listItemId);
+      _notifyTripDataChanged(tripId);
+    });
   }
 
   /// Übernimmt alle Vorschläge von Varianten mit default_selected == true (FB1-B).
   Future<void> adoptAllSuggestions(int tripId) async {
-    if (catalogRepository.catalog == null) {
-      await catalogRepository.loadFromBundle();
-    }
-    final catalog = catalogRepository.catalog!;
-    final defaultSelectedIds = catalog.variants
-        .where((v) => v.defaultSelected)
-        .map((v) => v.id)
-        .toSet();
+    return _runGuarded('adoptAllSuggestions', () async {
+      if (catalogRepository.catalog == null) {
+        await catalogRepository.loadFromBundle();
+      }
+      final catalog = catalogRepository.catalog!;
+      final defaultSelectedIds = catalog.variants
+          .where((v) => v.defaultSelected)
+          .map((v) => v.id)
+          .toSet();
 
-    await listItemDao.adoptSuggestions(
-      tripId: tripId,
-      defaultSelectedCatalogIds: defaultSelectedIds,
-    );
-    onTripDataChanged?.call(tripId);
+      await listItemDao.adoptSuggestions(
+        tripId: tripId,
+        defaultSelectedCatalogIds: defaultSelectedIds,
+      );
+      _notifyTripDataChanged(tripId);
+    });
   }
 
   /// Übernimmt alle Vorschläge einer bestimmten Kategorie (FB1-B).
@@ -436,21 +466,23 @@ class ShoppingListService {
     required int tripId,
     required String categoryId,
   }) async {
-    if (catalogRepository.catalog == null) {
-      await catalogRepository.loadFromBundle();
-    }
-    final catalog = catalogRepository.catalog!;
-    final catGroupIds = catalog.groups.where((g) => g.category == categoryId).map((g) => g.id).toSet();
-    final defaultSelectedIds = catalog.variants
-        .where((v) => catGroupIds.contains(v.group) && v.defaultSelected)
-        .map((v) => v.id)
-        .toSet();
+    return _runGuarded('adoptCategorySuggestions', () async {
+      if (catalogRepository.catalog == null) {
+        await catalogRepository.loadFromBundle();
+      }
+      final catalog = catalogRepository.catalog!;
+      final catGroupIds = catalog.groups.where((g) => g.category == categoryId).map((g) => g.id).toSet();
+      final defaultSelectedIds = catalog.variants
+          .where((v) => catGroupIds.contains(v.group) && v.defaultSelected)
+          .map((v) => v.id)
+          .toSet();
 
-    await listItemDao.adoptCategorySuggestions(
-      tripId: tripId,
-      categoryDefaultSelectedIds: defaultSelectedIds,
-    );
-    onTripDataChanged?.call(tripId);
+      await listItemDao.adoptCategorySuggestions(
+        tripId: tripId,
+        categoryDefaultSelectedIds: defaultSelectedIds,
+      );
+      _notifyTripDataChanged(tripId);
+    });
   }
 
   /// Aktualisiert den Prüfstatus einer Position (vorhanden / fehlt / nachkaufen).
@@ -459,8 +491,10 @@ class ShoppingListService {
     required int listItemId,
     required CheckItemState state,
   }) async {
-    await listItemDao.setCheckState(listItemId, state);
-    await tripService.recalculateTrip(tripId);
+    return _runGuarded('updateCheckState', () async {
+      await listItemDao.setCheckState(listItemId, state);
+      await tripService.recalculateTrip(tripId);
+    });
   }
 
   /// Ändert die Packungsgröße und berechnet die Packungszahl neu.
@@ -469,8 +503,10 @@ class ShoppingListService {
     required int listItemId,
     required double packSize,
   }) async {
-    await listItemDao.setCustomPackageSize(listItemId, packSize);
-    await tripService.recalculateTrip(tripId);
+    return _runGuarded('updateCustomPackageSize', () async {
+      await listItemDao.setCustomPackageSize(listItemId, packSize);
+      await tripService.recalculateTrip(tripId);
+    });
   }
 
   /// Schaltet die Auswahl einer Variante an oder aus (FB1-B: Übernehmen / Entfernen).
@@ -479,12 +515,14 @@ class ShoppingListService {
     required int listItemId,
     required bool isSelected,
   }) async {
-    if (isSelected) {
-      await listItemDao.adoptItem(listItemId);
-    } else {
-      await listItemDao.unadoptItem(listItemId);
-    }
-    await tripService.recalculateTrip(tripId);
+    return _runGuarded('toggleVariantSelected', () async {
+      if (isSelected) {
+        await listItemDao.adoptItem(listItemId);
+      } else {
+        await listItemDao.unadoptItem(listItemId);
+      }
+      await tripService.recalculateTrip(tripId);
+    });
   }
 
   /// Aktualisiert den Prozent-Anteil einer Variante.
@@ -493,8 +531,10 @@ class ShoppingListService {
     required int listItemId,
     required double share,
   }) async {
-    await listItemDao.setShare(listItemId, share);
-    await tripService.recalculateTrip(tripId);
+    return _runGuarded('updateVariantShare', () async {
+      await listItemDao.setShare(listItemId, share);
+      await tripService.recalculateTrip(tripId);
+    });
   }
 
   /// Weist einem Einkaufsstopp eine Teilmenge an Packungen zu.
@@ -504,14 +544,16 @@ class ShoppingListService {
     required int shoppingStopId,
     required int packages,
   }) async {
-    final result = await listItemDao.setAllocation(
-      tripId: tripId,
-      listItemId: listItemId,
-      shoppingStopId: shoppingStopId,
-      packages: packages,
-    );
-    onTripDataChanged?.call(tripId);
-    return result;
+    return _runGuarded('allocateToStop', () async {
+      final result = await listItemDao.setAllocation(
+        tripId: tripId,
+        listItemId: listItemId,
+        shoppingStopId: shoppingStopId,
+        packages: packages,
+      );
+      _notifyTripDataChanged(tripId);
+      return result;
+    });
   }
 
   /// Verschiebt Packungen von einem Stopp zu einem anderen Stopp.
@@ -521,24 +563,26 @@ class ShoppingListService {
     required int toStopId,
     required int packagesCount,
   }) async {
-    final currentFromAlloc = it.allocationsByStop[fromStopId]?.allocatedPackages ?? 0;
-    final newFrom = (currentFromAlloc - packagesCount).clamp(0, it.effectivePackages);
-    final currentToAlloc = it.allocationsByStop[toStopId]?.allocatedPackages ?? 0;
-    final newTo = currentToAlloc + packagesCount;
+    return _runGuarded('movePackagesBetweenStops', () async {
+      final currentFromAlloc = it.allocationsByStop[fromStopId]?.allocatedPackages ?? 0;
+      final newFrom = (currentFromAlloc - packagesCount).clamp(0, it.effectivePackages);
+      final currentToAlloc = it.allocationsByStop[toStopId]?.allocatedPackages ?? 0;
+      final newTo = currentToAlloc + packagesCount;
 
-    await listItemDao.setAllocation(
-      tripId: it.item.tripId,
-      listItemId: it.item.id,
-      shoppingStopId: fromStopId,
-      packages: newFrom,
-    );
-    await listItemDao.setAllocation(
-      tripId: it.item.tripId,
-      listItemId: it.item.id,
-      shoppingStopId: toStopId,
-      packages: newTo,
-    );
-    onTripDataChanged?.call(it.item.tripId);
+      await listItemDao.setAllocation(
+        tripId: it.item.tripId,
+        listItemId: it.item.id,
+        shoppingStopId: fromStopId,
+        packages: newFrom,
+      );
+      await listItemDao.setAllocation(
+        tripId: it.item.tripId,
+        listItemId: it.item.id,
+        shoppingStopId: toStopId,
+        packages: newTo,
+      );
+      _notifyTripDataChanged(it.item.tripId);
+    });
   }
 
   /// Verarbeitet nicht gekaufte Artikel eines Einkaufsstopps (FIX-A / Issue #14).
@@ -549,107 +593,111 @@ class ShoppingListService {
     required bool postpone,
     int? targetStopId,
   }) async {
-    final listData = await loadShoppingList(tripId);
-    final currentStop = listData.stops.where((s) => s.id == currentStopId).firstOrNull;
-    if (currentStop == null) return;
+    return _runGuarded('handleUnboughtItems', () async {
+      final listData = await loadShoppingList(tripId);
+      final currentStop = listData.stops.where((s) => s.id == currentStopId).firstOrNull;
+      if (currentStop == null) return;
 
-    final isFirstStop = listData.stops.firstOrNull?.id == currentStopId;
+      final isFirstStop = listData.stops.firstOrNull?.id == currentStopId;
 
-    final unboughtItems = <({ShoppingListItemView item, int unboughtCount})>[];
-    for (final it in listData.allItems) {
-      if (!it.isOnList) continue;
-      final totalOtherAlloc = it.allocationsByStop.entries
-          .where((e) => e.key != currentStopId)
-          .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
-      final countAtStop = it.packagesAtStop(
-        currentStopId,
-        isFirstStop: isFirstStop,
-        totalOtherAllocated: totalOtherAlloc,
-      );
-      final isBought = it.isBoughtAtStop(currentStopId);
-      if (countAtStop > 0 && !isBought) {
-        unboughtItems.add((item: it, unboughtCount: countAtStop));
-      }
-    }
-
-    if (unboughtItems.isEmpty) return;
-
-    if (postpone) {
-      int nextStopId;
-      if (targetStopId != null) {
-        nextStopId = targetStopId;
-      } else {
-        final laterStops = listData.stops.where((s) => s.dayNumber >= currentStop.dayNumber && s.id != currentStopId).toList();
-        if (laterStops.isNotEmpty) {
-          nextStopId = laterStops.first.id;
-        } else {
-          throw StateError('Kein Ziel-Einkaufsstopp für zurückgestellte Posten vorhanden.');
-        }
-      }
-
-      for (final entry in unboughtItems) {
-        final it = entry.item;
-        final unbought = entry.unboughtCount;
-
-        final currentAlloc = it.allocationsByStop[currentStopId];
-        if (currentAlloc != null) {
-          final newCurrent = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
-          await listItemDao.setAllocation(
-            tripId: tripId,
-            listItemId: it.item.id,
-            shoppingStopId: currentStopId,
-            packages: newCurrent,
-          );
-        }
-
-        final targetAlloc = it.allocationsByStop[nextStopId]?.allocatedPackages ?? 0;
-        await listItemDao.setAllocation(
-          tripId: tripId,
-          listItemId: it.item.id,
-          shoppingStopId: nextStopId,
-          packages: targetAlloc + unbought,
+      final unboughtItems = <({ShoppingListItemView item, int unboughtCount})>[];
+      for (final it in listData.allItems) {
+        if (!it.isOnList) continue;
+        final totalOtherAlloc = it.allocationsByStop.entries
+            .where((e) => e.key != currentStopId)
+            .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+        final countAtStop = it.packagesAtStop(
+          currentStopId,
+          isFirstStop: isFirstStop,
+          totalOtherAllocated: totalOtherAlloc,
         );
+        final isBought = it.isBoughtAtStop(currentStopId);
+        if (countAtStop > 0 && !isBought) {
+          unboughtItems.add((item: it, unboughtCount: countAtStop));
+        }
       }
-    } else {
-      for (final entry in unboughtItems) {
-        final it = entry.item;
-        final unbought = entry.unboughtCount;
-        final newEffective = it.effectivePackages - unbought;
 
-        final currentAlloc = it.allocationsByStop[currentStopId];
-        if (currentAlloc != null) {
-          final newCur = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
+      if (unboughtItems.isEmpty) return;
+
+      if (postpone) {
+        int nextStopId;
+        if (targetStopId != null) {
+          nextStopId = targetStopId;
+        } else {
+          final laterStops = listData.stops.where((s) => s.dayNumber >= currentStop.dayNumber && s.id != currentStopId).toList();
+          if (laterStops.isNotEmpty) {
+            nextStopId = laterStops.first.id;
+          } else {
+            throw StateError('Kein Ziel-Einkaufsstopp für zurückgestellte Posten vorhanden.');
+          }
+        }
+
+        for (final entry in unboughtItems) {
+          final it = entry.item;
+          final unbought = entry.unboughtCount;
+
+          final currentAlloc = it.allocationsByStop[currentStopId];
+          if (currentAlloc != null) {
+            final newCurrent = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
+            await listItemDao.setAllocation(
+              tripId: tripId,
+              listItemId: it.item.id,
+              shoppingStopId: currentStopId,
+              packages: newCurrent,
+            );
+          }
+
+          final targetAlloc = it.allocationsByStop[nextStopId]?.allocatedPackages ?? 0;
           await listItemDao.setAllocation(
             tripId: tripId,
             listItemId: it.item.id,
-            shoppingStopId: currentStopId,
-            packages: newCur,
+            shoppingStopId: nextStopId,
+            packages: targetAlloc + unbought,
           );
         }
+      } else {
+        for (final entry in unboughtItems) {
+          final it = entry.item;
+          final unbought = entry.unboughtCount;
+          final newEffective = it.effectivePackages - unbought;
 
-        if (newEffective <= 0) {
-          await listItemDao.unadoptItem(it.item.id);
-        } else {
-          await listItemDao.adoptItem(it.item.id, packages: newEffective);
+          final currentAlloc = it.allocationsByStop[currentStopId];
+          if (currentAlloc != null) {
+            final newCur = (currentAlloc.allocatedPackages - unbought).clamp(0, it.effectivePackages);
+            await listItemDao.setAllocation(
+              tripId: tripId,
+              listItemId: it.item.id,
+              shoppingStopId: currentStopId,
+              packages: newCur,
+            );
+          }
+
+          if (newEffective <= 0) {
+            await listItemDao.unadoptItem(it.item.id);
+          } else {
+            await listItemDao.adoptItem(it.item.id, packages: newEffective);
+          }
         }
       }
-    }
-    onTripDataChanged?.call(tripId);
+      _notifyTripDataChanged(tripId);
+    });
   }
 
   /// Legt eine eigene Position an.
   Future<int> addCustomItem(CustomItemInput input) async {
-    final result = await listItemDao.addCustomItem(
-      tripId: input.tripId,
-      name: input.name,
-      quantity: input.quantity,
-      unit: input.unit,
-      department: input.department,
-      categoryId: input.categoryId,
-      shoppingStopId: input.shoppingStopId,
-    );
-    onTripDataChanged?.call(input.tripId);
-    return result;
+    return _runGuarded('addCustomItem', () async {
+      final result = await listItemDao.addCustomItem(
+        tripId: input.tripId,
+        name: input.name,
+        quantity: input.quantity,
+        unit: input.unit,
+        department: input.department,
+        categoryId: input.categoryId,
+        shoppingStopId: input.shoppingStopId,
+      );
+      _notifyTripDataChanged(input.tripId);
+      return result;
+    });
   }
 
   /// Schaltet den Gekauft-Status im Einkaufsmodus um.
@@ -659,46 +707,50 @@ class ShoppingListService {
     required int shoppingStopId,
     required bool isBought,
   }) async {
-    final result = await listItemDao.toggleBought(
-      tripId: tripId,
-      listItemId: listItemId,
-      shoppingStopId: shoppingStopId,
-      isBought: isBought,
-    );
-    onTripDataChanged?.call(tripId);
-    return result;
+    return _runGuarded('toggleBought', () async {
+      final result = await listItemDao.toggleBought(
+        tripId: tripId,
+        listItemId: listItemId,
+        shoppingStopId: shoppingStopId,
+        isBought: isBought,
+      );
+      _notifyTripDataChanged(tripId);
+      return result;
+    });
   }
 
   /// Lädt die Einlagerungs-Checkliste nach Hinweisen aus dem Katalog.
   Future<List<StorageChecklistEntry>> loadStorageChecklist(int tripId) async {
-    final listData = await loadShoppingList(tripId);
-    final catalog = catalogRepository.catalog!;
-    final hints = catalog.storageHints;
+    return _runGuarded('loadStorageChecklist', () async {
+      final listData = await loadShoppingList(tripId);
+      final catalog = catalogRepository.catalog!;
+      final hints = catalog.storageHints;
 
-    final entries = <StorageChecklistEntry>[];
-    for (final hintKey in hints.keys) {
-      final affected = listData.allItems
-          .where((it) => it.isSelected && it.storageHints.contains(hintKey))
-          .toList();
+      final entries = <StorageChecklistEntry>[];
+      for (final hintKey in hints.keys) {
+        final affected = listData.allItems
+            .where((it) => it.isSelected && it.storageHints.contains(hintKey))
+            .toList();
 
-      if (affected.isNotEmpty) {
-        final allStored = affected.every((it) {
-          final allocs = it.allocationsByStop.values;
-          return allocs.isNotEmpty && allocs.every((a) => a.isStored);
-        });
+        if (affected.isNotEmpty) {
+          final allStored = affected.every((it) {
+            final allocs = it.allocationsByStop.values;
+            return allocs.isNotEmpty && allocs.every((a) => a.isStored);
+          });
 
-        entries.add(
-          StorageChecklistEntry(
-            hintKey: hintKey,
-            title: _hintTitle(hintKey),
-            explanation: hints[hintKey] ?? '',
-            affectedItems: affected,
-            isCompleted: allStored,
-          ),
-        );
+          entries.add(
+            StorageChecklistEntry(
+              hintKey: hintKey,
+              title: _hintTitle(hintKey),
+              explanation: hints[hintKey] ?? '',
+              affectedItems: affected,
+              isCompleted: allStored,
+            ),
+          );
+        }
       }
-    }
-    return entries;
+      return entries;
+    });
   }
 
   /// Überschrift für die Einlagerungs-Schritte.
@@ -715,21 +767,25 @@ class ShoppingListService {
 
   /// Markiert alle Elemente eines Lagerungshinweises als eingelagert.
   Future<void> toggleStorageHint(StorageChecklistEntry entry, bool isStored) async {
-    for (final it in entry.affectedItems) {
-      await listItemDao.setStored(it.item.id, isStored);
-    }
+    return _runGuarded('toggleStorageHint', () async {
+      for (final it in entry.affectedItems) {
+        await listItemDao.setStored(it.item.id, isStored);
+      }
+    });
   }
 
   /// Führt eine reine, lesende Vorratsprüfung für den Törn durch (PIVOT2).
   Future<ProvisioningReviewResult> reviewProvisioningList(int tripId) async {
-    final listData = await loadShoppingList(tripId);
-    final days = await tripDao.getDaysForTrip(tripId);
-    final crew = await tripDao.getCrewForTrip(tripId);
-    return reviewProvisioningListData(
-      listData: listData,
-      crew: crew,
-      days: days,
-    );
+    return _runGuarded('reviewProvisioningList', () async {
+      final listData = await loadShoppingList(tripId);
+      final days = await tripDao.getDaysForTrip(tripId);
+      final crew = await tripDao.getCrewForTrip(tripId);
+      return reviewProvisioningListData(
+        listData: listData,
+        crew: crew,
+        days: days,
+      );
+    });
   }
 
   /// Führt die flüchtige Vorratsprüfung anhand geladener TripShoppingListData und Kontexte durch.

@@ -10,8 +10,8 @@ void main() {
   test('S1/FB1-C Abnahmekriterium: Schema- und Migrationstest', () async {
     final db = AppDatabase(NativeDatabase.memory());
 
-    // SchemaVersion prüfen (jetzt 7 nach PIVOT3-A)
-    expect(db.schemaVersion, 7);
+    // SchemaVersion prüfen (jetzt 8 nach RECEIPT1)
+    expect(db.schemaVersion, 8);
 
     // Prüfen, ob alle Tabellen angelegt wurden
     expect(await db.select(db.boatProfiles).get(), isEmpty);
@@ -23,6 +23,8 @@ void main() {
     expect(await db.select(db.listItemAllocations).get(), isEmpty);
     expect(await db.select(db.expenses).get(), isEmpty);
     expect(await db.select(db.kittyPayments).get(), isEmpty);
+    expect(await db.select(db.expenseReceipts).get(), isEmpty);
+
 
     // MigrationStrategy testen
     final strategy = db.migration;
@@ -254,10 +256,10 @@ void main() {
     final upgradedDb = AppDatabase(NativeDatabase(dbFile));
     addTearDown(() async => upgradedDb.close());
 
-    // 4. Verifikation nach Upgrade auf v7:
+    // 4. Verifikation nach Upgrade auf aktuellen Schema-Stand (v8):
     // Schema-Version in SQLite prüfen
     final versionResult = await upgradedDb.customSelect('PRAGMA user_version').getSingle();
-    expect(versionResult.read<int>('user_version'), equals(7));
+    expect(versionResult.read<int>('user_version'), equals(8));
 
     // Alter Trip existiert und alle bestehenden Werte sind unverändert erhalten
     final oldTrip = await (upgradedDb.select(upgradedDb.trips)..where((t) => t.id.equals(1))).getSingle();
@@ -306,4 +308,142 @@ void main() {
     expect(tripAfterDelete.fridgeCapacity, equals(120));
     expect(tripAfterDelete.waterTankLiters, equals(350));
   });
-}
+
+  test('RECEIPT1 Abnahmekriterium: Reale Migration v7 -> v8 mit Datenintegrität und Foreign-Keys', () async {
+    final tempDir = Directory.systemTemp.createTempSync('drift_migration_v7_v8_');
+    final dbFile = File('${tempDir.path}/v7_database.sqlite');
+    addTearDown(() {
+      if (dbFile.existsSync()) dbFile.deleteSync();
+      if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+    });
+
+    final rawDb = sqlite3.open(dbFile.path);
+
+    // Schema v7 DDL
+    rawDb.execute('''
+      CREATE TABLE boat_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        manufacturer TEXT,
+        model TEXT,
+        fridge_capacity INTEGER NOT NULL DEFAULT 100,
+        has_freezer INTEGER NOT NULL DEFAULT 0,
+        freezer_capacity INTEGER NOT NULL DEFAULT 0,
+        water_tank_liters INTEGER NOT NULL DEFAULT 0,
+        is_water_tank_drinkable INTEGER NOT NULL DEFAULT 0,
+        has_watermaker INTEGER NOT NULL DEFAULT 0,
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE trips (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        start_date INTEGER NOT NULL,
+        days_count INTEGER NOT NULL DEFAULT 7,
+        region TEXT NOT NULL DEFAULT 'mediterranean',
+        climate TEXT NOT NULL DEFAULT 'warm',
+        is_charter INTEGER NOT NULL DEFAULT 1,
+        boat_profile_id INTEGER REFERENCES boat_profiles(id) ON DELETE SET NULL,
+        boat_name TEXT,
+        boat_manufacturer TEXT,
+        boat_model TEXT,
+        boat_type TEXT NOT NULL DEFAULT 'mono',
+        fridge_capacity INTEGER NOT NULL DEFAULT 100,
+        has_freezer INTEGER NOT NULL DEFAULT 0,
+        freezer_capacity INTEGER NOT NULL DEFAULT 0,
+        water_tank_liters INTEGER NOT NULL DEFAULT 0,
+        is_water_tank_drinkable INTEGER NOT NULL DEFAULT 0,
+        has_watermaker INTEGER NOT NULL DEFAULT 0,
+        appetite TEXT NOT NULL DEFAULT 'normal',
+        reserve_days TEXT NOT NULL DEFAULT 'few_days',
+        drinking_habit TEXT NOT NULL DEFAULT 'normal',
+        has_storage_checklist INTEGER NOT NULL DEFAULT 1,
+        phase TEXT NOT NULL DEFAULT 'plan',
+        is_archived INTEGER NOT NULL DEFAULT 0,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        kitty_model TEXT NOT NULL DEFAULT 'shared_kitty',
+        treasurer_member_id INTEGER,
+        created_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+        paid_by_crew_member_id INTEGER,
+        amount REAL NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'EUR',
+        category TEXT NOT NULL DEFAULT 'provisions',
+        note TEXT,
+        custom_split TEXT,
+        created_at INTEGER NOT NULL,
+        is_paid_from_kitty INTEGER NOT NULL DEFAULT 0
+      );
+
+      PRAGMA user_version = 7;
+    ''');
+
+    rawDb.execute('''
+      INSERT INTO trips (
+        id, name, start_date, days_count, region, climate, is_charter,
+        boat_type, fridge_capacity, has_freezer, freezer_capacity,
+        water_tank_liters, is_water_tank_drinkable, has_watermaker,
+        appetite, reserve_days, drinking_habit, has_storage_checklist,
+        phase, is_archived, currency, kitty_model, created_at
+      ) VALUES (
+        1, 'v7 Törn', 1700000000, 7, 'mediterranean', 'warm', 1,
+        'mono', 120, 1, 30,
+        350, 1, 0,
+        'normal', 'few_days', 'normal', 1,
+        'plan', 0, 'EUR', 'shared_kitty', 1700000000
+      );
+
+      INSERT INTO expenses (
+        id, trip_id, amount, currency, category, note, created_at, is_paid_from_kitty
+      ) VALUES (
+        10, 1, 45.50, 'EUR', 'provisions', 'Hafensupermarkt', 1700000000, 1
+      );
+    ''');
+
+    rawDb.dispose();
+
+    // Mit Drift öffnen (Upgrade v7 -> v8)
+    final upgradedDb = AppDatabase(NativeDatabase(dbFile));
+    addTearDown(() async => upgradedDb.close());
+
+    // Schema-Version in SQLite prüfen
+    final versionResult = await upgradedDb.customSelect('PRAGMA user_version').getSingle();
+    expect(versionResult.read<int>('user_version'), equals(8));
+
+    // Bestehende Daten unberührt
+    final oldTrip = await (upgradedDb.select(upgradedDb.trips)..where((t) => t.id.equals(1))).getSingle();
+    expect(oldTrip.name, equals('v7 Törn'));
+    final oldExpense = await (upgradedDb.select(upgradedDb.expenses)..where((e) => e.id.equals(10))).getSingle();
+    expect(oldExpense.note, equals('Hafensupermarkt'));
+    expect(oldExpense.amount, equals(45.50));
+
+    // Neue Tabelle ExpenseReceipts existiert
+    expect(await upgradedDb.select(upgradedDb.expenseReceipts).get(), isEmpty);
+
+    // Beleg einfügen
+    final receiptId = await upgradedDb.expenseDao.addReceipt(
+      ExpenseReceiptsCompanion.insert(
+        tripId: 1,
+        expenseId: 10,
+        filePath: 'receipts/trip_1/expense_10/beleg.jpg',
+        fileName: 'beleg.jpg',
+        byteSize: const Value(12345),
+      ),
+    );
+    expect(receiptId, greaterThan(0));
+
+    final receipts = await upgradedDb.expenseDao.getReceiptsForExpense(10);
+    expect(receipts.length, equals(1));
+    expect(receipts.first.fileName, equals('beleg.jpg'));
+
+    // Foreign-Key Cascade beim Löschen der Ausgabe
+    await upgradedDb.expenseDao.deleteExpense(10);
+    final receiptsAfterExpenseDelete = await upgradedDb.expenseDao.getReceiptsForExpense(10);
+    expect(receiptsAfterExpenseDelete, isEmpty);
+  });
+}

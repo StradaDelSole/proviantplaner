@@ -1,5 +1,123 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Concurrency Integrity Amendment 5 (Finding G)
+
+- **Finding G – BLOCKER (Paralleler Restore vs. Recovery & konkurrierende Datenoperationen):**
+  - Einführung von `StorageOperationCoordinator` in `ReceiptFileService` und `BackupCoordinator.runSynchronizedStorageOperation()` zur gemeinsamen, kontrollierten Serialisierung von `restoreBackup()`, `createBackup()`, `recoverStorageState()`, `TripService.deleteTrip()` sowie sämtlichen geschützten Lese- und Schreiboperationen in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und den zugehörigen Riverpod-Providern.
+  - Während eines aktiven `restoreBackup()` hält der Restore den exklusiven FIFO-Lock über die gesamte Laufzeit, sodass konkurrierende Recovery-, Lese- oder Schreibaufrufe weder aktive Staging-/Rollback-Dateien (`receipts_staging_active/`, `receipts_rollback/`) bereinigen noch auf einem teilweise ersetzten Datenbestand operieren können.
+  - Absicherung von `TripService.deleteTrip()` und seines Rollback-/Cleanup-Lifecycles (`stageTripDeleteRollback`, DB-Transaktion, `finalizeTripDeleteRollback`, `restoreTripDeleteRollback`) gegen konkurrierende Recovery-, Restore- und Service-Operationen.
+  - Zone-basierte Re-Entrancy verhindert Deadlocks bei verschachtelten Service-Aufrufen und beim internen Recovery-Check zu Beginn geschützter Operationen, während externe Hooks und Invalidierungs-Callbacks außerhalb der Re-Entrancy-Zone ausgeführt werden; garantierte Lock-Freigabe im Erfolgs- und Fehlerfall.
+
+## 2026-10-17 – RECEIPT1 Final Recovery Gate Amendment 4 (Findings E & F)
+
+- **Finding E – HIGH (Crash vor Journal-Erstellung):**
+  - Unterscheidung zwischen einem reinen Vor-Journal-Staging-Artefakt (`receipts_staging_active/` bzw. `receipts_staging/` ohne `restore_journal.json` und ohne `receipts_rollback/`) und einem tatsächlich unklaren Restore-Zustand in `BackupCoordinator.recoverStorageState()`.
+  - Vor einer Bereinigung durch `cleanPreJournalStagingArtifacts()` verifiziert Recovery für sämtliche in SQLite registrierten Belege, dass alle produktiven Belegdateien physisch und mit erwarteter Dateigröße in `receipts/` vorhanden sind; fehlt eine produktive Datei, wird keine Bereinigung ausgeführt und `RestoreRecoveryException` geworfen.
+  - `finalizeRestoreStaging()` und `abortRestoreStaging()` entfernen `restore_journal.json` stets als letzten Schritt nach den Rollback-/Staging-Verzeichnissen.
+- **Finding F – HIGH (Verbindliches App-Start-Gate):**
+  - `ProviantplanerApp.build()` wartet über `recoveryState.when(...)` verbindlich auf den Abschluss von `appStartupRecoveryProvider`, bevor `appRouterProvider` aufgebaut wird.
+  - Zeigt während laufender Recovery den Initialisierungszustand `AppStartupRecoveryLoadingScreen` (`Key('app_startup_recovery_loading')`) und bei `RestoreRecoveryException` den nicht-destruktiven Fehlerzustand `AppStartupRecoveryErrorScreen` (`Key('app_startup_recovery_error')`) mit Retry-Aktion (`Key('app_startup_recovery_retry_button')`) – ohne automatische Neuinitialisierung oder Datenbanklöschung.
+  - Reconciliiert sämtliche betroffenen Lese- und Schreibpfade in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und den zugehörigen Providern über den zentralen Single-Flight-Recovery-Gate, sodass vor erfolgreicher Recovery keine Datenmutationen möglich sind.
+
+## 2026-10-17 – RECEIPT1 Final Integrity Amendment 3 (Findings A–D)
+
+- **A – BLOCKER (Post-Commit-Finalisierung in `BackupCoordinator.restoreBackup()`):**
+  - Strikte Trennung des Restore-Ablaufs in drei Phasen anhand von `dbCommitted` und dem in SQLite (`_provy_restore_state`) sowie in `restore_journal.json` gespeicherten `restoreToken`:
+    - *Noch nicht committet (`dbCommitted == false`):* Rückabwicklung via `abortRestoreStaging()` ist zulässig.
+    - *Erfolgreich committet (`dbCommitted == true`):* **Niemals** werden nach einem erfolgreichen SQLite-Commit die alten Dateien via `abortRestoreStaging()` reaktiviert; ab diesem Punkt ist ausschließlich **Roll-Forward** bzw. die idempotente, wiederholbare Finalisierung (`finalizeRestoreStaging()`) zulässig.
+    - *Unklarer Zustand nach Crash:* Recovery prüft den belastbaren Commit-Nachweis (`_provy_restore_state` vs. `restore_journal.json`) und rollt bei fehlendem/widersprüchlichem Nachweis niemals blind zurück (`RestoreRecoveryException` ohne destruktive Operation).
+- **B – HIGH (Recovery beim App-Start):**
+  - Einbindung von `BackupCoordinator.recoverStorageState()` in den produktiven App-Initialisierungs- und Datenpfad (`appStartupRecoveryProvider` in `ProviantplanerApp`, `allTripsProvider`, `activeBoatProfilesProvider`, `tripByIdProvider` usw. sowie Single-Flight-Guard `_ensureStorageRecovered()` in `KittyService` und `TripService`).
+  - Einmalige initiale Ausführung pro `ReceiptFileService`-Instanz vor dem Lesen oder Ändern betroffener Daten; Pre-Commit- und Post-Commit-Crash-Zustände werden deterministisch aufgelöst, unklare Zustände nicht-destruktiv mit `RestoreRecoveryException` gemeldet.
+- **C – HIGH (`TripService.deleteTrip` & Crash-/Post-Commit-Sicherheit):**
+  - `TripService.deleteTrip()` löscht die letzte wiederherstellbare Kopie der Törn-Belege erst **nach** erfolgreichem DB-Commit (`stageTripDeleteRollback` vor der DB-Transaktion, `finalizeTripDeleteRollback` nach dem DB-Commit).
+  - Nachgelagerte Bereinigungsfehler nach erfolgreichem DB-Commit werfen `TripDeleteCleanupException(tripId: tripId, tripDeletedInDb: true)`, ohne einen DB-Rollback vorzutäuschen oder gelöschte Törn-Dateien wieder in `receipts/` zu aktivieren.
+  - App-Start-Recovery (`recoverStorageState`) löst einen Prozessabbruch vor bzw. nach dem DB-Commit von `deleteTrip` deterministisch anhand der Törn-Existenz in SQLite auf.
+- **D – HIGH (`KittyService.deleteReceipt` & defekte Belegreferenzen):**
+  - `KittyService.deleteReceipt()` wertet den `bool`-Rückgabewert von `receiptFileService.deleteReceiptFile()` aus.
+  - Fehlt die physische Datei eines registrierten Belegs (`!fileDeleted`), wird keine normale vollständige Löschung gemeldet, sondern `ReceiptFileMissingOnDeleteException` geworfen (explizite Bereinigung verwaister Referenzen über `allowBrokenReferenceCleanup: true`).
+  - Scheitert die DB-Löschung (`expenseDao.deleteReceipt` wirft oder gibt `<= 0` zurück), wird die physische Datei byte-genau wiederhergestellt.
+
+## 2026-10-17 – RECEIPT1 Independent Re-Review Amendment 2 (R1–R4)
+
+- **R1 – BLOCKER (Restore-Konsistenz & Crash-Recovery):**
+  - Zwei-Phasen-Staging in `BackupCoordinator.restoreBackup()` und `ReceiptFileService`: Das Schreiben des Recovery-Journals (`restore_journal.json`) und die Datei-Promotion (`promoteStagedReceipts`: altes `receipts/` -> `receipts_rollback/`, neues `receipts_staging_active/` -> `receipts/`) erfolgen nun **innerhalb** der SQLite-Transaktion (`_db.transaction`) vor dem DB-`COMMIT`.
+  - Tritt während der Datei-Promotion ein Fehler auf, bricht die SQLite-Transaktion automatisch per Rollback ab und `abortRestoreStaging()` stellt `receipts_rollback/` nach `receipts/` wieder her.
+  - Erst nach erfolgreichem SQLite-`COMMIT` entfernt `finalizeRestoreStaging()` das Rollback-Verzeichnis und das Journal.
+  - Crash-/Restart-Recovery (`recoverInterruptedRestore()`): Gleicht nach einem Prozessabbruch die in SQLite committeten Belegpfade gegen `restore_journal.json` ab und führt deterministisch entweder ein Roll-Back (falls SQLite vor dem Commit abgebrochen ist) oder ein Roll-Forward (falls SQLite bereits committet hatte) durch.
+- **R2 – HIGH (Attachment-Lifecycle & Fehlerpropagierung):**
+  - `KittyService.addReceiptToExpense`: Löscht bei fehlgeschlagenem DB-Insert (`expenseDao.addReceipt`) die neu angelegte Bilddatei sofort wieder (keine verwaisten Dateien).
+  - `KittyService.deleteReceipt` & `ReceiptFileService.deleteReceiptFile`: Dateilöschfehler werden nicht mehr still verschluckt; scheitert das DB-Delete nach erfolgreichem Dateilöschen, wird die Datei aus dem Speicher-Backup wiederhergestellt.
+  - `KittyService.deleteExpense` & `restoreExpense`: Transaktionale und dateisystemseitige Rollbacks bei I/O- oder DB-Fehlern.
+  - Zeitstempel-basiertes TTL-Cleanup (`cleanupExpiredTrash`) in `ReceiptFileService` und `KittyService.loadKittyData` verhindert dauerhaft verwaiste temporäre Undo-Dateien in `receipts_trash` nach einem App-Absturz.
+  - `TripService.deleteTrip`: Nutzt Rollback-Staging (`stageTripDeleteRollback` / `finalizeTripDeleteRollback` / `restoreTripDeleteRollback`) innerhalb einer DB-Transaktion und propagiert Bereinigungsfehler statt sie zu verschlucken.
+- **R3 – HIGH (Restore-Vollständigkeit):**
+  - Jeder im Backup registrierte Beleg muss einer gültigen Ausgabe (`expenseId`) zugeordnet sein; fehlende oder nicht zuordenbare `expenseId`s führen sofort zu `BackupCorruptException` (kein stilles Überspringen mehr).
+  - Base64-Inhalte werden als dekodierbare Bilddaten (`img.decodeImage`) validiert und `byteSize` wird strikt gegen die tatsächliche Byte-Länge geprüft.
+- **R4 – MEDIUM (PDF-Aufteilung nach tatsächlicher PDF-Größe & Temp-Cleanup):**
+  - `PdfExportService.generateReceiptsPdfs`: Überschreitet ein gerenderter Multi-Beleg-Chunk (`doc.save()`) `maxPdfBytes` (15 MB), wird er automatisch per binärer Präfixsuche in kleinere Chunks (`Belege_1.pdf`, `Belege_2.pdf`, ...) aufgeteilt, ohne fehlende oder doppelte Seiten. Ein einzelner unteilbarer Beleg > `maxPdfBytes` wirft weiterhin explizit `PdfChunkOversizedException`.
+  - `PdfExportService.prepareSettlementExportDirectory` & `cleanupTemporaryExportDirectories`: Bereinigt frühere temporäre `settlement_export_*`-Verzeichnisse deterministisch vor jedem neuen Export.
+
+## 2026-10-17 – RECEIPT1 Independent Review Amendment 1 (Findings A–G)
+
+- **Finding A (Backup-Vollständigkeit & Validierung):**
+  - `createBackup()` prüft physische Belegdateien auf Existenz und Inhalt; fehlt eine Datei oder ist sie leer, bricht die Sicherung mit `BackupIntegrityException` ab (`imageBase64: null` ist unzulässig).
+  - `restoreBackup()` validiert in einem Pre-Flight-Schritt alle Belegbilder über alle Törns. Fehlt `imageBase64` oder ist es korrupt, bricht der Vorgang mit `BackupCorruptException` ab.
+- **Finding B (PDF-Vollständigkeit & Fehlerbehandlung):**
+  - `generateReceiptsPdfs()` bricht bei fehlender Bilddatei mit `ReceiptImageMissingException` und bei unlesbarem Bild mit `ReceiptImageCorruptException` ab (keine stillen Platzhaltertexte).
+  - `SettlementScreen` fängt diese Ausnahmen ab und zeigt dem Nutzer eine klare, lokalisierte Rückmeldung.
+- **Finding C (Crash-sicherer Restore):**
+  - Gestagter Restore: Belegdateien werden zunächst in `receipts_staging_active` aufgebaut.
+  - Bei erfolgreichem DB-Commit atomarer Tausch: altes `receipts/` nach `receipts_rollback/`, `receipts_staging_active` nach `receipts/`.
+  - Bei Fehler Rollback: Re-instanziierung aus `receipts_rollback/`, wodurch der vorherige Datenbestand und alle Belegdateien byte-genau erhalten bleiben (`commitRestoreStaging`, `abortRestoreStaging`).
+- **Finding D (Expense-Lifecycle, Undo & Törn-Löschung):**
+  - 5-Sekunden-Snackbar-Undo: `deleteExpense` verschiebt bei `softDelete: true` Belege in `receipts_trash/trip_<id>/expense_<id>`.
+  - `restoreExpense` stellt die physischen Belege aus dem Papierkorb wieder her.
+  - Nach Ablauf des Undo-Fensters endgültige Bereinigung via `purgeDeletedExpenseReceipts`.
+  - `TripService.deleteTrip` bereinigt kaskadierend alle Belege und Papierkörbe des Törns vom Dateisystem (`deleteTripReceipts`).
+- **Finding E (Dateinamenkollisionen & Path Traversal):**
+  - Generierung kollisionsfreier interner Dateinamen (`rcpt_<timestamp>_<nonce>.jpg`).
+  - Bereinigung von bevorzugten Anzeigenamen via `sanitizeFileName` (Verhinderung von `..`, `/`, `\`).
+  - Standardisierte Posix-Pfade (`/`) für relationale Konsistenz über Plattformen hinweg.
+- **Finding F (Größen- und Speichergrenzen):**
+  - Cloud-Backup: Durchsetzung des 50 MB Limits (`maxBackupReceiptBytes`) mit `BackupSizeLimitExceededException`.
+  - PDF: Durchsetzung des 15 MB Limits gegen tatsächliche PDF-Bytegröße mit `PdfChunkOversizedException` bzw. `PdfReceiptOversizedException`.
+- **Finding G (Transaktionale Integrität):**
+  - `addExpense`: Transaktionaler Rollback bereinigt bei Fehlern beim Beleg-Speichern sowohl die Datenbankzeile als auch angelegte Dateien/Ordner.
+  - `addReceiptToExpense`: Validiert `expense.tripId == tripId` und wirft `ArgumentError` bei Abweichung.
+  - Lokalisierte Fehlermeldungen in allen 6 ARB-Dateien synchron ergänzt.
+
+## 2026-10-17 – RECEIPT1 Expense Receipts & Settlement Package (Issue #23)
+
+- **Datenbank & Migration (Drift v7 → v8):**
+  - Neue Entitätstabelle `ExpenseReceipts` (`id`, `tripId`, `expenseId`, `filePath`, `fileName`, `sortOrder`, `byteSize`, `mimeType`, `createdAt`) mit `onDelete: cascade` auf `Expenses` und `Trips`.
+  - Reale SQLite-Migration von v7 auf v8 verifiziert mit Erhalt aller bestehenden Daten und sauberem Kaskadenverhalten (`test/core/database/migration_test.dart`).
+- **Lokale Belegspeicherung & Bildoptimierung (100% Offline):**
+  - Neuer Service `ReceiptFileService` in `lib/core/services/receipt_file_service.dart`.
+  - Optimierung auf max. 1800 px Kantenlänge (`package:image`), EXIF-Baking und -Stripping (GPS- und Rotations-Datenschutz) sowie Komprimierung auf JPEG Qualität 82%.
+  - Strukturierte Ordnerhierarchie: `receipts/trip_{tripId}/expense_{expenseId}/{fileName}`.
+  - Vollständiges Lifecycle-Handling: Speichern, Einlesen, Löschen einzelner Dateien sowie kaskadierendes Bereinigen von Ausgaben- und Törnordnern (`test/core/services/receipt_file_service_test.dart`).
+- **Bordkassen-Integration (0..n Belege pro Ausgabe):**
+  - Erweiterung von `KittyExpense` um `List<ExpenseReceiptItem> receipts`.
+  - Erweiterung von `ExpenseInput` und `KittyService.addExpense` um `List<DraftReceipt> draftReceipts`.
+  - Methoden `addReceiptToExpense`, `deleteReceipt` und `restoreExpense` (mit Beleg-Wiederherstellung) in `KittyService`.
+  - Finanzmathematische Invarianz: Belege verändern den FIX-B Ledger, Salden, Anteile oder Ausgleichszahlungen in keiner Weise (`test/features/kitty/receipt_attachment_lifecycle_test.dart`).
+- **Endabrechnungs-Paket & Mehrteiliges PDF (Settlement Package):**
+  - Neuer Exportfluss in `PdfExportService`: `generateSettlementPackage`, `generateReceiptsPdfs` und `shareSettlementPackage`.
+  - Generierung von `Abrechnung.pdf` (Wer-zahlt-wem, Salden, Ausgaben) und `Belege.pdf` (A4-Seiten mit Törndaten, Ausgabendetails, Zahler und eingebetteten Belegfotos).
+  - Automatisches Splitting bei Überschreitung des Chunk-Limits (z. B. 15 MB) in `Belege_1.pdf`, `Belege_2.pdf` usw.
+  - Versand über nativen Share-Sheet (`share_plus`) als Mail oder AirDrop/Sharing ohne dedizierten Backend-Maildienst (`test/core/services/pdf_receipts_package_test.dart`).
+- **Cloud-Datensicherung v3 (Backup & Restore):**
+  - Upgrade des Backup-Formats auf Version 3 mit Base64-Serialisierung aller Belegbilder.
+  - Relationales ID-Remapping für `ExpenseReceipts` (`newExpenseId`, `newTripId`) und Wiederherstellung der physischen Bilddateien auf dem lokalen Dateisystem.
+  - Vollständige Abwärtskompatibilität für Backups der Versionen 1 und 2 (`test/core/services/backup_coordinator_v3_test.dart`).
+- **UI & UX:**
+  - `ExpenseSheet`: Kamera-/Galerie-Auswahl (`image_picker`), Miniaturansichten im Belegstreifen, Vollbild-Vorschau mit interaktivem Zoom (`ReceiptPreviewDialog`), Löschen und Anhängen weiterer Belegseiten.
+  - `KittyScreen`: Beleg-Indikator (Badge / Icon mit Beleganzahl) an jeder Ausgabenzeile.
+  - `SettlementScreen`: Prominenter Button „Abrechnungspaket versenden“ mit Subtitle „Abrechnung.pdf + Belege.pdf teilen“.
+- **Vollständige Lokalisierung:**
+  - Alle RECEIPT1-Texte in allen 6 unterstützten Sprachen (DE, EN, FR, ES, PT, HR) synchron gepflegt.
+
 ## 2026-10-17 – PIVOT2 Provisioning Review Final Cleanup Amendment
 
 - **Code Cleanup (Removal of Obsolete Callback Infrastructure):**

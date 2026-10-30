@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:proviantplaner/core/services/catalog_localization_service.dart';
 import '../domain/calculation/quantity_engine.dart';
@@ -27,10 +28,20 @@ class CatalogRepository {
         _reviewConfig = reviewConfig;
 
   Future<void> loadFromBundle() async {
-    final catalogString = await rootBundle.loadString('data/catalog_v0.11.json');
-    final quantitiesString = await rootBundle.loadString('data/quantities_v0.6.json');
-    final reviewConfigString =
-        await rootBundle.loadString('data/provisioning_review_v0.1.json');
+    String catalogString;
+    String quantitiesString;
+    String reviewConfigString;
+    try {
+      catalogString = await rootBundle.loadString('data/catalog_v0.11.json');
+      quantitiesString = await rootBundle.loadString('data/quantities_v0.6.json');
+      reviewConfigString =
+          await rootBundle.loadString('data/provisioning_review_v0.1.json');
+    } catch (_) {
+      catalogString = File('data/catalog_v0.11.json').readAsStringSync();
+      quantitiesString = File('data/quantities_v0.6.json').readAsStringSync();
+      reviewConfigString =
+          File('data/provisioning_review_v0.1.json').readAsStringSync();
+    }
     loadFromJsonStrings(
       catalogJson: catalogString,
       quantitiesJson: quantitiesString,

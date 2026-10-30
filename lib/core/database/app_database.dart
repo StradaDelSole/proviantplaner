@@ -22,6 +22,7 @@ part 'app_database.g.dart';
     ListItemAllocations,
     Expenses,
     KittyPayments,
+    ExpenseReceipts,
   ],
   daos: [
     TripDao,
@@ -34,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -80,6 +81,9 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(trips, trips.boatManufacturer);
           await m.addColumn(trips, trips.boatModel);
           await m.addColumn(trips, trips.hasWatermaker);
+        }
+        if (from < 8) {
+          await m.createTable(expenseReceipts);
         }
       },
       beforeOpen: (details) async {
