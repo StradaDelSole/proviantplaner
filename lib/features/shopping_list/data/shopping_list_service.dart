@@ -794,33 +794,31 @@ class ShoppingListService {
     List<CrewMember>? crew,
     List<TripDay>? days,
   }) async {
-    return _runGuarded('reviewProvisioningListData', () async {
-      final effectiveDays = days ?? await tripDao.getDaysForTrip(listData.trip.id);
-      final effectiveCrew = crew ?? await tripDao.getCrewForTrip(listData.trip.id);
+    final effectiveDays = days ?? await tripDao.getDaysForTrip(listData.trip.id);
+    final effectiveCrew = crew ?? await tripDao.getCrewForTrip(listData.trip.id);
 
-      if (catalogRepository.catalog == null ||
-          catalogRepository.quantities == null ||
-          catalogRepository.reviewConfig == null) {
-        await catalogRepository.loadFromBundle();
-      }
+    if (catalogRepository.catalog == null ||
+        catalogRepository.quantities == null ||
+        catalogRepository.reviewConfig == null) {
+      await catalogRepository.loadFromBundle();
+    }
 
-      final catalog = catalogRepository.catalog!;
-      final quantities = catalogRepository.quantities!;
-      final config = catalogRepository.reviewConfig!;
+    final catalog = catalogRepository.catalog!;
+    final quantities = catalogRepository.quantities!;
+    final config = catalogRepository.reviewConfig!;
 
-      final input = ProvisioningReviewInput(
-        trip: listData.trip,
-        crew: effectiveCrew,
-        tripDays: effectiveDays,
-        stops: listData.stops,
-        allItems: listData.allItems,
-        catalog: catalog,
-        quantities: quantities,
-        config: config,
-      );
+    final input = ProvisioningReviewInput(
+      trip: listData.trip,
+      crew: effectiveCrew,
+      tripDays: effectiveDays,
+      stops: listData.stops,
+      allItems: listData.allItems,
+      catalog: catalog,
+      quantities: quantities,
+      config: config,
+    );
 
-      final engine = ProvisioningReviewEngine(input);
-      return engine.evaluate();
-    });
+    final engine = ProvisioningReviewEngine(input);
+    return engine.evaluate();
   }
 }
