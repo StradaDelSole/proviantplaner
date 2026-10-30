@@ -163,3 +163,43 @@ Möglicher Dependency-Plan: A → B → C; notwendige Schutzmaßnahmen aus C ggf
 - **D5:** Public Guest-Shopping später: eigene Security-Reconciliation; kein GUEST1-Code im BACKEND-CORE-A.
 
 **Gate A: HOLD.** Dokument ist ein risikoorientierter Vorschlag gegen den verfügbaren Repo-Stand, noch kein unabhängiger Design-Review einer von Gemini erarbeiteten Architektur und keine Implementierungsfreigabe.
+
+## 11. Independent Preflight Addendum – verifizierte Grenzwerte und vollständiger Datenvertrag (30.10.2026)
+
+**Quelle:** aktueller main-HEAD `2ec14c66e825078990689b5a753f1566bed13405` und die am 30.10.2026 überprüften offiziellen Cloudflare-/Auth0-Dokumentationen. Dies ist ein **Design-Befund**, keine Freigabe und kein Beleg einer laufenden Cloud-Instanz.
+
+### P1 – HIGH: Backup-Gesamtgröße und Cloudflare-Memory-Grenzen
+
+- `BackupCoordinator.defaultMaxBackupReceiptBytes` beträgt **50 MiB Belegdateien**, nicht 50 MiB gesamten JSON-Payload. Belegdateien werden mit Base64 in `backupPayload` eingebettet. Schon die reine Base64-Kodierung kann für 50 MiB Binärdateien auf ca. 66,7 MiB Zeichen anwachsen, zuzüglich aller Törn-/Bordkassendaten und JSON-Escaping.
+- `HttpHullqApiClient.uploadBackup` verpackt den Snapshot erneut als JSON-String-Feld `content`, `backend/src/routes/backups.ts` liest `await c.req.json()` und `backend/src/db/backups.ts` berechnet die UTF-8-Bytes und schreibt den Vollstring nach R2. Daraus entstehen mehrere gleichzeitig lebende große Objekte und potenziell zusätzliche Kopien.
+- Cloudflare dokumentiert für Workers Free/Paid derzeit **128 MB Memory pro Isolate**; der HTTP-Request-Body darf auf Free/Pro bis 100 MB groß sein. **100 MB Request-Limit ≠ 100 MB sichere Verarbeitung im Worker.** Ein einzelner valider Provy-Snapshot könnte damit am Memory-Limit scheitern. Es gibt im Backend noch keine harte vollständige Payload-/Schema-Grenze vor dem JSON-Einlesen.
+- **Phase-A-Pflicht:** End-to-End-Maximalgrößen für Binärbilder, Base64-JSON, HTTP-Payload, Arbeiter-Speicher, R2 und Geräte-Restore realistisch abschätzen; Schutz vor Memory-/CPU-DoS; mindestens zwei Lösungsoptionen bewerten: streng kleiner gebundener Snapshot vs. gestreamte/segmentierte Verarbeitung. Keine Streaming-Architektur ohne begründeten Bedarf einschleusen.
+- **Pflichttests Phase B:** Grenzwert darunter/gleich/darüber, bösartige große Payload, Worker-Fehler und Retry, R2-Objekte ohne D1-Referenz, volle Snapshot-Rekonstruktion.
+
+Offizielle Quelle: https://developers.cloudflare.com/workers/platform/limits/ (Stand 29.10.2026).
+
+### P2 – HIGH: Dateninventar versus Backup-Versprechen
+
+- Der Backup-v3-Snapshot umfasst Drift-Törns/Bootsprofile/Belege. `SupplierService` speichert `saved_suppliers_json` und `DeliveryOrderService` speichert `delivery_orders_json` separat in `FlutterSecureStorage`. Beide erscheinen nicht im Backup-v3-Serialisierer. Nutzer könnten daher nach Gerätewechsel Lieferantenprofile und Lieferaufträge verlieren.
+- **Phase-A-Pflicht:** Inventar ALLER persistenten Drift-/Secure-Storage-/Dateiquellen mit klaren Regeln für Einschluss, gezielten Ausschluss (Tokens, Schlüssel, IBANs), Versionsmigration, Datenminimierung, Restore-Test und Nutzerhinweis. Kein stilles Einschließen sensitiver Auth-/Zahlungsdaten.
+- **Entscheidung:** Soll die App gegenüber dem Nutzer eine vollständige Törn-Sicherung versprechen? Wenn ja, diese Datenverträge vor Production Readiness erweitern und beweisen; andernfalls sichtbare ehrliche Funktionsgrenze festlegen.
+
+### P3 – HIGH: Cloud-Delete und Re-Registration
+
+- `backend/src/routes/me.ts` nutzt `deleteAccountCascade` für D1/R2; `GET /v1/me` ruft `ensureAccount` auf und kann nach erfolgreicher Provy-Datenlöschung mit demselben gültigen Auth0-Sub unmittelbar einen neuen Datensatz erzeugen.
+- `portal/src/pages/konto-loeschen.astro` besitzt noch keinen echten Auth0-/DELETE-Flow; `Auth0HullqAuthService` unterdrückt Lösch-/API-Fehler in produktiven Pfaden. **Owner-Entscheidung über Provy-only vs. globale HullQ-Identitätslöschung bleibt BLOCKING.**
+- **Phase-A-Pflicht:** Löschvertrag mit Tombstone-/Reopen-Policy oder gleichwertiger idempotenter, minimaler Lösung. Auch wenn der Owner Provy-only bevorzugt, darf eine sofortige automatische Rekonstruktion keine unbeabsichtigte Löschungssimulation ergeben. Entitlements und aktive Sessions berücksichtigen.
+
+### P4 – EU-Datenstandort verlässlich prüfen
+
+- Cloudflare D1 und R2 bieten ausdrücklich EU-Jurisdiktionen; bei beiden ist die Jurisdiktion **bei Erstellung** festzulegen, nicht durch spätere lokale Wunschkonfiguration nachzurüsten. Ein `jurisdiction="eu"` in `wrangler.toml` für R2 beweist nicht, dass der tatsächlich verwendete Bucket korrekt angelegt wurde. Die D1-ID im Repo ist weiterhin ein Platzhalter.
+- Die tatsächlichen Resource-IDs, Jurisdiktionen und Worker Bindings muss der Owner auf Stage/Prod nachweisen, ohne Secrets zu posten.
+- Quellen: https://developers.cloudflare.com/d1/configuration/data-location/ (Stand 02.10.2026), https://developers.cloudflare.com/r2/reference/data-location/ (Stand 19.08.2026).
+
+### P5 – OAuth und Testvertrauen
+
+- Offizielle Auth0-Flutter-SDK-Dokumentation beschreibt Native Universal Login und Credentials Manager; Pakete/Methoden müssen auf der tatsächlich freigegebenen SDK-Version reconciliiert werden, nicht anhand älterer Beta-Artikel.
+- Die Backend-JWKS-Tests beweisen lediglich serverseitige JWT-Verifikation, nicht den nativen Browser-/Callback-/Token-Refresh-/Logout-Flow auf einem Gerät oder einen funktionalen Portal-Login.
+- Quellen: https://developer.auth0.com/resources/guides/mobile/flutter/basic-authentication, https://developer.auth0.com/resources/guides/mobile/flutter
+
+**Gate bleibt HOLD.** Gemini muss die Punkte P1–P5 im unabhängigen Entwurf begründet lösen oder ausdrücklich als Owner-Entscheidungsblocker ausweisen. Kein Code.
