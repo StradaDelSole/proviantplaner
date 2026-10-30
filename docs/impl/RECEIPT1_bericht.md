@@ -3,7 +3,7 @@
 Slice: RECEIPT1 – Expense Receipts & Settlement Package (Issue #23)  
 Branch: `slice/receipt1-expense-receipts-settlement-package`  
 Basis: `origin/main` (`7bc0e145657411d5b032e168d97958c85c31fc71`)  
-Datum: 17.10.2026 (inkl. Independent Review Amendment 1, Amendment 2, Final Integrity Amendment 3 & Final Recovery Gate Amendment 4)
+Datum: 17.10.2026 (inkl. Independent Review Amendment 1, Amendment 2, Final Integrity Amendment 3, Final Recovery Gate Amendment 4 & Concurrency Integrity Amendment 5)
 
 ---
 
@@ -34,6 +34,12 @@ Datum: 17.10.2026 (inkl. Independent Review Amendment 1, Amendment 2, Final Inte
         - Schlägt die Recovery mit `RestoreRecoveryException` (oder einem sonstigen Fehler) fehl (`error`), zeigt `ProviantplanerApp` den nicht-destruktiven Fehlerzustand `AppStartupRecoveryErrorScreen` (`Key('app_startup_recovery_error')`) mit Diagnosehinweis und Retry-Button (`Key('app_startup_recovery_retry_button')`) an – ohne automatische Neuinitialisierung oder Datenbank-/Dateilöschung.
         - Erst nach erfolgreicher Recovery (`data`) wird `appRouterProvider` aufgebaut und die normale Anwendung geöffnet.
         - Zusätzlich sind sämtliche Lese- und Schreibpfade in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und `BackupCoordinator` über denselben zentralen Single-Flight-Recovery-Gate (`BackupCoordinator.recoverStorageState` / `ReceiptFileService.runSingleFlightRecovery`) abgesichert, sodass vor erfolgreichem Abschluss der Recovery keine betroffenen Datenmutationen möglich sind.
+     6. **Gemeinsame Operationskoordination für Restore, Recovery, `deleteTrip` und konkurrierende Service-Operationen (`StorageOperationCoordinator` – Amendment 5 Finding G):**
+        - `StorageOperationCoordinator` (FIFO-Queue mit direktem Lock-Handoff zwischen Waitern und Zone-basierter Re-Entrancy) koordiniert `restoreBackup()`, `createBackup()`, `recoverStorageState()`, `TripService.deleteTrip()` sowie alle geschützten Lese- und Schreiboperationen in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und den zugehörigen Riverpod-Providern über `BackupCoordinator.runSynchronizedStorageOperation`.
+        - Während eines aktiven `restoreBackup()` hält der Restore den exklusiven Lock über seine gesamte Laufzeit (Vorprüfung, Staging in `receipts_staging_active/`, Journal-Schreiben, SQLite-Transaktion mit Dateipromotion sowie Post-Commit-Finalisierung bzw. Pre-Commit-Rollback). Konkurrierende Lese-, Schreib- oder Recovery-Aufrufe reihen sich in die FIFO-Warteschlange ein und können weder aktive Staging-/Rollback-Dateien als vermeintlichen Crash bereinigen noch auf einem teilweise ersetzten Datenbestand lesen oder schreiben.
+        - Ebenso hält `TripService.deleteTrip()` denselben Coordinator-Lock über `stageTripDeleteRollback`, die SQLite-Löschtransaktion und `finalizeTripDeleteRollback` / `restoreTripDeleteRollback`, sodass ein paralleler Recovery- oder Restore-Aufruf `receipts_trip_rollback/trip_<id>` nicht während einer laufenden Löschtransaktion fehlinterpretiert.
+        - Verschachtelte Service-Aufrufe innerhalb derselben aktiven Operation (z. B. `restoreBackup()` -> `recoverStorageState()`, `addCrewMember()` -> `recalculateTrip()`, `deleteCrewMemberSafely()` -> `hasFinancialHistory()` + `recalculateTrip()`, `handleUnboughtItems()` -> `loadShoppingList()`) erkennen über das Zone-Token (`isInActiveOperationZone`) ihre Zugehörigkeit zur laufenden Top-Level-Operation und laufen deadlock-frei ohne erneuten Lock-Erwerb; externe Hooks (`onBeforeOperationAsync`, `onBeforeRecoveryHook`) und Invalidierungs-Callbacks (`onTripDataChanged`) werden hingegen außerhalb der Re-Entrancy-Zone ausgeführt, sodass daraus angestoßene konkurrierende Operationen regulär auf die Freigabe des Locks warten.
+        - Nach erfolgreichem Restore sehen wartende Operationen den neuen konsistenten Zustand; nach fehlgeschlagenem Restore oder `deleteTrip` wird der Lock im `try/finally` garantiert freigegeben und wartende Operationen arbeiten auf dem intakten Vorzustand weiter.
 
 4. **Bordkassen- & Attachment-Lifecycle (`KittyService`, `TripService`, R2 + Amendment 3 Findings C & D):**
    - `addReceiptToExpense`: Scheitert das DB-Insert (`expenseDao.addReceipt`), wird die zuvor geschriebene Bilddatei sofort wieder gelöscht, sodass keine verwaiste Datei entsteht.
@@ -111,20 +117,20 @@ Datum: 17.10.2026 (inkl. Independent Review Amendment 1, Amendment 2, Final Inte
 ---
 
 ## flutter test
-Gezielt ausgeführte Tests für RECEIPT1 (inkl. Amendment 1, Amendment 2, Amendment 3 & Amendment 4):
+Gezielt ausgeführte Tests für RECEIPT1 (inkl. Amendment 1, Amendment 2, Amendment 3, Amendment 4 & Amendment 5):
 - `test/core/database/migration_test.dart`: 4 Tests – alle bestanden.
 - `test/core/services/receipt_file_service_test.dart`: 10 Tests – alle bestanden.
 - `test/core/services/pdf_receipts_package_test.dart`: 10 Tests – alle bestanden.
-- `test/core/services/backup_coordinator_test.dart`: 19 Tests (inkl. R1, R3, Amendment 3 Findings A & B sowie Amendment 4 Finding E: Absturz vor `writeRestoreJournal()` mit anschließender sicherer, wiederholbarer App-Neustart-Recovery ohne Gefährdung produktiver Daten; Amendment 4 Finding F: `ProviantplanerApp`-Bootstrap-Gate bei verzögerter Recovery inkl. Blockierung vorzeitiger Mutationen sowie nicht-destruktiver Fehlerzustand bei `RestoreRecoveryException`) – alle bestanden.
+- `test/core/services/backup_coordinator_test.dart`: 22 Tests (inkl. R1, R3, Amendment 3 Findings A & B, Amendment 4 Findings E & F sowie Amendment 5 Finding G: Regression 1–4 paralleler Restore vor `writeRestoreJournal()` vs. konkurrierende Lese-/Schreib-/Recovery-Aufrufe bei Erfolg, Regression 5 paralleler Restore mit injiziertem Fehler inkl. Rollback und Lock-Freigabe, Regression 6 & 7 Konflikt zwischen `TripService.deleteTrip()` und Restore/Recovery sowie Deadlock-Freiheit bei verschachtelten Service-Aufrufen) – alle bestanden.
 - `test/features/kitty/receipt_attachment_lifecycle_test.dart`: 15 Tests (inkl. R2 sowie Amendment 3 Findings C & D) – alle bestanden.
 - `test/core/services/backup_coordinator_v3_test.dart`: 3 Tests – alle bestanden.
 - `test/widget_test.dart`: 2 Tests – alle bestanden.
 
-Gesamt: 63 gezielte Tests für RECEIPT1 und Amendments 1–4 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf PR #34.
+Gesamt: 66 gezielte Tests für RECEIPT1 und Amendments 1–5 erfolgreich ausgeführt. Vollständige Testsuite läuft über die authoritative GitHub Actions CI Pipeline auf PR #34.
 
 ---
 
-## Abnahmekriterien & Review Findings (Amendments 1–4)
+## Abnahmekriterien & Review Findings (Amendments 1–5)
 
 | Kriterium / Finding | Status | Nachweis |
 |---|---|---|
@@ -143,6 +149,7 @@ Gesamt: 63 gezielte Tests für RECEIPT1 und Amendments 1–4 erfolgreich ausgef�
 | **Amendment 3 – A–D** | erfüllt | automatische Tests in `backup_coordinator_test.dart` und `receipt_attachment_lifecycle_test.dart` |
 | **Amendment 4 – E (HIGH: Crash vor Journal-Erstellung):** Sichere, wiederholbare automatische Bereinigung von Vor-Journal-Staging-Artefakten (`receipts_staging_active/` ohne Journal und ohne Rollback) nach Prüfung produktiver DB-/Datei-Integrität | erfüllt | automatischer Test (`test/core/services/backup_coordinator_test.dart`: `Amendment 4 – Finding E: Crash nach Anlegen von receipts_staging_active vor writeRestoreJournal wird beim App-Neustart sicher, wiederholbar und ohne Gefährdung produktiver Daten bereinigt`) |
 | **Amendment 4 – F (HIGH: Verbindliches App-Start-Gate):** Zentrales Bootstrap-/Recovery-Gate in `ProviantplanerApp.build()` mit Initialisierungszustand (`AppStartupRecoveryLoadingScreen`), nicht-destruktivem Fehlerzustand (`AppStartupRecoveryErrorScreen`) und Blockierung vorzeitiger Mutationen | erfüllt | automatische Tests (`test/core/services/backup_coordinator_test.dart`: `Amendment 4 – Finding F (Verzögerte Recovery): ProviantplanerApp zeigt während laufender Recovery den Initialisierungszustand, baut den Router erst danach auf und blockiert vorzeitige Datenmutationen`, `Amendment 4 – Finding F (Nicht auflösbarer Recovery-Fehler): ProviantplanerApp zeigt bei RestoreRecoveryException den nicht-destruktiven Fehlerzustand, löscht keine Daten und blockiert Mutationen bis zur Behebung`) |
+| **Amendment 5 – G (BLOCKER: Paralleler Restore vs. Recovery & konkurrierende Datenoperationen):** Gemeinsame, kontrollierte Operationskoordination (`StorageOperationCoordinator`) für `restoreBackup()`, `recoverStorageState()`, `TripService.deleteTrip()` und konkurrierende Service-Operationen ohne Löschung aktiver Staging-/Rollback-Dateien und ohne Deadlocks | erfüllt | automatische Tests (`test/core/services/backup_coordinator_test.dart`: `Amendment 5 – Finding G (Regression 1–4 – Paralleler Restore vs. Lese-/Schreibzugriff & Recovery bei Erfolg): Laufender Restore vor writeRestoreJournal() wird durch parallele Recovery-/Service-Aufrufe nicht als Crash fehlinterpretiert`, `Amendment 5 – Finding G (Regression 5 – Paralleler Restore mit injiziertem Fehler): Wartende Lese-/Schreiboperationen löschen kein Staging, Lock wird bei Fehler freigegeben und Operationen arbeiten auf intaktem Vorzustand weiter`, `Amendment 5 – Finding G (Regression 6 & 7 – deleteTrip-Konflikt mit Restore/Recovery sowie Deadlock-Freiheit und Lock-Freigabe): Aktiver deleteTrip und aktiver Restore serialisieren sauber ohne Verlust von Rollback-/Staging-Dateien und ohne Deadlock`) |
 
 ---
 
@@ -157,7 +164,7 @@ Gesamt: 63 gezielte Tests für RECEIPT1 und Amendments 1–4 erfolgreich ausgef�
 
 ## Annahmen / Abweichungen vom PRD
 
-- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`, `docs/impl/RECEIPT1_plan.md` sowie Amendments 1–4 wurden vollständig umgesetzt.
+- Keine. Sämtliche Vorgaben aus `docs/PRODUCT_EXPENSE_RECEIPTS_v0.1.md`, `docs/impl/RECEIPT1_plan.md` sowie Amendments 1–5 wurden vollständig umgesetzt.
 - **Begründung zur Test-Erweiterung gemäß Programmierregel 7:** Der in Amendment 2 angelegte Test `R2: TripService.deleteTrip...` in `test/features/kitty/receipt_attachment_lifecycle_test.dart` wurde in Amendment 3 auf `R2 & Amendment 3 – Finding C` erweitert, um sowohl den Pre-Commit-Fehler (`stageTripDeleteRollback` mit vollständigem DB- und Datei-Erhalt), den Crash vor/nach DB-Commit als auch den Post-Commit-Cleanup-Fehler (`deleteTripReceipts` -> `TripDeleteCleanupException(tripDeletedInDb: true)`) zu prüfen.
 
 ---
@@ -187,4 +194,4 @@ Gesamt: 63 gezielte Tests für RECEIPT1 und Amendments 1–4 erfolgreich ausgef�
 
 - Branch: `slice/receipt1-expense-receipts-settlement-package`
 - PR: #34
-- Amendment 4 Commit: `RECEIPT1: Address final recovery gate amendment 4 (Findings E & F pre-journal crash recovery & central app startup gate)`
+- Amendment 5 Commit: `RECEIPT1: Address concurrency integrity amendment 5 (Finding G StorageOperationCoordinator for restore, recovery & deleteTrip)`

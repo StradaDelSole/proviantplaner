@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-17 – RECEIPT1 Concurrency Integrity Amendment 5 (Finding G)
+
+- **Finding G – BLOCKER (Paralleler Restore vs. Recovery & konkurrierende Datenoperationen):**
+  - Einführung von `StorageOperationCoordinator` in `ReceiptFileService` und `BackupCoordinator.runSynchronizedStorageOperation()` zur gemeinsamen, kontrollierten Serialisierung von `restoreBackup()`, `createBackup()`, `recoverStorageState()`, `TripService.deleteTrip()` sowie sämtlichen geschützten Lese- und Schreiboperationen in `TripService`, `ShoppingListService`, `KittyService`, `BoatProfileService` und den zugehörigen Riverpod-Providern.
+  - Während eines aktiven `restoreBackup()` hält der Restore den exklusiven FIFO-Lock über die gesamte Laufzeit, sodass konkurrierende Recovery-, Lese- oder Schreibaufrufe weder aktive Staging-/Rollback-Dateien (`receipts_staging_active/`, `receipts_rollback/`) bereinigen noch auf einem teilweise ersetzten Datenbestand operieren können.
+  - Absicherung von `TripService.deleteTrip()` und seines Rollback-/Cleanup-Lifecycles (`stageTripDeleteRollback`, DB-Transaktion, `finalizeTripDeleteRollback`, `restoreTripDeleteRollback`) gegen konkurrierende Recovery-, Restore- und Service-Operationen.
+  - Zone-basierte Re-Entrancy verhindert Deadlocks bei verschachtelten Service-Aufrufen und beim internen Recovery-Check zu Beginn geschützter Operationen, während externe Hooks und Invalidierungs-Callbacks außerhalb der Re-Entrancy-Zone ausgeführt werden; garantierte Lock-Freigabe im Erfolgs- und Fehlerfall.
+
 ## 2026-10-17 – RECEIPT1 Final Recovery Gate Amendment 4 (Findings E & F)
 
 - **Finding E – HIGH (Crash vor Journal-Erstellung):**

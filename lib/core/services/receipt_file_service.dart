@@ -2,12 +2,100 @@
 /// Speichert, skaliert, entfernt EXIF-Metadaten und verwaltet lokale Belegdateien.
 library;
 
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+/// Koordiniert konkurrierende Storage-, Recovery-, Restore- und Törn-Löschoperationen
+/// über eine gemeinsame FIFO-Sperre mit Zone-basierter Re-Entrancy (RECEIPT1 Amendment 5 Finding G).
+class StorageOperationCoordinator {
+  static final Object _zoneTokenKey = Object();
+
+  bool _isLocked = false;
+  Object? _activeToken;
+  String? _activeOperationName;
+  final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
+
+  /// Gibt an, ob aktuell eine koordinierte Operation aktiv ist.
+  bool get isOperationActive => _isLocked;
+
+  /// Name der aktuell aktiven Top-Level-Operation.
+  String? get activeOperationName => _activeOperationName;
+
+  /// Anzahl der aktuell in der FIFO-Warteschlange wartenden Operationen.
+  int get pendingWaitersCount => _waitQueue.length;
+
+  /// Prüft, ob der aktuelle Aufrufpfad bereits innerhalb der aktiven Operation läuft (Re-Entrancy).
+  bool get isInActiveOperationZone =>
+      _isLocked && _activeToken != null && Zone.current[_zoneTokenKey] == _activeToken;
+
+  /// Führt [action] exklusiv koordiniert aus; verschachtelte Aufrufe innerhalb derselben
+  /// Operations-Zone laufen re-entrant ohne Deadlock durch.
+  Future<T> runSynchronized<T>({
+    required String operationName,
+    required Future<T> Function() action,
+  }) async {
+    if (isInActiveOperationZone) {
+      return await action();
+    }
+
+    if (_isLocked) {
+      final waiter = Completer<void>();
+      _waitQueue.addLast(waiter);
+      await waiter.future;
+    } else {
+      _isLocked = true;
+    }
+
+    final token = Object();
+    _activeToken = token;
+    _activeOperationName = operationName;
+    try {
+      return await runZoned(
+        action,
+        zoneValues: <Object?, Object?>{_zoneTokenKey: token},
+      );
+    } finally {
+      _activeToken = null;
+      _activeOperationName = null;
+      if (_waitQueue.isNotEmpty) {
+        final nextWaiter = _waitQueue.removeFirst();
+        nextWaiter.complete();
+      } else {
+        _isLocked = false;
+      }
+    }
+  }
+
+  /// Führt einen asynchronen Hook außerhalb der aktiven Re-Entrancy-Zone aus,
+  /// damit darin gestartete konkurrierende Zugriffe regulär auf die Sperre warten.
+  static Future<T> runOutsideOperationZoneAsync<T>(Future<T> Function() callback) {
+    if (Zone.current[_zoneTokenKey] == null) {
+      return callback();
+    }
+    return runZoned(
+      callback,
+      zoneValues: <Object?, Object?>{_zoneTokenKey: null},
+    );
+  }
+
+  /// Führt einen synchronen Callback außerhalb der aktiven Re-Entrancy-Zone aus.
+  static void runOutsideOperationZoneSync(void Function() callback) {
+    if (Zone.current[_zoneTokenKey] == null) {
+      callback();
+      return;
+    }
+    runZoned(
+      callback,
+      zoneValues: <Object?, Object?>{_zoneTokenKey: null},
+    );
+  }
+}
 
 /// Ergebnis des Speicherns oder Verarbeitens eines Belegs.
 class ProcessedReceiptFile {
@@ -37,12 +125,32 @@ class ReceiptFileService {
   /// Wird vor Dateisystemoperationen mit dem Operationsnamen aufgerufen.
   void Function(String operation)? faultInjector;
 
+  /// Optionaler asynchroner Hook vor Dateisystemoperationen zur gezielten Anhalte-/Concurrency-Steuerung in Tests (Amendment 5 Finding G).
+  Future<void> Function(String operation)? onBeforeOperationAsync;
+
   /// Optionaler asynchroner Hook vor Ausführung der Recovery (für verzögerte Recovery-Tests, Amendment 4 Finding F).
   Future<void> Function()? onBeforeRecoveryHook;
 
+  StorageOperationCoordinator? _boundCoordinator;
   bool _initialRecoveryCompleted = false;
   int _recoveryExecutionCount = 0;
   Future<void>? _activeRecoveryFuture;
+
+  /// Der an diese Instanz gebundene [StorageOperationCoordinator].
+  StorageOperationCoordinator? get boundCoordinator => _boundCoordinator;
+
+  /// Bindet einen gemeinsamen [StorageOperationCoordinator] an diese Instanz.
+  void bindCoordinator(StorageOperationCoordinator coordinator) {
+    _boundCoordinator = coordinator;
+  }
+
+  /// Führt [onBeforeOperationAsync] (falls gesetzt) außerhalb der Re-Entrancy-Zone aus.
+  Future<void> invokeBeforeOperationAsync(String operation) async {
+    final hook = onBeforeOperationAsync;
+    if (hook != null) {
+      await StorageOperationCoordinator.runOutsideOperationZoneAsync(() => hook(operation));
+    }
+  }
 
   /// Gibt an, ob die initiale App-Start-Recovery für diese Instanz erfolgreich abgeschlossen wurde (Finding B).
   bool get isInitialRecoveryCompleted => _initialRecoveryCompleted;
@@ -53,6 +161,7 @@ class ReceiptFileService {
   ReceiptFileService({
     Future<Directory> Function()? docsDirProvider,
     this.faultInjector,
+    this.onBeforeOperationAsync,
     this.onBeforeRecoveryHook,
   }) : getDocsDir = docsDirProvider ?? _resolveDefaultDocsDir;
 
@@ -78,7 +187,7 @@ class ReceiptFileService {
       _recoveryExecutionCount++;
       try {
         if (onBeforeRecoveryHook != null) {
-          await onBeforeRecoveryHook!();
+          await StorageOperationCoordinator.runOutsideOperationZoneAsync(onBeforeRecoveryHook!);
         }
         await task();
         _initialRecoveryCompleted = true;
@@ -303,6 +412,7 @@ class ReceiptFileService {
   /// Verschiebt alle Belege eines Törns vor einer Törn-Löschung in ein Rollback-Verzeichnis,
   /// damit die letzte wiederherstellbare Kopie bis nach dem erfolgreichen DB-Commit erhalten bleibt (Finding C).
   Future<void> stageTripDeleteRollback(int tripId) async {
+    await invokeBeforeOperationAsync('stageTripDeleteRollback');
     faultInjector?.call('stageTripDeleteRollback');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
@@ -318,6 +428,8 @@ class ReceiptFileService {
 
   /// Stellt die Belege eines Törns aus dem Rollback-Verzeichnis wieder her, falls `deleteTrip` vor dem DB-Commit fehlschlägt (Finding C).
   Future<void> restoreTripDeleteRollback(int tripId) async {
+    await invokeBeforeOperationAsync('restoreTripDeleteRollback');
+    faultInjector?.call('restoreTripDeleteRollback');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts', 'trip_$tripId'));
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_trip_rollback', 'trip_$tripId'));
@@ -334,6 +446,7 @@ class ReceiptFileService {
 
   /// Finalisiert die Törn-Löschung im Dateisystem erst NACH erfolgreichem DB-Commit (Finding C).
   Future<void> finalizeTripDeleteRollback(int tripId) async {
+    await invokeBeforeOperationAsync('finalizeTripDeleteRollback');
     faultInjector?.call('deleteTripReceipts');
     faultInjector?.call('finalizeTripDeleteRollback');
     final docsDir = await getDocsDir();
@@ -421,6 +534,7 @@ class ReceiptFileService {
     String phase = 'promoting',
     List<String>? previousReceiptPaths,
   }) async {
+    await invokeBeforeOperationAsync('writeRestoreJournal');
     faultInjector?.call('writeRestoreJournal');
     final docsDir = await getDocsDir();
     final journalFile = File(p.join(docsDir.path, 'restore_journal.json'));
@@ -482,6 +596,7 @@ class ReceiptFileService {
   Future<void> promoteStagedReceipts({
     required Directory stagedActiveDir,
   }) async {
+    await invokeBeforeOperationAsync('promoteStagedReceipts_beforeBackupMove');
     faultInjector?.call('promoteStagedReceipts_beforeBackupMove');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));
@@ -495,6 +610,7 @@ class ReceiptFileService {
       await _moveDirectory(activeDir, rollbackDir);
     }
 
+    await invokeBeforeOperationAsync('promoteStagedReceipts_afterBackupMove');
     faultInjector?.call('promoteStagedReceipts_afterBackupMove');
 
     if (stagedActiveDir.existsSync()) {
@@ -503,12 +619,14 @@ class ReceiptFileService {
       activeDir.createSync(recursive: true);
     }
 
+    await invokeBeforeOperationAsync('promoteStagedReceipts_afterPromote');
     faultInjector?.call('promoteStagedReceipts_afterPromote');
   }
 
   /// Phase 2 des Restore-Commits (wird NACH erfolgreichem SQLite-COMMIT ausgeführt, R1):
   /// Entfernt das Rollback-Verzeichnis, das Staging-Verzeichnis und zuletzt das Recovery-Journal.
   Future<void> finalizeRestoreStaging() async {
+    await invokeBeforeOperationAsync('finalizeRestoreStaging');
     faultInjector?.call('finalizeRestoreStaging');
     final docsDir = await getDocsDir();
     final rollbackDir = Directory(p.join(docsDir.path, 'receipts_rollback'));
@@ -528,6 +646,7 @@ class ReceiptFileService {
   /// Darf ausschließlich aufgerufen werden, nachdem verifiziert wurde, dass weder ein Journal noch ein
   /// Rollback-Verzeichnis existiert und alle produktiven DB-Belegdateien in `receipts/` intakt sind.
   Future<void> cleanPreJournalStagingArtifacts() async {
+    await invokeBeforeOperationAsync('cleanPreJournalStagingArtifacts');
     faultInjector?.call('cleanPreJournalStagingArtifacts');
     final docsDir = await getDocsDir();
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
@@ -549,6 +668,7 @@ class ReceiptFileService {
   Future<void> abortRestoreStaging({
     Directory? stagedActiveDir,
   }) async {
+    await invokeBeforeOperationAsync('abortRestoreStaging');
     faultInjector?.call('abortRestoreStaging');
     final docsDir = await getDocsDir();
     final activeDir = Directory(p.join(docsDir.path, 'receipts'));

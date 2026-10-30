@@ -30,7 +30,11 @@ import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/receipt_file_service.dart';
 import 'package:proviantplaner/features/entitlements/data/entitlements_providers.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
+import 'package:proviantplaner/features/kitty/data/kitty_service.dart';
+import 'package:proviantplaner/features/shopping_list/data/catalog_repository.dart';
+import 'package:proviantplaner/features/trip/data/boat_profile_service.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
 Uint8List _createTestJpeg({int width = 10, int height = 10}) {
   final image = img.Image(width: width, height: height);
@@ -1763,6 +1767,514 @@ void main() {
       expect(find.byKey(const Key('app_startup_recovery_error')), findsNothing);
       expect(find.text('Meine Törns'), findsOneWidget);
       expect(find.text('Geschützter Törn bei Recovery-Fehler'), findsOneWidget);
+    });
+
+    test('Amendment 5 – Finding G (Regression 1–4 – Paralleler Restore vs. Lese-/Schreibzugriff & Recovery bei Erfolg): Laufender Restore vor writeRestoreJournal() wird durch parallele Recovery-/Service-Aufrufe nicht als Crash fehlinterpretiert', () async {
+      await authService.loginWithEmail('concurrency@example.com', newsletterOptIn: false);
+
+      // 1. Erstelle gültiges Backup mit Belegbild
+      final backupTripId = await seedCompleteTrip(db, 'Wiederhergestellter Concurrency-Törn');
+      final backupExpenses = await db.expenseDao.getExpensesForTrip(backupTripId);
+      final backupProcessed = await receiptService.saveReceiptImage(
+        tripId: backupTripId,
+        expenseId: backupExpenses.first.id,
+        preferredFileName: 'staged_active_beleg.jpg',
+        imageBytes: _createTestJpeg(width: 24, height: 24),
+      );
+      final backupReceiptBytes = File(backupProcessed.absolutePath).readAsBytesSync();
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: backupTripId,
+          expenseId: backupExpenses.first.id,
+          fileName: backupProcessed.fileName,
+          filePath: backupProcessed.filePath,
+          byteSize: Value(backupProcessed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      await coordinator.createBackup();
+
+      // 2. Lokalen Zustand durch anderen Törn ersetzen
+      await db.delete(db.trips).go();
+      final activeReceiptsDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (activeReceiptsDir.existsSync()) {
+        activeReceiptsDir.deleteSync(recursive: true);
+      }
+      final localTripId = await seedCompleteTrip(db, 'Alter Lokaler Törn');
+
+      final catalogRepo = CatalogRepository();
+      catalogRepo.loadFromJsonStrings(
+        catalogJson: File('data/catalog_v0.11.json').readAsStringSync(),
+        quantitiesJson: File('data/quantities_v0.6.json').readAsStringSync(),
+        reviewConfigJson: File('data/provisioning_review_v0.1.json').readAsStringSync(),
+      );
+      final tripService = TripService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        boatProfileDao: db.boatProfileDao,
+        expenseDao: db.expenseDao,
+        receiptFileService: receiptService,
+      );
+      final shoppingListService = ShoppingListService(
+        listItemDao: db.listItemDao,
+        tripDao: db.tripDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final kittyService = KittyService(
+        expenseDao: db.expenseDao,
+        tripDao: db.tripDao,
+        receiptFileService: receiptService,
+      );
+      final boatProfileService = BoatProfileService(
+        boatProfileDao: db.boatProfileDao,
+        receiptFileService: receiptService,
+      );
+
+      // 3. Pausiere restoreBackup() NACH dem Anlegen der Staging-Dateien (`receipts_staging_active/`),
+      //    aber VOR `writeRestoreJournal()`.
+      final restorePausedAtJournal = Completer<void>();
+      final resumeRestore = Completer<void>();
+      receiptService.onBeforeOperationAsync = (op) async {
+        if (op == 'writeRestoreJournal' && !restorePausedAtJournal.isCompleted) {
+          restorePausedAtJournal.complete();
+          await resumeRestore.future;
+        }
+      };
+
+      final restoreFuture = coordinator.restoreBackup();
+      await restorePausedAtJournal.future;
+
+      final stagingDir = Directory(p.join(tempDir.path, 'receipts_staging_active'));
+      final journalFile = File(p.join(tempDir.path, 'restore_journal.json'));
+      expect(stagingDir.existsSync(), isTrue);
+      final stagedFilesBefore = stagingDir.listSync(recursive: true).whereType<File>().toList();
+      expect(stagedFilesBefore, hasLength(1));
+      final stagedFile = stagedFilesBefore.single;
+      expect(stagedFile.existsSync(), isTrue);
+      expect(stagedFile.readAsBytesSync(), equals(backupReceiptBytes));
+      expect(journalFile.existsSync(), isFalse);
+      expect(coordinator.operationCoordinator.isOperationActive, isTrue);
+
+      // Da backupTripId = 1 und localTripId = 2 vergeben wurden, erhält der wiederhergestellte Törn
+      // in SQLite AUTOINCREMENT die ID localTripId + 1 (= 3).
+      final expectedRestoredTripId = localTripId + 1;
+
+      // 4. Starte parallel geschützte Leseoperationen, Schreiboperationen und direkte Recovery-Aufrufe
+      var recoveryFinished = false;
+      var readShoppingFinished = false;
+      var readKittyFinished = false;
+      var readBoatsFinished = false;
+      var writeStopFinished = false;
+      var writeBoatFinished = false;
+
+      final concurrentRecoveryFuture = BackupCoordinator.recoverStorageState(
+        db: db,
+        receiptFileService: receiptService,
+      ).then((_) => recoveryFinished = true);
+
+      final concurrentReadShoppingFuture = shoppingListService
+          .loadShoppingList(expectedRestoredTripId)
+          .then((items) {
+        readShoppingFinished = true;
+        return items;
+      });
+
+      final concurrentReadKittyFuture = kittyService
+          .loadKittyData(expectedRestoredTripId)
+          .then((data) {
+        readKittyFinished = true;
+        return data;
+      });
+
+      final concurrentReadBoatsFuture = boatProfileService
+          .getActiveProfiles()
+          .then((profiles) {
+        readBoatsFinished = true;
+        return profiles;
+      });
+
+      final concurrentWriteStopFuture = tripService
+          .addShoppingStop(
+            tripId: expectedRestoredTripId,
+            name: 'Stopp Nach Restore',
+            dayNumber: 2,
+          )
+          .then((stopId) {
+        writeStopFinished = true;
+        return stopId;
+      });
+
+      final concurrentWriteBoatFuture = boatProfileService
+          .createProfile(name: 'Boot Nach Restore')
+          .then((boatId) {
+        writeBoatFinished = true;
+        return boatId;
+      });
+
+      // Gib der Event-Loop Zeit: Wäre kein Coordinator aktiv, würde `recoverStorageState`
+      // sofort `cleanPreJournalStagingArtifacts()` aufrufen und `receipts_staging_active/` löschen!
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // 5. Weise nach, dass KEINE aktive Staging-Datei gelöscht wurde und alle Operationen warten
+      expect(stagingDir.existsSync(), isTrue);
+      expect(stagedFile.existsSync(), isTrue);
+      expect(stagedFile.readAsBytesSync(), equals(backupReceiptBytes));
+      expect(recoveryFinished, isFalse);
+      expect(readShoppingFinished, isFalse);
+      expect(readKittyFinished, isFalse);
+      expect(readBoatsFinished, isFalse);
+      expect(writeStopFinished, isFalse);
+      expect(writeBoatFinished, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(6));
+
+      // 6. Setze Restore fort und prüfe Konsistenz von SQLite, Belegdateien und Service-Ergebnissen
+      resumeRestore.complete();
+      await restoreFuture;
+
+      final shoppingItemsAfter = await concurrentReadShoppingFuture;
+      final kittyDataAfter = await concurrentReadKittyFuture;
+      final boatsAfterRead = await concurrentReadBoatsFuture;
+      final newStopId = await concurrentWriteStopFuture;
+      final newBoatId = await concurrentWriteBoatFuture;
+      await concurrentRecoveryFuture;
+
+      expect(recoveryFinished, isTrue);
+      expect(readShoppingFinished, isTrue);
+      expect(readKittyFinished, isTrue);
+      expect(readBoatsFinished, isTrue);
+      expect(writeStopFinished, isTrue);
+      expect(writeBoatFinished, isTrue);
+      expect(coordinator.operationCoordinator.isOperationActive, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(0));
+
+      // Staging und Journal sind sauber aufgeräumt; wiederhergestellte Belegdatei ist aktiv und byte-identisch
+      expect(stagingDir.existsSync(), isFalse);
+      expect(journalFile.existsSync(), isFalse);
+      final restoredReceiptRelPath = kittyDataAfter.expenses.first.receipts.single.filePath;
+      final restoredReceiptFile = File(p.join(tempDir.path, restoredReceiptRelPath));
+      expect(restoredReceiptFile.existsSync(), isTrue);
+      expect(restoredReceiptFile.readAsBytesSync(), equals(backupReceiptBytes));
+
+      // Alle wartenden Lese- und Schreiboperationen haben den neuen konsistenten Zustand gesehen
+      final tripsAfter = await db.tripDao.getAllTrips();
+      expect(tripsAfter.single.id, equals(expectedRestoredTripId));
+      expect(tripsAfter.single.name, equals('Wiederhergestellter Concurrency-Törn'));
+      expect(shoppingItemsAfter.trip.name, equals('Wiederhergestellter Concurrency-Törn'));
+      expect(shoppingItemsAfter.stops, isNotEmpty);
+      expect(kittyDataAfter.expenses, isNotEmpty);
+      expect(boatsAfterRead, isNotNull);
+      expect(newStopId, greaterThan(0));
+      expect(newBoatId, greaterThan(0));
+
+      final stopsAfter = await db.tripDao.getShoppingStopsForTrip(expectedRestoredTripId);
+      expect(stopsAfter.map((s) => s.name), contains('Stopp Nach Restore'));
+    });
+
+    test('Amendment 5 – Finding G (Regression 5 – Paralleler Restore mit injiziertem Fehler): Wartende Lese-/Schreiboperationen löschen kein Staging, Lock wird bei Fehler freigegeben und Operationen arbeiten auf intaktem Vorzustand weiter', () async {
+      await authService.loginWithEmail('fail-concurrency@example.com', newsletterOptIn: false);
+
+      // 1. Backup erstellen
+      final backupTripId = await seedCompleteTrip(db, 'Backup-Törn Mit Fehler');
+      final backupExpenses = await db.expenseDao.getExpensesForTrip(backupTripId);
+      final backupProcessed = await receiptService.saveReceiptImage(
+        tripId: backupTripId,
+        expenseId: backupExpenses.first.id,
+        preferredFileName: 'backup_fail.jpg',
+        imageBytes: _createTestJpeg(width: 20, height: 20),
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: backupTripId,
+          expenseId: backupExpenses.first.id,
+          fileName: backupProcessed.fileName,
+          filePath: backupProcessed.filePath,
+          byteSize: Value(backupProcessed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+      await coordinator.createBackup();
+
+      // 2. Lokalen produktiven Zustand mit eigenem Beleg aufbauen
+      await db.delete(db.trips).go();
+      final activeReceiptsDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (activeReceiptsDir.existsSync()) {
+        activeReceiptsDir.deleteSync(recursive: true);
+      }
+      final localTripId = await seedCompleteTrip(db, 'Intakter Lokaler Törn');
+      final localExpenses = await db.expenseDao.getExpensesForTrip(localTripId);
+      final localProcessed = await receiptService.saveReceiptImage(
+        tripId: localTripId,
+        expenseId: localExpenses.first.id,
+        preferredFileName: 'local_intact.jpg',
+        imageBytes: _createTestJpeg(width: 18, height: 18),
+      );
+      final localBytes = File(localProcessed.absolutePath).readAsBytesSync();
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: localTripId,
+          expenseId: localExpenses.first.id,
+          fileName: localProcessed.fileName,
+          filePath: localProcessed.filePath,
+          byteSize: Value(localProcessed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      final catalogRepo = CatalogRepository();
+      catalogRepo.loadFromJsonStrings(
+        catalogJson: File('data/catalog_v0.11.json').readAsStringSync(),
+        quantitiesJson: File('data/quantities_v0.6.json').readAsStringSync(),
+        reviewConfigJson: File('data/provisioning_review_v0.1.json').readAsStringSync(),
+      );
+      final tripService = TripService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        boatProfileDao: db.boatProfileDao,
+        expenseDao: db.expenseDao,
+        receiptFileService: receiptService,
+      );
+      final kittyService = KittyService(
+        expenseDao: db.expenseDao,
+        tripDao: db.tripDao,
+        receiptFileService: receiptService,
+      );
+
+      // 3. Pausiere restoreBackup() vor `writeRestoreJournal()`, injiziere Fehler nach Freigabe
+      final restorePaused = Completer<void>();
+      final resumeRestore = Completer<void>();
+      receiptService.onBeforeOperationAsync = (op) async {
+        if (op == 'writeRestoreJournal' && !restorePaused.isCompleted) {
+          restorePaused.complete();
+          await resumeRestore.future;
+        }
+      };
+      receiptService.faultInjector = (op) {
+        if (op == 'promoteStagedReceipts_afterBackupMove') {
+          throw const FileSystemException('Simulierter Fehler während Dateipromotion');
+        }
+      };
+
+      final restoreFuture = expectLater(
+        coordinator.restoreBackup(),
+        throwsA(isA<FileSystemException>()),
+      );
+      await restorePaused.future;
+
+      final stagingDir = Directory(p.join(tempDir.path, 'receipts_staging_active'));
+      expect(stagingDir.existsSync(), isTrue);
+      final stagedFilesBefore = stagingDir.listSync(recursive: true).whereType<File>().toList();
+      expect(stagedFilesBefore, hasLength(1));
+      final stagedFile = stagedFilesBefore.single;
+      expect(stagedFile.existsSync(), isTrue);
+
+      // 4. Starte parallele Lese- und Schreiboperationen auf dem lokalen Törn
+      var readCompleted = false;
+      var writeCompleted = false;
+      final waitingReadFuture = kittyService.loadKittyData(localTripId).then((data) {
+        readCompleted = true;
+        return data;
+      });
+      final waitingWriteFuture = tripService
+          .addShoppingStop(
+            tripId: localTripId,
+            name: 'Stopp Nach Rollback',
+            dayNumber: 3,
+          )
+          .then((id) {
+        writeCompleted = true;
+        return id;
+      });
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(stagingDir.existsSync(), isTrue);
+      expect(stagedFile.existsSync(), isTrue);
+      expect(readCompleted, isFalse);
+      expect(writeCompleted, isFalse);
+
+      // 5. Setze Restore fort -> Fehler schlägt fehl, Rollback stellt lokalen Zustand wieder her,
+      //    Lock wird freigegeben und wartende Operationen laufen erfolgreich auf dem Vorzustand!
+      resumeRestore.complete();
+      await restoreFuture;
+
+      receiptService.faultInjector = null;
+      receiptService.onBeforeOperationAsync = null;
+
+      final kittyData = await waitingReadFuture;
+      final createdStopId = await waitingWriteFuture;
+
+      expect(readCompleted, isTrue);
+      expect(writeCompleted, isTrue);
+      expect(createdStopId, greaterThan(0));
+      expect(coordinator.operationCoordinator.isOperationActive, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(0));
+
+      // Lokaler Törn und lokale Belegdatei sind vollständig intakt
+      final tripsAfter = await db.tripDao.getAllTrips();
+      expect(tripsAfter.single.id, equals(localTripId));
+      expect(tripsAfter.single.name, equals('Intakter Lokaler Törn'));
+      expect(kittyData.expenses.first.receipts.single.filePath, equals(localProcessed.filePath));
+      final localFile = File(p.join(tempDir.path, localProcessed.filePath));
+      expect(localFile.existsSync(), isTrue);
+      expect(localFile.readAsBytesSync(), equals(localBytes));
+      expect(stagingDir.existsSync(), isFalse);
+      expect(Directory(p.join(tempDir.path, 'receipts_rollback')).existsSync(), isFalse);
+      expect(File(p.join(tempDir.path, 'restore_journal.json')).existsSync(), isFalse);
+    });
+
+    test('Amendment 5 – Finding G (Regression 6 & 7 – deleteTrip-Konflikt mit Restore/Recovery sowie Deadlock-Freiheit und Lock-Freigabe): Aktiver deleteTrip und aktiver Restore serialisieren sauber ohne Verlust von Rollback-/Staging-Dateien und ohne Deadlock', () async {
+      await authService.loginWithEmail('deletetrip-concurrency@example.com', newsletterOptIn: false);
+
+      // 1. Erstelle Backup für späteren parallelen Restore
+      final backupTripId = await seedCompleteTrip(db, 'Backup-Törn Nach Delete');
+      await coordinator.createBackup();
+
+      // 2. Erstelle zwei lokale Törns; Törn 1 hat einen Beleg und soll gelöscht werden
+      await db.delete(db.trips).go();
+      final activeReceiptsDir = Directory(p.join(tempDir.path, 'receipts'));
+      if (activeReceiptsDir.existsSync()) {
+        activeReceiptsDir.deleteSync(recursive: true);
+      }
+      final tripToDeleteId = await seedCompleteTrip(db, 'Zu Löschender Törn');
+      final keepTripId = await seedCompleteTrip(db, 'Bleibender Törn');
+
+      final expenses = await db.expenseDao.getExpensesForTrip(tripToDeleteId);
+      final receiptBytes = _createTestJpeg(width: 20, height: 20);
+      final processed = await receiptService.saveReceiptImage(
+        tripId: tripToDeleteId,
+        expenseId: expenses.first.id,
+        preferredFileName: 'delete_race.jpg',
+        imageBytes: receiptBytes,
+      );
+      await db.expenseDao.addReceipt(
+        ExpenseReceiptsCompanion.insert(
+          tripId: tripToDeleteId,
+          expenseId: expenses.first.id,
+          fileName: processed.fileName,
+          filePath: processed.filePath,
+          byteSize: Value(processed.byteSize),
+          mimeType: const Value('image/jpeg'),
+        ),
+      );
+
+      final catalogRepo = CatalogRepository();
+      catalogRepo.loadFromJsonStrings(
+        catalogJson: File('data/catalog_v0.11.json').readAsStringSync(),
+        quantitiesJson: File('data/quantities_v0.6.json').readAsStringSync(),
+        reviewConfigJson: File('data/provisioning_review_v0.1.json').readAsStringSync(),
+      );
+      final tripService = TripService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        boatProfileDao: db.boatProfileDao,
+        expenseDao: db.expenseDao,
+        receiptFileService: receiptService,
+      );
+      final shoppingListService = ShoppingListService(
+        listItemDao: db.listItemDao,
+        tripDao: db.tripDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final kittyService = KittyService(
+        expenseDao: db.expenseDao,
+        tripDao: db.tripDao,
+        receiptFileService: receiptService,
+      );
+
+      // 3. Teil A: Pausiere `deleteTrip` mitten in der SQLite-Transaktion (nachdem
+      //    `stageTripDeleteRollback` die Belegdateien nach `receipts_trip_rollback/trip_<id>` verschoben hat).
+      final deletePausedInTx = Completer<void>();
+      final resumeDelete = Completer<void>();
+      receiptService.onBeforeOperationAsync = (op) async {
+        if (op == 'deleteTrip_inTransaction' && !deletePausedInTx.isCompleted) {
+          deletePausedInTx.complete();
+          await resumeDelete.future;
+        }
+      };
+
+      final deleteFuture = tripService.deleteTrip(tripToDeleteId);
+      await deletePausedInTx.future;
+
+      final tripRollbackDir = Directory(
+        p.join(tempDir.path, 'receipts_trip_rollback', 'trip_$tripToDeleteId'),
+      );
+      expect(tripRollbackDir.existsSync(), isTrue);
+
+      // Starte parallel `recoverStorageState()`, `kittyService.loadKittyData()` und `restoreBackup()`
+      var recoveryDone = false;
+      var kittyReadDone = false;
+      var restoreDone = false;
+
+      final waitingRecovery = BackupCoordinator.recoverStorageState(
+        db: db,
+        receiptFileService: receiptService,
+      ).then((_) => recoveryDone = true);
+
+      final waitingKittyRead = kittyService.loadKittyData(keepTripId).then((data) {
+        kittyReadDone = true;
+        return data;
+      });
+
+      final waitingRestore = coordinator.restoreBackup().then((_) => restoreDone = true);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Wäre `deleteTrip` nicht durch den Coordinator geschützt, würde `recoverStorageState()`
+      // sehen, dass `tripToDeleteId` in SQLite (vor Commit) noch existiert, und würde
+      // `receipts_trip_rollback/trip_<id>` fälschlich zurück nach `receipts/trip_<id>` verschieben!
+      expect(tripRollbackDir.existsSync(), isTrue);
+      expect(recoveryDone, isFalse);
+      expect(kittyReadDone, isFalse);
+      expect(restoreDone, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(3));
+
+      resumeDelete.complete();
+      await deleteFuture;
+      await waitingRecovery;
+      await waitingKittyRead;
+      await waitingRestore;
+
+      expect(recoveryDone, isTrue);
+      expect(kittyReadDone, isTrue);
+      expect(restoreDone, isTrue);
+      expect(tripRollbackDir.existsSync(), isFalse);
+      expect(coordinator.operationCoordinator.isOperationActive, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(0));
+
+      // 4. Teil B (Regression 7): Verschachtelte Service-Aufrufe (Re-Entrancy ohne Deadlock)
+      //    - `addCrewMember` ruft intern `recalculateTrip` auf
+      //    - `deleteCrewMemberSafely` ruft intern `hasFinancialHistory` und `recalculateTrip` auf
+      //    - `handleUnboughtItems` ruft intern `loadShoppingList` auf
+      receiptService.onBeforeOperationAsync = null;
+      final restoredTrip = (await db.tripDao.getAllTrips()).single;
+      expect(restoredTrip.name, equals('Backup-Törn Nach Delete'));
+      final restoredTripId = restoredTrip.id;
+      expect(restoredTripId, greaterThan(keepTripId));
+
+      final addedCrewId = await tripService.addCrewMember(
+        restoredTripId,
+        CrewMembersCompanion.insert(
+          tripId: restoredTripId,
+          name: 'Neues Crewmitglied Ohne Deadlock',
+        ),
+      );
+      expect(addedCrewId, greaterThan(0));
+
+      await tripService.deleteCrewMemberSafely(addedCrewId);
+
+      final stops = await db.tripDao.getShoppingStopsForTrip(restoredTripId);
+      await shoppingListService.handleUnboughtItems(
+        tripId: restoredTripId,
+        currentStopId: stops.first.id,
+        postpone: true,
+      );
+
+      expect(coordinator.operationCoordinator.isOperationActive, isFalse);
+      expect(coordinator.operationCoordinator.pendingWaitersCount, equals(0));
     });
   });
 }

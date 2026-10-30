@@ -64,9 +64,34 @@ class TripService {
     this.expenseDao,
     ReceiptFileService? receiptFileService,
     this.onTripDataChanged,
-  }) : receiptFileService = receiptFileService ?? ReceiptFileService();
+  }) : receiptFileService = BackupCoordinator.resolveReceiptFileService(
+          tripDao.attachedDatabase,
+          receiptFileService,
+        );
 
-  /// Zentraler Recovery-Gate-Check vor Lese-/Schreiboperationen (RECEIPT1 Amendment 3 Finding B & Amendment 4 Finding F).
+  /// Führt einen geschützten Lese-/Schreibzugriff synchronisiert mit Restore/Recovery/Delete aus (Finding G).
+  Future<T> runGuarded<T>(
+    Future<T> Function() action, {
+    String operationName = 'tripServiceOperation',
+  }) {
+    return BackupCoordinator.runSynchronizedStorageOperation<T>(
+      db: tripDao.attachedDatabase,
+      receiptFileService: receiptFileService,
+      operationName: operationName,
+      action: action,
+    );
+  }
+
+  void _notifyTripDataChanged(int tripId) {
+    final callback = onTripDataChanged;
+    if (callback != null) {
+      StorageOperationCoordinator.runOutsideOperationZoneSync(() {
+        callback(tripId);
+      });
+    }
+  }
+
+  /// Zentraler Recovery-Gate-Check vor Lese-/Schreiboperationen (RECEIPT1 Amendment 3 Finding B, Amendment 4 Finding F & Amendment 5 Finding G).
   Future<void> ensureStorageRecovered() async {
     await BackupCoordinator.recoverStorageState(
       db: tripDao.attachedDatabase,
@@ -102,262 +127,269 @@ class TripService {
     String? boatModel,
     bool? hasWatermaker,
   }) async {
-    await ensureStorageRecovered();
-    final effectiveClimate = climate ??
-        (region != null
-            ? (region == 'temperate'
-                ? 'cool'
-                : (region == 'hot_or_remote'
-                    ? 'hot'
-                    : (region == 'mediterranean' || region == 'mediterranean_summer' ? 'warm' : region)))
-            : 'warm');
+    return runGuarded(() async {
+      final effectiveClimate = climate ??
+          (region != null
+              ? (region == 'temperate'
+                  ? 'cool'
+                  : (region == 'hot_or_remote'
+                      ? 'hot'
+                      : (region == 'mediterranean' || region == 'mediterranean_summer' ? 'warm' : region)))
+              : 'warm');
 
-    // Falls ein Bootsprofil angegeben ist, dessen Werte als Basis für den Snapshot laden
-    BoatProfile? profile;
-    if (boatProfileId != null && boatProfileDao != null) {
-      profile = await boatProfileDao!.getProfileById(boatProfileId);
-    }
+      // Falls ein Bootsprofil angegeben ist, dessen Werte als Basis für den Snapshot laden
+      BoatProfile? profile;
+      if (boatProfileId != null && boatProfileDao != null) {
+        profile = await boatProfileDao!.getProfileById(boatProfileId);
+      }
 
-    final effectiveBoatName = boatName ?? profile?.name;
-    final effectiveBoatManufacturer = boatManufacturer ?? profile?.manufacturer;
-    final effectiveBoatModel = boatModel ?? profile?.model;
-    final effectiveFridgeCapacity = fridgeCapacityLiters != null
-        ? fridgeCapacityLiters.round()
-        : (profile != null ? profile.fridgeCapacity : 100);
-    final effectiveHasFreezer = hasFreezer ?? (profile != null ? profile.hasFreezer : false);
-    final effectiveFreezerCapacity = freezerCapacityLiters != null
-        ? freezerCapacityLiters.round()
-        : (profile != null ? profile.freezerCapacity : 0);
-    final effectiveWaterTankLiters = waterTankLiters != null
-        ? waterTankLiters.round()
-        : (profile != null ? profile.waterTankLiters : 0);
-    final effectiveIsWaterTankDrinkable = isWaterTankDrinkable ??
-        (profile != null ? profile.isWaterTankDrinkable : false);
-    final effectiveHasWatermaker = hasWatermaker ?? (profile?.hasWatermaker ?? false);
+      final effectiveBoatName = boatName ?? profile?.name;
+      final effectiveBoatManufacturer = boatManufacturer ?? profile?.manufacturer;
+      final effectiveBoatModel = boatModel ?? profile?.model;
+      final effectiveFridgeCapacity = fridgeCapacityLiters != null
+          ? fridgeCapacityLiters.round()
+          : (profile != null ? profile.fridgeCapacity : 100);
+      final effectiveHasFreezer = hasFreezer ?? (profile != null ? profile.hasFreezer : false);
+      final effectiveFreezerCapacity = freezerCapacityLiters != null
+          ? freezerCapacityLiters.round()
+          : (profile != null ? profile.freezerCapacity : 0);
+      final effectiveWaterTankLiters = waterTankLiters != null
+          ? waterTankLiters.round()
+          : (profile != null ? profile.waterTankLiters : 0);
+      final effectiveIsWaterTankDrinkable = isWaterTankDrinkable ??
+          (profile != null ? profile.isWaterTankDrinkable : false);
+      final effectiveHasWatermaker = hasWatermaker ?? (profile?.hasWatermaker ?? false);
 
-    // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
-    final tripCompanion = TripsCompanion.insert(
-      name: name,
-      startDate: startDate,
-      daysCount: Value(daysCount),
-      region: Value(effectiveClimate),
-      climate: Value(effectiveClimate),
-      isCharter: Value(isCharter),
-      boatProfileId: Value(boatProfileId),
-      boatName: Value(effectiveBoatName),
-      boatManufacturer: Value(effectiveBoatManufacturer),
-      boatModel: Value(effectiveBoatModel),
-      boatType: Value(boatType),
-      fridgeCapacity: Value(effectiveFridgeCapacity),
-      hasFreezer: Value(effectiveHasFreezer),
-      freezerCapacity: Value(effectiveFreezerCapacity),
-      waterTankLiters: Value(effectiveWaterTankLiters),
-      isWaterTankDrinkable: Value(effectiveIsWaterTankDrinkable),
-      hasWatermaker: Value(effectiveHasWatermaker),
-      hasStorageChecklist: Value(effectiveClimate == 'hot'),
-      appetite: Value(crewAppetite),
-      reserveDays: Value(crewReserve ? 'all_anchoring_days' : 'none'),
-      drinkingHabit: Value(crewDrinking),
-      createdAt: Value(DateTime.now()),
-    );
+      // 1. Törn anlegen (TripDao legt automatisch TripDays und den ersten ShoppingStop an)
+      final tripCompanion = TripsCompanion.insert(
+        name: name,
+        startDate: startDate,
+        daysCount: Value(daysCount),
+        region: Value(effectiveClimate),
+        climate: Value(effectiveClimate),
+        isCharter: Value(isCharter),
+        boatProfileId: Value(boatProfileId),
+        boatName: Value(effectiveBoatName),
+        boatManufacturer: Value(effectiveBoatManufacturer),
+        boatModel: Value(effectiveBoatModel),
+        boatType: Value(boatType),
+        fridgeCapacity: Value(effectiveFridgeCapacity),
+        hasFreezer: Value(effectiveHasFreezer),
+        freezerCapacity: Value(effectiveFreezerCapacity),
+        waterTankLiters: Value(effectiveWaterTankLiters),
+        isWaterTankDrinkable: Value(effectiveIsWaterTankDrinkable),
+        hasWatermaker: Value(effectiveHasWatermaker),
+        hasStorageChecklist: Value(effectiveClimate == 'hot'),
+        appetite: Value(crewAppetite),
+        reserveDays: Value(crewReserve ? 'all_anchoring_days' : 'none'),
+        drinkingHabit: Value(crewDrinking),
+        createdAt: Value(DateTime.now()),
+      );
 
-    final tripId = await tripDao.createTrip(tripCompanion, initialStopName: 'Ersteinkauf Basis');
+      final tripId = await tripDao.createTrip(tripCompanion, initialStopName: 'Ersteinkauf Basis');
 
-    // 1b. Restaurantbesuche initial setzen falls angegeben
-    if (restaurantDinnersCount > 0 || restaurantLunchesCount > 0) {
+      // 1b. Restaurantbesuche initial setzen falls angegeben
+      if (restaurantDinnersCount > 0 || restaurantLunchesCount > 0) {
+        final days = await tripDao.getDaysForTrip(tripId);
+        for (int i = 0; i < days.length; i++) {
+          final shouldDinner = i < restaurantDinnersCount;
+          final shouldLunch = i < restaurantLunchesCount;
+          if (shouldDinner || shouldLunch) {
+            await tripDao.updateTripDay(days[i].copyWith(
+              dinnerRestaurant: shouldDinner,
+              lunchRestaurant: shouldLunch,
+            ));
+          }
+        }
+      }
+
+      // 2. Crew-Mitglieder speichern
+      for (final member in crewMembers) {
+        await tripDao.addCrewMember(
+          CrewMembersCompanion.insert(
+            tripId: tripId,
+            name: member.name,
+            isChild: Value(!member.isAdult),
+            isVegetarian: Value(member.isVegetarian),
+            isNonDrinker: Value(member.noAlcohol),
+            customEatLevel: Value(member.customEatLevel?.rawValue),
+            customDrinkLevel: Value(member.customDrinkLevel?.rawValue),
+            iban: Value(member.iban),
+            paypalLink: Value(member.paypalLink),
+            revolutLink: Value(member.revolutLink),
+          ),
+        );
+      }
+
+      // 3. Vorratsmengen initial berechnen und persistieren
+      await recalculateTrip(tripId);
+
+      return tripId;
+    }, operationName: 'createTripWithCrew');
+  }
+
+  /// Berechnet alle Vorräte für den Törn reaktiv neu.
+  /// Bestehende manuelle Überschreibungen (overriddenPackages) bleiben unberührt erhalten!
+  Future<void> recalculateTrip(int tripId) async {
+    return runGuarded(() async {
+      final trip = await tripDao.getTripById(tripId);
+      if (trip == null) return;
+
+      final days = await tripDao.getDaysForTrip(tripId);
+      final crew = await tripDao.getCrewForTrip(tripId);
+      final existingItems = await listItemDao.getListItemsForTrip(tripId);
+
+      // Katalog-Repositories sicherstellen
+      if (catalogRepository.catalog == null || catalogRepository.quantities == null) {
+        await catalogRepository.loadFromBundle();
+      }
+
+      final engine = QuantityEngine(
+        catalog: catalogRepository.catalog!,
+        quantities: catalogRepository.quantities!,
+      );
+
+      final tripDayInputs = days.map((d) => TripDayInput(
+        dayNumber: d.dayNumber,
+        isLunchRestaurant: d.lunchRestaurant,
+        isEveningRestaurant: d.dinnerRestaurant,
+      )).toList();
+
+      final crewInputs = crew.map((c) => CrewMemberInput(
+        id: c.id.toString(),
+        name: c.name,
+        isAdult: !c.isChild,
+        isVegetarian: c.isVegetarian,
+        noAlcohol: c.isNonDrinker,
+        customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
+        customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
+        iban: c.iban,
+        paypalLink: c.paypalLink,
+        revolutLink: c.revolutLink,
+      )).toList();
+
+      // Map der Nutzertätigkeiten (Überschreibungen, Abwahlen etc.)
+      final userItemStates = <String, UserItemState>{};
+      final existingItemMap = <String, ListItem>{};
+      for (final item in existingItems) {
+        existingItemMap[item.catalogId] = item;
+        userItemStates[item.catalogId] = UserItemState(
+          isSelected: item.selected,
+          share: item.share,
+          overriddenPackages: null,
+          customPackSize: item.customPackageSize,
+        );
+      }
+
+      final calculationResult = engine.calculateTrip(
+        QuantityCalculationInput(
+          daysCount: trip.daysCount,
+          climate: trip.climate,
+          region: trip.climate,
+          fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
+          hasFreezer: trip.hasFreezer,
+          freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
+          waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
+          isWaterTankDrinkable: trip.isWaterTankDrinkable,
+          hasWatermaker: trip.hasWatermaker,
+          crewAppetite: trip.appetite,
+          crewReserve: trip.reserveDays == 'all_anchoring_days',
+          crewDrinking: trip.drinkingHabit,
+          tripDays: tripDayInputs,
+          crewMembers: crewInputs,
+          userItemStates: userItemStates,
+        ),
+      );
+
+      // Ergebnisse in DB aktualisieren / einfügen
+      for (final group in calculationResult.groupResults) {
+        for (final variant in group.variantResults) {
+          final existing = existingItemMap[variant.variantId];
+          if (existing != null) {
+            // Nur berechnete Menge & Packungen aktualisieren (overriddenPackages bleibt erhalten)
+            await listItemDao.updateListItem(
+              existing.copyWith(
+                calculatedQuantity: variant.calculatedNeedAmount,
+                calculatedPackages: variant.calculatedPackages,
+              ),
+            );
+          } else {
+            // Neu einfügen (FB1-B: Liste startet leer, Vorschläge vorhanden)
+            await listItemDao.addListItem(
+              ListItemsCompanion.insert(
+                tripId: tripId,
+                catalogId: variant.variantId,
+                calculatedQuantity: Value(variant.calculatedNeedAmount),
+                calculatedPackages: Value(variant.calculatedPackages),
+                selected: Value(variant.isSelected),
+                isAdopted: const Value(false),
+                share: Value(variant.share),
+                overriddenPackages: const Value(null),
+                customPackageSize: Value(variant.packSize),
+              ),
+            );
+          }
+        }
+      }
+
+      _notifyTripDataChanged(tripId);
+    }, operationName: 'recalculateTrip');
+  }
+
+  /// Schaltet Mittags-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
+  Future<void> toggleLunchRestaurant(TripDay day) async {
+    return runGuarded(() async {
+      final updated = day.copyWith(lunchRestaurant: !day.lunchRestaurant);
+      await tripDao.updateTripDay(updated);
+      await recalculateTrip(day.tripId);
+    }, operationName: 'toggleLunchRestaurant');
+  }
+
+  /// Schaltet Abends-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
+  Future<void> toggleEveningRestaurant(TripDay day) async {
+    return runGuarded(() async {
+      final updated = day.copyWith(dinnerRestaurant: !day.dinnerRestaurant);
+      await tripDao.updateTripDay(updated);
+      await recalculateTrip(day.tripId);
+    }, operationName: 'toggleEveningRestaurant');
+  }
+
+  /// Setzt die genaue Anzahl an Restaurant-Abendessen und -Mittagessen und berechnet Mengen sofort neu.
+  Future<void> setRestaurantCounts(int tripId, {required int dinners, required int lunches}) async {
+    return runGuarded(() async {
       final days = await tripDao.getDaysForTrip(tripId);
       for (int i = 0; i < days.length; i++) {
-        final shouldDinner = i < restaurantDinnersCount;
-        final shouldLunch = i < restaurantLunchesCount;
-        if (shouldDinner || shouldLunch) {
+        final shouldDinner = i < dinners;
+        final shouldLunch = i < lunches;
+        if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
           await tripDao.updateTripDay(days[i].copyWith(
             dinnerRestaurant: shouldDinner,
             lunchRestaurant: shouldLunch,
           ));
         }
       }
-    }
-
-    // 2. Crew-Mitglieder speichern
-    for (final member in crewMembers) {
-      await tripDao.addCrewMember(
-        CrewMembersCompanion.insert(
-          tripId: tripId,
-          name: member.name,
-          isChild: Value(!member.isAdult),
-          isVegetarian: Value(member.isVegetarian),
-          isNonDrinker: Value(member.noAlcohol),
-          customEatLevel: Value(member.customEatLevel?.rawValue),
-          customDrinkLevel: Value(member.customDrinkLevel?.rawValue),
-          iban: Value(member.iban),
-          paypalLink: Value(member.paypalLink),
-          revolutLink: Value(member.revolutLink),
-        ),
-      );
-    }
-
-    // 3. Vorratsmengen initial berechnen und persistieren
-    await recalculateTrip(tripId);
-
-    return tripId;
-  }
-
-  /// Berechnet alle Vorräte für den Törn reaktiv neu.
-  /// Bestehende manuelle Überschreibungen (overriddenPackages) bleiben unberührt erhalten!
-  Future<void> recalculateTrip(int tripId) async {
-    await ensureStorageRecovered();
-    final trip = await tripDao.getTripById(tripId);
-    if (trip == null) return;
-
-    final days = await tripDao.getDaysForTrip(tripId);
-    final crew = await tripDao.getCrewForTrip(tripId);
-    final existingItems = await listItemDao.getListItemsForTrip(tripId);
-
-    // Katalog-Repositories sicherstellen
-    if (catalogRepository.catalog == null || catalogRepository.quantities == null) {
-      await catalogRepository.loadFromBundle();
-    }
-
-    final engine = QuantityEngine(
-      catalog: catalogRepository.catalog!,
-      quantities: catalogRepository.quantities!,
-    );
-
-    final tripDayInputs = days.map((d) => TripDayInput(
-      dayNumber: d.dayNumber,
-      isLunchRestaurant: d.lunchRestaurant,
-      isEveningRestaurant: d.dinnerRestaurant,
-    )).toList();
-
-    final crewInputs = crew.map((c) => CrewMemberInput(
-      id: c.id.toString(),
-      name: c.name,
-      isAdult: !c.isChild,
-      isVegetarian: c.isVegetarian,
-      noAlcohol: c.isNonDrinker,
-      customEatLevel: c.customEatLevel != null ? EatProfileLevel.fromString(c.customEatLevel!) : null,
-      customDrinkLevel: c.customDrinkLevel != null ? DrinkProfileLevel.fromString(c.customDrinkLevel!) : null,
-      iban: c.iban,
-      paypalLink: c.paypalLink,
-      revolutLink: c.revolutLink,
-    )).toList();
-
-    // Map der Nutzertätigkeiten (Überschreibungen, Abwahlen etc.)
-    final userItemStates = <String, UserItemState>{};
-    final existingItemMap = <String, ListItem>{};
-    for (final item in existingItems) {
-      existingItemMap[item.catalogId] = item;
-      userItemStates[item.catalogId] = UserItemState(
-        isSelected: item.selected,
-        share: item.share,
-        overriddenPackages: null,
-        customPackSize: item.customPackageSize,
-      );
-    }
-
-    final calculationResult = engine.calculateTrip(
-      QuantityCalculationInput(
-        daysCount: trip.daysCount,
-        climate: trip.climate,
-        region: trip.climate,
-        fridgeCapacityLiters: trip.fridgeCapacity.toDouble(),
-        hasFreezer: trip.hasFreezer,
-        freezerCapacityLiters: trip.freezerCapacity > 0 ? trip.freezerCapacity.toDouble() : null,
-        waterTankLiters: trip.waterTankLiters > 0 ? trip.waterTankLiters.toDouble() : null,
-        isWaterTankDrinkable: trip.isWaterTankDrinkable,
-        hasWatermaker: trip.hasWatermaker,
-        crewAppetite: trip.appetite,
-        crewReserve: trip.reserveDays == 'all_anchoring_days',
-        crewDrinking: trip.drinkingHabit,
-        tripDays: tripDayInputs,
-        crewMembers: crewInputs,
-        userItemStates: userItemStates,
-      ),
-    );
-
-    // Ergebnisse in DB aktualisieren / einfügen
-    for (final group in calculationResult.groupResults) {
-      for (final variant in group.variantResults) {
-        final existing = existingItemMap[variant.variantId];
-        if (existing != null) {
-          // Nur berechnete Menge & Packungen aktualisieren (overriddenPackages bleibt erhalten)
-          await listItemDao.updateListItem(
-            existing.copyWith(
-              calculatedQuantity: variant.calculatedNeedAmount,
-              calculatedPackages: variant.calculatedPackages,
-            ),
-          );
-        } else {
-          // Neu einfügen (FB1-B: Liste startet leer, Vorschläge vorhanden)
-          await listItemDao.addListItem(
-            ListItemsCompanion.insert(
-              tripId: tripId,
-              catalogId: variant.variantId,
-              calculatedQuantity: Value(variant.calculatedNeedAmount),
-              calculatedPackages: Value(variant.calculatedPackages),
-              selected: Value(variant.isSelected),
-              isAdopted: const Value(false),
-              share: Value(variant.share),
-              overriddenPackages: const Value(null),
-              customPackageSize: Value(variant.packSize),
-            ),
-          );
-        }
-      }
-    }
-
-    onTripDataChanged?.call(tripId);
-  }
-
-  /// Schaltet Mittags-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
-  Future<void> toggleLunchRestaurant(TripDay day) async {
-    await ensureStorageRecovered();
-    final updated = day.copyWith(lunchRestaurant: !day.lunchRestaurant);
-    await tripDao.updateTripDay(updated);
-    await recalculateTrip(day.tripId);
-  }
-
-  /// Schaltet Abends-Restaurantbesuch für einen Tag um und berechnet Mengen sofort neu.
-  Future<void> toggleEveningRestaurant(TripDay day) async {
-    await ensureStorageRecovered();
-    final updated = day.copyWith(dinnerRestaurant: !day.dinnerRestaurant);
-    await tripDao.updateTripDay(updated);
-    await recalculateTrip(day.tripId);
-  }
-
-  /// Setzt die genaue Anzahl an Restaurant-Abendessen und -Mittagessen und berechnet Mengen sofort neu.
-  Future<void> setRestaurantCounts(int tripId, {required int dinners, required int lunches}) async {
-    await ensureStorageRecovered();
-    final days = await tripDao.getDaysForTrip(tripId);
-    for (int i = 0; i < days.length; i++) {
-      final shouldDinner = i < dinners;
-      final shouldLunch = i < lunches;
-      if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
-        await tripDao.updateTripDay(days[i].copyWith(
-          dinnerRestaurant: shouldDinner,
-          lunchRestaurant: shouldLunch,
-        ));
-      }
-    }
-    await recalculateTrip(tripId);
+      await recalculateTrip(tripId);
+    }, operationName: 'setRestaurantCounts');
   }
 
   /// Aktualisiert Hafenname oder Tagestyp für einen Tag (reine Info, keine Rechenlogik).
   Future<void> updateDayInfo(TripDay day, {String? portName, String? dayType}) async {
-    await ensureStorageRecovered();
-    final updated = day.copyWith(
-      portName: Value(portName ?? day.portName),
-      dayType: Value(dayType ?? day.dayType),
-    );
-    await tripDao.updateTripDay(updated);
+    return runGuarded(() async {
+      final updated = day.copyWith(
+        portName: Value(portName ?? day.portName),
+        dayType: Value(dayType ?? day.dayType),
+      );
+      await tripDao.updateTripDay(updated);
+    }, operationName: 'updateDayInfo');
   }
 
   /// Fügt ein Crew-Mitglied hinzu und berechnet den Törn neu.
   Future<int> addCrewMember(int tripId, CrewMembersCompanion member) async {
-    await ensureStorageRecovered();
-    final id = await tripDao.addCrewMember(member);
-    await recalculateTrip(tripId);
-    return id;
+    return runGuarded(() async {
+      final id = await tripDao.addCrewMember(member);
+      await recalculateTrip(tripId);
+      return id;
+    }, operationName: 'addCrewMember');
   }
 
   // --- Einkaufsstopps CRUD ---
@@ -368,81 +400,87 @@ class TripService {
     required String name,
     required int dayNumber,
   }) async {
-    await ensureStorageRecovered();
-    final id = await tripDao.addShoppingStop(
-      ShoppingStopsCompanion.insert(
-        tripId: tripId,
-        name: name,
-        dayNumber: Value(dayNumber),
-        isInitial: const Value(false),
-      ),
-    );
-    onTripDataChanged?.call(tripId);
-    return id;
+    return runGuarded(() async {
+      final id = await tripDao.addShoppingStop(
+        ShoppingStopsCompanion.insert(
+          tripId: tripId,
+          name: name,
+          dayNumber: Value(dayNumber),
+          isInitial: const Value(false),
+        ),
+      );
+      _notifyTripDataChanged(tripId);
+      return id;
+    }, operationName: 'addShoppingStop');
   }
 
   /// Aktualisiert einen Einkaufsstopp (z. B. Umbenennen).
   Future<bool> updateShoppingStop(ShoppingStop stop) async {
-    await ensureStorageRecovered();
-    final result = await tripDao.updateShoppingStop(stop);
-    onTripDataChanged?.call(stop.tripId);
-    return result;
+    return runGuarded(() async {
+      final result = await tripDao.updateShoppingStop(stop);
+      _notifyTripDataChanged(stop.tripId);
+      return result;
+    }, operationName: 'updateShoppingStop');
   }
 
   /// Löscht einen Einkaufsstopp.
   /// Gibt false zurück, wenn es der initiale Stopp ist (dieser darf nicht gelöscht werden).
   Future<bool> deleteShoppingStop(int stopId) async {
-    await ensureStorageRecovered();
-    final stop = await tripDao.getShoppingStopById(stopId);
-    final result = await tripDao.deleteShoppingStop(stopId);
-    if (stop != null) {
-      onTripDataChanged?.call(stop.tripId);
-    }
-    return result;
+    return runGuarded(() async {
+      final stop = await tripDao.getShoppingStopById(stopId);
+      final result = await tripDao.deleteShoppingStop(stopId);
+      if (stop != null) {
+        _notifyTripDataChanged(stop.tripId);
+      }
+      return result;
+    }, operationName: 'deleteShoppingStop');
   }
 
   /// Archiviert oder de-archiviert einen Törn.
   Future<bool> archiveTrip(int tripId, {bool archive = true}) async {
-    await ensureStorageRecovered();
-    final trip = await tripDao.getTripById(tripId);
-    if (trip == null) return false;
-    return tripDao.updateTrip(trip.copyWith(isArchived: archive));
+    return runGuarded(() async {
+      final trip = await tripDao.getTripById(tripId);
+      if (trip == null) return false;
+      return tripDao.updateTrip(trip.copyWith(isArchived: archive));
+    }, operationName: 'archiveTrip');
   }
 
   /// Setzt die Phase des Törns (FIX-A).
   Future<bool> setTripPhase(int tripId, TripPhase phase) async {
-    await ensureStorageRecovered();
-    return tripDao.setTripPhase(tripId, phase);
+    return runGuarded(() async {
+      return tripDao.setTripPhase(tripId, phase);
+    }, operationName: 'setTripPhase');
   }
 
   /// Führt einen expliziten Resync der Bootsdaten eines Törns mit dem verknüpften Bootsprofil durch (PIVOT3-A).
   /// Aktualisiert die Snapshot-Werte des Törns auf den aktuellen Stand des verknüpften Bootsprofils.
   /// Gibt false zurück, wenn kein Törn, keine boatProfileId oder kein passendes Profil gefunden wurde.
   Future<bool> resyncTripBoatProfile(int tripId) async {
-    await ensureStorageRecovered();
-    final trip = await tripDao.getTripById(tripId);
-    if (trip == null || trip.boatProfileId == null || boatProfileDao == null) {
-      return false;
-    }
-    final profile = await boatProfileDao!.getProfileById(trip.boatProfileId!);
-    if (profile == null) {
-      return false;
-    }
+    return runGuarded(() async {
+      final trip = await tripDao.getTripById(tripId);
+      if (trip == null || trip.boatProfileId == null || boatProfileDao == null) {
+        return false;
+      }
+      final profile = await boatProfileDao!.getProfileById(trip.boatProfileId!);
+      if (profile == null) {
+        return false;
+      }
 
-    final updated = trip.copyWith(
-      boatName: Value(profile.name),
-      boatManufacturer: Value(profile.manufacturer),
-      boatModel: Value(profile.model),
-      fridgeCapacity: profile.fridgeCapacity,
-      hasFreezer: profile.hasFreezer,
-      freezerCapacity: profile.freezerCapacity,
-      waterTankLiters: profile.waterTankLiters,
-      isWaterTankDrinkable: profile.isWaterTankDrinkable,
-      hasWatermaker: profile.hasWatermaker,
-    );
-    await tripDao.updateTrip(updated);
-    await recalculateTrip(tripId);
-    return true;
+      final updated = trip.copyWith(
+        boatName: Value(profile.name),
+        boatManufacturer: Value(profile.manufacturer),
+        boatModel: Value(profile.model),
+        fridgeCapacity: profile.fridgeCapacity,
+        hasFreezer: profile.hasFreezer,
+        freezerCapacity: profile.freezerCapacity,
+        waterTankLiters: profile.waterTankLiters,
+        isWaterTankDrinkable: profile.isWaterTankDrinkable,
+        hasWatermaker: profile.hasWatermaker,
+      );
+      await tripDao.updateTrip(updated);
+      await recalculateTrip(tripId);
+      return true;
+    }, operationName: 'resyncTripBoatProfile');
   }
 
   /// Aktualisiert Törn-Stammdaten (Name, Startdatum, Tage, Kapazitäten, Restaurantbesuche) und berechnet Mengen neu.
@@ -464,65 +502,66 @@ class TripService {
     Value<String?> boatModel = const Value.absent(),
     bool? hasWatermaker,
   }) async {
-    await ensureStorageRecovered();
-    final trip = await tripDao.getTripById(tripId);
-    if (trip == null) return;
+    return runGuarded(() async {
+      final trip = await tripDao.getTripById(tripId);
+      if (trip == null) return;
 
-    final effectiveDays = daysCount ?? trip.daysCount;
+      final effectiveDays = daysCount ?? trip.daysCount;
 
-    if (daysCount != null && daysCount != trip.daysCount) {
-      final existingDays = await tripDao.getDaysForTrip(tripId);
-      if (daysCount > existingDays.length) {
-        for (int i = existingDays.length + 1; i <= daysCount; i++) {
-          await tripDao.addTripDay(TripDaysCompanion.insert(
-            tripId: tripId,
-            dayNumber: i,
-          ));
-        }
-      } else if (daysCount < existingDays.length) {
-        final toRemove = existingDays.where((d) => d.dayNumber > daysCount);
-        for (final d in toRemove) {
-          await tripDao.deleteTripDay(d.id);
-        }
-      }
-    }
-
-    if (restaurantLunches != null || restaurantDinners != null) {
-      final days = await tripDao.getDaysForTrip(tripId);
-      final currentLunches = days.where((d) => d.lunchRestaurant).length;
-      final currentDinners = days.where((d) => d.dinnerRestaurant).length;
-      final clampedLunches = (restaurantLunches ?? currentLunches).clamp(0, effectiveDays);
-      final clampedDinners = (restaurantDinners ?? currentDinners).clamp(0, effectiveDays);
-
-      for (int i = 0; i < days.length; i++) {
-        final shouldDinner = i < clampedDinners;
-        final shouldLunch = i < clampedLunches;
-        if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
-          await tripDao.updateTripDay(days[i].copyWith(
-            dinnerRestaurant: shouldDinner,
-            lunchRestaurant: shouldLunch,
-          ));
+      if (daysCount != null && daysCount != trip.daysCount) {
+        final existingDays = await tripDao.getDaysForTrip(tripId);
+        if (daysCount > existingDays.length) {
+          for (int i = existingDays.length + 1; i <= daysCount; i++) {
+            await tripDao.addTripDay(TripDaysCompanion.insert(
+              tripId: tripId,
+              dayNumber: i,
+            ));
+          }
+        } else if (daysCount < existingDays.length) {
+          final toRemove = existingDays.where((d) => d.dayNumber > daysCount);
+          for (final d in toRemove) {
+            await tripDao.deleteTripDay(d.id);
+          }
         }
       }
-    }
 
-    final updated = trip.copyWith(
-      name: name ?? trip.name,
-      startDate: startDate ?? trip.startDate,
-      daysCount: daysCount ?? trip.daysCount,
-      fridgeCapacity: fridgeCapacity ?? trip.fridgeCapacity,
-      hasFreezer: hasFreezer ?? trip.hasFreezer,
-      freezerCapacity: freezerCapacity ?? trip.freezerCapacity,
-      waterTankLiters: waterTankLiters ?? trip.waterTankLiters,
-      isWaterTankDrinkable: isWaterTankDrinkable ?? trip.isWaterTankDrinkable,
-      boatProfileId: boatProfileId,
-      boatName: boatName,
-      boatManufacturer: boatManufacturer,
-      boatModel: boatModel,
-      hasWatermaker: hasWatermaker ?? trip.hasWatermaker,
-    );
-    await tripDao.updateTrip(updated);
-    await recalculateTrip(tripId);
+      if (restaurantLunches != null || restaurantDinners != null) {
+        final days = await tripDao.getDaysForTrip(tripId);
+        final currentLunches = days.where((d) => d.lunchRestaurant).length;
+        final currentDinners = days.where((d) => d.dinnerRestaurant).length;
+        final clampedLunches = (restaurantLunches ?? currentLunches).clamp(0, effectiveDays);
+        final clampedDinners = (restaurantDinners ?? currentDinners).clamp(0, effectiveDays);
+
+        for (int i = 0; i < days.length; i++) {
+          final shouldDinner = i < clampedDinners;
+          final shouldLunch = i < clampedLunches;
+          if (days[i].dinnerRestaurant != shouldDinner || days[i].lunchRestaurant != shouldLunch) {
+            await tripDao.updateTripDay(days[i].copyWith(
+              dinnerRestaurant: shouldDinner,
+              lunchRestaurant: shouldLunch,
+            ));
+          }
+        }
+      }
+
+      final updated = trip.copyWith(
+        name: name ?? trip.name,
+        startDate: startDate ?? trip.startDate,
+        daysCount: daysCount ?? trip.daysCount,
+        fridgeCapacity: fridgeCapacity ?? trip.fridgeCapacity,
+        hasFreezer: hasFreezer ?? trip.hasFreezer,
+        freezerCapacity: freezerCapacity ?? trip.freezerCapacity,
+        waterTankLiters: waterTankLiters ?? trip.waterTankLiters,
+        isWaterTankDrinkable: isWaterTankDrinkable ?? trip.isWaterTankDrinkable,
+        boatProfileId: boatProfileId,
+        boatName: boatName,
+        boatManufacturer: boatManufacturer,
+        boatModel: boatModel,
+        hasWatermaker: hasWatermaker ?? trip.hasWatermaker,
+      );
+      await tripDao.updateTrip(updated);
+      await recalculateTrip(tripId);
+    }, operationName: 'updateTripDetails');
   }
 
   /// Prüft, ob ein Crew-Mitglied finanzielle Referenzen im Törn besitzt (FIX-B Finding A / S1):
@@ -531,44 +570,45 @@ class TripService {
   /// - in einem customSplit einer Ausgabe
   /// - als aktiver Kassenwart (treasurerMemberId)
   Future<bool> hasFinancialHistory(int crewMemberId) async {
-    await ensureStorageRecovered();
-    final member = await tripDao.getCrewMemberById(crewMemberId);
-    if (member == null) return false;
-    final tripId = member.tripId;
+    return runGuarded(() async {
+      final member = await tripDao.getCrewMemberById(crewMemberId);
+      if (member == null) return false;
+      final tripId = member.tripId;
 
-    // 1. Aktiver Kassenwart
-    final trip = await tripDao.getTripById(tripId);
-    if (trip != null && trip.treasurerMemberId == crewMemberId) {
-      return true;
-    }
-
-    final effectiveExpenseDao = expenseDao ?? tripDao.attachedDatabase.expenseDao;
-
-    // 2. Kassen-Einzahlungen
-    final payments = await effectiveExpenseDao.getKittyPaymentsForTrip(tripId);
-    if (payments.any((p) => p.crewMemberId == crewMemberId)) {
-      return true;
-    }
-
-    // 3. Ausgaben als Zahler oder im Custom Split
-    final expenses = await effectiveExpenseDao.getExpensesForTrip(tripId);
-    final memberIdStr = crewMemberId.toString();
-    for (final exp in expenses) {
-      if (exp.paidByCrewMemberId == crewMemberId) {
+      // 1. Aktiver Kassenwart
+      final trip = await tripDao.getTripById(tripId);
+      if (trip != null && trip.treasurerMemberId == crewMemberId) {
         return true;
       }
-      if (exp.customSplit != null && exp.customSplit!.isNotEmpty) {
-        try {
-          final decoded = jsonDecode(exp.customSplit!);
-          if (decoded is Map &&
-              (decoded.containsKey(memberIdStr) || decoded.containsKey(crewMemberId))) {
-            return true;
-          }
-        } catch (_) {}
-      }
-    }
 
-    return false;
+      final effectiveExpenseDao = expenseDao ?? tripDao.attachedDatabase.expenseDao;
+
+      // 2. Kassen-Einzahlungen
+      final payments = await effectiveExpenseDao.getKittyPaymentsForTrip(tripId);
+      if (payments.any((p) => p.crewMemberId == crewMemberId)) {
+        return true;
+      }
+
+      // 3. Ausgaben als Zahler oder im Custom Split
+      final expenses = await effectiveExpenseDao.getExpensesForTrip(tripId);
+      final memberIdStr = crewMemberId.toString();
+      for (final exp in expenses) {
+        if (exp.paidByCrewMemberId == crewMemberId) {
+          return true;
+        }
+        if (exp.customSplit != null && exp.customSplit!.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(exp.customSplit!);
+            if (decoded is Map &&
+                (decoded.containsKey(memberIdStr) || decoded.containsKey(crewMemberId))) {
+              return true;
+            }
+          } catch (_) {}
+        }
+      }
+
+      return false;
+    }, operationName: 'hasFinancialHistory');
   }
 
   /// Löscht ein Crew-Mitglied sicher, sofern keine finanziellen Referenzen
@@ -576,29 +616,30 @@ class TripService {
   /// Wirft [CrewMemberHasFinancialHistoryException], falls finanzielle Referenzen existieren.
   /// Wirft [StateError], falls es das letzte verbleibende Crew-Mitglied ist.
   Future<void> deleteCrewMemberSafely(int crewMemberId) async {
-    await ensureStorageRecovered();
-    final member = await tripDao.getCrewMemberById(crewMemberId);
-    if (member == null) return;
-    final tripId = member.tripId;
+    return runGuarded(() async {
+      final member = await tripDao.getCrewMemberById(crewMemberId);
+      if (member == null) return;
+      final tripId = member.tripId;
 
-    final crew = await tripDao.getCrewForTrip(tripId);
-    if (crew.length <= 1) {
-      throw StateError('Cannot delete the last remaining crew member.');
-    }
+      final crew = await tripDao.getCrewForTrip(tripId);
+      if (crew.length <= 1) {
+        throw StateError('Cannot delete the last remaining crew member.');
+      }
 
-    if (await hasFinancialHistory(crewMemberId)) {
-      throw CrewMemberHasFinancialHistoryException(
-        crewMemberId: crewMemberId,
-        tripId: tripId,
-      );
-    }
+      if (await hasFinancialHistory(crewMemberId)) {
+        throw CrewMemberHasFinancialHistoryException(
+          crewMemberId: crewMemberId,
+          tripId: tripId,
+        );
+      }
 
-    await tripDao.deleteCrewMember(crewMemberId);
-    await recalculateTrip(tripId);
+      await tripDao.deleteCrewMember(crewMemberId);
+      await recalculateTrip(tripId);
+    }, operationName: 'deleteCrewMemberSafely');
   }
 
   /// Löscht einen Törn aus der Datenbank und bereinigt alle physischen Belegdateien auf dem Dateisystem
-  /// (RECEIPT1 Finding D, R2 & Amendment 3 Finding C).
+  /// (RECEIPT1 Finding D, R2, Amendment 3 Finding C & Amendment 5 Finding G).
   ///
   /// Ablauf:
   /// 1. Belegdateien werden vorab sicher in `receipts_trip_rollback/trip_<id>` zurückgehalten;
@@ -611,37 +652,38 @@ class TripService {
   ///    kein vollständiger DB-Rollback suggeriert wird. Beim nächsten Start/Recovery wird
   ///    das verbliebene Rollback-Verzeichnis automatisch bereinigt.
   Future<bool> deleteTrip(int tripId) async {
-    await ensureStorageRecovered();
+    return runGuarded(() async {
+      await receiptFileService.stageTripDeleteRollback(tripId);
 
-    await receiptFileService.stageTripDeleteRollback(tripId);
-
-    int deletedCount = 0;
-    try {
-      deletedCount = await tripDao.attachedDatabase.transaction(() async {
-        return await tripDao.deleteTrip(tripId);
-      });
-    } catch (e) {
+      int deletedCount = 0;
       try {
+        deletedCount = await tripDao.attachedDatabase.transaction(() async {
+          await receiptFileService.invokeBeforeOperationAsync('deleteTrip_inTransaction');
+          return await tripDao.deleteTrip(tripId);
+        });
+      } catch (e) {
+        try {
+          await receiptFileService.restoreTripDeleteRollback(tripId);
+        } catch (_) {}
+        rethrow;
+      }
+
+      if (deletedCount <= 0) {
         await receiptFileService.restoreTripDeleteRollback(tripId);
-      } catch (_) {}
-      rethrow;
-    }
+        return false;
+      }
 
-    if (deletedCount <= 0) {
-      await receiptFileService.restoreTripDeleteRollback(tripId);
-      return false;
-    }
+      try {
+        await receiptFileService.finalizeTripDeleteRollback(tripId);
+      } catch (e) {
+        throw TripDeleteCleanupException(
+          tripId: tripId,
+          tripDeletedInDb: true,
+          cause: e,
+        );
+      }
 
-    try {
-      await receiptFileService.finalizeTripDeleteRollback(tripId);
-    } catch (e) {
-      throw TripDeleteCleanupException(
-        tripId: tripId,
-        tripDeletedInDb: true,
-        cause: e,
-      );
-    }
-
-    return true;
+      return true;
+    }, operationName: 'deleteTrip');
   }
 }

@@ -59,6 +59,10 @@ class RestoreRecoveryException implements Exception {
 /// Verwaltet den Export aller lokalen Törndaten in die Cloud und den Import daraus.
 class BackupCoordinator {
   static int _restoreNonce = 0;
+  static final Expando<StorageOperationCoordinator> _dbCoordinators =
+      Expando<StorageOperationCoordinator>('dbStorageOperationCoordinator');
+  static final Expando<ReceiptFileService> _dbReceiptServices =
+      Expando<ReceiptFileService>('dbReceiptFileService');
 
   final AppDatabase _db;
   final HullqBackupService _backupService;
@@ -73,7 +77,73 @@ class BackupCoordinator {
   })  : _db = db,
         _backupService = backupService,
         _authService = authService,
-        _receiptFileService = receiptFileService ?? ReceiptFileService();
+        _receiptFileService = resolveReceiptFileService(db, receiptFileService);
+
+  /// Löst den für [db] zuständigen [ReceiptFileService] auf, damit Services auf derselben
+  /// Datenbankinstanz denselben Dateidienst und Operationskoordinator teilen (Finding G).
+  static ReceiptFileService resolveReceiptFileService(
+    AppDatabase db,
+    ReceiptFileService? explicitService,
+  ) {
+    if (explicitService != null) {
+      _dbReceiptServices[db] = explicitService;
+      coordinatorFor(db: db, receiptFileService: explicitService);
+      return explicitService;
+    }
+    final existing = _dbReceiptServices[db] ?? ReceiptFileService();
+    _dbReceiptServices[db] = existing;
+    coordinatorFor(db: db, receiptFileService: existing);
+    return existing;
+  }
+
+  /// Liefert den gemeinsamen [StorageOperationCoordinator] für [db] und [receiptFileService] (Finding G).
+  static StorageOperationCoordinator coordinatorFor({
+    required AppDatabase db,
+    required ReceiptFileService receiptFileService,
+  }) {
+    final existingDbCoord = _dbCoordinators[db];
+    if (existingDbCoord != null) {
+      receiptFileService.bindCoordinator(existingDbCoord);
+      return existingDbCoord;
+    }
+    final existingRfsCoord = receiptFileService.boundCoordinator;
+    if (existingRfsCoord != null) {
+      _dbCoordinators[db] = existingRfsCoord;
+      return existingRfsCoord;
+    }
+    final created = StorageOperationCoordinator();
+    _dbCoordinators[db] = created;
+    receiptFileService.bindCoordinator(created);
+    return created;
+  }
+
+  /// Der für diesen Koordinator zuständige [StorageOperationCoordinator] (Finding G).
+  StorageOperationCoordinator get operationCoordinator =>
+      coordinatorFor(db: _db, receiptFileService: _receiptFileService);
+
+  /// Führt eine geschützte Storage-/Datenbankoperation koordiniert mit Restore, Recovery
+  /// und Törn-Löschung über den gemeinsamen [StorageOperationCoordinator] aus (Finding G).
+  static Future<T> runSynchronizedStorageOperation<T>({
+    required AppDatabase db,
+    required ReceiptFileService receiptFileService,
+    required String operationName,
+    required Future<T> Function() action,
+  }) async {
+    final coord = coordinatorFor(db: db, receiptFileService: receiptFileService);
+    if (coord.isInActiveOperationZone) {
+      return await action();
+    }
+    return coord.runSynchronized<T>(
+      operationName: operationName,
+      action: () async {
+        await _ensureStorageRecoveredLocked(
+          db: db,
+          receiptFileService: receiptFileService,
+        );
+        return await action();
+      },
+    );
+  }
 
   /// Prüft, ob eine Sicherung in der Cloud existiert.
   Future<bool> hasBackup() async {
@@ -110,7 +180,7 @@ class BackupCoordinator {
   }
 
   /// Statischer, einmalig beim App-Start sowie vor Lese-/Schreibzugriffen ausgeführter
-  /// Recovery-Pfad (R1, Amendment 3 Finding A, B, C).
+  /// Recovery-Pfad (R1, Amendment 3 Finding A, B, C, Amendment 5 Finding G).
   ///
   /// Trennt strikt zwischen:
   /// 1. **Erfolgreich committet (Roll-Forward):** Der SQLite-Commit-Nachweis (`_provy_restore_state.restore_token`
@@ -123,6 +193,18 @@ class BackupCoordinator {
   ///    beschädigt oder fehlen für den jeweiligen Pfad benötigte Belegdateien -> **niemals blind zurückrollen
   ///    oder löschen**; wirft [RestoreRecoveryException].
   static Future<void> recoverStorageState({
+    required AppDatabase db,
+    required ReceiptFileService receiptFileService,
+  }) async {
+    await runSynchronizedStorageOperation<void>(
+      db: db,
+      receiptFileService: receiptFileService,
+      operationName: 'recoverStorageState',
+      action: () async {},
+    );
+  }
+
+  static Future<void> _ensureStorageRecoveredLocked({
     required AppDatabase db,
     required ReceiptFileService receiptFileService,
   }) async {
@@ -354,8 +436,15 @@ class BackupCoordinator {
       throw StateError('Sicherung ist nur für angemeldete HullQ-Mitglieder verfügbar.');
     }
 
-    await recoverInterruptedRestore();
+    return runSynchronizedStorageOperation<bool>(
+      db: _db,
+      receiptFileService: _receiptFileService,
+      operationName: 'createBackup',
+      action: () => _executeCreateBackupLocked(maxBackupReceiptBytes: maxBackupReceiptBytes),
+    );
+  }
 
+  Future<bool> _executeCreateBackupLocked({required int maxBackupReceiptBytes}) async {
     final allTrips = await _db.tripDao.getAllTrips();
     final allBoatProfiles = await _db.boatProfileDao.getAllProfiles(includeArchived: true);
     final tripsBackupList = <Map<String, dynamic>>[];
@@ -454,8 +543,15 @@ class BackupCoordinator {
       throw StateError('Wiederherstellung ist nur für angemeldete HullQ-Mitglieder verfügbar.');
     }
 
-    await recoverInterruptedRestore();
+    return runSynchronizedStorageOperation<bool>(
+      db: _db,
+      receiptFileService: _receiptFileService,
+      operationName: 'restoreBackup',
+      action: _executeRestoreBackupLocked,
+    );
+  }
 
+  Future<bool> _executeRestoreBackupLocked() async {
     final jsonStr = await _backupService.restoreData();
     if (jsonStr == null || jsonStr.isEmpty) {
       return false;
@@ -539,20 +635,23 @@ class BackupCoordinator {
 
     final docsDir = await _receiptFileService.getDocsDir();
     final stagedActiveDir = Directory(p.join(docsDir.path, 'receipts_staging_active'));
-    if (stagedActiveDir.existsSync()) {
-      stagedActiveDir.deleteSync(recursive: true);
-    }
-    stagedActiveDir.createSync(recursive: true);
-
-    final previousDbReceipts = await _db.select(_db.expenseReceipts).get();
-    final previousReceiptPaths =
-        previousDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toList();
-    _restoreNonce++;
-    final restoreToken = 'restore_${DateTime.now().microsecondsSinceEpoch}_$_restoreNonce';
-    final expectedReceiptPaths = <String>[];
 
     bool dbCommitted = false;
+    late final String restoreToken;
+    late final List<String> previousReceiptPaths;
+    final expectedReceiptPaths = <String>[];
     try {
+      if (stagedActiveDir.existsSync()) {
+        stagedActiveDir.deleteSync(recursive: true);
+      }
+      stagedActiveDir.createSync(recursive: true);
+
+      final previousDbReceipts = await _db.select(_db.expenseReceipts).get();
+      previousReceiptPaths =
+          previousDbReceipts.map((r) => p.posix.normalize(r.filePath.replaceAll('\\', '/'))).toList();
+      _restoreNonce++;
+      restoreToken = 'restore_${DateTime.now().microsecondsSinceEpoch}_$_restoreNonce';
+
       await _db.transaction(() async {
         // Vorhandene Daten bereinigen
         await _db.customStatement('PRAGMA foreign_keys = OFF');
