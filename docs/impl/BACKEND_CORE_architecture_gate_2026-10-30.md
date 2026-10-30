@@ -1,7 +1,7 @@
 # BACKEND-CORE – Phase A Architecture Gate (Draft)
 
 **Stand:** 30.10.2026. **Status: HOLD – Architektur-/Owner-Entscheidungen offen. KEIN PRODUKTIONSCODE.**
-**Tracking:** Issue #36. **Zielbasis:** main nach Integration der Owner-accepted RECEIPT1-Arbeit (PR #34); zum Erhebungszeitpunkt README/GEMINI/AGENTS aus dem gemergten Engineering-PR #35 und RECEIPT1-Code von reviewed HEAD fb74f4cfcd039fca0c1cfa59b36a074ffa7b987c. Vor Freigabe erneut mit origin/main reconciliieren.
+**Tracking:** Issue #36. **Exact main-HEAD nach Owner Acceptance und Merge von PR #34:** 2ec14c66e825078990689b5a753f1566bed13405 (30.10.2026). Implementierungsstand wurde am exakt geprüften RECEIPT1-Code-HEAD fb74f4cfcd039fca0c1cfa59b36a074ffa7b987c untersucht und anschließend rein dokumentarisch in main integriert; der Engineering-Standard aus PR #35 ist Bestandteil von main. Vor einer Phase-B-Freigabe stets erneut mit aktuellem origin/main reconciliieren.
 **Maßgeblich:** AGENTS.md, GEMINI.md, docs/ENGINEERING_STANDARD_v1.0.md, docs/BACKEND_KONZEPT_v0.2.md, neuere Owner-Produktentscheidungen.
 **Risiko:** HIGH (Login, Token, Datenschutz, Persistenz, Löschung, Cloud-Backup, mobile/Web/Worker-Integration).
 
