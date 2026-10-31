@@ -50,3 +50,28 @@ Erstelle einen vollständigen, unabhängigen Phase-A-Architekturentwurf für BAC
 **Zu P1–P5 jeweils liefern:** beobachtete Dateien/Zeilen, verletzbare Invariante, Optionen, Entscheidungsvorschlag, Failure-/Concurrency-Tests, benötigter Owner-Nachweis und verbleibendes Risiko. Nicht belegt ≠ grün.
 
 **Verbindliche Querschnittsprüfung:** Prüfe anschließend jeden API-Flow Ende-zu-Ende zwischen Flutter, Worker, D1, R2 und Portal. Suche vor allem State-Races und Fehler zwischen "R2 erledigt" und "D1 erledigt", zwischen "Daten gelöscht" und "Auth0-Sub noch gültig" sowie zwischen "Backup im Client bestätigt" und "vollständig wiederherstellbar". Phase-A-STOP bleibt erhalten.
+
+## 31.10.2026 – Independent Gate-A-Review: verpflichtende Amendment-v2-Aufgabe
+
+Der von Gemini vorgelegte Architekturbericht vom 31.10.2026 wurde unabhängig gegen main `2ec14c66e825078990689b5a753f1566bed13405` überprüft. **Gate A bleibt HOLD.**
+
+**Lies zusätzlich zwingend:**
+`docs/impl/BACKEND_CORE_phase_A_independent_review_2026-10-31.md`
+
+Gemini muss **vor jeglichem Coding** einen **konsolidierten Architekturentwurf v2** liefern, der die Findings **A–H als gemeinsames Gesamtsystem** beantwortet. Es sind keine isolierten Patchvorschläge gesucht.
+
+Pflichtstruktur:
+1. Vollständiges mobiles **Upload- und Download**-Protokoll inklusive R2-/Worker-/Client-Memory- und Payloadlimits und Legacy-Backup-Kompatibilität; keine Halb-Lösung mit Streaming nur beim Upload.
+2. Explizite D1/R2-Statusmaschine für Backup, Retention und Account Delete, Crash ohne `catch`, gleichzeitige Operationen, sichere Reconciliation und Garbage Collection; keine vermeintliche Cross-Resource-Atomarität durch `db.batch()`.
+3. Gemessenes oder klar als ungemessen ausgewiesenes Backup-Budget. Keine stillschweigende Produktkürzung 50 MiB → 25 MB; belastbare Optionen plus Owner-Entscheidung.
+4. Dokumentierter server- und clientseitiger Daten-/Privacy-Vertrag für strukturierte und ggf. opake Backup-Inhalte; der Server darf nicht fälschlich „IBAN-frei garantiert“ behaupten.
+5. EU-Jurisdiktion für **D1 ausdrücklich `--jurisdiction=eu`**, kein bloßes `--location=weur`. Tatsächliche R2-Jurisdiktion EU ownerseitig prüfen.
+6. Konto-Delete-State-Machine mit geteiltem Auth0-/HullQ-Sub, Minimal-Tombstone/Retention, expliziter Re-Registration, Webaccount-Löschung, gleichzeitigen alten JWTs und idempotenten Fehlern.
+7. Provy-Entitlement-Autorität und Offline-Verhalten festlegen, ohne zu behaupten, dass fachliche Entitlements in Auth0-JWTs stehen müssen.
+8. Fehlerhafte/nicht belegte Aussagen (Cloudflare CPU-Limits, 25-MB-Belegzahlen, Callback-URLs, angebliche R2-Atomarität, CORS als AuthZ) korrigieren.
+9. Reale Datenmigrationen und komplettes Persistenzinventar in Backup/Restore mit ID-Remapping und bestehenden Shop-Statusfeldern als Release-Gate abbilden.
+10. Issue #36 und alle bisherigen Owner-Gates beachten; 1–3 konkrete Owner-Entscheidungen formulieren und ein sinnvolles, kleines Slicing für Phase B empfehlen.
+
+**Beweisstandard:** Zu jeder relevanten Invariante tatsächlicher Codepfad, möglicher Gegenfall und geplanter automatischer Negativtest. Jeder nicht belegte Plattform-/Cloud-Wert ausdrücklich als „offen“ kennzeichnen.
+
+**STOP:** Nur überarbeiteter Design-/Testplan (keine Implementierung, kein Merge, kein Deployment, keine Owner-Acceptance-Simulation). Bericht zur unabhängigen Gate-A-Review vorlegen.
