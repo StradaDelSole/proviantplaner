@@ -1,8 +1,10 @@
 # ADR-BC-004 – D1/R2 Backup- und Lösch-Lifecycle
 
-**Status:** PROPOSED / TECHNICAL GATE A – kein Implementierungsrelease.  
+**Status:** ACCEPTED AS PHASE-A ARCHITECTURE; P01–P05 (relevante Teilgates) noch offen – kein Implementierungsrelease.  
 **Owner-Produktentscheidungen:** ADR-BC-001 (Provy-only-Löschung), ADR-BC-002 (50-MiB-Belegziel): ACCEPTED.  
 **Scope:** Worker+D1+R2, konkurrierende mobile Geräte, abgebrochene Uploads, Retention und Recovery; nicht HullQ-Fachdaten.
+
+> **Owner-Acceptance 31.10.2026:** Der Architekturvertrag ist als Designrichtung angenommen; die produktiven Sicherheitsgarantien sind noch nicht nachgewiesen. Maßgeblich sind `BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`, `BACKEND_CORE_phase_A_final_independent_review_2026-10-31.md` und der neuere `BACKEND_CORE_targeted_technical_contract_2026-10-31.md` (versioniertes NDJSON-v4-Streaming). Insbesondere: GC darf keinen aktiven `pending`-Upload löschen; reale Zwei-Schreiber-Races und Parser-Negativtests gehören in Phase B.
 
 ## Nicht verhandelbare Invarianten
 
