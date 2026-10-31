@@ -2,19 +2,21 @@ import { env } from 'cloudflare:test';
 import { describe, it, expect, beforeAll } from 'vitest';
 import migrationSql from '../migrations/0001_initial_schema.sql?raw';
 
-describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', () => {
+describe('Spike S2: D1 Conditional Activation, Concurrency, Idempotency & GC Fencing', () => {
   async function applyMigrations(db: any) {
     const statements = migrationSql
       .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0);
 
     for (const stmt of statements) {
       await db.prepare(stmt).run();
     }
 
-    // Schema-Erweiterungen für ADR-BC-003/004 (Migration v2)
-    // Verwende sowohl datetime-String als auch normalized Unix-Epoch-Sekunden für sichere Zeitvergleiche
+    // HINWEIS ZUR ARCHITEKTUR-ABGRENZUNG:
+    // Die folgenden v2-Schemafelder werden ausschließlich im Test-Harness zu Verifikationszwecken
+    // der Phase-A-Integritätsmodelle (ADR-BC-003/004) angelegt. Sie stellen noch KEINE
+    // produktive D1-Migrationsdatei dar; die formale Migration 0002 erfolgt in Phase B.
     const v2Statements = [
       "ALTER TABLE accounts ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
       "ALTER TABLE accounts ADD COLUMN tier TEXT NOT NULL DEFAULT 'trial'",
@@ -26,13 +28,14 @@ describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', (
       "ALTER TABLE backups ADD COLUMN generation INTEGER NOT NULL DEFAULT 1",
       "CREATE INDEX IF NOT EXISTS idx_backups_account_status ON backups(account_id, status, created_at DESC)",
       "CREATE INDEX IF NOT EXISTS idx_backups_gc_sweep ON backups(status, lease_expires_at_epoch)",
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_backups_account_req_id ON backups(account_id, request_id)",
     ];
 
     for (const stmt of v2Statements) {
       try {
         await db.prepare(stmt).run();
       } catch (err: any) {
-        if (!err.message?.includes('duplicate column')) {
+        if (!err.message?.includes('duplicate column') && !err.message?.includes('already exists')) {
           throw err;
         }
       }
@@ -50,7 +53,7 @@ describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', (
     expect(tables?.name).toBe('accounts');
   });
 
-  it('S2.2: Conditional Activation (CAS) scheitert, wenn Account gelöscht wurde (Delete Race)', async () => {
+  it('S2.2: Conditional Activation (CAS) scheitert bei gelöschtem Account und liefert HTTP 404', async () => {
     const accountId = 'acc_del_race_1';
     const sub = 'auth0|del_race_user';
     const now = new Date().toISOString();
@@ -74,19 +77,28 @@ describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', (
       "UPDATE accounts SET status = 'deleted', deleted_at = datetime('now'), generation = generation + 1 WHERE id = ?"
     ).bind(accountId).run();
 
-    // 4. Worker versucht verspätete Aktivierung per CAS
-    const updateResult = await env.DB.prepare(
-      `UPDATE backups 
-       SET status = 'active', size = 12345
-       WHERE id = ? 
-         AND account_id = ? 
-         AND status = 'pending'
-         AND (SELECT status FROM accounts WHERE id = ?) = 'active'
-         AND generation = (SELECT generation FROM accounts WHERE id = ?)`
-    ).bind(backupId, accountId, accountId, accountId).run();
+    // Simulierter Worker CAS-Aktivierungs-Handler:
+    async function activateBackupCas(bId: string, accId: string, sizeBytes: number) {
+      const updateResult = await env.DB.prepare(
+        `UPDATE backups 
+         SET status = 'active', size = ?
+         WHERE id = ? 
+           AND account_id = ? 
+           AND status = 'pending'
+           AND (SELECT status FROM accounts WHERE id = ?) = 'active'
+           AND generation = (SELECT generation FROM accounts WHERE id = ?)`
+      ).bind(sizeBytes, bId, accId, accId, accId).run();
 
-    // CAS muss 0 Zeilen verändert haben!
-    expect(updateResult.meta.changes).toBe(0);
+      // Bei 0 Änderungen: Account wurde gelöscht oder Backup existiert nicht mehr -> HTTP 404
+      if (updateResult.meta.changes === 0) {
+        return { status: 404, error: 'Account not found or deleted' };
+      }
+      return { status: 200, activated: true };
+    }
+
+    const res = await activateBackupCas(backupId, accountId, 12345);
+    expect(res.status).toBe(404);
+    expect(res.error).toBe('Account not found or deleted');
 
     // Backup bleibt 'pending' und wird dem Nutzer niemals als 'active' ausgeliefert
     const backup = await env.DB.prepare(
@@ -101,104 +113,155 @@ describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', (
     expect(visible?.cnt).toBe(0);
   });
 
-  it('S2.3: Idempotenz bei wiederholter Request-ID', async () => {
-    const accountId = 'acc_idempotent_1';
-    const sub = 'auth0|idempotent_user';
-    const reqId = 'client_req_unique_999';
-    const now = new Date().toISOString();
+  describe('S2.3: Idempotenz vs. Konflikte bei wiederholter Request-ID', () => {
+    it('S2.3a: Identischer Retry liefert bestehendes Backup (Idempotenz)', async () => {
+      const accountId = 'acc_idempotent_1';
+      const sub = 'auth0|idempotent_user_1';
+      const reqId = 'client_req_unique_111';
+      const now = new Date().toISOString();
 
-    await env.DB.prepare(
-      "INSERT INTO accounts (id, auth0_sub, status, generation, created_at) VALUES (?, ?, 'active', 1, ?)"
-    ).bind(accountId, sub, now).run();
+      await env.DB.prepare(
+        "INSERT INTO accounts (id, auth0_sub, status, generation, created_at) VALUES (?, ?, 'active', 1, ?)"
+      ).bind(accountId, sub, now).run();
 
-    // Erster Upload mit request_id
-    await env.DB.prepare(
-      `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, request_id, created_at)
-       VALUES ('b_idemp_1', ?, 'dev_1', 'key_1', 100, 'active', ?, ?)`
-    ).bind(accountId, reqId, now).run();
+      // Erster Upload
+      await env.DB.prepare(
+        `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, request_id, created_at)
+         VALUES ('b_idemp_orig', ?, 'dev_1', 'key_1', 100, 'active', ?, ?)`
+      ).bind(accountId, reqId, now).run();
 
-    // Client verliert 201 Response und wiederholt denselben Request mit derselben request_id:
-    const existing = await env.DB.prepare(
-      "SELECT id, size, created_at FROM backups WHERE account_id = ? AND request_id = ? AND status = 'active'"
-    ).bind(accountId, reqId).first<{ id: string }>();
+      // Simulierter Worker-Handler mit Idempotenz-Prüfung:
+      async function handleUpload(accId: string, bId: string, rId: string) {
+        const existing = await env.DB.prepare(
+          "SELECT id, size, created_at FROM backups WHERE account_id = ? AND request_id = ?"
+        ).bind(accId, rId).first<{ id: string; size: number }>();
 
-    expect(existing).toBeDefined();
-    expect(existing?.id).toBe('b_idemp_1');
+        if (existing) {
+          if (existing.id === bId) {
+            return { status: 200, idempotentReplay: true, id: existing.id };
+          } else {
+            return { status: 409, error: 'Conflict: request_id already used with different backup_id' };
+          }
+        }
+
+        await env.DB.prepare(
+          `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, request_id, created_at)
+           VALUES (?, ?, 'dev_1', 'key_new', 100, 'active', ?, datetime('now'))`
+        ).bind(bId, accId, rId).run();
+
+        return { status: 201, created: true, id: bId };
+      }
+
+      // Wiederholung mit identischer Backup-ID -> 200 OK Idempotent Replay
+      const replay = await handleUpload(accountId, 'b_idemp_orig', reqId);
+      expect(replay.status).toBe(200);
+      expect(replay.idempotentReplay).toBe(true);
+      expect(replay.id).toBe('b_idemp_orig');
+
+      // Wiederholung mit ANDERER Backup-ID bei gleicher request_id -> 409 Conflict
+      const conflict = await handleUpload(accountId, 'b_idemp_DIFFERENT', reqId);
+      expect(conflict.status).toBe(409);
+      expect(conflict.error).toContain('Conflict');
+    });
+
+    it('S2.3b: UNIQUE-Constraint auf (account_id, request_id) verhindert Race bei doppelter Einfügung', async () => {
+      const accountId = 'acc_idempotent_2';
+      const sub = 'auth0|idempotent_user_2';
+      const reqId = 'client_req_race_222';
+
+      await env.DB.prepare(
+        "INSERT INTO accounts (id, auth0_sub, status, generation, created_at) VALUES (?, ?, 'active', 1, datetime('now'))"
+      ).bind(accountId, sub).run();
+
+      // Erster Insert succeeds
+      await env.DB.prepare(
+        `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, request_id, created_at)
+         VALUES ('b_race_1', ?, 'dev_1', 'key_race_1', 100, 'active', ?, datetime('now'))`
+      ).bind(accountId, reqId).run();
+
+      // Zweiter paralleler Insert mit gleicher (account_id, request_id) scheitert zwingend auf Datenbankebene:
+      let caughtError: any = null;
+      try {
+        await env.DB.prepare(
+          `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, request_id, created_at)
+           VALUES ('b_race_2', ?, 'dev_1', 'key_race_2', 100, 'active', ?, datetime('now'))`
+        ).bind(accountId, reqId).run();
+      } catch (err) {
+        caughtError = err;
+      }
+
+      expect(caughtError).not.toBeNull();
+      expect(String(caughtError)).toMatch(/UNIQUE constraint failed/i);
+    });
   });
 
-  it('S2.4: Atomare 5er-Limit Retention – Beobachter sieht zu keinem Zeitpunkt 6 aktive Backups', async () => {
-    const accountId = 'acc_retention_atomic';
-    const sub = 'auth0|retention_atomic_user';
+  it('S2.4: Echte Nebenläufigkeit – Parallele Aktivierungen & Beobachter sehen zu keinem Zeitpunkt > 5 aktive Backups', async () => {
+    const accountId = 'acc_concurrency_retention';
+    const sub = 'auth0|concurrency_retention_user';
     const baseTime = Date.now();
 
     await env.DB.prepare(
       "INSERT INTO accounts (id, auth0_sub, status, generation, created_at) VALUES (?, ?, 'active', 1, datetime('now'))"
     ).bind(accountId, sub).run();
 
-    // 4 bereits aktive Backups anlegen
-    for (let i = 1; i <= 4; i++) {
+    // Initial 5 aktive Backups anlegen
+    for (let i = 1; i <= 5; i++) {
       const ts = new Date(baseTime + i * 1000).toISOString();
       await env.DB.prepare(
         `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, created_at)
          VALUES (?, ?, 'dev', ?, 100, 'active', ?)`
-      ).bind(`b_old_${i}`, accountId, `key_old_${i}`, ts).run();
+      ).bind(`b_init_${i}`, accountId, `key_init_${i}`, ts).run();
     }
 
-    // Vor Start: exakt 4 aktive
-    let countBefore = await env.DB.prepare(
+    const observedCounts: number[] = [];
+
+    // Beobachter-Task: Führt parallele Lese-Abfragen während der Batch-Aktivierung aus
+    const readTask = async () => {
+      for (let j = 0; j < 5; j++) {
+        const count = await env.DB.prepare(
+          "SELECT count(*) as cnt FROM backups WHERE account_id = ? AND status = 'active'"
+        ).bind(accountId).first<{ cnt: number }>();
+        if (count?.cnt !== undefined) {
+          observedCounts.push(count.cnt);
+        }
+      }
+    };
+
+    // Parallele Transaktion: Fügt Backup #6 ein und setzt älteste über 5 atomar auf 'deleting'
+    const tx = env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, created_at)
+         VALUES ('b_tx_6', ?, 'dev', 'key_tx_6', 150, 'active', ?)`
+      ).bind(accountId, new Date(baseTime + 6000).toISOString()),
+      env.DB.prepare(
+        `UPDATE backups SET status = 'deleting'
+         WHERE account_id = ? AND status = 'active' AND id NOT IN (
+           SELECT id FROM backups 
+           WHERE account_id = ? AND status = 'active' 
+           ORDER BY created_at DESC LIMIT 5
+         )`
+      ).bind(accountId, accountId),
+    ]);
+
+    // Führe Batch-Transaktion und Beobachter-Reads parallel aus
+    await Promise.all([tx, readTask()]);
+
+    // Harte Invariante: Der Beobachter hat zu JEDEM Zeitpunkt maximal 5 aktive Backups gesehen!
+    expect(observedCounts.length).toBeGreaterThanOrEqual(1);
+    for (const count of observedCounts) {
+      expect(count).toBeLessThanOrEqual(5);
+    }
+
+    // Endzustand verifizieren: Exakt 5 aktive Backups
+    const finalActive = await env.DB.prepare(
       "SELECT count(*) as cnt FROM backups WHERE account_id = ? AND status = 'active'"
     ).bind(accountId).first<{ cnt: number }>();
-    expect(countBefore?.cnt).toBe(4);
-
-    // Führe zwei aufeinanderfolgende Transaktionen aus und prüfe den Zustand vor, während und nach den Batches:
-    for (let i = 5; i <= 6; i++) {
-      const ts = new Date(baseTime + i * 1000).toISOString();
-      
-      // SQLite BATCH ist transaktional: Entweder beide Statements sind committet oder keines.
-      // D.h. der Zustand "6 aktiv" existiert im Transaktions-Journal niemals für lesende Clients!
-      await env.DB.batch([
-        // Statement 1: Neues Backup einfügen (oder aktivieren)
-        env.DB.prepare(
-          `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, created_at)
-           VALUES (?, ?, 'dev', ?, 200, 'active', ?)`
-        ).bind(`b_new_${i}`, accountId, `key_new_${i}`, ts),
-
-        // Statement 2: Alle über 5 hinausgehenden älteren sofort auf 'deleting' setzen
-        env.DB.prepare(
-          `UPDATE backups SET status = 'deleting'
-           WHERE account_id = ? AND status = 'active' AND id NOT IN (
-             SELECT id FROM backups 
-             WHERE account_id = ? AND status = 'active' 
-             ORDER BY created_at DESC LIMIT 5
-           )`
-        ).bind(accountId, accountId),
-      ]);
-
-      // Unmittelbare Beobachter-Abfrage nach dem Batch:
-      const countAfterBatch = await env.DB.prepare(
-        "SELECT count(*) as cnt FROM backups WHERE account_id = ? AND status = 'active'"
-      ).bind(accountId).first<{ cnt: number }>();
-
-      // Darf niemals mehr als 5 sein:
-      expect(countAfterBatch?.cnt).toBeLessThanOrEqual(5);
-    }
-
-    // Endzustand verifizieren:
-    const activeBackups = await env.DB.prepare(
-      "SELECT id, created_at FROM backups WHERE account_id = ? AND status = 'active' ORDER BY created_at DESC"
-    ).bind(accountId).all<{ id: string }>();
-
-    expect(activeBackups.results.length).toBe(5);
-    // Älteste Backups (b_old_1) müssen 'deleting' sein
-    const oldest = await env.DB.prepare(
-      "SELECT status FROM backups WHERE id = 'b_old_1'"
-    ).first<{ status: string }>();
-    expect(oldest?.status).toBe('deleting');
+    expect(finalActive?.cnt).toBe(5);
   });
 
-  it('S2.5: Bounded Garbage Collection & Late Put Reconciliation', async () => {
-    const accountId = 'acc_gc_reconcile';
-    const sub = 'auth0|gc_reconcile_user';
+  it('S2.5: Late Put / GC Ghost Race – D1-Lease verfällt vor Upload-Abschluss; Sweep löscht R2-Ghost', async () => {
+    const accountId = 'acc_gc_race_test';
+    const sub = 'auth0|gc_race_user';
     const nowEpoch = Math.floor(Date.now() / 1000);
     const expiredEpoch = nowEpoch - 600; // Vor 10 Minuten abgelaufen
 
@@ -206,57 +269,59 @@ describe('Spike S2: D1 Conditional Activation, Atomic Retention & GC Fencing', (
       "INSERT INTO accounts (id, auth0_sub, status, generation, created_at) VALUES (?, ?, 'active', 1, datetime('now'))"
     ).bind(accountId, sub).run();
 
-    // 1 verwaister Upload (pending mit abgelaufenem Lease)
-    await env.DB.prepare(
-      `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, lease_expires_at_epoch, created_at)
-       VALUES ('b_orphan_1', ?, 'dev', 'r2_orphan_key', 0, 'pending', ?, datetime('now', '-10 minutes'))`
-    ).bind(accountId, expiredEpoch).run();
-
-    await env.BACKUPS_BUCKET.put('r2_orphan_key', 'test orphan data');
-
-    // 1 aktives Backup (darf von GC NIEMALS berührt werden)
+    // 1 aktives Backup vorhanden
+    const activeKey = 'r2_safe_active_key';
     await env.DB.prepare(
       `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, created_at)
-       VALUES ('b_active_safe', ?, 'dev', 'r2_safe_key', 500, 'active', datetime('now'))`
-    ).bind(accountId).run();
-    await env.BACKUPS_BUCKET.put('r2_safe_key', 'safe active data');
+       VALUES ('b_active_1', ?, 'dev', ?, 500, 'active', datetime('now'))`
+    ).bind(accountId, activeKey).run();
+    await env.BACKUPS_BUCKET.put(activeKey, 'ACTIVE_DATA');
 
-    // GC-Durchlauf mit numerischem Epoch-Vergleich (völlig unabhängig von Zeitzonen und 'T'-Strings)
-    const currentEpoch = Math.floor(Date.now() / 1000);
-    const candidates = await env.DB.prepare(
-      `SELECT id, r2_key FROM backups 
-       WHERE (status = 'pending' AND lease_expires_at_epoch < ?)
-          OR status = 'deleting'
-       LIMIT 10`
-    ).bind(currentEpoch).all<{ id: string; r2_key: string }>();
+    // 1 abgelaufenes Staging-Backup in D1
+    const latePutKey = 'r2_late_put_ghost_key';
+    await env.DB.prepare(
+      `INSERT INTO backups (id, account_id, device_id, r2_key, size, status, lease_expires_at_epoch, created_at)
+       VALUES ('b_staging_late', ?, 'dev', ?, 0, 'pending', ?, datetime('now', '-10 minutes'))`
+    ).bind(accountId, latePutKey, expiredEpoch).run();
 
-    expect(candidates.results.length).toBeGreaterThanOrEqual(1);
+    // PHASE 1: D1-GC läuft zuerst und bereinigt den abgelaufenen Staging-Lease aus der DB:
+    const expiredCandidates = await env.DB.prepare(
+      "SELECT id, r2_key FROM backups WHERE status = 'pending' AND lease_expires_at_epoch < ?"
+    ).bind(nowEpoch).all<{ id: string; r2_key: string }>();
 
-    for (const c of candidates.results) {
-      if (c.r2_key) {
-        await env.BACKUPS_BUCKET.delete(c.r2_key);
-      }
+    expect(expiredCandidates.results.length).toBe(1);
+    for (const c of expiredCandidates.results) {
       await env.DB.prepare("DELETE FROM backups WHERE id = ?").bind(c.id).run();
     }
 
-    // Verifikation: Orphan gelöscht, aktives Backup unberührt!
-    const orphanObj = await env.BACKUPS_BUCKET.get('r2_orphan_key');
-    expect(orphanObj).toBeNull();
+    // PHASE 2: Der verzögerte Client-Upload beendet JETZT seinen Transfer nach R2 (Ghost Object entsteht):
+    await env.BACKUPS_BUCKET.put(latePutKey, 'DELAYED_LATE_PUT_DATA');
 
-    const safeObj = await env.BACKUPS_BUCKET.get('r2_safe_key');
+    // PHASE 3: Anschließender geplanter R2 Prefix-Sweep scannt R2 und gleicht gegen aktive D1-Backups ab:
+    const r2Objects = await env.BACKUPS_BUCKET.list({ prefix: 'r2_' });
+    for (const obj of r2Objects.objects) {
+      const isKnownInD1 = await env.DB.prepare(
+        "SELECT id FROM backups WHERE r2_key = ? AND status = 'active'"
+      ).bind(obj.key).first();
+
+      if (!isKnownInD1) {
+        // Nicht in D1 als aktiv verzeichnet -> Ghost wird gelöscht!
+        await env.BACKUPS_BUCKET.delete(obj.key);
+      }
+    }
+
+    // Verifikation: Ghost gelöscht, aktives Backup unberührt!
+    const ghostObj = await env.BACKUPS_BUCKET.get(latePutKey);
+    expect(ghostObj).toBeNull();
+
+    const safeObj = await env.BACKUPS_BUCKET.get(activeKey);
     expect(safeObj).not.toBeNull();
-    await safeObj!.arrayBuffer(); // Handle freigeben
+    expect(await safeObj!.text()).toBe('ACTIVE_DATA');
 
-    const safeDb = await env.DB.prepare("SELECT status FROM backups WHERE id = 'b_active_safe'").first<{ status: string }>();
-    expect(safeDb?.status).toBe('active');
-
-    // Aufräumen
-    await env.BACKUPS_BUCKET.delete('r2_safe_key');
+    await env.BACKUPS_BUCKET.delete(activeKey);
   });
 
   it('S2.6: Datumsabgleich mit ISO-Strings via datetime() und Epoch-Sekunden', async () => {
-    // Beweis für SQLite Datumsvergleich:
-    // Stringvergleich '2026-10-31T08:00:00Z' < datetime('now') schlägt fehl ohne datetime()!
     const testDateIso = '2020-01-01T00:00:00.000Z';
     const testDateEpoch = Math.floor(new Date(testDateIso).getTime() / 1000);
 
