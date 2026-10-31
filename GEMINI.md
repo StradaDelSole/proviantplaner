@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.30
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.31
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -34,6 +34,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.28 | 17.10.2026 | PIVOT2 Owner Acceptance: COMPLETE; Issues #26, #7, #8 geschlossen; kein Folgeslice freigegeben |
 | v0.29 | 30.10.2026 | Owner-accepted Architecture-First-Engineering-Standard, verpflichtendes zweistufiges High-Risk-Gate; RECEIPT1-Status reconciliiert |
 | v0.30 | 31.10.2026 | RECEIPT1 gemergt; BACKEND-CORE Phase A Owner-accepted unter P01–P05; BC-1A Planung, Coding nicht freigegeben |
+| v0.31 | 31.10.2026 | BC-1A Phase B Owner-release mit Pflichtcheck für Auth0 SDK/Plattform; kein Merge, kein BC-1B-Go |
 
 ## Verbindlicher Engineering-Prozess ab 30.10.2026
 
@@ -66,9 +67,9 @@ Verbindliche aktuelle Daten-/Domainwahrheit:
 - WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
 - PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-**RECEIPT1 ist Owner-accepted und via PR #34 gemergt.** **BACKEND-CORE Gate A ist am 31.10.2026 vom Owner als Architektur mit P01–P05 als bindenden Implementierungs-/Stage-Gates akzeptiert.** Test-only PR #38 ist nach exaktem HEAD-Review und CI SUCCESS gemergt (Test-HEAD `858238286671730308716aa374d7ae71852748eb`, Merge `7adf9349ccd2bb47a23c3237280c2f5260064332`). Maßgeblich: `docs/impl/BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`. **BC-1A ist lediglich DRAFT und NICHT zur Implementierung freigegeben.** Reale Stage-/Gerätetests offen; bei jedem Sitzungsstart mit GitHub reconciliieren.
+**RECEIPT1 ist Owner-accepted und via PR #34 gemergt.** **BACKEND-CORE Gate A ist am 31.10.2026 vom Owner als Architektur mit P01–P05 als bindenden Implementierungs-/Stage-Gates akzeptiert.** Test-only PR #38 ist nach exaktem HEAD-Review und CI SUCCESS gemergt (Test-HEAD `858238286671730308716aa374d7ae71852748eb`, Merge `7adf9349ccd2bb47a23c3237280c2f5260064332`). Maßgeblich: `docs/impl/BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`. **BC-1A ist am 31.10.2026 zur eng begrenzten Phase-B-Implementierung freigegeben, gemäß `docs/impl/BACKEND_CORE_BC1A_phase_B_owner_release_2026-10-31.md` und Issue #40.** Vor jeder nativen SDK-Integration muss die iOS12→iOS14+-Mindestversionsfolge vom Owner ausdrücklich freigegeben werden; SDK-unabhängige Adapter-/Tests dürfen vorbereitet werden. Kein eigenmächtiger Merge, Backend-Release oder BC-1B-Go. Reale Stage-/Gerätetests offen; bei jedem Sitzungsstart mit GitHub reconciliieren.
 
-**Kein neuer BACKEND-CORE-Phase-B-Slice ist zur Implementierung freigegeben; die Owner-Zustimmung gilt ausschließlich Gate A.**
+**Nur BC-1A Phase B ist zur begrenzten Implementierung freigegeben; BC-1B, Cloud-Deployment und alle Folgeslices bleiben gesperrt. SDK-/OS-Kompatibilitätscheck ist verpflichtend.**
 
 Weiterhin nicht freigegeben:
 - GUEST1
