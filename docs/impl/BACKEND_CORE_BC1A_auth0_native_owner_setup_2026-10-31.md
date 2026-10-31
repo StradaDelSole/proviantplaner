@@ -41,7 +41,7 @@ The exact Android scheme must be chosen and wired by Gemini as part of BC-1A. An
 
 ## 4. Gemini/BC-1A implementation checklist (after release already granted)
 
-- On an isolated feature branch from verified latest `main`: pin the approved `auth0_flutter` **2.7.x** (not a broad `^2.7.0` that can cross major 3.x; use `>=2.7.0 <3.0.0`), update lockfile, verify Flutter >=3.24, Dart >=3.5, iOS target >=14, Android/Java baseline unchanged.
+- On an isolated feature branch from verified latest `main`: use the approved `auth0_flutter` **2.7.x** (`^2.7.0` and `'>=2.7.0 <3.0.0'` are equivalent constraints in Dart pub semantics); check in the resolved lockfile, verify Flutter >=3.24, Dart >=3.5, iOS target >=14, Android/Java baseline unchanged.
 - Configure Android `auth0Domain` and `auth0Scheme` manifest placeholders consistent with chosen callback; iOS `CFBundleURLTypes` and all required CocoaPods/Swift Package settings; no arbitrary sample Client IDs in production builds.
 - Auth0 credentials manager and production-safe DI; no hard-coded `auth0_<connection>_token`, no fake login success, no storing access/refresh tokens in ordinary preferences/logs/backups.
 - Never automatically call existing `GET /v1/me` to create account, never infer `member` from Auth0 login or network errors. Cloud registration and server entitlements belong to later BC-1B.
