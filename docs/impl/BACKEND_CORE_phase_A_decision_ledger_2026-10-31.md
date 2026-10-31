@@ -3,6 +3,8 @@
 **Stand:** main `2ec14c66e825078990689b5a753f1566bed13405`. **Docs-PR:** #37 · **Tracking:** Issue #36.  
 **Gate A: HOLD** (Owner-Grundsatzentscheidungen geschlossen; technische Architektur-Spezifikation teilweise noch PROPOSED). **Kein Produktionscode, kein Deployment, kein B3/B4/B5/GUEST1-Release.**
 
+> **Independent Review 31.10.2026, authoritative exact-HEAD:** Spike-PR #38 in CI auf `858238286671730308716aa374d7ae71852748eb` vollständig grün (Run 41213360372). Das zuvor im Bericht genannte SHA `8582382c448d4847e1d5a7d79b9ef3bf212f71f6` ist nicht auflösbar. Der eingesehene Testcode belegt lokale Machbarkeit, **nicht** alle behaupteten produktiven Concurrency-/GC-/Hostile-Input-Garantien. Verbindliche P01–P05 sind in `BACKEND_CORE_phase_A_final_independent_review_2026-10-31.md` festgehalten. **Gate A: READY FOR OWNER ACCEPTANCE WITH CONDITIONS**, nicht ACCEPTED und keine Phase-B-Freigabe. Alte HOLD-Vermerke weiter unten beschreiben den historischen Stand vor diesem Review.
+
 ## Owner-Accepted Produktentscheidungen
 
 | ID | Entscheidung | Evidenz | Status |
