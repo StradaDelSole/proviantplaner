@@ -1,13 +1,13 @@
 # BACKEND-CORE BC-1A – Phase-B Owner Release & Gemini Implementation Brief
 
-**Status: OWNER-RELEASED FOR BC-1A ONLY, subject to explicit platform-compatibility checkpoint.**  
+**Status: OWNER-RELEASED FOR BC-1A ONLY. Platform decision iOS 14 / Auth0 Flutter 2.7.x OWNER-ACCEPTED (31.10.2026); toolchain verification remains mandatory.**  
 **Owner authorization:** 31.10.2026, user instruction "ok weiter" immediately after the verified Phase-A acceptance and BC-1A draft. This authorizes the **bounded next BC-1A implementation**, not BC-1B, account deletion, backend provisioning, store publishing or any merge.  
 **Exact baseline:** `origin/main` = `8bff7a199562be9035e6e479411d4619d35d172d` (verify anew immediately before coding).  
 **Tracking:** Issue #40.  
 **Phase A:** `BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`, ADR-BC-001–004, `BACKEND_CORE_phase_A_final_independent_review_2026-10-31.md` (P01–P05 remain binding).  
 **Historical preparatory draft:** `BACKEND_CORE_BC1A_implementation_brief_DRAFT_2026-10-31.md`. This file is the newer authority.
 
-## 0. Required SDK/platform preflight – potentially blocking
+## 0. SDK/platform decision – Owner accepted; technical preflight still mandatory
 
 **Repository evidence:** `ios/Runner.xcodeproj/project.pbxproj` sets `IPHONEOS_DEPLOYMENT_TARGET = 12.0`; `android/app/build.gradle` uses `flutter.minSdkVersion` and Java 8. There is currently **no** `auth0_flutter` dependency. Flutter SDK constraint `^3.5.3` is the Dart constraint, not proof the locally installed Flutter SDK meets the plugin minimum.
 
@@ -15,7 +15,7 @@
 - `auth0_flutter 2.7.0`: Flutter >=3.24, Dart >=3.5, Android API >=21 / Java 8, **iOS >=14**; https://pub.dev/packages/auth0_flutter/versions/2.7.0
 - `auth0_flutter 3.1.0`: Flutter >=3.24, Android API >=26 / Java 17, **iOS >=15**; https://pub.dev/packages/auth0_flutter
 
-**Recommended minimum-change option:** prefer the maintained 2.7.x line with an explicit <3.0.0 constraint, **subject to Owner approval of the necessary iOS minimum 14**. Do not silently raise the minimum supported iOS version (12→14 or 15) or Android/Java baseline, select an older security-unmaintained version solely to preserve iOS12, use a fake plugin/credentials manager, or weaken the Android/iOS build. Present SDK compatibility, exact installed Flutter toolchain, minimum-platform impact and the smallest safe choice; **STOP prior to any platform-minimum change until Owner accepts it.** While waiting, it is permitted to write a separately testable, SDK-agnostic auth adapter and negative tests, but not to claim native login integration complete.
+**Owner decision O-BC1A-01 – ACCEPTED 31.10.2026:** Set the Provy **minimum supported iOS to 14.0** (from 12.0) and use **`auth0_flutter` 2.7.x**, with an explicit dependency constraint **`>=2.7.0 <3.0.0`** and reproducible `pubspec.lock`. The Owner explicitly accepted the earlier recommendation. BC-1A coding may adjust the relevant iOS target / Podfile / project settings required by the SDK; **do not** raise the minimum to iOS 15, move to SDK 3.x, or raise Android/Java minimums without a new Owner decision. Perform exact Flutter/Dart/Xcode/Android toolchain and plugin compatibility checks before native integration, record failures, and STOP if the accepted pairing is technically infeasible; never silently choose an alternative. SDK-independent adapter work is no longer held by this Owner platform decision, but all ordinary BC-1A scope and review gates remain.
 
 **Auth0 Owner setup (separate Stage requirement):** Provy Native application inside existing HullQ EU tenant; Domain, public Client ID and API Audience, enabled identity connections, Allowed Callback/Logout URIs for real Android applicationId `com.hullq.proviantplaner` and iOS bundle ID `com.hullq.proviantplaner`. The real values must be verified, not invented or committed as secrets. `flutter_secure_storage` is already installed; SDK CredentialsManager is preferred for refresh-token lifecycle. Configured deployment and physical device OAuth callback stay P05 OPEN.
 
@@ -55,9 +55,9 @@ No D1 migrations, backend `GET/DELETE /me` rewrite, account-registration API, pa
 ## 4. Sequence and stop
 
 1. Gemini fetches `origin/main`, reads `AGENTS.md`, `GEMINI.md`, `docs/ENGINEERING_STANDARD_v1.0.md`, this release, issue #40 and existing B1 tests, states exact HEAD.
-2. **Compatibility checkpoint:** show SDK version proposal and impact on iOS12 min / Android baseline. If changing supported OS is required and not approved, STOP for Owner decision before platform change. Keep work limited to pure injectable adapter/tests until approval.
+2. **Compatibility preflight:** the Owner has accepted iOS 14 and Auth0 Flutter 2.7.x. Verify actual Flutter/Dart/Xcode toolchain and native build, apply **only** the approved iOS 12→14 deployment-target change and `auth0_flutter >=2.7.0 <3.0.0`. STOP if additional minimum-platform or SDK major-version increases are necessary; do not self-authorize.
 3. Implement only allowed BC-1A changes on **feature branch**, never main; add deterministic failure/concurrency tests. If missing Auth0 real app IDs/tenant settings, isolate configuration and keep Stage-device completion OPEN.
 4. Adversarial self-review, local focused tests, push feature branch, open PR. GitHub Actions full QA on exact HEAD. STOP for independent review by ChatGPT.
 5. **No automatic merge or follow-on.** Only an explicit later Owner Acceptance can merge BC-1A and initiate BC-1B.
 
-**Owner Release scope is BC-1A only, conditional platform compatibility. It is not an account-delete, Store, or cloud-production release.**
+**Owner Release scope is BC-1A only. iOS 14 / Auth0 Flutter 2.7.x is an accepted platform decision; real compatibility must still be verified. It is not an account-delete, Store, or cloud-production release.**
