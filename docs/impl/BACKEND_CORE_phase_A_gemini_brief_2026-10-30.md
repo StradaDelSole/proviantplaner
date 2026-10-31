@@ -4,7 +4,9 @@
 **Tracking:** Issue #36.  
 **Arbeitsgrundlage:** AGENTS.md, GEMINI.md, docs/ENGINEERING_STANDARD_v1.0.md, docs/templates/ARCHITECTURE_GATE_TEMPLATE.md und docs/impl/BACKEND_CORE_architecture_gate_2026-10-30.md.
 
-## Deine Aufgabe
+> **STATUSUPDATE 31.10.2026 – HISTORISCHER GEMINI-AUFTRAG, NICHT ERNEUT VOLLSTÄNDIG AUSFÜHREN.** Das allgemeine Phase-A-Design und die konsolidierte v2 sind bereits geliefert und unabhängig geprüft. O-01/O-02 sind in ADR-BC-001/002 **ACCEPTED**. Für den Gate-A-Abschluss sind **nur noch** die schmalen technischen Design- und Nachweispunkte aus `docs/adr/ADR-BC-003-versioned-backup-transport.md`, `docs/adr/ADR-BC-004-d1-r2-lifecycle.md` und `docs/impl/BACKEND_CORE_phase_A_decision_ledger_2026-10-31.md` offen. Keinen dritten allgemeinen Änderungsbericht erzeugen; kein Produktionscode.
+
+## Deine Aufgabe (historisch, Stand vor v2-Review)
 
 Erstelle einen vollständigen, unabhängigen Phase-A-Architekturentwurf für BACKEND-CORE anhand des **dann aktuellen origin/main**, ohne Code, Package- oder Schemaänderungen. Behandle die vorhandene Architekturvorlage als kritisierbare Ausgangshypothese, nicht als bereits akzeptiertes Design.
 

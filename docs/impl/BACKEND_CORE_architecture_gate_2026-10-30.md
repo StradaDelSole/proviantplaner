@@ -1,9 +1,11 @@
 # BACKEND-CORE – Phase A Architecture Gate (Draft)
 
-**Stand:** 30.10.2026. **Status: HOLD – Architektur-/Owner-Entscheidungen offen. KEIN PRODUKTIONSCODE.**
+**Stand:** initial 30.10.2026; aktualisierte Owner-/Gate-Entscheidung vom 31.10.2026. **Status: HOLD – O-01/O-02 akzeptiert, technische Phase-A-Verträge noch nicht freigegeben. KEIN PRODUKTIONSCODE.**
 **Tracking:** Issue #36. **Exact main-HEAD nach Owner Acceptance und Merge von PR #34:** 2ec14c66e825078990689b5a753f1566bed13405 (30.10.2026). Implementierungsstand wurde am exakt geprüften RECEIPT1-Code-HEAD fb74f4cfcd039fca0c1cfa59b36a074ffa7b987c untersucht und anschließend rein dokumentarisch in main integriert; der Engineering-Standard aus PR #35 ist Bestandteil von main. Vor einer Phase-B-Freigabe stets erneut mit aktuellem origin/main reconciliieren.
 **Maßgeblich:** AGENTS.md, GEMINI.md, docs/ENGINEERING_STANDARD_v1.0.md, docs/BACKEND_KONZEPT_v0.2.md, neuere Owner-Produktentscheidungen.
 **Risiko:** HIGH (Login, Token, Datenschutz, Persistenz, Löschung, Cloud-Backup, mobile/Web/Worker-Integration).
+
+> **Entscheidungsnachtrag 31.10.2026 (maßgeblich):** Die unten stehenden älteren Abschnitte mit „Owner-Entscheidungen offen“ und breitem Gemini-Amendment sind als historische Analyse zu lesen. Der Owner hat **O-01 (Provy-only-Kontolöschung; HullQ/Auth0 bleibt erhalten)** und **O-02 (50 MiB rohe Belegbilder als Cloud-Backup-Ziel)** ausdrücklich akzeptiert. Verbindliche Produktentscheidungen: `docs/adr/ADR-BC-001-provy-only-account-deletion.md` und `docs/adr/ADR-BC-002-cloud-backup-50mib-receipts.md`. Technische Entwürfe `ADR-BC-003-versioned-backup-transport.md` und `ADR-BC-004-d1-r2-lifecycle.md` sind **PROPOSED**, nicht bereits implementierbar freigegeben. Aktueller Gate-Status und offene Nachweise: `docs/impl/BACKEND_CORE_phase_A_decision_ledger_2026-10-31.md`. **Kein dritter ungezielter Gemini-Architekturbericht** und keine automatische Phase-B-Freigabe.
 
 ## 1. Ziel und ausdrückliche Nicht-Ziele
 
@@ -202,4 +204,4 @@ Offizielle Quelle: https://developers.cloudflare.com/workers/platform/limits/ (S
 - Die Backend-JWKS-Tests beweisen lediglich serverseitige JWT-Verifikation, nicht den nativen Browser-/Callback-/Token-Refresh-/Logout-Flow auf einem Gerät oder einen funktionalen Portal-Login.
 - Quellen: https://developer.auth0.com/resources/guides/mobile/flutter/basic-authentication, https://developer.auth0.com/resources/guides/mobile/flutter
 
-**Gate bleibt HOLD.** Gemini muss die Punkte P1–P5 im unabhängigen Entwurf begründet lösen oder ausdrücklich als Owner-Entscheidungsblocker ausweisen. Kein Code.
+**Gate bleibt HOLD.** Diese ursprüngliche P1–P5-Klärung wurde inzwischen durch zwei Gemini-Architekturentwürfe und unabhängige Reviews durchgeführt. Die verbleibenden **konkreten** Verträge und Testnachweise werden im aktuellen Gate-Ledger `BACKEND_CORE_phase_A_decision_ledger_2026-10-31.md` geführt; O-01 und O-02 sind nicht mehr offen. Keine Implementierung.
