@@ -1,8 +1,10 @@
 # ADR-BC-003 – Versionierter Backup-Transport und mobiler Speichervertrag
 
-**Status:** PROPOSED / TECHNICAL GATE A – kein Implementierungsrelease.  
+**Status:** ACCEPTED AS PHASE-A ARCHITECTURE; P01–P05 (relevante Teilgates) noch offen – kein Implementierungsrelease.  
 **Owner-Entscheidung:** O-02 (50 MiB rohe Belegbildbytes) in ADR-BC-002 ACCEPTED.  
 **Repo-Basis:** main `2ec14c66e825078990689b5a753f1566bed13405`, Issue #36, Docs-PR #37.
+
+> **Owner-Acceptance 31.10.2026:** Der Architekturvertrag ist als Designrichtung angenommen; die produktiven Sicherheitsgarantien sind noch nicht nachgewiesen. Maßgeblich sind `BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`, `BACKEND_CORE_phase_A_final_independent_review_2026-10-31.md` und der neuere `BACKEND_CORE_targeted_technical_contract_2026-10-31.md` (versioniertes NDJSON-v4-Streaming). Insbesondere: GC darf keinen aktiven `pending`-Upload löschen; reale Zwei-Schreiber-Races und Parser-Negativtests gehören in Phase B.
 
 ## Kontext und Optionen
 
