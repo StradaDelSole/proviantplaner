@@ -6,12 +6,12 @@
   - Redundantes Schreiben von `keyUserEmail` in `_getTokenInternal` ersatzlos entfernt. Der Token-Abruf `getAuthToken()` ist nun ein rein lesender Vorgang ohne Nebeneffekte auf den persistenten sicheren Speicher.
   - Bereinigung ungültiger oder abgelaufener Credentials (`_clearLocalSession`) erfolgt strikt unter dem gemeinsamen Mutex `_runExclusive` mit Post-Await-Epochenprüfung (`currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)`). Eine verzögerte Bereinigung kann Daten einer neueren Session weder überschreiben noch löschen.
   - Neue deterministische Tests: `Finding C4-1a` (rein lesender Token-Abruf, keine Schreibzugriffe auf `keyUserEmail`) und `Finding C4-1b` (verzögerte Bereinigung ungültiger Credentials beschädigt Session B nicht).
-- **Finding C4-2 – BLOCKER (SDK CredentialsManager Mutationen & Native/Fake-Parität):**
-  - `NativeAuth0Adapter` und `FakeAuth0Adapter` serialisieren asynchrone SDK-Mutationen (`clearCredentials`, SDK-Credentials-Speicherung in `login`) über `_runSdkExclusive`.
-  - In beiden Adaptern wird die Generation vor dem blockierten SDK-Clear, unter dem Mutex und an der Mutationsgrenze geprüft (exakte Parität zwischen nativer Implementierung und Test-Fake).
-  - Wenn `clearCredentials` eines alten Logouts aktiv ist, wartet ein nachfolgender Login unter dem Mutex auf den Abschluss des Clears und stellt anschließend die Credentials via `storeCredentials` sicher.
-  - Verspätete WebAuth-Callbacks einer älteren Generation werden unter dem Mutex abgewiesen und können neuere Credentials im CredentialsManager weder überschreiben noch leeren (`_committedGeneration > gen`).
-  - Neue deterministische Tests: `Finding C4-2a` (Native-like Fake prüft Generation vor blockiertem Clear; Clear resumet nach B SDK-Persistenz -> B überlebt) und `Finding C4-2b` (stale WebAuth Callback von A nach B SDK-Persistenz überschreibt B nicht).
+- **Finding C4-2 – BLOCKER (SDK-Integration: useCredentialsManager: false & verifizierte Mutationen):**
+  - Native WebAuthentication nutzt für `login()` und `logout()` explizit `useCredentialsManager: false`. Dies unterbindet das automatische, unkoordinierte Speichern und Löschen durch das SDK vor unserem Mutationskoordinator (gemäß `auth0_flutter` v2.7.0 Quellcode).
+  - `storeCredentials()` und `clearCredentials()` werden ausschließlich innerhalb des SDK-Mutationskoordinators (`_runSdkExclusive`) ausgeführt, mit strikter Prüfung der Generation.
+  - Der boolesche Rückgabewert von `storeCredentials()` wird geprüft: Schlägt das Speichern fehl oder wirft eine Exception, wird der Login fail-closed abgebrochen (`return null`) und kein Scheinerfolg gemeldet.
+  - Neuer Demo-Test `Finding C4-2-DEMO` belegt den Mangel von `useCredentialsManager: true`.
+  - Neue deterministische Tests: `Finding C4-2a` (stale A-Callback nach B überschreibt B nicht, distinct sub), `Finding C4-2b` (stale A-Callback nach B überschreibt B nicht, same sub), `Finding C4-2c` (überholter WebAuth-Logout löscht B nicht, distinct sub), `Finding C4-2d` (überholter WebAuth-Logout löscht B nicht, same sub) und `Finding C4-2e` (Fehlschlag von `storeCredentials()` meldet keinen erfolgreichen Login).
 
 ## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 4 (Exclusive Operation Coordinator & Fail-Safe Quarantine)
 

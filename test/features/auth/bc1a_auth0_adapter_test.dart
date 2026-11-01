@@ -983,91 +983,242 @@ void main() {
       expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), isNull);
     });
 
-    test('Finding C4-2a: Native-like fake prüft Generation vor blockiertem Clear; Clear resumet nach B SDK-Persistenz -> B überlebt', () async {
-      // 1. Session A aktiv
-      final credsA = buildCredentials(
-        sub: 'auth0|user_a_logout_parity',
-        email: 'a_parity@hullq.com',
-        accessToken: 'token_a_logout_parity',
-      );
-      fakeAuth0Adapter.credentials = credsA;
-      await authService.loginWithGoogle(newsletterOptIn: false);
-      expect(await authService.getAuthToken(), 'token_a_logout_parity');
-
-      // 2. Logout A wird initiiert und blockiert im SDK clearCredentials
-      // Pre-check im Fake prüft Generation VOR blockiertem Clear (matching production line 270)
-      final clearCompleter = Completer<void>();
-      fakeAuth0Adapter.clearCredentialsCompleter = clearCompleter;
-      final logoutAFuture = authService.logout();
-
-      // 3. Während Clear blockiert ist: Login B wird vorbereitet und gestartet
-      final credsB = buildCredentials(
-        sub: 'auth0|user_b_parity',
-        email: 'b_parity@hullq.com',
-        accessToken: 'token_b_parity',
-      );
-      fakeAuth0Adapter.credentials = credsB;
-      final loginBFuture = authService.loginWithApple(newsletterOptIn: true);
-
-      // 4. Nun wird der blockierte Clear freigegeben: Clear resumet
-      clearCompleter.complete();
-      await logoutAFuture;
-
-      // Login B vollendet
-      final loginBSuccess = await loginBFuture;
-      expect(loginBSuccess, isTrue);
-
-      // 5. VERBINDLICHE PRÜFUNG: B's SDK-Credentials und Tokens haben überlebt
-      expect(fakeAuth0Adapter.storedCredentials, isNotNull);
-      expect(fakeAuth0Adapter.storedCredentials?.accessToken, 'token_b_parity');
-      expect(await authService.isAuthenticated(), isTrue);
-      expect(await authService.getAuthToken(), 'token_b_parity');
-      expect(await authService.getUserEmail(), 'b_parity@hullq.com');
-      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'b_parity@hullq.com');
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b_parity');
-    });
-
-    test('Finding C4-2b: Stale WebAuth Callback von A nach B SDK-Persistenz überschreibt B nicht', () async {
-      final nativeStyleAdapter = FakeAuth0Adapter();
-      final testService = Auth0HullqAuthService(
+    test('Finding C4-2-DEMO: Zeigt den Defekt von useCredentialsManager=true (implizites SDK Auto-Store/Clear vor Mutex)', () async {
+      // 1. Simuliere altes/unsicheres SDK-Verhalten: useCredentialsManager = true
+      final unsafeAdapter = FakeAuth0Adapter(useCredentialsManager: true);
+      final unsafeService = Auth0HullqAuthService(
         storage: storage,
-        auth0Adapter: nativeStyleAdapter,
+        auth0Adapter: unsafeAdapter,
         apiClient: fakeApiClient,
       );
 
       final callbackBarrierA = Completer<Credentials?>();
-      nativeStyleAdapter.loginCompleter = callbackBarrierA;
+      unsafeAdapter.loginCompleter = callbackBarrierA;
 
-      // 1. Login A startet WebAuth und pausiert
-      final loginAFuture = testService.loginWithGoogle(newsletterOptIn: false);
+      // Login A startet
+      final loginAFuture = unsafeService.loginWithGoogle(newsletterOptIn: false);
 
-      // 2. Während A in WebAuth hängt: Login B startet und vollendet erfolgreich
-      nativeStyleAdapter.loginCompleter = null;
+      // Login B startet und vollendet
+      unsafeAdapter.loginCompleter = null;
       final credsB = buildCredentials(
-        sub: 'auth0|user_b_stale_test',
-        email: 'b_stale@hullq.com',
-        accessToken: 'token_b_stale',
+        sub: 'auth0|user_b',
+        email: 'b@hullq.com',
+        accessToken: 'token_b',
       );
-      nativeStyleAdapter.credentials = credsB;
-      final loginBSuccess = await testService.loginWithApple(newsletterOptIn: true);
-      expect(loginBSuccess, isTrue);
-      expect(nativeStyleAdapter.storedCredentials?.accessToken, 'token_b_stale');
+      unsafeAdapter.credentials = credsB;
+      await unsafeService.loginWithApple(newsletterOptIn: true);
+      expect(unsafeAdapter.storedCredentials?.accessToken, 'token_b');
 
-      // 3. Nun trifft verspäteter WebAuth-Callback von A ein
+      // Nun trifft A verspätet ein. Im alten SDK-Modus überschreibt das SDK implizit storedCredentials:
       final credsA = buildCredentials(
-        sub: 'auth0|user_a_stale_test',
-        email: 'a_stale@hullq.com',
+        sub: 'auth0|user_a',
+        email: 'a@hullq.com',
+        accessToken: 'token_a',
+      );
+      callbackBarrierA.complete(credsA);
+      await loginAFuture;
+
+      // Beweis des Mangels im alten Modus: SDK hält fälschlich Token A trotz Ablehnung durch Service
+      expect(unsafeAdapter.storedCredentials?.accessToken, 'token_a',
+          reason: 'Beweist, dass useCredentialsManager=true Credentials vor dem Mutex überschrieben hat');
+    });
+
+    test('Finding C4-2a: useCredentialsManager=false schützt Session B vor verspätetem A-Callback (distinct sub)', () async {
+      final safeAdapter = FakeAuth0Adapter(useCredentialsManager: false);
+      final safeService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: safeAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      final callbackBarrierA = Completer<Credentials?>();
+      safeAdapter.loginCompleter = callbackBarrierA;
+
+      final loginAFuture = safeService.loginWithGoogle(newsletterOptIn: false);
+
+      safeAdapter.loginCompleter = null;
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_distinct',
+        email: 'b_distinct@hullq.com',
+        accessToken: 'token_b_distinct',
+      );
+      safeAdapter.credentials = credsB;
+      final loginBSuccess = await safeService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_b_distinct');
+
+      // Verspäteter Callback A
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_distinct',
+        email: 'a_distinct@hullq.com',
         accessToken: 'token_a_stale',
       );
       callbackBarrierA.complete(credsA);
 
       final resA = await loginAFuture;
-      expect(resA, isFalse, reason: 'Verspäteter WebAuth-Callback muss abgewiesen werden');
+      expect(resA, isFalse, reason: 'Stale A muss abgelehnt werden');
 
-      // 4. VERBINDLICHE PRÜFUNG: B's Credentials im SDK-Store dürfen nicht durch A ersetzt werden
-      expect(nativeStyleAdapter.storedCredentials?.accessToken, 'token_b_stale');
-      expect(await testService.getAuthToken(), 'token_b_stale');
-      expect(await testService.getUserEmail(), 'b_stale@hullq.com');
+      // VERBINDLICHE PRÜFUNG: B bleibt unverändert im SDK und Service
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_b_distinct');
+      expect(await safeService.getAuthToken(), 'token_b_distinct');
+      expect(await safeService.getUserEmail(), 'b_distinct@hullq.com');
+      expect(await safeService.isAuthenticated(), isTrue);
+    });
+
+    test('Finding C4-2b: useCredentialsManager=false schützt Session B vor verspätetem A-Callback (same sub)', () async {
+      final safeAdapter = FakeAuth0Adapter(useCredentialsManager: false);
+      final safeService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: safeAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      const sameSub = 'auth0|skipper_same_sub';
+      final callbackBarrierA = Completer<Credentials?>();
+      safeAdapter.loginCompleter = callbackBarrierA;
+
+      final loginAFuture = safeService.loginWithGoogle(newsletterOptIn: false);
+
+      safeAdapter.loginCompleter = null;
+      final credsB = buildCredentials(
+        sub: sameSub,
+        email: 'skipper@adria.com',
+        accessToken: 'token_fresh_b',
+      );
+      safeAdapter.credentials = credsB;
+      final loginBSuccess = await safeService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_fresh_b');
+
+      // Verspäteter Callback A mit demselben sub aber altem Token
+      final credsA = buildCredentials(
+        sub: sameSub,
+        email: 'skipper@adria.com',
+        accessToken: 'token_stale_a',
+      );
+      callbackBarrierA.complete(credsA);
+
+      final resA = await loginAFuture;
+      expect(resA, isFalse);
+
+      // VERBINDLICHE PRÜFUNG: Frischer Token B überlebt
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_fresh_b');
+      expect(await safeService.getAuthToken(), 'token_fresh_b');
+    });
+
+    test('Finding C4-2c: useCredentialsManager=false verhindert Credential-Löschung bei überholtem WebAuth-Logout (distinct sub)', () async {
+      final safeAdapter = FakeAuth0Adapter(useCredentialsManager: false);
+      final safeService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: safeAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      // 1. Session A aktiv
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_logout',
+        email: 'a_logout@hullq.com',
+        accessToken: 'token_a_logout',
+      );
+      safeAdapter.credentials = credsA;
+      await safeService.loginWithGoogle(newsletterOptIn: false);
+      expect(await safeService.getAuthToken(), 'token_a_logout');
+
+      // 2. Logout A pausiert im asynchronen WebAuth-Logout
+      final logoutWait = Completer<void>();
+      safeAdapter.webAuthLogoutCompleter = logoutWait;
+      final logoutAFuture = safeService.logout();
+
+      // 3. Während Logout A noch im Browser hängt: Login B startet und committet
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_new',
+        email: 'b_new@hullq.com',
+        accessToken: 'token_b_new',
+      );
+      safeAdapter.credentials = credsB;
+      final loginBSuccess = await safeService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_b_new');
+
+      // 4. WebAuth-Logout von A wacht auf und vollendet
+      logoutWait.complete();
+      await logoutAFuture;
+
+      // 5. VERBINDLICHE PRÜFUNG: Session B im SDK CredentialsManager und im Service unberührt
+      expect(safeAdapter.storedCredentials, isNotNull);
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_b_new');
+      expect(await safeService.getAuthToken(), 'token_b_new');
+      expect(await safeService.getUserEmail(), 'b_new@hullq.com');
+      expect(await safeService.isAuthenticated(), isTrue);
+    });
+
+    test('Finding C4-2d: useCredentialsManager=false verhindert Credential-Löschung bei überholtem WebAuth-Logout (same sub)', () async {
+      final safeAdapter = FakeAuth0Adapter(useCredentialsManager: false);
+      final safeService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: safeAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      const sameSub = 'auth0|skipper_relogin';
+
+      // 1. Session A aktiv
+      final credsA = buildCredentials(
+        sub: sameSub,
+        email: 'skipper@adria.com',
+        accessToken: 'token_relogin_a',
+      );
+      safeAdapter.credentials = credsA;
+      await safeService.loginWithGoogle(newsletterOptIn: false);
+
+      // 2. Logout A pausiert im WebAuth-Logout
+      final logoutWait = Completer<void>();
+      safeAdapter.webAuthLogoutCompleter = logoutWait;
+      final logoutAFuture = safeService.logout();
+
+      // 3. Re-Login als B (gleicher Sub, neues Token)
+      final credsB = buildCredentials(
+        sub: sameSub,
+        email: 'skipper@adria.com',
+        accessToken: 'token_relogin_b_fresh',
+      );
+      safeAdapter.credentials = credsB;
+      final loginBSuccess = await safeService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+
+      // 4. Logout A beendet
+      logoutWait.complete();
+      await logoutAFuture;
+
+      // 5. VERBINDLICHE PRÜFUNG: Re-Login B überlebt
+      expect(safeAdapter.storedCredentials?.accessToken, 'token_relogin_b_fresh');
+      expect(await safeService.getAuthToken(), 'token_relogin_b_fresh');
+    });
+
+    test('Finding C4-2e: storeCredentials Fehlschlag meldet keinen erfolgreichen Login (Fail-Closed)', () async {
+      final safeAdapter = FakeAuth0Adapter(useCredentialsManager: false);
+      final safeService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: safeAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      // Simuliere Fehlschlag beim Speichern im CredentialsManager (storeCredentials() == false)
+      safeAdapter.shouldFailStoreCredentials = true;
+      final creds = buildCredentials(
+        sub: 'auth0|failed_store_user',
+        email: 'fail_store@hullq.com',
+        accessToken: 'token_fail_store',
+      );
+      safeAdapter.credentials = creds;
+
+      final loginSuccess = await safeService.loginWithGoogle(newsletterOptIn: false);
+
+      // VERBINDLICHE PRÜFUNG: Kein erfolgreicher Login
+      expect(loginSuccess, isFalse, reason: 'Bei fehlgeschlagenem storeCredentials() darf kein Erfolg gemeldet werden');
+      expect(await safeService.isAuthenticated(), isFalse);
+      expect(await safeService.getAuthToken(), isNull);
+      expect(safeAdapter.storedCredentials, isNull);
     });
   });
 }

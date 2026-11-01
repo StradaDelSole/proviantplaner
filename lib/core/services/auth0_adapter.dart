@@ -187,7 +187,10 @@ class NativeAuth0Adapter implements Auth0Adapter {
           : null;
 
       final credentials = await client
-          .webAuthentication(scheme: scheme)
+          .webAuthentication(
+            scheme: scheme,
+            useCredentialsManager: false,
+          )
           .login(
             audience: audience ?? (config.audience.isNotEmpty ? config.audience : null),
             scopes: scopes,
@@ -198,24 +201,21 @@ class NativeAuth0Adapter implements Auth0Adapter {
         // Post-Await Generation Check unter SDK-Mutex:
         // Wurde dieser Login inzwischen durch einen Logout oder neueren Login überholt?
         if (gen < _activeGeneration || _committedGeneration > gen) {
-          // Callback ist veraltet.
-          // Das SDK hat die Credentials bereits im CredentialsManager gespeichert.
-          // Falls noch KEINE neuere Generation committet wurde (_committedGeneration < gen),
-          // bereinigen wir die versehentlich gespeicherten Credentials.
-          // Hat aber bereits eine neuere Generation committet (_committedGeneration >= gen),
-          // dürfen wir die Credentials keinesfalls anrühren!
-          if (_committedGeneration < gen) {
-            try {
-              await client.credentialsManager.clearCredentials();
-            } catch (_) {}
-          }
+          // Callback ist veraltet. Da useCredentialsManager: false gesetzt war,
+          // wurden keine Credentials automatisch im SDK gespeichert.
+          // Wir dürfen und müssen den CredentialsManager keinesfalls manipulieren!
           return null;
         }
 
-        // Falls während WebAuth ein asynchroner Clear lief, Credentials sicherstellen:
+        // Credentials explizit und exakt einmal unter Mutex und Generationsprüfung im SDK speichern:
         try {
-          await client.credentialsManager.storeCredentials(credentials);
-        } catch (_) {}
+          final stored = await client.credentialsManager.storeCredentials(credentials);
+          if (!stored) {
+            return null;
+          }
+        } catch (_) {
+          return null;
+        }
 
         return credentials;
       });
@@ -241,12 +241,17 @@ class NativeAuth0Adapter implements Auth0Adapter {
       return;
     }
 
-    // 1. Remote-Browser-Logout (Best-Effort, da offline fehlschlagen kann)
+    // 1. Remote-Browser-Logout (ohne implizites clearCredentials im SDK!)
     try {
       final scheme = defaultTargetPlatform == TargetPlatform.android
           ? (customScheme ?? config.customScheme)
           : null;
-      await client.webAuthentication(scheme: scheme).logout();
+      await client
+          .webAuthentication(
+            scheme: scheme,
+            useCredentialsManager: false,
+          )
+          .logout();
     } catch (_) {
       // Best-effort remote logout
     }
@@ -337,6 +342,8 @@ class FakeAuth0Adapter implements Auth0Adapter {
   bool shouldThrowOnLogin;
   bool shouldThrowOnRenew;
   bool shouldThrowOnClear;
+  bool shouldFailStoreCredentials;
+  bool useCredentialsManager;
   Exception? customException;
 
   Completer<Credentials?>? loginCompleter;
@@ -392,6 +399,8 @@ class FakeAuth0Adapter implements Auth0Adapter {
     this.shouldThrowOnLogin = false,
     this.shouldThrowOnRenew = false,
     this.shouldThrowOnClear = false,
+    this.shouldFailStoreCredentials = false,
+    this.useCredentialsManager = false,
     this.customException,
     this.renewDelay,
     this.getCredentialsDelay,
@@ -460,13 +469,21 @@ class FakeAuth0Adapter implements Auth0Adapter {
       return null;
     }
 
+    // Wenn der veraltete/unsichere SDK-Modus simuliert wird (useCredentialsManager == true),
+    // speichert das SDK Credentials implizit VOR dem Provy-Mutex (af-v2.7.0 WebAuthentication.login:118):
+    if (useCredentialsManager) {
+      storedCredentials = res;
+    }
+
     return await _runSdkExclusive(() async {
       if (gen < _activeGeneration || _committedGeneration > gen) {
-        if (_committedGeneration < gen) {
-          storedCredentials = null;
-        }
         return null;
       }
+
+      if (shouldFailStoreCredentials) {
+        return null;
+      }
+
       storedCredentials = res;
       return res;
     });
@@ -483,7 +500,15 @@ class FakeAuth0Adapter implements Auth0Adapter {
 
     // Optional: Simuliere asynchronen WebAuthentication.logout() Await
     if (webAuthLogoutCompleter != null) {
+      // Wenn der veraltete/unsichere SDK-Modus simuliert wird (useCredentialsManager == true),
+      // leert das SDK Credentials implizit VOR dem Provy-Mutex (af-v2.7.0 WebAuthentication.logout:160):
+      if (useCredentialsManager) {
+        storedCredentials = null;
+      }
       await webAuthLogoutCompleter!.future;
+      if (useCredentialsManager) {
+        storedCredentials = null;
+      }
     }
 
     if (gen >= _activeGeneration && _committedGeneration <= gen) {
