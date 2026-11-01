@@ -142,24 +142,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Meldet den Benutzer ab.
   Future<void> logout() async {
-    await _authService.logout();
-    state = const AuthState(
-      status: HullqMembershipStatus.trial,
-      email: null,
-      isLoading: false,
-      isAuthenticated: false,
-    );
+    try {
+      await _authService.logout();
+    } finally {
+      state = const AuthState(
+        status: HullqMembershipStatus.trial,
+        email: null,
+        isLoading: false,
+        isAuthenticated: false,
+      );
+    }
   }
 
   /// Löscht das Konto und alle Anmeldedaten.
   Future<void> deleteAccount() async {
-    await _authService.deleteAccount();
-    state = const AuthState(
-      status: HullqMembershipStatus.trial,
-      email: null,
-      isLoading: false,
-      isAuthenticated: false,
-    );
+    try {
+      await _authService.deleteAccount();
+    } finally {
+      state = const AuthState(
+        status: HullqMembershipStatus.trial,
+        email: null,
+        isLoading: false,
+        isAuthenticated: false,
+      );
+    }
   }
 }
 

@@ -168,11 +168,16 @@ class Auth0HullqAuthService implements HullqAuthService {
   static const String keyAuth0Sub = 'hullq_auth0_sub';
   static const String keyMembershipStatus = 'hullq_membership_status';
   static const String keyNewsletterConsent = 'hullq_newsletter_consent';
+  static const String keySessionRevoked = 'hullq_session_revoked';
 
   int _sessionEpoch = 0;
+  int _revokedEpoch = -1;
+  bool _isSessionRevoked = false;
   Future<String?>? _inFlightTokenRetrieval;
   int _inFlightEpoch = 0;
   bool _lastNewsletterConsent = false;
+
+  bool _isRevokedForEpoch(int epoch) => _isSessionRevoked && _revokedEpoch >= epoch;
 
   Auth0HullqAuthService({
     FlutterSecureStorage? storage,
@@ -187,6 +192,18 @@ class Auth0HullqAuthService implements HullqAuthService {
 
   @override
   bool get lastNewsletterConsent => _lastNewsletterConsent;
+
+  Future<bool> _safeStorageWrite(int epoch, String key, String value) async {
+    if (epoch != _sessionEpoch || _isRevokedForEpoch(epoch)) return false;
+    await _storage.write(key: key, value: value);
+    if (epoch != _sessionEpoch || _isRevokedForEpoch(epoch)) {
+      try {
+        await _storage.delete(key: key);
+      } catch (_) {}
+      return false;
+    }
+    return true;
+  }
 
   Future<bool> _handleLogin({
     String? connection,
@@ -208,47 +225,65 @@ class Auth0HullqAuthService implements HullqAuthService {
       }
 
       // Linearizable Epoch Check:
-      // Wurde während des Logins abgemeldet oder ein anderer Login gestartet?
-      if (currentEpoch != _sessionEpoch) {
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
+        if (_isRevokedForEpoch(currentEpoch)) {
+          try {
+            await _auth0Adapter.clearCredentials();
+          } catch (_) {}
+        }
         return false;
       }
 
       final userEmail = credentials.user.email ?? email ?? credentials.user.sub;
       final userSub = credentials.user.sub;
 
-      // Nur Provy-Metadaten in SecureStorage schreiben (KEIN Access-Token!)
-      await _storage.write(key: keyUserEmail, value: userEmail);
-      if (currentEpoch != _sessionEpoch) {
+      if (!await _safeStorageWrite(currentEpoch, keyUserEmail, userEmail)) {
+        await _rollbackStaleLoginSession(currentEpoch);
         return false;
       }
 
       if (userSub.isNotEmpty) {
-        await _storage.write(key: keyAuth0Sub, value: userSub);
-        if (currentEpoch != _sessionEpoch) {
+        if (!await _safeStorageWrite(currentEpoch, keyAuth0Sub, userSub)) {
+          await _rollbackStaleLoginSession(currentEpoch);
           return false;
         }
       }
 
-      await _storage.write(
-        key: keyNewsletterConsent,
-        value: newsletterOptIn.toString(),
-      );
-      if (currentEpoch != _sessionEpoch) {
+      if (!await _safeStorageWrite(currentEpoch, keyNewsletterConsent, newsletterOptIn.toString())) {
+        await _rollbackStaleLoginSession(currentEpoch);
         return false;
       }
 
       // In BC-1A: Status bleibt trial; Server-Entitlements folgen in BC-1B
-      await _storage.write(
-        key: keyMembershipStatus,
-        value: HullqMembershipStatus.trial.rawValue,
-      );
-      if (currentEpoch != _sessionEpoch) {
+      if (!await _safeStorageWrite(currentEpoch, keyMembershipStatus, HullqMembershipStatus.trial.rawValue)) {
+        await _rollbackStaleLoginSession(currentEpoch);
         return false;
       }
+
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
+        await _rollbackStaleLoginSession(currentEpoch);
+        return false;
+      }
+
+      // Erfolgreich: Session ist aktiv, Quarantäne aufheben
+      await _storage.delete(key: keySessionRevoked);
+      _isSessionRevoked = false;
+      _revokedEpoch = -1;
 
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> _rollbackStaleLoginSession(int epoch) async {
+    if (_sessionEpoch == epoch || _isRevokedForEpoch(epoch)) {
+      await _clearLocalSession(preserveNewsletterConsent: false);
+    }
+    if (_isRevokedForEpoch(epoch)) {
+      try {
+        await _auth0Adapter.clearCredentials();
+      } catch (_) {}
     }
   }
 
@@ -282,14 +317,20 @@ class Auth0HullqAuthService implements HullqAuthService {
   @override
   Future<void> logout() async {
     _sessionEpoch++;
+    _revokedEpoch = _sessionEpoch;
+    _isSessionRevoked = true;
     _inFlightTokenRetrieval = null;
     _lastNewsletterConsent = false;
 
-    // Lokalen Speicher leeren
+    // 1. Quarantäne-Marker dauerhaft im Speicher ablegen (Fail-Closed gegen Reaktivierung)
+    try {
+      await _storage.write(key: keySessionRevoked, value: 'true');
+    } catch (_) {}
+
+    // 2. Lokale Metadaten bereinigen
     await _clearLocalSession(preserveNewsletterConsent: false);
 
-    // SDK-Logout und CredentialsManager leeren
-    // Fehler beim Löschen von Sicherheits-Credentials nicht still verschlucken!
+    // 3. SDK-Logout und CredentialsManager leeren
     try {
       await _auth0Adapter.logout();
     } catch (e) {
@@ -307,8 +348,14 @@ class Auth0HullqAuthService implements HullqAuthService {
     // Lokale Anmeldedaten und Tokens werden sicher bereinigt, ohne eine
     // fälschliche Fernlöschung vorzutäuschen.
     _sessionEpoch++;
+    _revokedEpoch = _sessionEpoch;
+    _isSessionRevoked = true;
     _inFlightTokenRetrieval = null;
     _lastNewsletterConsent = false;
+
+    try {
+      await _storage.write(key: keySessionRevoked, value: 'true');
+    } catch (_) {}
 
     await _clearLocalSession(preserveNewsletterConsent: false);
 
@@ -338,19 +385,20 @@ class Auth0HullqAuthService implements HullqAuthService {
   @override
   Future<String?> getAuthToken() async {
     final currentEpoch = _sessionEpoch;
+    if (_isRevokedForEpoch(currentEpoch)) return null;
 
-    // Wenn bereits ein Abruf für die aktuelle Epoche läuft: anhängen
+    Future<String?> future;
     if (_inFlightTokenRetrieval != null && _inFlightEpoch == currentEpoch) {
-      return _inFlightTokenRetrieval!;
+      future = _inFlightTokenRetrieval!;
+    } else {
+      _inFlightEpoch = currentEpoch;
+      future = _getTokenInternal(currentEpoch);
+      _inFlightTokenRetrieval = future;
     }
-
-    _inFlightEpoch = currentEpoch;
-    final future = _getTokenInternal(currentEpoch);
-    _inFlightTokenRetrieval = future;
 
     try {
       final token = await future;
-      if (currentEpoch != _sessionEpoch) {
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
         return null;
       }
       return token;
@@ -363,28 +411,52 @@ class Auth0HullqAuthService implements HullqAuthService {
 
   Future<String?> _getTokenInternal(int currentEpoch) async {
     try {
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
+        return null;
+      }
+
+      final revoked = await _storage.read(key: keySessionRevoked);
+      if (revoked == 'true') {
+        _isSessionRevoked = true;
+        _revokedEpoch = _sessionEpoch;
+        return null;
+      }
+
+      final expectedSub = await _storage.read(key: keyAuth0Sub);
+      if (expectedSub == null || expectedSub.isEmpty) {
+        return null;
+      }
+
       // SDK CredentialsManager ist die alleinige Quelle der Wahrheit!
       final creds = await _auth0Adapter.getCredentials();
 
-      if (currentEpoch != _sessionEpoch) {
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
         return null;
       }
 
       if (creds != null && creds.accessToken.isNotEmpty) {
+        // Sub-Prüfung: Gehört das SDK-Token zum gespeicherten Provy-Account?
+        if (creds.user.sub != expectedSub) {
+          return null;
+        }
+
         // Falls SDK neue Benutzer-E-Mail mitbringt, lokalen Cache aktualisieren
         if (creds.user.email != null) {
-          await _storage.write(key: keyUserEmail, value: creds.user.email!);
+          final written = await _safeStorageWrite(currentEpoch, keyUserEmail, creds.user.email!);
+          if (!written || currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
+            return null;
+          }
         }
         return creds.accessToken;
       }
 
       // Falls Credentials ungültig oder abgelaufen sind:
-      if (currentEpoch == _sessionEpoch) {
+      if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
         await _clearLocalSession(preserveNewsletterConsent: true);
       }
       return null;
     } catch (_) {
-      if (currentEpoch == _sessionEpoch) {
+      if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
         await _clearLocalSession(preserveNewsletterConsent: true);
       }
       return null;
@@ -393,10 +465,22 @@ class Auth0HullqAuthService implements HullqAuthService {
 
   @override
   Future<String?> getUserEmail() async {
+    final currentEpoch = _sessionEpoch;
+    if (_isRevokedForEpoch(currentEpoch)) return null;
+    final revoked = await _storage.read(key: keySessionRevoked);
+    if (revoked == 'true') {
+      _isSessionRevoked = true;
+      _revokedEpoch = _sessionEpoch;
+      return null;
+    }
+
+    final expectedSub = await _storage.read(key: keyAuth0Sub);
+    if (expectedSub == null || expectedSub.isEmpty) return null;
+
     try {
       final creds = await _auth0Adapter.getCredentials();
-      if (creds?.user.email != null) {
-        return creds!.user.email;
+      if (creds != null && creds.user.sub == expectedSub && creds.user.email != null) {
+        return creds.user.email;
       }
     } catch (_) {}
     return _storage.read(key: keyUserEmail);

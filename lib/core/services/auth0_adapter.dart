@@ -64,6 +64,7 @@ abstract class Auth0Adapter {
 class NativeAuth0Adapter implements Auth0Adapter {
   final Auth0Config config;
   late final Auth0? _auth0;
+  int _loginRequestId = 0;
 
   NativeAuth0Adapter({this.config = Auth0Config.standard}) {
     if (config.domain.isNotEmpty && config.clientId.isNotEmpty) {
@@ -102,6 +103,8 @@ class NativeAuth0Adapter implements Auth0Adapter {
       return null;
     }
 
+    final requestId = ++_loginRequestId;
+
     try {
       final Map<String, String> parameters = {};
       if (connection != null && connection.isNotEmpty) {
@@ -122,6 +125,15 @@ class NativeAuth0Adapter implements Auth0Adapter {
             scopes: scopes,
             parameters: parameters,
           );
+
+      if (requestId != _loginRequestId) {
+        // Callback kam verspätet nach Logout oder neuem Login an
+        try {
+          await clearCredentials();
+        } catch (_) {}
+        return null;
+      }
+
       return credentials;
     } on WebAuthenticationException catch (e) {
       if (e.isUserCancelledException) {
@@ -135,6 +147,7 @@ class NativeAuth0Adapter implements Auth0Adapter {
 
   @override
   Future<void> logout({String? customScheme}) async {
+    _loginRequestId++;
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) {
       return;

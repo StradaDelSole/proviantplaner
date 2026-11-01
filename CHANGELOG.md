@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 2 (Findings C, D, E)
+
+- **Finding C – BLOCKER (Dauerhafte Session-Konsistenz über asynchrone Grenzen & Barrier-Absicherung):**
+  - Asynchrone Schreibvorgänge im sicheren Speicher mit `_safeStorageWrite` abgesichert: Prüft Epoche und Revocation-Status vor und nach jedem `_storage.write`; überschriebene oder nach einem Logout vollendete Writes werden sofort gelöscht und rollen die Session zurück.
+  - Alle nebenläufigen Aufrufer von `getAuthToken()` warten auf das gemeinsame In-Flight-Future und durchlaufen ausnahmslos dieselbe Post-Await-Epochen- und Quarantäneprüfung (kein Bypass für spätere Aufrufer).
+  - Stale native SDK-Callbacks (z. B. nach verspätetem WebAuthentication-Abschluss nach Logout oder folgendem Login) werden über Request-IDs erkannt, strikt verworfen und aus dem SDK bereinigt.
+  - Deterministische Barrier-Tests: C-1 (verzögerter Speicher-Write mit `BarrierSecureStorage`), C-2 (zwei parallele `getAuthToken`-Aufrufer während Logout), C-3 (überlappender Account-Wechsel) und C-4 (stale native SDK-Callback-Verwerfung).
+- **Finding D – BLOCKER (Dauerhafte Fail-Closed Quarantäne bei unvollständigem SDK-Clear):**
+  - Schlägt `clearCredentials()` im SDK fehl, bleibt die Sitzung dauerhaft und neustart-resistent unter Quarantäne: `keySessionRevoked: 'true'` wird vor dem SDK-Aufruf persistent in `FlutterSecureStorage` geschrieben.
+  - `getAuthToken()`, `isAuthenticated()` und `getUserEmail()` werten die Quarantäne aus und liefern `null` bzw. `false` (auch nach vollständigem App-Neustart, selbst wenn Keychain-Daten verblieben sind).
+  - `AuthNotifier` in Riverpod garantiert über `try ... finally` das Zurücksetzen des UI-Zustands bei `Auth0ClearCredentialsException`.
+  - `MoreScreen` zeigt bei fehlgeschlagener Keychain-Bereinigung eine ehrliche SnackBar (`Sitzung lokal beendet. Sichere Geräteschlüssel konnten nicht vollständig bereinigt werden.`) ohne falsche Erfolgsmeldung.
+  - Erst ein nachfolgender, vollständig erfolgreicher Login hebt die Quarantäne auf.
+- **Finding E – HIGH (Entfernung erfundener Client-IDs & striktes Fail-Closed):**
+  - Die erfundene Default-Client-ID `provy-app-client` wurde vollständig entfernt; `Auth0Config.clientId` ist standardmäßig leer (`''`).
+  - Bekannte Platzhalter (`provy-app-client`, `placeholder`, `todo`, `client_id`, etc.) werden strikt abgewiesen.
+  - Ohne zur Build-Zeit via `--dart-define=AUTH0_CLIENT_ID=...` übergebene echte Client-ID ist `Auth0Config.standard.isValid` strikt `false`.
+- **Finding A Nachschärfung (MoreScreen Cloud-Backup für Trial):**
+  - Cloud-Backup-Button auf der Trial-Kontokarte deaktiviert (`canBackup: false`) mit wahrheitsgemäßem Untertitel `Cloud-Backup erfordert Provy-Mitgliedschaft`.
+
 ## 2026-11-01 – BACKEND-CORE BC-1A Independent Review Amendment (Findings A–E)
 
 - **Finding A – BLOCKER (Wahrheitsgemäße Konto-UI & Lösch-Sicherheit):**

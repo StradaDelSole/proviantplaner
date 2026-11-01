@@ -7,11 +7,10 @@ class Auth0Config {
   static const String expectedNativeScheme = 'provy';
   static const String expectedNativeAudience = 'https://api.planer.hullq.com';
   static const String nativeApplicationId = 'com.hullq.proviantplaner';
-  static const String defaultClientId = 'provy-app-client';
 
   const Auth0Config({
     this.domain = const String.fromEnvironment('AUTH0_DOMAIN', defaultValue: expectedNativeDomain),
-    this.clientId = const String.fromEnvironment('AUTH0_CLIENT_ID', defaultValue: defaultClientId),
+    this.clientId = const String.fromEnvironment('AUTH0_CLIENT_ID', defaultValue: ''),
     this.audience = const String.fromEnvironment('AUTH0_AUDIENCE', defaultValue: expectedNativeAudience),
     this.customScheme = const String.fromEnvironment('AUTH0_CUSTOM_SCHEME', defaultValue: expectedNativeScheme),
   });
@@ -28,9 +27,20 @@ class Auth0Config {
   /// Custom Scheme für Android Redirects (z.B. provy).
   final String customScheme;
 
+  static const Set<String> _knownPlaceholders = {
+    'provy-app-client',
+    'placeholder',
+    'todo',
+    'client_id',
+    'your_client_id',
+    'insert_client_id_here',
+  };
+
   /// Prüft, ob die Konfiguration konsistent mit den nativen Manifest-/URL-Scheme-Registrierungen ist.
   bool get isValid {
-    if (clientId.trim().isEmpty) return false;
+    final cleanClientId = clientId.trim();
+    if (cleanClientId.isEmpty) return false;
+    if (_knownPlaceholders.contains(cleanClientId.toLowerCase())) return false;
     if (domain != expectedNativeDomain) return false;
     if (customScheme != expectedNativeScheme) return false;
     if (audience != expectedNativeAudience) return false;

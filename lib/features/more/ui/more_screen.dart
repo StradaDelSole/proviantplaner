@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/core/services/auth0_adapter.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/user_payment_profile_service.dart';
@@ -52,7 +53,50 @@ class MoreScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await ref.read(authNotifierProvider.notifier).deleteAccount();
+      try {
+        await ref.read(authNotifierProvider.notifier).deleteAccount();
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Lokale Anmeldedaten wurden entfernt. Das Cloud-Konto wurde nicht gelöscht.',
+              ),
+            ),
+          );
+        }
+      } on Auth0ClearCredentialsException {
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Lokale Daten entfernt. Geräteschlüssel konnten nicht vollständig gelöscht werden.',
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await ref.read(authNotifierProvider.notifier).logout();
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.accountLogoutNotice)),
+        );
+      }
+    } on Auth0ClearCredentialsException {
       ref.invalidate(entitlementLevelProvider);
       ref.invalidate(canCreateTripProvider);
 
@@ -60,24 +104,11 @@ class MoreScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Lokale Anmeldedaten wurden entfernt. Das Cloud-Konto wurde nicht gelöscht.',
+              'Sitzung lokal beendet. Sichere Geräteschlüssel konnten nicht vollständig bereinigt werden.',
             ),
           ),
         );
       }
-    }
-  }
-
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    await ref.read(authNotifierProvider.notifier).logout();
-    ref.invalidate(entitlementLevelProvider);
-    ref.invalidate(canCreateTripProvider);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accountLogoutNotice)),
-      );
     }
   }
 
@@ -314,11 +345,14 @@ class MoreScreen extends ConsumerWidget {
     final status = authState.status;
     final email = authState.email ?? '';
 
+    final canBackup = status != HullqMembershipStatus.trial;
     final lastBackupAsync = ref.watch(lastBackupTimestampProvider);
     final lastBackup = lastBackupAsync.valueOrNull;
-    final backupSubtitle = lastBackup != null
-        ? '${l10n.accountBackupStatus} ${DateFormat('dd.MM.yyyy HH:mm').format(lastBackup)}'
-        : l10n.accountBackupNever;
+    final backupSubtitle = !canBackup
+        ? 'Cloud-Backup erfordert Provy-Mitgliedschaft'
+        : (lastBackup != null
+            ? '${l10n.accountBackupStatus} ${DateFormat('dd.MM.yyyy HH:mm').format(lastBackup)}'
+            : l10n.accountBackupNever);
 
     return Card(
       elevation: 0,
@@ -419,7 +453,7 @@ class MoreScreen extends ConsumerWidget {
                       icon: const Icon(Icons.cloud_upload_outlined, size: 18),
                       label: Text(l10n.accountBackupNow),
                       style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                      onPressed: () => _backupNow(context, ref),
+                      onPressed: canBackup ? () => _backupNow(context, ref) : null,
                     ),
                   ),
                   const SizedBox(width: 8),

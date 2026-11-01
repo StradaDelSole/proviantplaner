@@ -216,6 +216,8 @@ void main() {
       expect(find.text('ANGEMELDET'), findsOneWidget);
       // Logout-Button MUSS sichtbar und erreichbar sein
       expect(find.text('Abmelden'), findsOneWidget);
+      // Cloud-Backup ist für Trial-Status wahrheitsgemäß als mitgliedschaftspflichtig deklariert
+      expect(find.text('Cloud-Backup erfordert Provy-Mitgliedschaft'), findsOneWidget);
     });
 
     testWidgets('8. Finding A: Legacy Member-Nutzer sieht MITGLIED-Badge und HullQ-Mitglied Subtitle', (tester) async {

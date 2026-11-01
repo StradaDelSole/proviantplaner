@@ -60,8 +60,42 @@ class TrackingHullqApiClient implements HullqApiClient {
   Future<String> downloadBackup(String token, String backupId) async => '{}';
 }
 
+/// Mock-Speicher mit konfigurierbaren Barrieren fuer deterministische Nebenlaeufigkeitstests.
+class BarrierSecureStorage extends FlutterSecureStorage {
+  Completer<void>? writeBarrier;
+  String? pausedKey;
+
+  BarrierSecureStorage() : super();
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+    WebOptions? webOptions,
+  }) async {
+    if (writeBarrier != null && (pausedKey == null || key == pausedKey)) {
+      await writeBarrier!.future;
+    }
+    await super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+      webOptions: webOptions,
+    );
+  }
+}
+
 void main() {
-  late FlutterSecureStorage storage;
+  late BarrierSecureStorage storage;
   late TrackingHullqApiClient fakeApiClient;
   late FakeAuth0Adapter fakeAuth0Adapter;
   late Auth0HullqAuthService authService;
@@ -87,7 +121,7 @@ void main() {
 
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
-    storage = const FlutterSecureStorage();
+    storage = BarrierSecureStorage();
     fakeApiClient = TrackingHullqApiClient();
     fakeAuth0Adapter = FakeAuth0Adapter(credentials: buildCredentials());
     authService = Auth0HullqAuthService(
@@ -277,6 +311,8 @@ void main() {
       expect(config.domain, 'auth.hullq.com');
       expect(config.audience, 'https://api.planer.hullq.com');
       expect(config.customScheme, 'provy');
+      expect(config.clientId, isEmpty);
+      expect(config.isValid, isFalse, reason: 'Ohne Client-ID ist die Standard-Konfiguration fail-closed');
 
       // NativeAdapter mit ungültigen Parametern
       final adapter = NativeAuth0Adapter(
@@ -356,48 +392,65 @@ void main() {
       expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
     });
 
-    test('Finding C-1: Logout während laufendem Login bricht persistenten Zustand linearisierbar ab', () async {
-      final creds = buildCredentials(sub: 'auth0|concurrent_login');
-      fakeAuth0Adapter.loginCompleter = Completer<Credentials?>();
+    test('Finding C-1: Logout während verzögertem SecureStorage-Write bereinigt Stale-State deterministisch', () async {
+      final creds = buildCredentials(
+        sub: 'auth0|concurrent_login',
+        email: 'delayed_write@hullq.com',
+      );
+      fakeAuth0Adapter.credentials = creds;
 
-      // Login starten (blockiert an der Barriere)
+      // Barriere im SecureStorage beim Schreiben von keyUserEmail aktivieren
+      storage.pausedKey = Auth0HullqAuthService.keyUserEmail;
+      final barrier = Completer<void>();
+      storage.writeBarrier = barrier;
+
+      // 1. Login starten (hängt an der Barriere bei _storage.write)
       final loginFuture = authService.loginWithGoogle(newsletterOptIn: true);
 
-      // Während Login läuft: Logout anstoßen
+      // Kurzer Yield, damit der Login bis zur Storage-Barriere läuft
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // 2. Parallel abmelden
       await authService.logout();
 
-      // Login vollenden lassen
-      fakeAuth0Adapter.loginCompleter!.complete(creds);
+      // 3. Nun Barriere freigeben -> Write wird ausgeführt
+      barrier.complete();
       final loginResult = await loginFuture;
 
+      // 4. Assertions:
       expect(loginResult, isFalse, reason: 'Login während Logout darf nicht erfolgreich abschließen');
       expect(await authService.isAuthenticated(), isFalse);
       expect(await authService.getAuthToken(), isNull);
       expect(await authService.getUserEmail(), isNull);
+      // Stale Key darf nicht im Speicher verbleiben
       expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
       expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+      expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), 'true');
     });
 
-    test('Finding C-2: Logout während verzögertem CredentialsManager-Read liefert null und invalidiert Single-Flight', () async {
-      final creds = buildCredentials(sub: 'auth0|delayed_read');
+    test('Finding C-2: Zwei parallele getAuthToken Aufrufe während Logout -> Beide liefern null', () async {
+      final creds = buildCredentials(sub: 'auth0|two_callers');
       fakeAuth0Adapter.credentials = creds;
       await authService.loginWithGoogle(newsletterOptIn: false);
 
       fakeAuth0Adapter.getCredentialsCompleter = Completer<Credentials?>();
 
-      // getAuthToken anstoßen (blockiert im Adapter)
-      final tokenFuture = authService.getAuthToken();
+      // Zwei gleichzeitige Caller starten getAuthToken()
+      final future1 = authService.getAuthToken();
+      final future2 = authService.getAuthToken();
 
-      // Parallel abmelden
+      // Parallel abmelden während Token-Retrieval läuft
       await authService.logout();
 
-      // Read vollenden lassen
+      // Adapter-Read auflösen
       final completer = fakeAuth0Adapter.getCredentialsCompleter!;
       fakeAuth0Adapter.getCredentialsCompleter = null;
       completer.complete(creds);
-      final tokenResult = await tokenFuture;
 
-      expect(tokenResult, isNull, reason: 'Token-Abruf nach Logout muss null liefern');
+      final results = await Future.wait([future1, future2]);
+
+      expect(results[0], isNull, reason: 'Caller 1 muss null erhalten');
+      expect(results[1], isNull, reason: 'Caller 2 (In-Flight-Joiner) darf Epoch-Check keinesfalls umgehen');
       expect(await authService.isAuthenticated(), isFalse);
     });
 
@@ -433,11 +486,48 @@ void main() {
       expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|account_b');
     });
 
-    test('Finding D-1: SDK clearCredentials Fehler wirft Auth0ClearCredentialsException und verhindert Reaktivierung', () async {
+    test('Finding C-4: Stale native-style SDK WebAuthentication Callback nach Logout wird abgewiesen und bereinigt', () async {
+      final nativeStyleAdapter = FakeAuth0Adapter();
+      final testService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: nativeStyleAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      final callbackBarrier = Completer<Credentials?>();
+      nativeStyleAdapter.loginCompleter = callbackBarrier;
+
+      // Login A startet
+      final loginFuture = testService.loginWithGoogle(newsletterOptIn: false);
+
+      // Während WebAuth im Browser aktiv ist: Logout
+      await testService.logout();
+
+      // Nun trifft verspäteter WebAuth-Callback ein
+      callbackBarrier.complete(buildCredentials(
+        sub: 'auth0|stale_callback_user',
+        accessToken: 'stale_callback_token',
+      ));
+
+      final result = await loginFuture;
+      expect(result, isFalse);
+      expect(await testService.getAuthToken(), isNull);
+      expect(await testService.isAuthenticated(), isFalse);
+      expect(nativeStyleAdapter.storedCredentials, isNull, reason: 'Verspäteter WebAuth-Callback darf keine SDK-Credentials hinterlassen');
+    });
+
+    test('Finding D-1: Fehlgeschlagenes clearCredentials() führt zu dauerhafter Quarantäne (keine Reaktivierung, kein Stale-Token, Fail-Closed bei Neustart)', () async {
+      final creds = buildCredentials(
+        sub: 'auth0|failed_clear_user',
+        email: 'clear_fail@hullq.com',
+        accessToken: 'uncleared_access_token',
+      );
+      fakeAuth0Adapter.credentials = creds;
       await authService.loginWithGoogle(newsletterOptIn: false);
       expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'uncleared_access_token');
 
-      // Injiziere Hardware-/Keychain-Löschfehler
+      // Injiziere Hardware-/Keychain-Löschfehler im SDK
       fakeAuth0Adapter.shouldThrowOnClear = true;
 
       await expectLater(
@@ -445,49 +535,86 @@ void main() {
         throwsA(isA<Auth0ClearCredentialsException>()),
       );
 
-      // Lokale Provy-Session muss trotz Exception bereinigt sein
+      // 1. Unmittelbar nach fehlgeschlagenem Logout:
       expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
       expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+      expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), 'true');
+      expect(await authService.getAuthToken(), isNull, reason: 'getAuthToken darf trotz uncleared SDK-Credentials null liefern');
+      expect(await authService.isAuthenticated(), isFalse, reason: 'isAuthenticated darf nach Logout nicht wahr sein');
+      expect(await authService.getUserEmail(), isNull);
+
+      // 2. Simuliere App-Neustart:
+      expect(fakeAuth0Adapter.storedCredentials, isNotNull, reason: 'SDK hält wegen Fehler noch Credentials');
+      final restartedService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: fakeAuth0Adapter,
+        apiClient: fakeApiClient,
+      );
+
+      // Nach Neustart: Strikte Quarantäne bleibt aktiv!
+      expect(await restartedService.isAuthenticated(), isFalse, reason: 'Sitzung darf nach Neustart nicht reaktiviert werden');
+      expect(await restartedService.getAuthToken(), isNull, reason: 'Neustart darf kein Stale-Token aus unbereinigtem SDK liefern');
+      expect(await restartedService.getUserEmail(), isNull);
+
+      // 3. Ein neuer expliziter Login beendet die Quarantäne sauber
+      fakeAuth0Adapter.shouldThrowOnClear = false;
+      final newCreds = buildCredentials(
+        sub: 'auth0|fresh_new_user',
+        email: 'fresh@hullq.com',
+        accessToken: 'fresh_new_token',
+      );
+      fakeAuth0Adapter.credentials = newCreds;
+      final loginSuccess = await restartedService.loginWithApple(newsletterOptIn: true);
+      expect(loginSuccess, isTrue);
+      expect(await restartedService.isAuthenticated(), isTrue);
+      expect(await restartedService.getAuthToken(), 'fresh_new_token');
+      expect(await restartedService.getUserEmail(), 'fresh@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), isNull);
     });
 
     test('Finding E-1: Auth0Config Fail-Closed Validierung und Callback-URLs', () {
-      // 1. Standard-Konfiguration ist valide
+      // 1. Standard-Konfiguration ohne externe Client-ID ist ungültig (fail-closed!)
       const standard = Auth0Config.standard;
-      expect(standard.isValid, isTrue);
+      expect(standard.clientId, isEmpty);
+      expect(standard.isValid, isFalse, reason: 'Ohne reale Client-ID muss die Standard-Konfiguration fail-closed ungültig sein');
       expect(standard.domain, Auth0Config.expectedNativeDomain);
       expect(standard.customScheme, Auth0Config.expectedNativeScheme);
       expect(standard.audience, Auth0Config.expectedNativeAudience);
 
-      // 2. Callback-URLs für iOS und Android
-      expect(standard.callbackUrlFor(TargetPlatform.android), 'provy://auth.hullq.com/android/com.hullq.proviantplaner/callback');
-      expect(standard.callbackUrlFor(TargetPlatform.iOS), 'com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback');
+      // 2. Erfundene Platzhalter werden strikt abgewiesen
+      const placeholderConfig = Auth0Config(
+        clientId: 'provy-app-client',
+        domain: 'auth.hullq.com',
+        customScheme: 'provy',
+      );
+      expect(placeholderConfig.isValid, isFalse, reason: 'Erfundene Platzhalter-Client-IDs müssen abgewiesen werden');
 
-      // 3. Fail-Closed bei Mismatch
+      // 3. Gültige echte externe Client-ID ist valide
+      const validConfig = Auth0Config(
+        clientId: 'real_client_id_prod_999',
+        domain: 'auth.hullq.com',
+        customScheme: 'provy',
+      );
+      expect(validConfig.isValid, isTrue);
+
+      // 4. Callback-URLs für iOS und Android
+      expect(validConfig.callbackUrlFor(TargetPlatform.android), 'provy://auth.hullq.com/android/com.hullq.proviantplaner/callback');
+      expect(validConfig.callbackUrlFor(TargetPlatform.iOS), 'com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback');
+
+      // 5. Fail-Closed bei ungültiger Domain oder ungültigem Scheme
       const invalidDomain = Auth0Config(
-        clientId: 'provy-app-client-id',
+        clientId: 'real_client_id_prod_999',
         domain: 'malicious.attacker.com',
         customScheme: 'provy',
       );
       expect(invalidDomain.isValid, isFalse);
 
       const invalidScheme = Auth0Config(
-        clientId: 'provy-app-client-id',
+        clientId: 'real_client_id_prod_999',
         domain: 'auth.hullq.com',
         customScheme: 'http',
       );
       expect(invalidScheme.isValid, isFalse);
-
-      const emptyClientId = Auth0Config(
-        clientId: '',
-        domain: 'auth.hullq.com',
-        customScheme: 'provy',
-      );
-      expect(emptyClientId.isValid, isFalse);
-
-      // NativeAdapter mit invalider Config schlägt sofort fail-closed fehl
-      final invalidAdapter = NativeAuth0Adapter(config: invalidDomain);
-      expect(invalidAdapter.login(), completion(isNull));
     });
   });
 }
-
