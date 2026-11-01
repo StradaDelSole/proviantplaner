@@ -23,6 +23,9 @@ dependencies:
   # Übersetzung & Lokalisierung (Leitplanken)
   intl: ^0.19.0
 
+  # Authentifizierung (BC-1A / Owner-Entscheidung O-BC1A-01)
+  auth0_flutter: ">=2.7.0 <3.0.0"
+
   # Sichere Token-Ablage (Leitplanken)
   flutter_secure_storage: ^9.2.2
 

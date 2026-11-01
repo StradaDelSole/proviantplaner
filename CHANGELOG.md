@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A (Native Auth0 Login Adapter – Phase B)
+
+- **Offizielles Auth0 Flutter SDK (v2.7.x) & Plattform-Konfiguration:**
+  - `auth0_flutter: ">=2.7.0 <3.0.0"` in `pubspec.yaml` ergänzt und mit reproduzierbarem `pubspec.lock` (2.7.0) aufgelöst.
+  - iOS Deployment Target auf 14.0 angehoben (Owner-Entscheidung O-BC1A-01 in `ios/Runner.xcodeproj/project.pbxproj`), Android `minSdkVersion` (21) und Java-Baseline unverändert beibehalten.
+  - Native Manifest- und Info.plist-Konfiguration: Android `manifestPlaceholders` (`auth0Domain: "auth.hullq.com"`, `auth0Scheme: "provy"`) und iOS `CFBundleURLTypes` mit Scheme `$(PRODUCT_BUNDLE_IDENTIFIER)`.
+- **Adapter-Architektur (`Auth0Adapter`):**
+  - Neues Interface `Auth0Adapter` in `lib/core/services/auth0_adapter.dart` mit `NativeAuth0Adapter` (PKCE Universal Login & CredentialsManager) und `FakeAuth0Adapter` für deterministische Tests.
+  - Fail-closed Absicherung bei nicht unterstützten Plattformen (Desktop/Web) oder fehlender Client-ID-Konfiguration.
+  - Zentrale Konfiguration über `Auth0Config` in `lib/core/config/auth0_config.dart`.
+- **Entkopplung von Authentifizierung und Provy-Mitgliedschaft:**
+  - Synthetische Token-Pfade und Demo-E-Mails in `Auth0HullqAuthService` entfernt; Identitätsdaten werden ausschließlich aus verifizierten SDK-`Credentials.user` abgeleitet.
+  - Auth0-Login verleiht nicht automatisch `HullqMembershipStatus.member`, sondern belässt den Status auf `trial` (Server-Entitlement folgt in BC-1B).
+  - `AuthState.isAuthenticated` entkoppelt die sichtbare Anmeldung bei HullQ von der Provy-Mitgliedschaft.
+- **Verhinderung vorzeitiger Account-Projektion & Datenschutz:**
+  - Kein Aufruf von `GET /v1/me` beim Login (verhindert ungewollte Account-Auferstehung gelöschter Konten in D1).
+  - Newsletter-Einwilligung wird lokal in `lastNewsletterConsent` erfasst und nicht vorzeitig an ein nicht existentes Cloud-Konto gesendet.
+  - `deleteAccount()` ruft kein ungeschütztes Backend-DELETE auf und schützt die gemeinsame HullQ/Auth0-Identität vor Löschung (O-01).
+- **Nebenläufigkeits- und Token-Lebenszyklus-Härtung:**
+  - Single-Flight Koordination in `Auth0HullqAuthService.getAuthToken()` verhindert konkurrierende parallele Token-Refreshes.
+  - Session-Epochen (`_sessionEpoch`) verhindern Token-Leaks bei gleichzeitigem Logout oder Account-Wechsel während laufender Erneuerung.
+  - Deterministisches Bereinigen abgelaufener Tokens bei Refresh-Fehlschlag; kein Zugriff auf Stale-Tokens.
+- **Test-Suite & Kontrakt-Prüfung:**
+  - Reconcilierung bestehender B1-Tests (`b1_auth0_login_test.dart`) auf negative Vertragstests (kein `GET /me`, kein `updateConsent`, Status `trial`).
+  - Neue Pflicht-Testsuite `bc1a_auth0_adapter_test.dart` mit Testszenarien A01–A08 (User Cancelled, unkonfigurierter Client, offline API, Stale-Token-Purge, Concurrency-Locking, Account-Wechsel, Opt-In-Genauigkeit, Lösch-Schutz, URL-Konfiguration).
+
 ## 2026-10-17 – RECEIPT1 Concurrency Integrity Amendment 5 (Finding G)
 
 - **Finding G – BLOCKER (Paralleler Restore vs. Recovery & konkurrierende Datenoperationen):**

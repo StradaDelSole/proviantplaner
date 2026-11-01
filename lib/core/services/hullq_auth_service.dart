@@ -1,7 +1,8 @@
-/// Status der HullQ-Mitgliedschaft und Authentifizierungsdienste (Slice S7).
+/// Status der HullQ-Mitgliedschaft und Authentifizierungsdienste (Slice S7 & BC-1A).
 library;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'auth0_adapter.dart';
 import 'hullq_api_client.dart';
 
 /// Status der HullQ-Mitgliedschaft laut PRD.
@@ -33,6 +34,7 @@ abstract class HullqAuthService {
   Future<String?> getAuthToken();
   Future<String?> getUserEmail();
   bool get lastNewsletterConsent;
+  Future<bool> isAuthenticated() async => (await getAuthToken()) != null;
 }
 
 /// Mock-Implementierung des [HullqAuthService] für lokale Tests und S7 mit [FlutterSecureStorage].
@@ -118,7 +120,6 @@ class MockHullqAuthService implements HullqAuthService {
   @override
   Future<void> deleteAccount() async {
     _lastNewsletterConsent = false;
-    // Löscht alle Auth-Tokens und lokalen Kontodaten
     await _storage.delete(key: keyAuthToken);
     await _storage.delete(key: keyUserEmail);
     await _storage.delete(key: keyMembershipStatus);
@@ -127,7 +128,6 @@ class MockHullqAuthService implements HullqAuthService {
 
   @override
   Future<HullqMembershipStatus> getMembershipStatus() async {
-    // Offline-tolerant: Liest lokalen gesicherten Status
     final statusStr = await _storage.read(key: keyMembershipStatus);
     if (statusStr == null || statusStr.isEmpty) {
       return HullqMembershipStatus.trial;
@@ -144,89 +144,100 @@ class MockHullqAuthService implements HullqAuthService {
   Future<String?> getUserEmail() async {
     return _storage.read(key: keyUserEmail);
   }
+
+  @override
+  Future<bool> isAuthenticated() async {
+    final token = await getAuthToken();
+    return token != null && token.isNotEmpty;
+  }
 }
 
-/// Produktionsreife Implementierung des [HullqAuthService] mit Auth0 und Planer-Backend API (Slice B1).
+/// Produktionsreife Implementierung des [HullqAuthService] mit Auth0 Native Adapter (Slice BC-1A).
 class Auth0HullqAuthService implements HullqAuthService {
   final FlutterSecureStorage _storage;
+  final Auth0Adapter _auth0Adapter;
   final HullqApiClient _apiClient;
-  final Future<String?> Function({required String connection, String? email})? _tokenProvider;
 
   static const String keyAuthToken = 'hullq_auth_token';
   static const String keyUserEmail = 'hullq_user_email';
+  static const String keyAuth0Sub = 'hullq_auth0_sub';
   static const String keyMembershipStatus = 'hullq_membership_status';
   static const String keyNewsletterConsent = 'hullq_newsletter_consent';
 
+  int _sessionEpoch = 0;
+  Future<String?>? _inFlightTokenRetrieval;
   bool _lastNewsletterConsent = false;
 
   Auth0HullqAuthService({
     FlutterSecureStorage? storage,
+    Auth0Adapter? auth0Adapter,
     HullqApiClient? apiClient,
-    Future<String?> Function({required String connection, String? email})? tokenProvider,
   })  : _storage = storage ?? const FlutterSecureStorage(),
-        _apiClient = apiClient ?? HttpHullqApiClient(),
-        _tokenProvider = tokenProvider;
+        _auth0Adapter = auth0Adapter ?? NativeAuth0Adapter(),
+        _apiClient = apiClient ?? HttpHullqApiClient();
+
+  /// Zugriff auf den konfigurierten [HullqApiClient].
+  HullqApiClient get apiClient => _apiClient;
 
   @override
   bool get lastNewsletterConsent => _lastNewsletterConsent;
 
   Future<bool> _handleLogin({
-    required String connection,
+    String? connection,
     String? email,
     required bool newsletterOptIn,
   }) async {
+    _sessionEpoch++;
+    final epoch = _sessionEpoch;
     _lastNewsletterConsent = newsletterOptIn;
 
-    String? token;
-    if (_tokenProvider != null) {
-      token = await _tokenProvider(connection: connection, email: email);
-    } else {
-      token = 'auth0_${connection}_token';
-    }
-
-    if (token == null) return false;
-
     try {
-      final meData = await _apiClient.getMe(token);
-      final userEmail = email ?? (meData['account']?['auth0_sub'] as String?);
-
-      await _apiClient.updateConsent(
-        token,
-        granted: newsletterOptIn,
-        textVersion: 'v1.0',
+      final credentials = await _auth0Adapter.login(
+        connection: connection,
+        loginHint: email,
       );
 
-      await _storage.write(key: keyAuthToken, value: token);
-      if (userEmail != null) {
-        await _storage.write(key: keyUserEmail, value: userEmail);
+      if (credentials == null) {
+        return false;
       }
-      await _storage.write(
-        key: keyMembershipStatus,
-        value: HullqMembershipStatus.member.rawValue,
-      );
+
+      // Verwerfen, falls während des Logins eine Abmeldung oder ein neuer Login erfolgte
+      if (epoch != _sessionEpoch) {
+        return false;
+      }
+
+      final accessToken = credentials.accessToken;
+      final userEmail = credentials.user.email ?? email ?? credentials.user.sub;
+      final userSub = credentials.user.sub;
+
+      await _storage.write(key: keyAuthToken, value: accessToken);
+      await _storage.write(key: keyUserEmail, value: userEmail);
+      if (userSub.isNotEmpty) {
+        await _storage.write(key: keyAuth0Sub, value: userSub);
+      }
       await _storage.write(
         key: keyNewsletterConsent,
         value: newsletterOptIn.toString(),
       );
 
-      return true;
-    } catch (_) {
-      await _storage.write(key: keyAuthToken, value: token);
-      if (email != null) {
-        await _storage.write(key: keyUserEmail, value: email);
-      }
+      // In BC-1A: Auth0-Authentifizierung verleiht NICHT automatisch Provy-Mitgliedschaft.
+      // Der Status bleibt trial; Provy-Account-Registrierung und Berechtigungs-Autorität
+      // folgen in BC-1B.
       await _storage.write(
         key: keyMembershipStatus,
-        value: HullqMembershipStatus.member.rawValue,
+        value: HullqMembershipStatus.trial.rawValue,
       );
+
       return true;
+    } catch (_) {
+      return false;
     }
   }
 
   @override
   Future<bool> loginWithEmail(String email, {required bool newsletterOptIn}) async {
     return _handleLogin(
-      connection: 'email',
+      connection: null,
       email: email,
       newsletterOptIn: newsletterOptIn,
     );
@@ -236,7 +247,7 @@ class Auth0HullqAuthService implements HullqAuthService {
   Future<bool> loginWithApple({required bool newsletterOptIn}) async {
     return _handleLogin(
       connection: 'apple',
-      email: 'apple.user@example.com',
+      email: null,
       newsletterOptIn: newsletterOptIn,
     );
   }
@@ -244,41 +255,45 @@ class Auth0HullqAuthService implements HullqAuthService {
   @override
   Future<bool> loginWithGoogle({required bool newsletterOptIn}) async {
     return _handleLogin(
-      connection: 'google',
-      email: 'google.user@example.com',
+      connection: 'google-oauth2',
+      email: null,
       newsletterOptIn: newsletterOptIn,
     );
   }
 
   @override
   Future<void> logout() async {
+    _sessionEpoch++;
     _lastNewsletterConsent = false;
-    await _storage.delete(key: keyAuthToken);
-    await _storage.delete(key: keyUserEmail);
-    await _storage.delete(key: keyMembershipStatus);
-    await _storage.delete(key: keyNewsletterConsent);
+    try {
+      await _auth0Adapter.logout();
+    } catch (_) {}
+    try {
+      await _auth0Adapter.clearCredentials();
+    } catch (_) {}
+    await _clearLocalSession(preserveNewsletterConsent: false);
   }
 
   @override
   Future<void> deleteAccount() async {
+    // In BC-1A: Provy-Cloudkonto-Löschung ist noch nicht implementiert (BC-1B/später).
+    // Die gemeinsame HullQ/Auth0-Identität darf NIEMALS gelöscht werden (O-01).
+    // Lokale Anmeldedaten und Tokens werden sicher bereinigt, ohne eine
+    // fälschliche Fernlöschung vorzutäuschen.
+    _sessionEpoch++;
     _lastNewsletterConsent = false;
-    final token = await _storage.read(key: keyAuthToken);
-    if (token != null) {
-      try {
-        await _apiClient.deleteMe(token);
-      } catch (_) {
-        // Lokale Löschung wird auch bei Netzwerkfehlern vollzogen
-      }
-    }
-
-    await _storage.delete(key: keyAuthToken);
-    await _storage.delete(key: keyUserEmail);
-    await _storage.delete(key: keyMembershipStatus);
-    await _storage.delete(key: keyNewsletterConsent);
+    try {
+      await _auth0Adapter.clearCredentials();
+    } catch (_) {}
+    await _clearLocalSession(preserveNewsletterConsent: false);
   }
 
   @override
   Future<HullqMembershipStatus> getMembershipStatus() async {
+    final token = await getAuthToken();
+    if (token == null || token.isEmpty) {
+      return HullqMembershipStatus.trial;
+    }
     final statusStr = await _storage.read(key: keyMembershipStatus);
     if (statusStr == null || statusStr.isEmpty) {
       return HullqMembershipStatus.trial;
@@ -288,11 +303,74 @@ class Auth0HullqAuthService implements HullqAuthService {
 
   @override
   Future<String?> getAuthToken() async {
-    return _storage.read(key: keyAuthToken);
+    if (_inFlightTokenRetrieval != null) {
+      return _inFlightTokenRetrieval;
+    }
+
+    final future = _getTokenInternal();
+    _inFlightTokenRetrieval = future;
+    try {
+      return await future;
+    } finally {
+      _inFlightTokenRetrieval = null;
+    }
+  }
+
+  Future<String?> _getTokenInternal() async {
+    final token = await _storage.read(key: keyAuthToken);
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    final hasValid = await _auth0Adapter.hasValidCredentials();
+    if (hasValid) {
+      return token;
+    }
+
+    return _performTokenRenew(_sessionEpoch);
+  }
+
+  Future<String?> _performTokenRenew(int epoch) async {
+    try {
+      final renewed = await _auth0Adapter.renewCredentials();
+      if (renewed == null || epoch != _sessionEpoch) {
+        if (epoch == _sessionEpoch) {
+          await _clearLocalSession(preserveNewsletterConsent: true);
+        }
+        return null;
+      }
+
+      await _storage.write(key: keyAuthToken, value: renewed.accessToken);
+      if (renewed.user.email != null) {
+        await _storage.write(key: keyUserEmail, value: renewed.user.email!);
+      }
+      return renewed.accessToken;
+    } catch (_) {
+      if (epoch == _sessionEpoch) {
+        await _clearLocalSession(preserveNewsletterConsent: true);
+      }
+      return null;
+    }
   }
 
   @override
   Future<String?> getUserEmail() async {
     return _storage.read(key: keyUserEmail);
+  }
+
+  @override
+  Future<bool> isAuthenticated() async {
+    final token = await getAuthToken();
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<void> _clearLocalSession({required bool preserveNewsletterConsent}) async {
+    await _storage.delete(key: keyAuthToken);
+    await _storage.delete(key: keyUserEmail);
+    await _storage.delete(key: keyAuth0Sub);
+    await _storage.delete(key: keyMembershipStatus);
+    if (!preserveNewsletterConsent) {
+      await _storage.delete(key: keyNewsletterConsent);
+    }
   }
 }

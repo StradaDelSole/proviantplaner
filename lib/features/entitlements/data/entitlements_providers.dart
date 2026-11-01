@@ -1,9 +1,10 @@
-/// Riverpod Provider für Freischaltungen und Berechtigungen (Slice S6).
+/// Riverpod Provider für Freischaltungen und Berechtigungen (Slice S6 & BC-1A).
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proviantplaner/core/config/feature_flags.dart';
 import 'package:proviantplaner/core/database/database_provider.dart';
+import 'package:proviantplaner/core/services/auth0_adapter.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import '../domain/entitlements.dart';
 import 'entitlements_service.dart';
@@ -22,10 +23,19 @@ final hullqApiClientProvider = Provider<HullqApiClient>((ref) {
   return HttpHullqApiClient();
 });
 
-/// Provider für den HullQ-Authentifizierungsdienst (Slice B1: Auth0HullqAuthService).
+/// Provider für den Auth0Adapter (Slice BC-1A).
+final auth0AdapterProvider = Provider<Auth0Adapter>((ref) {
+  return NativeAuth0Adapter();
+});
+
+/// Provider für den HullQ-Authentifizierungsdienst (Slice B1 & BC-1A: Auth0HullqAuthService).
 final hullqAuthServiceProvider = Provider<HullqAuthService>((ref) {
   final apiClient = ref.watch(hullqApiClientProvider);
-  return Auth0HullqAuthService(apiClient: apiClient);
+  final auth0Adapter = ref.watch(auth0AdapterProvider);
+  return Auth0HullqAuthService(
+    apiClient: apiClient,
+    auth0Adapter: auth0Adapter,
+  );
 });
 
 /// Provider für den EntitlementsService.
@@ -50,19 +60,21 @@ final entitlementLevelProvider = FutureProvider<EntitlementLevel>((ref) async {
   return service.getEntitlementLevel();
 });
 
-/// Zustand des HullQ-Authentifizierungsdienstes (Slice S7).
+/// Zustand des HullQ-Authentifizierungsdienstes (Slice S7 & BC-1A).
 class AuthState {
   final HullqMembershipStatus status;
   final String? email;
   final bool isLoading;
+  final bool isAuthenticated;
 
   const AuthState({
     required this.status,
     this.email,
     this.isLoading = false,
+    this.isAuthenticated = false,
   });
 
-  bool get isLoggedIn => status != HullqMembershipStatus.trial;
+  bool get isLoggedIn => isAuthenticated || status != HullqMembershipStatus.trial;
   bool get isMember => status == HullqMembershipStatus.member;
   bool get isPro => status == HullqMembershipStatus.pro;
 }
@@ -79,14 +91,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _loadInitialState() async {
     final status = await _authService.getMembershipStatus();
     final email = await _authService.getUserEmail();
-    state = AuthState(status: status, email: email, isLoading: false);
+    final isAuth = await _authService.isAuthenticated();
+    state = AuthState(
+      status: status,
+      email: email,
+      isLoading: false,
+      isAuthenticated: isAuth,
+    );
   }
 
   /// Aktualisiert den Zustand aus dem AuthService.
   Future<void> refresh() async {
     final status = await _authService.getMembershipStatus();
     final email = await _authService.getUserEmail();
-    state = AuthState(status: status, email: email, isLoading: false);
+    final isAuth = await _authService.isAuthenticated();
+    state = AuthState(
+      status: status,
+      email: email,
+      isLoading: false,
+      isAuthenticated: isAuth,
+    );
   }
 
   /// Meldet mit E-Mail an.
@@ -119,13 +143,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Meldet den Benutzer ab.
   Future<void> logout() async {
     await _authService.logout();
-    state = const AuthState(status: HullqMembershipStatus.trial, email: null, isLoading: false);
+    state = const AuthState(
+      status: HullqMembershipStatus.trial,
+      email: null,
+      isLoading: false,
+      isAuthenticated: false,
+    );
   }
 
   /// Löscht das Konto und alle Anmeldedaten.
   Future<void> deleteAccount() async {
     await _authService.deleteAccount();
-    state = const AuthState(status: HullqMembershipStatus.trial, email: null, isLoading: false);
+    state = const AuthState(
+      status: HullqMembershipStatus.trial,
+      email: null,
+      isLoading: false,
+      isAuthenticated: false,
+    );
   }
 }
 
