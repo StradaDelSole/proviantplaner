@@ -96,6 +96,9 @@ class FakeHullqAuthService implements HullqAuthService {
     token = null;
     status = HullqMembershipStatus.trial;
   }
+
+  @override
+  Future<bool> isAuthenticated() async => token != null;
 }
 
 void main() {

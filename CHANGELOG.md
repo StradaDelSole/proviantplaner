@@ -1,5 +1,118 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Final Coordinator Correction (Findings C4-1 & C4-2)
+
+- **Finding C4-1 – BLOCKER (Unkoordinierte Mutationen im Token-Abruf vollständig eliminiert):**
+  - Redundantes Schreiben von `keyUserEmail` in `_getTokenInternal` ersatzlos entfernt. Der Token-Abruf `getAuthToken()` ist nun ein rein lesender Vorgang ohne Nebeneffekte auf den persistenten sicheren Speicher.
+  - Bereinigung ungültiger oder abgelaufener Credentials (`_clearLocalSession`) erfolgt strikt unter dem gemeinsamen Mutex `_runExclusive` mit Post-Await-Epochenprüfung (`currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)`). Eine verzögerte Bereinigung kann Daten einer neueren Session weder überschreiben noch löschen.
+  - Neue deterministische Tests: `Finding C4-1a` (rein lesender Token-Abruf, keine Schreibzugriffe auf `keyUserEmail`) und `Finding C4-1b` (verzögerte Bereinigung ungültiger Credentials beschädigt Session B nicht).
+- **Finding C4-2 – BLOCKER (SDK-Integration: useCredentialsManager: false & verifizierte Mutationen):**
+  - Native WebAuthentication nutzt für `login()` und `logout()` explizit `useCredentialsManager: false`. Dies unterbindet das automatische, unkoordinierte Speichern und Löschen durch das SDK vor unserem Mutationskoordinator (gemäß `auth0_flutter` v2.7.0 Quellcode).
+  - `storeCredentials()` und `clearCredentials()` werden ausschließlich innerhalb des SDK-Mutationskoordinators (`_runSdkExclusive`) ausgeführt, mit strikter Prüfung der Generation.
+  - Der boolesche Rückgabewert von `storeCredentials()` wird geprüft: Schlägt das Speichern fehl oder wirft eine Exception, wird der Login fail-closed abgebrochen (`return null`) und kein Scheinerfolg gemeldet.
+  - Neuer Demo-Test `Finding C4-2-DEMO` belegt den Mangel von `useCredentialsManager: true`.
+  - Neue deterministische Tests: `Finding C4-2a` (stale A-Callback nach B überschreibt B nicht, distinct sub), `Finding C4-2b` (stale A-Callback nach B überschreibt B nicht, same sub), `Finding C4-2c` (überholter WebAuth-Logout löscht B nicht, distinct sub), `Finding C4-2d` (überholter WebAuth-Logout löscht B nicht, same sub) und `Finding C4-2e` (Fehlschlag von `storeCredentials()` meldet keinen erfolgreichen Login).
+
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 4 (Exclusive Operation Coordinator & Fail-Safe Quarantine)
+
+- **Finding C-R3-1 – BLOCKER (Marker-Fencing & kein Unrevoking älterer Logins):**
+  - Mutex-geschützte Commit-Phase in `Auth0HullqAuthService._runExclusive`: Das Löschen des Quarantänemarkers `keySessionRevoked` ist atomar und generation-fenced. Wenn während des Awaits ein neuerer Logout stattfindet, restauriert der Login den Quarantänemarker sofort (`write(keySessionRevoked, 'true')`), bricht ab und liefert strikt `false`.
+  - Neuer deterministischer Test `Finding C-R3-1`: Login A pausiert im `_storage.delete(keySessionRevoked)`, Logout B vollendet; A wacht auf, stellt den Marker wieder her, B's Quarantäne bleibt auf Dauer und über Kaltstart hinweg unangreifbar.
+- **Finding C-R3-2 & C-R3-4 – BLOCKER (Nativer SDK-Logout und Callback-Ownership):**
+  - Generation-Fencing im `NativeAuth0Adapter` und `FakeAuth0Adapter` (`_activeGeneration`, `_committedGeneration`): Wenn ein älterer nativer Logout aus seinem asynchronen Browser-Redirect `webAuthentication.logout()` erwacht, darf er `clearCredentials()` nur ausführen, wenn er nicht durch einen neueren Login überholt wurde.
+  - Verspätete WebAuth-Callbacks für denselben oder einen anderen Account (`same-sub`) können niemals SDK-Credentials einer neueren Generation löschen oder überschreiben.
+  - Neue deterministische Tests: `Finding C-R3-2` (alter nativer Logout wacht auf, nachdem neuer Login B committet hat -> B's Credentials bleiben intakt) und `Finding C-R3-4` (verspäteter WebAuth-Callback bei erneutem Login derselben Sub-ID löscht nicht die frischen Credentials).
+- **Finding C-R3-3 & C-R3-3b – BLOCKER (Eliminierung blinder Rewrites & Drei-Generationen-Interleaving):**
+  - Sämtliche blinden Lese-/Wiederherstellungsversuche (`_safeStorageWrite`) wurden vollständig eliminiert und durch eine strikte FIFO-Mutationssperre (`_runExclusive`) ersetzt.
+  - Neue deterministische Tests: `Finding C-R3-3` (Drei-Generationen-Interleaving A→B→C: A und B verwerfen und überschreiben C niemals) und `Finding C-R3-3b` (A's Rollback während aktivem Login B löscht keine Daten von B).
+- **Finding D-R3 – PARTIALLY CLOSED -> FULLY CLOSED (Fail-Safe Quarantäne-Persistenz & Crash-Simulation):**
+  - Schlägt das Schreiben des Quarantänemarkers fehl, bricht `logout()` unverzüglich mit `Auth0RevocationException` ab, ohne unvollständige Folgeschritte vorzutäuschen.
+  - Neuer deterministischer Test `Finding D-R3`: Simuliert einen Hardware-Schreibfehler und sofortigen Kaltstart (Prozess-Absturz). Weist transparent und ehrlich die physikalische Grenze unbeschreibbarer Hardware aus und belegt die verlässliche Selbstheilung bei der nächsten regulären Abmeldung.
+
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 3 (Findings C & D: Ownership Fencing, Preemption Guards & Verifiable Quarantine)
+
+- **Finding C – BLOCKER (Session-Eigentümerschaft, Preemption-Guards & native Callbacks):**
+  - `_safeStorageWrite` schützt aktive Sessions vor verspäteten Writes früherer Epochen: Beendet ein asynchroner Speicher-Write aus einer veralteten Epoche, wird die neue Session nicht durch Löschen des Schlüssels beschädigt, sondern der aktive Zustand der neuen Session (`_activeSessionEmail` etc.) unverzüglich restauriert.
+  - `_rollbackStaleLoginSession` an strikte Epochenbindung gekoppelt: Bricht ein Login ab oder schlägt fehl, während bereits eine neuere Epoche aktiv ist (`_sessionEpoch != epoch`), wird kein lokaler Speicher und kein SDK-Zustand manipuliert.
+  - Asynchrone Preemption in `logout()` und `deleteAccount()`: Jeder asynchrone Schritt (nach Quarantäne-Marker, nach lokalem Cache-Clear, nach SDK-Logout) prüft `if (currentEpoch != _sessionEpoch) return;`. Ein verspäteter Logout kann eine inzwischen erfolgreich gestartete Session B weder lokal noch im SDK leeren.
+  - `getUserEmail()` durch Post-Await Epochen- und Sub-Check (`creds.user.sub == expectedSub`) abgesichert: Bei nebenläufigem Logout oder Account-Wechsel während des asynchronen Lesens wird strikt `null` zurückgegeben; kein E-Mail-Leak veralteter Sessions.
+  - Nativer Callback-Schutz in `NativeAuth0Adapter` und `FakeAuth0Adapter`: Verspätete Callbacks aus `login()` löschen niemals SDK-Credentials einer neueren Session (`_lastSuccessfulLoginRequestId <= requestId` und Sub-Gleichheit).
+  - Deterministische Tests C-1 (verzögerter Write von Session A beschädigt Session B nicht), C-1b (stale Logout nach Login B beschädigt B nicht), C-2 (verspäteter SDK-Callback von A löscht B nicht), C-3 (parallele `getAuthToken`-Calls bei Logout) und C-4 (`getUserEmail` Guard).
+- **Finding D – BLOCKER (Verifizierte, absturzsichere Quarantäne & ehrliche Recovery-Grenzen):**
+  - Schreib- und Leseverifikation beim Setzen des Quarantänemarkers (`keySessionRevoked: 'true'`): Schlägt das Schreiben oder die unmittelbare Leseverifikation fehl, wird `quarantinePersisted = false` deklariert und eine typisierte `Auth0RevocationException` geworfen (kein stilles Ignorieren fehlerhafter Persistenz).
+  - `MoreScreen` und UI fangen `Auth0RevocationException` ab und warnen wahrheitsgemäß per SnackBar (`Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.`), ohne falsche Abmeldegarantien zu suggerieren.
+  - Deterministische Tests D-1 (injizierter SecureStorage-Schreibfehler wirft `Auth0RevocationException`, UI fängt ehrlich ab, Recovery-Grenzen dokumentiert) und D-2 (erfolgreicher Quarantänemarker garantiert Fail-Closed über App-Neustart hinweg auch bei fehlschlagendem SDK-Clear).
+
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 2 (Findings C, D, E)
+
+- **Finding C – BLOCKER (Dauerhafte Session-Konsistenz über asynchrone Grenzen & Barrier-Absicherung):**
+  - Asynchrone Schreibvorgänge im sicheren Speicher mit `_safeStorageWrite` abgesichert: Prüft Epoche und Revocation-Status vor und nach jedem `_storage.write`; überschriebene oder nach einem Logout vollendete Writes werden sofort gelöscht und rollen die Session zurück.
+  - Alle nebenläufigen Aufrufer von `getAuthToken()` warten auf das gemeinsame In-Flight-Future und durchlaufen ausnahmslos dieselbe Post-Await-Epochen- und Quarantäneprüfung (kein Bypass für spätere Aufrufer).
+  - Stale native SDK-Callbacks (z. B. nach verspätetem WebAuthentication-Abschluss nach Logout oder folgendem Login) werden über Request-IDs erkannt, strikt verworfen und aus dem SDK bereinigt.
+  - Deterministische Barrier-Tests: C-1 (verzögerter Speicher-Write mit `BarrierSecureStorage`), C-2 (zwei parallele `getAuthToken`-Aufrufer während Logout), C-3 (überlappender Account-Wechsel) und C-4 (stale native SDK-Callback-Verwerfung).
+- **Finding D – BLOCKER (Dauerhafte Fail-Closed Quarantäne bei unvollständigem SDK-Clear):**
+  - Schlägt `clearCredentials()` im SDK fehl, bleibt die Sitzung dauerhaft und neustart-resistent unter Quarantäne: `keySessionRevoked: 'true'` wird vor dem SDK-Aufruf persistent in `FlutterSecureStorage` geschrieben.
+  - `getAuthToken()`, `isAuthenticated()` und `getUserEmail()` werten die Quarantäne aus und liefern `null` bzw. `false` (auch nach vollständigem App-Neustart, selbst wenn Keychain-Daten verblieben sind).
+  - `AuthNotifier` in Riverpod garantiert über `try ... finally` das Zurücksetzen des UI-Zustands bei `Auth0ClearCredentialsException`.
+  - `MoreScreen` zeigt bei fehlgeschlagener Keychain-Bereinigung eine ehrliche SnackBar (`Sitzung lokal beendet. Sichere Geräteschlüssel konnten nicht vollständig bereinigt werden.`) ohne falsche Erfolgsmeldung.
+  - Erst ein nachfolgender, vollständig erfolgreicher Login hebt die Quarantäne auf.
+- **Finding E – HIGH (Entfernung erfundener Client-IDs & striktes Fail-Closed):**
+  - Die erfundene Default-Client-ID `provy-app-client` wurde vollständig entfernt; `Auth0Config.clientId` ist standardmäßig leer (`''`).
+  - Bekannte Platzhalter (`provy-app-client`, `placeholder`, `todo`, `client_id`, etc.) werden strikt abgewiesen.
+  - Ohne zur Build-Zeit via `--dart-define=AUTH0_CLIENT_ID=...` übergebene echte Client-ID ist `Auth0Config.standard.isValid` strikt `false`.
+- **Finding A Nachschärfung (MoreScreen Cloud-Backup für Trial):**
+  - Cloud-Backup-Button auf der Trial-Kontokarte deaktiviert (`canBackup: false`) mit wahrheitsgemäßem Untertitel `Cloud-Backup erfordert Provy-Mitgliedschaft`.
+
+## 2026-11-01 – BACKEND-CORE BC-1A Independent Review Amendment (Findings A–E)
+
+- **Finding A – BLOCKER (Wahrheitsgemäße Konto-UI & Lösch-Sicherheit):**
+  - Konto-Statusanzeige und UI-Zustand in `MoreScreen` an `authState.isLoggedIn` gekoppelt: Authentifizierte `trial`-Nutzer sehen E-Mail, Badge (`ANGEMELDET`) und einen voll funktionsfähigen, erreichbaren `Abmelden`-Button.
+  - Lösch-Aktion wahrheitsgemäß auf `"Lokale Anmeldedaten entfernen"` umbenannt. Der Bestätigungsdialog und die SnackBar stellen unmissverständlich klar, dass nur die lokalen Sitzungsdaten entfernt werden, keine Cloud-Löschung vorliegt und die HullQ-Identität intakt bleibt (O-01).
+  - Neue UI-Tests in `auth_ui_test.dart` für authentifizierte `trial`-Nutzer, Legacy-Mitglieder und unauthentifizierte Nutzer.
+- **Finding B – BLOCKER (SDK CredentialsManager als alleinige Token-Autorität & Silent Refresh):**
+  - Redundante Token-Speicherung (`keyAuthToken`) in `FlutterSecureStorage` vollständig entfernt; der native `CredentialsManager` des Auth0-SDKs ist die alleinige Quelle der Wahrheit für Access-Tokens.
+  - Verhindert das Ausliefern veralteter Tokens bei SDK-interner automatischer Token-Erneuerung (Silent Renewal von Token A zu Token B) und garantiert konsistente Token-Rückgabe nach App-Neustart direkt aus dem sicheren Hardware-Speicher.
+  - Dedizierte Tests B-1 (Silent Renewal) und B-2 (App-Neustart ohne lokalen Token-Key) in `bc1a_auth0_adapter_test.dart`.
+- **Finding C – BLOCKER (Session-Epochen, Race-Conditions & Nebenläufigkeitssicherheit):**
+  - Await-sichere Session-Epochen (`_sessionEpoch`) in `Auth0HullqAuthService` sichern Login, Logout, Token-Retrieval und Account-Wechsel gegen asynchrone Race Conditions ab.
+  - Stale Logins oder verspätet eintreffende Credentials werden strikt verworfen und können weder den Speicher noch neuere aktive Sitzungen manipulieren oder bereinigen.
+  - Single-Flight Token-Koordination wird bei Logout oder Account-Wechsel deterministisch invalidiert.
+  - Deterministische Race-Tests C-1 (Logout während laufendem Login), C-2 (Logout während CredentialsManager-Read) und C-3 (überlappender Account-Wechsel mit Barrieren/Completers).
+- **Finding D – HIGH (Sichere Fehlerbehandlung bei CredentialsManager.clearCredentials):**
+  - Löschfehler des SDK-CredentialsManagers in `NativeAuth0Adapter` und `Auth0HullqAuthService` werden nicht mehr verschluckt, sondern werfen eine typisierte `Auth0ClearCredentialsException`.
+  - Verhindert die Reaktivierung persistierter Sessions bei Hardware- oder Keychain-Fehlern; Provy-Speicherdaten werden vor dem SDK-Aufruf bereinigt.
+  - Dedizierter Fehlertest D-1 mit injiziertem Keychain-Fehler.
+- **Finding E – HIGH (Auth0Config Validierung & Callback-URLs / P05-Deklaration):**
+  - `Auth0Config.isValid` validiert Domain (`auth.hullq.com`), Scheme (`provy`), Audience (`https://api.planer.hullq.com`) und Client-ID gegen native Manifest- und Info.plist-Ziele und schlägt bei Mismatch sofort fail-closed fehl.
+  - Plattformspezifische Callback-URLs (`callbackUrlFor`) für Android (`provy://auth.hullq.com/android/com.hullq.proviantplaner/callback`) und iOS (`com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback`).
+  - Stage-Prüfung P05 (physikalischer OAuth-Redirect gegen Live-Tenant) bleibt als unveränderte, bindende Stage-Gate-Prüfung OPEN deklariert.
+
+## 2026-11-01 – BACKEND-CORE BC-1A (Native Auth0 Login Adapter – Phase B)
+
+- **Offizielles Auth0 Flutter SDK (v2.7.x) & Plattform-Konfiguration:**
+  - `auth0_flutter: ">=2.7.0 <3.0.0"` in `pubspec.yaml` ergänzt und mit reproduzierbarem `pubspec.lock` (2.7.0) aufgelöst.
+  - iOS Deployment Target auf 14.0 angehoben (Owner-Entscheidung O-BC1A-01 in `ios/Runner.xcodeproj/project.pbxproj`), Android `minSdkVersion` (21) und Java-Baseline unverändert beibehalten.
+  - Native Manifest- und Info.plist-Konfiguration: Android `manifestPlaceholders` (`auth0Domain: "auth.hullq.com"`, `auth0Scheme: "provy"`) und iOS `CFBundleURLTypes` mit Scheme `$(PRODUCT_BUNDLE_IDENTIFIER)`.
+- **Adapter-Architektur (`Auth0Adapter`):**
+  - Neues Interface `Auth0Adapter` in `lib/core/services/auth0_adapter.dart` mit `NativeAuth0Adapter` (PKCE Universal Login & CredentialsManager) und `FakeAuth0Adapter` für deterministische Tests.
+  - Fail-closed Absicherung bei nicht unterstützten Plattformen (Desktop/Web) oder fehlender Client-ID-Konfiguration.
+  - Zentrale Konfiguration über `Auth0Config` in `lib/core/config/auth0_config.dart`.
+- **Entkopplung von Authentifizierung und Provy-Mitgliedschaft:**
+  - Synthetische Token-Pfade und Demo-E-Mails in `Auth0HullqAuthService` entfernt; Identitätsdaten werden ausschließlich aus verifizierten SDK-`Credentials.user` abgeleitet.
+  - Auth0-Login verleiht nicht automatisch `HullqMembershipStatus.member`, sondern belässt den Status auf `trial` (Server-Entitlement folgt in BC-1B).
+  - `AuthState.isAuthenticated` entkoppelt die sichtbare Anmeldung bei HullQ von der Provy-Mitgliedschaft.
+- **Verhinderung vorzeitiger Account-Projektion & Datenschutz:**
+  - Kein Aufruf von `GET /v1/me` beim Login (verhindert ungewollte Account-Auferstehung gelöschter Konten in D1).
+  - Newsletter-Einwilligung wird lokal in `lastNewsletterConsent` erfasst und nicht vorzeitig an ein nicht existentes Cloud-Konto gesendet.
+  - `deleteAccount()` ruft kein ungeschütztes Backend-DELETE auf und schützt die gemeinsame HullQ/Auth0-Identität vor Löschung (O-01).
+- **Nebenläufigkeits- und Token-Lebenszyklus-Härtung:**
+  - Single-Flight Koordination in `Auth0HullqAuthService.getAuthToken()` verhindert konkurrierende parallele Token-Refreshes.
+  - Session-Epochen (`_sessionEpoch`) verhindern Token-Leaks bei gleichzeitigem Logout oder Account-Wechsel während laufender Erneuerung.
+  - Deterministisches Bereinigen abgelaufener Tokens bei Refresh-Fehlschlag; kein Zugriff auf Stale-Tokens.
+- **Test-Suite & Kontrakt-Prüfung:**
+  - Reconcilierung bestehender B1-Tests (`b1_auth0_login_test.dart`) auf negative Vertragstests (kein `GET /me`, kein `updateConsent`, Status `trial`).
+  - Neue Pflicht-Testsuite `bc1a_auth0_adapter_test.dart` mit Testszenarien A01–A08 (User Cancelled, unkonfigurierter Client, offline API, Stale-Token-Purge, Concurrency-Locking, Account-Wechsel, Opt-In-Genauigkeit, Lösch-Schutz, URL-Konfiguration).
+
 ## 2026-10-17 – RECEIPT1 Concurrency Integrity Amendment 5 (Finding G)
 
 - **Finding G – BLOCKER (Paralleler Restore vs. Recovery & konkurrierende Datenoperationen):**

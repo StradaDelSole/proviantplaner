@@ -4,6 +4,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/core/services/auth0_adapter.dart';
 import 'package:proviantplaner/core/services/backup_providers.dart';
 import 'package:proviantplaner/core/services/hullq_auth_service.dart';
 import 'package:proviantplaner/core/services/user_payment_profile_service.dart';
@@ -28,8 +29,12 @@ class MoreScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.accountDeleteConfirmTitle),
-        content: Text(l10n.accountDeleteConfirmContent),
+        title: const Text('Lokale Anmeldedaten entfernen?'),
+        content: const Text(
+          'Die serverseitige Cloud-Kontolöschung ist in dieser Version noch nicht aktiv. '
+          'Möchtest du stattdessen alle lokalen Zugangsdaten und die Sitzung auf diesem Gerät entfernen? '
+          'Deine gemeinsame HullQ-Identität bleibt erhalten.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -41,35 +46,95 @@ class MoreScreen extends ConsumerWidget {
               foregroundColor: theme.colorScheme.onError,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.accountDeleteConfirmButton),
+            child: const Text('Lokale Daten entfernen'),
           ),
         ],
       ),
     );
 
     if (confirmed == true && context.mounted) {
-      await ref.read(authNotifierProvider.notifier).deleteAccount();
-      ref.invalidate(entitlementLevelProvider);
-      ref.invalidate(canCreateTripProvider);
+      try {
+        await ref.read(authNotifierProvider.notifier).deleteAccount();
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.accountDeletedNotice)),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Lokale Anmeldedaten wurden entfernt. Das Cloud-Konto wurde nicht gelöscht.',
+              ),
+            ),
+          );
+        }
+      } on Auth0RevocationException {
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.',
+              ),
+            ),
+          );
+        }
+      } on Auth0ClearCredentialsException {
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Lokale Daten entfernt. Geräteschlüssel konnten nicht vollständig gelöscht werden.',
+              ),
+            ),
+          );
+        }
       }
     }
   }
 
   Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(authNotifierProvider.notifier).logout();
-    ref.invalidate(entitlementLevelProvider);
-    ref.invalidate(canCreateTripProvider);
+    try {
+      await ref.read(authNotifierProvider.notifier).logout();
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accountLogoutNotice)),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.accountLogoutNotice)),
+        );
+      }
+    } on Auth0RevocationException {
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.',
+            ),
+          ),
+        );
+      }
+    } on Auth0ClearCredentialsException {
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sitzung lokal beendet. Sichere Geräteschlüssel konnten nicht vollständig bereinigt werden.',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -159,8 +224,6 @@ class MoreScreen extends ConsumerWidget {
     }
     final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
-    final status = authState.status;
-    final email = authState.email ?? '';
     final isNightwatch = ref.watch(themeControllerProvider) == AppThemeMode.nightwatch;
 
     return Scaffold(
@@ -181,7 +244,7 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          _buildAccountCard(context, ref, theme, l10n, status, email),
+          _buildAccountCard(context, ref, theme, l10n, authState),
           const SizedBox(height: 16),
           _buildNightwatchTile(ref, theme, l10n, isNightwatch),
           const Divider(height: 24),
@@ -302,16 +365,20 @@ class MoreScreen extends ConsumerWidget {
     WidgetRef ref,
     ThemeData theme,
     AppLocalizations l10n,
-    HullqMembershipStatus status,
-    String email,
+    AuthState authState,
   ) {
-    final isLoggedIn = status != HullqMembershipStatus.trial;
+    final isLoggedIn = authState.isLoggedIn;
+    final status = authState.status;
+    final email = authState.email ?? '';
 
+    final canBackup = status != HullqMembershipStatus.trial;
     final lastBackupAsync = ref.watch(lastBackupTimestampProvider);
     final lastBackup = lastBackupAsync.valueOrNull;
-    final backupSubtitle = lastBackup != null
-        ? '${l10n.accountBackupStatus} ${DateFormat('dd.MM.yyyy HH:mm').format(lastBackup)}'
-        : l10n.accountBackupNever;
+    final backupSubtitle = !canBackup
+        ? 'Cloud-Backup erfordert Provy-Mitgliedschaft'
+        : (lastBackup != null
+            ? '${l10n.accountBackupStatus} ${DateFormat('dd.MM.yyyy HH:mm').format(lastBackup)}'
+            : l10n.accountBackupNever);
 
     return Card(
       elevation: 0,
@@ -344,7 +411,7 @@ class MoreScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isLoggedIn ? email : l10n.accountTitle,
+                        isLoggedIn && email.isNotEmpty ? email : l10n.accountTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -354,7 +421,9 @@ class MoreScreen extends ConsumerWidget {
                         isLoggedIn
                             ? (status == HullqMembershipStatus.pro
                                 ? l10n.accountStatusPro
-                                : l10n.accountStatusMember)
+                                : (status == HullqMembershipStatus.member
+                                    ? l10n.accountStatusMember
+                                    : 'HullQ-Konto (Basis)'))
                             : l10n.accountNotLoggedIn,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
@@ -371,7 +440,11 @@ class MoreScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      status == HullqMembershipStatus.pro ? 'PRO' : l10n.membershipBadgeMember,
+                      status == HullqMembershipStatus.pro
+                          ? 'PRO'
+                          : (status == HullqMembershipStatus.member
+                              ? l10n.membershipBadgeMember
+                              : 'ANGEMELDET'),
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSecondaryContainer,
@@ -406,7 +479,7 @@ class MoreScreen extends ConsumerWidget {
                       icon: const Icon(Icons.cloud_upload_outlined, size: 18),
                       label: Text(l10n.accountBackupNow),
                       style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-                      onPressed: () => _backupNow(context, ref),
+                      onPressed: canBackup ? () => _backupNow(context, ref) : null,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -433,9 +506,9 @@ class MoreScreen extends ConsumerWidget {
               Center(
                 child: TextButton.icon(
                   icon: Icon(Icons.delete_forever, size: 18, color: theme.colorScheme.error),
-                  label: Text(
-                    l10n.accountDelete,
-                    style: TextStyle(color: theme.colorScheme.error),
+                  label: const Text(
+                    'Lokale Anmeldedaten entfernen',
+                    style: TextStyle(color: Color(0xFFB00020)),
                   ),
                   style: TextButton.styleFrom(minimumSize: const Size(120, 48)),
                   onPressed: () => _confirmDeleteAccount(context, ref),

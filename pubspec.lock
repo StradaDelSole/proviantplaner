@@ -46,6 +46,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  auth0_flutter:
+    dependency: "direct main"
+    description:
+      name: auth0_flutter
+      sha256: aa9f3c72d51ef4d7c912e41a4226214209667c4c4f6b5ec989897e03762b2f58
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.7.0"
+  auth0_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: auth0_flutter_platform_interface
+      sha256: b29c1859bb0ba034060167af75732d18b548e6271e68fc61da157e2530940b4e
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.7.0"
   barcode:
     dependency: transitive
     description:
