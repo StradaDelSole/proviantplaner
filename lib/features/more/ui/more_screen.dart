@@ -28,8 +28,12 @@ class MoreScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.accountDeleteConfirmTitle),
-        content: Text(l10n.accountDeleteConfirmContent),
+        title: const Text('Lokale Anmeldedaten entfernen?'),
+        content: const Text(
+          'Die serverseitige Cloud-Kontolöschung ist in dieser Version noch nicht aktiv. '
+          'Möchtest du stattdessen alle lokalen Zugangsdaten und die Sitzung auf diesem Gerät entfernen? '
+          'Deine gemeinsame HullQ-Identität bleibt erhalten.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -41,7 +45,7 @@ class MoreScreen extends ConsumerWidget {
               foregroundColor: theme.colorScheme.onError,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.accountDeleteConfirmButton),
+            child: const Text('Lokale Daten entfernen'),
           ),
         ],
       ),
@@ -54,7 +58,11 @@ class MoreScreen extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.accountDeletedNotice)),
+          const SnackBar(
+            content: Text(
+              'Lokale Anmeldedaten wurden entfernt. Das Cloud-Konto wurde nicht gelöscht.',
+            ),
+          ),
         );
       }
     }
@@ -159,8 +167,6 @@ class MoreScreen extends ConsumerWidget {
     }
     final theme = Theme.of(context);
     final authState = ref.watch(authNotifierProvider);
-    final status = authState.status;
-    final email = authState.email ?? '';
     final isNightwatch = ref.watch(themeControllerProvider) == AppThemeMode.nightwatch;
 
     return Scaffold(
@@ -181,7 +187,7 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          _buildAccountCard(context, ref, theme, l10n, status, email),
+          _buildAccountCard(context, ref, theme, l10n, authState),
           const SizedBox(height: 16),
           _buildNightwatchTile(ref, theme, l10n, isNightwatch),
           const Divider(height: 24),
@@ -302,10 +308,11 @@ class MoreScreen extends ConsumerWidget {
     WidgetRef ref,
     ThemeData theme,
     AppLocalizations l10n,
-    HullqMembershipStatus status,
-    String email,
+    AuthState authState,
   ) {
-    final isLoggedIn = status != HullqMembershipStatus.trial;
+    final isLoggedIn = authState.isLoggedIn;
+    final status = authState.status;
+    final email = authState.email ?? '';
 
     final lastBackupAsync = ref.watch(lastBackupTimestampProvider);
     final lastBackup = lastBackupAsync.valueOrNull;
@@ -344,7 +351,7 @@ class MoreScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isLoggedIn ? email : l10n.accountTitle,
+                        isLoggedIn && email.isNotEmpty ? email : l10n.accountTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -354,7 +361,9 @@ class MoreScreen extends ConsumerWidget {
                         isLoggedIn
                             ? (status == HullqMembershipStatus.pro
                                 ? l10n.accountStatusPro
-                                : l10n.accountStatusMember)
+                                : (status == HullqMembershipStatus.member
+                                    ? l10n.accountStatusMember
+                                    : 'HullQ-Konto (Basis)'))
                             : l10n.accountNotLoggedIn,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
@@ -371,7 +380,11 @@ class MoreScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      status == HullqMembershipStatus.pro ? 'PRO' : l10n.membershipBadgeMember,
+                      status == HullqMembershipStatus.pro
+                          ? 'PRO'
+                          : (status == HullqMembershipStatus.member
+                              ? l10n.membershipBadgeMember
+                              : 'ANGEMELDET'),
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSecondaryContainer,
@@ -433,9 +446,9 @@ class MoreScreen extends ConsumerWidget {
               Center(
                 child: TextButton.icon(
                   icon: Icon(Icons.delete_forever, size: 18, color: theme.colorScheme.error),
-                  label: Text(
-                    l10n.accountDelete,
-                    style: TextStyle(color: theme.colorScheme.error),
+                  label: const Text(
+                    'Lokale Anmeldedaten entfernen',
+                    style: TextStyle(color: Color(0xFFB00020)),
                   ),
                   style: TextButton.styleFrom(minimumSize: const Size(120, 48)),
                   onPressed: () => _confirmDeleteAccount(context, ref),

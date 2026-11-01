@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Independent Review Amendment (Findings A–E)
+
+- **Finding A – BLOCKER (Wahrheitsgemäße Konto-UI & Lösch-Sicherheit):**
+  - Konto-Statusanzeige und UI-Zustand in `MoreScreen` an `authState.isLoggedIn` gekoppelt: Authentifizierte `trial`-Nutzer sehen E-Mail, Badge (`ANGEMELDET`) und einen voll funktionsfähigen, erreichbaren `Abmelden`-Button.
+  - Lösch-Aktion wahrheitsgemäß auf `"Lokale Anmeldedaten entfernen"` umbenannt. Der Bestätigungsdialog und die SnackBar stellen unmissverständlich klar, dass nur die lokalen Sitzungsdaten entfernt werden, keine Cloud-Löschung vorliegt und die HullQ-Identität intakt bleibt (O-01).
+  - Neue UI-Tests in `auth_ui_test.dart` für authentifizierte `trial`-Nutzer, Legacy-Mitglieder und unauthentifizierte Nutzer.
+- **Finding B – BLOCKER (SDK CredentialsManager als alleinige Token-Autorität & Silent Refresh):**
+  - Redundante Token-Speicherung (`keyAuthToken`) in `FlutterSecureStorage` vollständig entfernt; der native `CredentialsManager` des Auth0-SDKs ist die alleinige Quelle der Wahrheit für Access-Tokens.
+  - Verhindert das Ausliefern veralteter Tokens bei SDK-interner automatischer Token-Erneuerung (Silent Renewal von Token A zu Token B) und garantiert konsistente Token-Rückgabe nach App-Neustart direkt aus dem sicheren Hardware-Speicher.
+  - Dedizierte Tests B-1 (Silent Renewal) und B-2 (App-Neustart ohne lokalen Token-Key) in `bc1a_auth0_adapter_test.dart`.
+- **Finding C – BLOCKER (Session-Epochen, Race-Conditions & Nebenläufigkeitssicherheit):**
+  - Await-sichere Session-Epochen (`_sessionEpoch`) in `Auth0HullqAuthService` sichern Login, Logout, Token-Retrieval und Account-Wechsel gegen asynchrone Race Conditions ab.
+  - Stale Logins oder verspätet eintreffende Credentials werden strikt verworfen und können weder den Speicher noch neuere aktive Sitzungen manipulieren oder bereinigen.
+  - Single-Flight Token-Koordination wird bei Logout oder Account-Wechsel deterministisch invalidiert.
+  - Deterministische Race-Tests C-1 (Logout während laufendem Login), C-2 (Logout während CredentialsManager-Read) und C-3 (überlappender Account-Wechsel mit Barrieren/Completers).
+- **Finding D – HIGH (Sichere Fehlerbehandlung bei CredentialsManager.clearCredentials):**
+  - Löschfehler des SDK-CredentialsManagers in `NativeAuth0Adapter` und `Auth0HullqAuthService` werden nicht mehr verschluckt, sondern werfen eine typisierte `Auth0ClearCredentialsException`.
+  - Verhindert die Reaktivierung persistierter Sessions bei Hardware- oder Keychain-Fehlern; Provy-Speicherdaten werden vor dem SDK-Aufruf bereinigt.
+  - Dedizierter Fehlertest D-1 mit injiziertem Keychain-Fehler.
+- **Finding E – HIGH (Auth0Config Validierung & Callback-URLs / P05-Deklaration):**
+  - `Auth0Config.isValid` validiert Domain (`auth.hullq.com`), Scheme (`provy`), Audience (`https://api.planer.hullq.com`) und Client-ID gegen native Manifest- und Info.plist-Ziele und schlägt bei Mismatch sofort fail-closed fehl.
+  - Plattformspezifische Callback-URLs (`callbackUrlFor`) für Android (`provy://auth.hullq.com/android/com.hullq.proviantplaner/callback`) und iOS (`com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback`).
+  - Stage-Prüfung P05 (physikalischer OAuth-Redirect gegen Live-Tenant) bleibt als unveränderte, bindende Stage-Gate-Prüfung OPEN deklariert.
+
 ## 2026-11-01 – BACKEND-CORE BC-1A (Native Auth0 Login Adapter – Phase B)
 
 - **Offizielles Auth0 Flutter SDK (v2.7.x) & Plattform-Konfiguration:**

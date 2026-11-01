@@ -1,9 +1,21 @@
 /// Adapter für die native Auth0-Authentifizierung (Slice BC-1A).
 library;
 
+import 'dart:async';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../config/auth0_config.dart';
+
+/// Exception, wenn das Löschen von Credentials im SDK CredentialsManager fehlschlägt.
+class Auth0ClearCredentialsException implements Exception {
+  final String message;
+  final Object? cause;
+
+  const Auth0ClearCredentialsException(this.message, [this.cause]);
+
+  @override
+  String toString() => 'Auth0ClearCredentialsException: $message (${cause ?? ""})';
+}
 
 /// Schnittstelle für die Auth0-Authentifizierung.
 ///
@@ -28,6 +40,8 @@ abstract class Auth0Adapter {
   });
 
   /// Führt den Auth0 Logout durch und bereinigt die Session.
+  ///
+  /// Wirft [Auth0ClearCredentialsException], wenn das lokale Bereinigen fehlschlägt.
   Future<void> logout({String? customScheme});
 
   /// Ruft gespeicherte [Credentials] aus dem CredentialsManager ab.
@@ -40,6 +54,8 @@ abstract class Auth0Adapter {
   Future<bool> hasValidCredentials({int minTtl = 0});
 
   /// Löscht gespeicherte Credentials aus dem CredentialsManager.
+  ///
+  /// Wirft [Auth0ClearCredentialsException], wenn das Löschen fehlschlägt.
   Future<void> clearCredentials();
 }
 
@@ -81,6 +97,11 @@ class NativeAuth0Adapter implements Auth0Adapter {
       return null;
     }
 
+    // Strenger Config-Check: Mismatch gegen native Manifest-/Scheme-Ziele fail-closed abfangen
+    if (!config.isValid) {
+      return null;
+    }
+
     try {
       final Map<String, String> parameters = {};
       if (connection != null && connection.isNotEmpty) {
@@ -118,6 +139,8 @@ class NativeAuth0Adapter implements Auth0Adapter {
     if (!_isSupportedPlatform || client == null) {
       return;
     }
+
+    // 1. Remote-Browser-Logout (Best-Effort, da offline fehlschlagen kann)
     try {
       final scheme = defaultTargetPlatform == TargetPlatform.android
           ? (customScheme ?? config.customScheme)
@@ -126,9 +149,9 @@ class NativeAuth0Adapter implements Auth0Adapter {
     } catch (_) {
       // Best-effort remote logout
     }
-    try {
-      await client.credentialsManager.clearCredentials();
-    } catch (_) {}
+
+    // 2. Lokale SDK-Credentials bereinigen (verbindlich, wirft bei Fehler)
+    await clearCredentials();
   }
 
   @override
@@ -171,18 +194,40 @@ class NativeAuth0Adapter implements Auth0Adapter {
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) return;
     try {
-      await client.credentialsManager.clearCredentials();
-    } catch (_) {}
+      final success = await client.credentialsManager.clearCredentials();
+      if (!success) {
+        throw const Auth0ClearCredentialsException(
+          'SDK CredentialsManager.clearCredentials gab false zurück',
+        );
+      }
+    } catch (e) {
+      if (e is Auth0ClearCredentialsException) rethrow;
+      throw Auth0ClearCredentialsException(
+        'Fehler beim Löschen der Auth0-Credentials im CredentialsManager',
+        e,
+      );
+    }
   }
 }
 
-/// Test-Fake für [Auth0Adapter] für deterministische Unit- und Widget-Tests.
+/// Test-Fake für [Auth0Adapter] für deterministische Unit- und Concurrency-Tests.
 class FakeAuth0Adapter implements Auth0Adapter {
   Credentials? credentials;
+  Credentials? storedCredentials;
+
+  String? silentlyRenewedToken;
+
   bool isUserCancelled;
   bool shouldThrowOnLogin;
   bool shouldThrowOnRenew;
+  bool shouldThrowOnClear;
   Exception? customException;
+
+  Completer<Credentials?>? loginCompleter;
+  Completer<Credentials?>? getCredentialsCompleter;
+  Completer<void>? clearCredentialsCompleter;
+
+  int _loginRequestId = 0;
 
   int loginCallCount = 0;
   int logoutCallCount = 0;
@@ -198,14 +243,19 @@ class FakeAuth0Adapter implements Auth0Adapter {
   String? lastScheme;
 
   Duration? renewDelay;
+  Duration? getCredentialsDelay;
 
   FakeAuth0Adapter({
     this.credentials,
+    this.storedCredentials,
+    this.silentlyRenewedToken,
     this.isUserCancelled = false,
     this.shouldThrowOnLogin = false,
     this.shouldThrowOnRenew = false,
+    this.shouldThrowOnClear = false,
     this.customException,
     this.renewDelay,
+    this.getCredentialsDelay,
   });
 
   @override
@@ -222,17 +272,30 @@ class FakeAuth0Adapter implements Auth0Adapter {
     },
   }) async {
     loginCallCount++;
+    final requestId = ++_loginRequestId;
     lastConnection = connection;
     lastLoginHint = loginHint;
     lastAudience = audience;
     lastScopes = scopes;
     lastScheme = customScheme;
 
+    if (loginCompleter != null) {
+      final res = await loginCompleter!.future;
+      credentials = res;
+      if (requestId == _loginRequestId) {
+        storedCredentials = res;
+      }
+      return res;
+    }
+
     if (isUserCancelled) {
       return null;
     }
     if (shouldThrowOnLogin) {
       throw customException ?? Exception('Auth0 login failed');
+    }
+    if (requestId == _loginRequestId) {
+      storedCredentials = credentials;
     }
     return credentials;
   }
@@ -241,17 +304,42 @@ class FakeAuth0Adapter implements Auth0Adapter {
   Future<void> logout({String? customScheme}) async {
     logoutCallCount++;
     lastScheme = customScheme;
-    credentials = null;
+    await clearCredentials();
   }
 
   @override
   Future<Credentials?> getCredentials() async {
     getCredentialsCallCount++;
-    if (credentials == null) return null;
-    if (credentials!.expiresAt.isBefore(DateTime.now().toUtc())) {
+    if (getCredentialsDelay != null) {
+      await Future<void>.delayed(getCredentialsDelay!);
+    }
+    if (getCredentialsCompleter != null) {
+      return await getCredentialsCompleter!.future;
+    }
+    final current = storedCredentials;
+    if (current == null) return null;
+
+    if (silentlyRenewedToken != null) {
+      storedCredentials = Credentials(
+        idToken: current.idToken,
+        accessToken: silentlyRenewedToken!,
+        refreshToken: current.refreshToken,
+        expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+        scopes: current.scopes,
+        user: current.user,
+        tokenType: current.tokenType,
+        sessionExpiry: current.sessionExpiry,
+      );
+      return storedCredentials;
+    }
+
+    if (current.expiresAt.isBefore(DateTime.now().toUtc())) {
+      if (current.refreshToken != null && current.refreshToken!.isNotEmpty) {
+        return await renewCredentials();
+      }
       return null;
     }
-    return credentials;
+    return current;
   }
 
   @override
@@ -263,26 +351,27 @@ class FakeAuth0Adapter implements Auth0Adapter {
     if (shouldThrowOnRenew) {
       throw customException ?? Exception('Token renewal failed');
     }
-    if (credentials == null) return null;
+    final current = storedCredentials ?? credentials;
+    if (current == null) return null;
 
-    credentials = Credentials(
-      idToken: credentials!.idToken,
-      accessToken: '${credentials!.accessToken}_renewed',
-      refreshToken: credentials!.refreshToken,
+    storedCredentials = Credentials(
+      idToken: current.idToken,
+      accessToken: '${current.accessToken}_renewed',
+      refreshToken: current.refreshToken,
       expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
-      scopes: credentials!.scopes,
-      user: credentials!.user,
-      tokenType: credentials!.tokenType,
-      sessionExpiry: credentials!.sessionExpiry,
+      scopes: current.scopes,
+      user: current.user,
+      tokenType: current.tokenType,
+      sessionExpiry: current.sessionExpiry,
     );
-    return credentials;
+    return storedCredentials;
   }
 
   @override
   Future<bool> hasValidCredentials({int minTtl = 0}) async {
     hasValidCredentialsCallCount++;
-    if (credentials == null) return false;
-    final expires = credentials!.expiresAt;
+    if (storedCredentials == null) return false;
+    final expires = storedCredentials!.expiresAt;
     final nowWithTtl = DateTime.now().toUtc().add(Duration(seconds: minTtl));
     return expires.isAfter(nowWithTtl);
   }
@@ -290,6 +379,15 @@ class FakeAuth0Adapter implements Auth0Adapter {
   @override
   Future<void> clearCredentials() async {
     clearCredentialsCallCount++;
-    credentials = null;
+    _loginRequestId++;
+    if (clearCredentialsCompleter != null) {
+      await clearCredentialsCompleter!.future;
+    }
+    if (shouldThrowOnClear) {
+      throw customException ??
+          const Auth0ClearCredentialsException('Injected native keychain clear failure');
+    }
+    storedCredentials = null;
+    silentlyRenewedToken = null;
   }
 }

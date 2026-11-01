@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/core/config/auth0_config.dart';
@@ -237,7 +239,8 @@ void main() {
       await authService.loginWithGoogle(newsletterOptIn: false);
       expect(await authService.getAuthToken(), 'token_account_b');
       expect(await authService.getUserEmail(), 'user_b@hullq.com');
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), 'token_account_b');
+      // Redundante Token-Kopie im Speicher ist eliminiert (Finding B)
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
     });
 
     test('A05: Newsletter Opt-In Genauigkeit (false, true, keine unaufgeforderte Übermittlung)', () async {
@@ -303,4 +306,188 @@ void main() {
       expect(await entitlements.canCreateNewTrip(), isTrue);
     });
   });
+
+  group('BC-1A Amendment Review Findings A–E: Rigorous Verification', () {
+    test('Finding B-1: SDK CredentialsManager Silent Token Renewal (Token A -> Token B)', () async {
+      final initialCreds = buildCredentials(
+        sub: 'auth0|silent_renew_user',
+        email: 'renew@hullq.com',
+        accessToken: 'initial_token_A',
+      );
+      fakeAuth0Adapter.credentials = initialCreds;
+      final loginSuccess = await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(loginSuccess, isTrue);
+
+      // Erster Abruf liefert Token A
+      expect(await authService.getAuthToken(), 'initial_token_A');
+      // Verifiziere: Kein Token im SecureStorage
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
+
+      // Simuliere SDK-interne stumme Erneuerung im CredentialsManager
+      fakeAuth0Adapter.silentlyRenewedToken = 'silently_renewed_token_B';
+
+      // AuthService muss ohne Neuanmeldung direkt den neuen Token B liefern
+      final renewedToken = await authService.getAuthToken();
+      expect(renewedToken, 'silently_renewed_token_B');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
+    });
+
+    test('Finding B-2: App-Neustart ohne lokalen Token-Key liest direkt aus SDK', () async {
+      final creds = buildCredentials(
+        sub: 'auth0|restart_user',
+        email: 'restart@hullq.com',
+        accessToken: 'valid_sdk_token_xyz',
+      );
+      fakeAuth0Adapter.credentials = creds;
+      await authService.loginWithApple(newsletterOptIn: true);
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
+
+      // Simuliere App-Neustart: Neue AuthService-Instanz mit existierendem SecureStorage und CredentialsManager
+      final restartedAdapter = FakeAuth0Adapter(storedCredentials: creds);
+      final restartedService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: restartedAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      expect(await restartedService.isAuthenticated(), isTrue);
+      expect(await restartedService.getAuthToken(), 'valid_sdk_token_xyz');
+      expect(await restartedService.getUserEmail(), 'restart@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
+    });
+
+    test('Finding C-1: Logout während laufendem Login bricht persistenten Zustand linearisierbar ab', () async {
+      final creds = buildCredentials(sub: 'auth0|concurrent_login');
+      fakeAuth0Adapter.loginCompleter = Completer<Credentials?>();
+
+      // Login starten (blockiert an der Barriere)
+      final loginFuture = authService.loginWithGoogle(newsletterOptIn: true);
+
+      // Während Login läuft: Logout anstoßen
+      await authService.logout();
+
+      // Login vollenden lassen
+      fakeAuth0Adapter.loginCompleter!.complete(creds);
+      final loginResult = await loginFuture;
+
+      expect(loginResult, isFalse, reason: 'Login während Logout darf nicht erfolgreich abschließen');
+      expect(await authService.isAuthenticated(), isFalse);
+      expect(await authService.getAuthToken(), isNull);
+      expect(await authService.getUserEmail(), isNull);
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+    });
+
+    test('Finding C-2: Logout während verzögertem CredentialsManager-Read liefert null und invalidiert Single-Flight', () async {
+      final creds = buildCredentials(sub: 'auth0|delayed_read');
+      fakeAuth0Adapter.credentials = creds;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+
+      fakeAuth0Adapter.getCredentialsCompleter = Completer<Credentials?>();
+
+      // getAuthToken anstoßen (blockiert im Adapter)
+      final tokenFuture = authService.getAuthToken();
+
+      // Parallel abmelden
+      await authService.logout();
+
+      // Read vollenden lassen
+      final completer = fakeAuth0Adapter.getCredentialsCompleter!;
+      fakeAuth0Adapter.getCredentialsCompleter = null;
+      completer.complete(creds);
+      final tokenResult = await tokenFuture;
+
+      expect(tokenResult, isNull, reason: 'Token-Abruf nach Logout muss null liefern');
+      expect(await authService.isAuthenticated(), isFalse);
+    });
+
+    test('Finding C-3: Überlappender Account-Wechsel: Alter Login überholt durch neuen Login', () async {
+      final completerA = Completer<Credentials?>();
+      fakeAuth0Adapter.loginCompleter = completerA;
+
+      // 1. Login A starten
+      final loginAFuture = authService.loginWithEmail('user_a@hullq.com', newsletterOptIn: false);
+
+      // 2. Login B startet vor Abschluss von A
+      fakeAuth0Adapter.loginCompleter = null;
+      fakeAuth0Adapter.credentials = buildCredentials(
+        sub: 'auth0|account_b',
+        email: 'user_b@hullq.com',
+        accessToken: 'token_b',
+      );
+      final loginBSuccess = await authService.loginWithGoogle(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+
+      // 3. Login A vollendet nun verspätet
+      completerA.complete(buildCredentials(
+        sub: 'auth0|account_a',
+        email: 'user_a@hullq.com',
+        accessToken: 'token_a',
+      ));
+      final loginAResult = await loginAFuture;
+
+      expect(loginAResult, isFalse, reason: 'Veralteter Login A muss durch Epoch-Check abgewiesen werden');
+      // Endzustand muss strikt Account B sein
+      expect(await authService.getAuthToken(), 'token_b');
+      expect(await authService.getUserEmail(), 'user_b@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|account_b');
+    });
+
+    test('Finding D-1: SDK clearCredentials Fehler wirft Auth0ClearCredentialsException und verhindert Reaktivierung', () async {
+      await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(await authService.isAuthenticated(), isTrue);
+
+      // Injiziere Hardware-/Keychain-Löschfehler
+      fakeAuth0Adapter.shouldThrowOnClear = true;
+
+      await expectLater(
+        authService.logout(),
+        throwsA(isA<Auth0ClearCredentialsException>()),
+      );
+
+      // Lokale Provy-Session muss trotz Exception bereinigt sein
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+    });
+
+    test('Finding E-1: Auth0Config Fail-Closed Validierung und Callback-URLs', () {
+      // 1. Standard-Konfiguration ist valide
+      const standard = Auth0Config.standard;
+      expect(standard.isValid, isTrue);
+      expect(standard.domain, Auth0Config.expectedNativeDomain);
+      expect(standard.customScheme, Auth0Config.expectedNativeScheme);
+      expect(standard.audience, Auth0Config.expectedNativeAudience);
+
+      // 2. Callback-URLs für iOS und Android
+      expect(standard.callbackUrlFor(TargetPlatform.android), 'provy://auth.hullq.com/android/com.hullq.proviantplaner/callback');
+      expect(standard.callbackUrlFor(TargetPlatform.iOS), 'com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback');
+
+      // 3. Fail-Closed bei Mismatch
+      const invalidDomain = Auth0Config(
+        clientId: 'provy-app-client-id',
+        domain: 'malicious.attacker.com',
+        customScheme: 'provy',
+      );
+      expect(invalidDomain.isValid, isFalse);
+
+      const invalidScheme = Auth0Config(
+        clientId: 'provy-app-client-id',
+        domain: 'auth.hullq.com',
+        customScheme: 'http',
+      );
+      expect(invalidScheme.isValid, isFalse);
+
+      const emptyClientId = Auth0Config(
+        clientId: '',
+        domain: 'auth.hullq.com',
+        customScheme: 'provy',
+      );
+      expect(emptyClientId.isValid, isFalse);
+
+      // NativeAdapter mit invalider Config schlägt sofort fail-closed fehl
+      final invalidAdapter = NativeAuth0Adapter(config: invalidDomain);
+      expect(invalidAdapter.login(), completion(isNull));
+    });
+  });
 }
+

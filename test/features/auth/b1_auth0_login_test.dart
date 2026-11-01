@@ -128,9 +128,10 @@ void main() {
       // BC-1A Invariante: Keine Übermittlung an Backend ohne existierenden Provy-Account
       expect(fakeApiClient.updateConsentCalls, isEmpty);
 
-      // Gespeichert in FlutterSecureStorage
-      final savedToken = await storage.read(key: Auth0HullqAuthService.keyAuthToken);
-      expect(savedToken, fakeJwtToken);
+      // Token-Autorität liegt im CredentialsManager, E-Mail im Speicher
+      expect(await authService.getAuthToken(), fakeJwtToken);
+      // Redundante Speicherung im SecureStorage ist eliminiert (Finding B)
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
       final savedEmail = await storage.read(key: Auth0HullqAuthService.keyUserEmail);
       expect(savedEmail, 'skipper@adria-sailing.com');
 
@@ -153,7 +154,7 @@ void main() {
     test('3. deleteAccount bereinigt lokalen Speicher und ruft in BC-1A KEIN ungeschütztes Backend-DELETE auf (O-01)', () async {
       // Zuerst anmelden
       await authService.loginWithApple(newsletterOptIn: false);
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNotNull);
+      expect(await authService.getAuthToken(), isNotNull);
 
       // Konto löschen
       await authService.deleteAccount();
@@ -171,7 +172,7 @@ void main() {
 
     test('4. logout bereinigt Tokens ohne Backend-Löschung', () async {
       await authService.loginWithGoogle(newsletterOptIn: false);
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNotNull);
+      expect(await authService.getAuthToken(), isNotNull);
 
       await authService.logout();
 

@@ -27,11 +27,12 @@ void main() {
     await db.close();
   });
 
-  Widget buildTestableWidget(Widget child) {
+  Widget buildTestableWidget(Widget child, {List<Override> overrides = const []}) {
     return ProviderScope(
       overrides: [
         hullqAuthServiceProvider.overrideWithValue(mockAuth),
         databaseProvider.overrideWithValue(db),
+        ...overrides,
       ],
       child: MaterialApp(
         locale: const Locale('de'),
@@ -48,14 +49,13 @@ void main() {
     );
   }
 
-  group('Slice S7: UI-Tests für UnlockSheet, Checkbox, MoreScreen & Konto löschen', () {
+  group('Slice S7 / BC-1A: UI-Tests für UnlockSheet, Checkbox, MoreScreen & Authentifizierungs-Status', () {
     testWidgets('1. SC-ACC-01 / Designregel 4: Einwilligungs-Checkbox ist beim Öffnen strikt unmarkiert (false)', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(const UnlockSheet()),
       );
       await tester.pumpAndSettle();
 
-      // Checkbox suchen
       final checkboxFinder = find.byType(Checkbox);
       expect(checkboxFinder, findsOneWidget);
 
@@ -69,7 +69,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Checkbox anhaken
       final checkboxTileFinder = find.byType(CheckboxListTile);
       expect(checkboxTileFinder, findsOneWidget);
       await tester.tap(checkboxTileFinder);
@@ -78,7 +77,6 @@ void main() {
       final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
       expect(checkbox.value, isTrue);
 
-      // Google Login betätigen
       final googleBtnFinder = find.text('Mit Google fortfahren');
       expect(googleBtnFinder, findsOneWidget);
       await tester.tap(googleBtnFinder);
@@ -96,7 +94,6 @@ void main() {
 
       expect(find.text('Anmeldung braucht eine Internetverbindung.'), findsOneWidget);
 
-      // Buttons müssen deaktiviert sein
       expect(find.text('Mit Google fortfahren'), findsOneWidget);
       final googleBtn = tester.widget<ButtonStyleButton>(
         find.ancestor(
@@ -132,10 +129,10 @@ void main() {
       expect(find.text('HullQ-Konto'), findsOneWidget);
       expect(find.text('Nicht angemeldet'), findsOneWidget);
       expect(find.text('Kostenlos freischalten mit HullQ-Konto'), findsOneWidget);
+      expect(find.text('Abmelden'), findsNothing);
     });
 
-    testWidgets('5. SC-MORE-01: MoreScreen zeigt angemeldeten Zustand mit E-Mail, Badge, Abmelden und Konto löschen', (tester) async {
-      // Nutzer vorab anmelden
+    testWidgets('5. Finding A: MoreScreen zeigt angemeldeten Zustand mit E-Mail, Badge, erreichbarem Abmelden und ehrlichem Lösch-Hinweis', (tester) async {
       await mockAuth.loginWithEmail('captain.ahab@sea.org', newsletterOptIn: false);
 
       await tester.pumpWidget(
@@ -147,10 +144,10 @@ void main() {
       expect(find.text('HullQ-Mitglied'), findsOneWidget);
       expect(find.text('MITGLIED'), findsOneWidget);
       expect(find.text('Abmelden'), findsOneWidget);
-      expect(find.text('Konto löschen'), findsOneWidget);
+      expect(find.text('Lokale Anmeldedaten entfernen'), findsOneWidget);
     });
 
-    testWidgets('6. SC-MORE-01: Konto löschen öffnet Bestätigungsdialog, entfernt Token und setzt Status auf trial zurück', (tester) async {
+    testWidgets('6. Finding A: Lokale Anmeldedaten entfernen öffnet Dialog und zeigt ehrliche Rückmeldung ohne Fake-Cloud-Löschung', (tester) async {
       await mockAuth.loginWithEmail('sailor.delete@hullq.com', newsletterOptIn: true);
 
       await tester.pumpWidget(
@@ -160,35 +157,121 @@ void main() {
 
       expect(find.text('sailor.delete@hullq.com'), findsOneWidget);
 
-      // Auf "Konto löschen" tippen
-      final deleteBtnFinder = find.text('Konto löschen');
+      // Auf "Lokale Anmeldedaten entfernen" tippen
+      final deleteBtnFinder = find.text('Lokale Anmeldedaten entfernen');
       await tester.ensureVisible(deleteBtnFinder);
       await tester.tap(deleteBtnFinder);
       await tester.pumpAndSettle();
 
-      // Dialog prüfen
-      expect(find.text('Konto wirklich löschen?'), findsOneWidget);
-      expect(find.text('Konto endgültig löschen'), findsOneWidget);
+      // Ehrlicher Bestätigungsdialog: informiert über Erhalt der Identität und fehlende Server-Löschung
+      expect(find.text('Lokale Anmeldedaten entfernen?'), findsOneWidget);
+      expect(find.text('Lokale Daten entfernen'), findsOneWidget);
 
       // Bestätigen
-      await tester.tap(find.text('Konto endgültig löschen'));
+      await tester.tap(find.text('Lokale Daten entfernen'));
       await tester.pumpAndSettle();
 
-      // Status prüfen
+      // Status prüfen: lokale Session bereinigt
       expect(await mockAuth.getMembershipStatus(), HullqMembershipStatus.trial);
       expect(await mockAuth.getAuthToken(), isNull);
       expect(await mockAuth.getUserEmail(), isNull);
 
-      // Snackbar prüfen
-      expect(find.text('Dein Konto und alle lokalen Daten wurden erfolgreich gelöscht.'), findsOneWidget);
+      // Ehrliche Snackbar: Keine fälschliche "Konto gelöscht"-Behauptung
+      expect(find.text('Lokale Anmeldedaten wurden entfernt. Das Cloud-Konto wurde nicht gelöscht.'), findsOneWidget);
 
-      // Zurück nach oben scrollen, um die Kontokarte zu sehen
+      // Zurück nach oben scrollen
       await tester.drag(find.byType(ListView), const Offset(0, 500));
       await tester.pumpAndSettle();
 
-      // Karte muss wieder auf "Nicht angemeldet" stehen
       expect(find.text('Nicht angemeldet'), findsOneWidget);
       expect(find.text('Kostenlos freischalten mit HullQ-Konto'), findsOneWidget);
     });
+
+    testWidgets('7. Finding A: Authentifizierter trial-Nutzer sieht E-Mail, ANGEMELDET-Badge und erreichbares Abmelden', (tester) async {
+      // Authentifizierter Nutzer mit trial-Status (BC-1A Standard nach Auth0 Login)
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const MoreScreen(),
+          overrides: [
+            authNotifierProvider.overrideWith(
+              (ref) => _StaticAuthNotifier(
+                const AuthState(
+                  status: HullqMembershipStatus.trial,
+                  email: 'trial.sailor@hullq.com',
+                  isAuthenticated: true,
+                ),
+                mockAuth,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // E-Mail muss sichtbar sein
+      expect(find.text('trial.sailor@hullq.com'), findsOneWidget);
+      // Status-Text wahrheitsgemäß (Basis / Trial)
+      expect(find.text('HullQ-Konto (Basis)'), findsOneWidget);
+      // Badge zeigt ANGEMELDET (nicht fälschlich MITGLIED)
+      expect(find.text('ANGEMELDET'), findsOneWidget);
+      // Logout-Button MUSS sichtbar und erreichbar sein
+      expect(find.text('Abmelden'), findsOneWidget);
+    });
+
+    testWidgets('8. Finding A: Legacy Member-Nutzer sieht MITGLIED-Badge und HullQ-Mitglied Subtitle', (tester) async {
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const MoreScreen(),
+          overrides: [
+            authNotifierProvider.overrideWith(
+              (ref) => _StaticAuthNotifier(
+                const AuthState(
+                  status: HullqMembershipStatus.member,
+                  email: 'legacy.member@hullq.com',
+                  isAuthenticated: true,
+                ),
+                mockAuth,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('legacy.member@hullq.com'), findsOneWidget);
+      expect(find.text('HullQ-Mitglied'), findsOneWidget);
+      expect(find.text('MITGLIED'), findsOneWidget);
+      expect(find.text('Abmelden'), findsOneWidget);
+    });
   });
+}
+
+class _StaticAuthNotifier extends StateNotifier<AuthState> implements AuthNotifier {
+  final HullqAuthService _auth;
+
+  _StaticAuthNotifier(super.state, this._auth);
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  Future<bool> loginWithEmail(String email, {required bool newsletterOptIn}) async => true;
+
+  @override
+  Future<bool> loginWithApple({required bool newsletterOptIn}) async => true;
+
+  @override
+  Future<bool> loginWithGoogle({required bool newsletterOptIn}) async => true;
+
+  @override
+  Future<void> logout() async {
+    await _auth.logout();
+    state = const AuthState(status: HullqMembershipStatus.trial, email: null, isAuthenticated: false);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await _auth.deleteAccount();
+    state = const AuthState(status: HullqMembershipStatus.trial, email: null, isAuthenticated: false);
+  }
 }
