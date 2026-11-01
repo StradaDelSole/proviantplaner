@@ -533,27 +533,24 @@ class Auth0HullqAuthService implements HullqAuthService {
           return null;
         }
 
-        // Falls SDK neue Benutzer-E-Mail mitbringt, lokalen Cache aktualisieren
-        if (creds.user.email != null) {
-          if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
-            await _storage.write(key: keyUserEmail, value: creds.user.email!);
-          }
-          if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
-            return null;
-          }
-        }
+        // C4-1: Token-Abruf ist rein lesend (kein unkoordinierter Schreibvorgang auf keyUserEmail)
         return creds.accessToken;
       }
 
       // Falls Credentials ungültig oder abgelaufen sind:
-      if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
-        await _clearLocalSession(preserveNewsletterConsent: true);
-      }
+      // C4-1: Ungültige/abgelaufene Credentials unter dem gemeinsamen Exclusive-Coordinator bereinigen
+      await _runExclusive(() async {
+        if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
+          await _clearLocalSession(preserveNewsletterConsent: true);
+        }
+      });
       return null;
     } catch (_) {
-      if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
-        await _clearLocalSession(preserveNewsletterConsent: true);
-      }
+      await _runExclusive(() async {
+        if (currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)) {
+          await _clearLocalSession(preserveNewsletterConsent: true);
+        }
+      });
       return null;
     }
   }

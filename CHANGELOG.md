@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Final Coordinator Correction (Findings C4-1 & C4-2)
+
+- **Finding C4-1 – BLOCKER (Unkoordinierte Mutationen im Token-Abruf vollständig eliminiert):**
+  - Redundantes Schreiben von `keyUserEmail` in `_getTokenInternal` ersatzlos entfernt. Der Token-Abruf `getAuthToken()` ist nun ein rein lesender Vorgang ohne Nebeneffekte auf den persistenten sicheren Speicher.
+  - Bereinigung ungültiger oder abgelaufener Credentials (`_clearLocalSession`) erfolgt strikt unter dem gemeinsamen Mutex `_runExclusive` mit Post-Await-Epochenprüfung (`currentEpoch == _sessionEpoch && !_isRevokedForEpoch(currentEpoch)`). Eine verzögerte Bereinigung kann Daten einer neueren Session weder überschreiben noch löschen.
+  - Neue deterministische Tests: `Finding C4-1a` (rein lesender Token-Abruf, keine Schreibzugriffe auf `keyUserEmail`) und `Finding C4-1b` (verzögerte Bereinigung ungültiger Credentials beschädigt Session B nicht).
+- **Finding C4-2 – BLOCKER (SDK CredentialsManager Mutationen & Native/Fake-Parität):**
+  - `NativeAuth0Adapter` und `FakeAuth0Adapter` serialisieren asynchrone SDK-Mutationen (`clearCredentials`, SDK-Credentials-Speicherung in `login`) über `_runSdkExclusive`.
+  - In beiden Adaptern wird die Generation vor dem blockierten SDK-Clear, unter dem Mutex und an der Mutationsgrenze geprüft (exakte Parität zwischen nativer Implementierung und Test-Fake).
+  - Wenn `clearCredentials` eines alten Logouts aktiv ist, wartet ein nachfolgender Login unter dem Mutex auf den Abschluss des Clears und stellt anschließend die Credentials via `storeCredentials` sicher.
+  - Verspätete WebAuth-Callbacks einer älteren Generation werden unter dem Mutex abgewiesen und können neuere Credentials im CredentialsManager weder überschreiben noch leeren (`_committedGeneration > gen`).
+  - Neue deterministische Tests: `Finding C4-2a` (Native-like Fake prüft Generation vor blockiertem Clear; Clear resumet nach B SDK-Persistenz -> B überlebt) und `Finding C4-2b` (stale WebAuth Callback von A nach B SDK-Persistenz überschreibt B nicht).
+
 ## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 4 (Exclusive Operation Coordinator & Fail-Safe Quarantine)
 
 - **Finding C-R3-1 – BLOCKER (Marker-Fencing & kein Unrevoking älterer Logins):**

@@ -910,5 +910,164 @@ void main() {
       );
       expect(invalidScheme.isValid, isFalse);
     });
+
+    test('Finding C4-1a: getAuthToken ist rein lesend und schreibt niemals keyUserEmail', () async {
+      final creds = buildCredentials(
+        sub: 'auth0|read_only_user',
+        email: 'readonly@hullq.com',
+        accessToken: 'token_readonly_123',
+      );
+      fakeAuth0Adapter.credentials = creds;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+
+      // Verifiziere: E-Mail ist persistiert
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'readonly@hullq.com');
+
+      // Schütze Speicher vor Schreibzugriffen auf keyUserEmail
+      storage.throwOnWriteKeys = {Auth0HullqAuthService.keyUserEmail};
+
+      // getAuthToken() muss den Token rein lesend zurückliefern, ohne Exception
+      final token = await authService.getAuthToken();
+      expect(token, 'token_readonly_123');
+    });
+
+    test('Finding C4-1b: Verzögerte invalid-credentials Bereinigung aus getAuthToken beschädigt Session B nicht', () async {
+      // 1. Session A einrichten
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_stale_clean',
+        email: 'user_a_stale@hullq.com',
+        accessToken: 'token_a_stale',
+      );
+      fakeAuth0Adapter.credentials = credsA;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(await authService.getAuthToken(), 'token_a_stale');
+
+      // 2. Simuliere abgelaufene/ungültige Credentials für A
+      fakeAuth0Adapter.storedCredentials = null;
+
+      // Barriere für das Löschen von keyUserEmail während _clearLocalSession
+      final deleteBarrier = Completer<void>();
+      final onBarrierReached = Completer<void>();
+      storage.deleteBarrier = deleteBarrier;
+      storage.onDeleteBarrierReached = onBarrierReached;
+      storage.pausedDeleteKey = Auth0HullqAuthService.keyUserEmail;
+
+      // getAuthToken() für A starten -> erkennt null-Credentials und initiiert _clearLocalSession
+      final tokenAFuture = authService.getAuthToken();
+      await onBarrierReached.future;
+
+      // 3. Während A beim Löschen pausiert ist: Login B startet
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_safe',
+        email: 'user_b_safe@hullq.com',
+        accessToken: 'token_b_safe',
+      );
+      fakeAuth0Adapter.credentials = credsB;
+      final loginBFuture = authService.loginWithApple(newsletterOptIn: true);
+
+      // Barriere für A freigeben: A wacht unter dem Mutex auf oder beendet seine Operation
+      deleteBarrier.complete();
+
+      final tokenA = await tokenAFuture;
+      expect(tokenA, isNull);
+
+      final loginBSuccess = await loginBFuture;
+      expect(loginBSuccess, isTrue);
+
+      // 4. VERBINDLICHE PRÜFUNG: Session B bleibt 100% intakt
+      expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'token_b_safe');
+      expect(await authService.getUserEmail(), 'user_b_safe@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'user_b_safe@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b_safe');
+      expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), isNull);
+    });
+
+    test('Finding C4-2a: Native-like fake prüft Generation vor blockiertem Clear; Clear resumet nach B SDK-Persistenz -> B überlebt', () async {
+      // 1. Session A aktiv
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_logout_parity',
+        email: 'a_parity@hullq.com',
+        accessToken: 'token_a_logout_parity',
+      );
+      fakeAuth0Adapter.credentials = credsA;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(await authService.getAuthToken(), 'token_a_logout_parity');
+
+      // 2. Logout A wird initiiert und blockiert im SDK clearCredentials
+      // Pre-check im Fake prüft Generation VOR blockiertem Clear (matching production line 270)
+      final clearCompleter = Completer<void>();
+      fakeAuth0Adapter.clearCredentialsCompleter = clearCompleter;
+      final logoutAFuture = authService.logout();
+
+      // 3. Während Clear blockiert ist: Login B wird vorbereitet und gestartet
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_parity',
+        email: 'b_parity@hullq.com',
+        accessToken: 'token_b_parity',
+      );
+      fakeAuth0Adapter.credentials = credsB;
+      final loginBFuture = authService.loginWithApple(newsletterOptIn: true);
+
+      // 4. Nun wird der blockierte Clear freigegeben: Clear resumet
+      clearCompleter.complete();
+      await logoutAFuture;
+
+      // Login B vollendet
+      final loginBSuccess = await loginBFuture;
+      expect(loginBSuccess, isTrue);
+
+      // 5. VERBINDLICHE PRÜFUNG: B's SDK-Credentials und Tokens haben überlebt
+      expect(fakeAuth0Adapter.storedCredentials, isNotNull);
+      expect(fakeAuth0Adapter.storedCredentials?.accessToken, 'token_b_parity');
+      expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'token_b_parity');
+      expect(await authService.getUserEmail(), 'b_parity@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'b_parity@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b_parity');
+    });
+
+    test('Finding C4-2b: Stale WebAuth Callback von A nach B SDK-Persistenz überschreibt B nicht', () async {
+      final nativeStyleAdapter = FakeAuth0Adapter();
+      final testService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: nativeStyleAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      final callbackBarrierA = Completer<Credentials?>();
+      nativeStyleAdapter.loginCompleter = callbackBarrierA;
+
+      // 1. Login A startet WebAuth und pausiert
+      final loginAFuture = testService.loginWithGoogle(newsletterOptIn: false);
+
+      // 2. Während A in WebAuth hängt: Login B startet und vollendet erfolgreich
+      nativeStyleAdapter.loginCompleter = null;
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_stale_test',
+        email: 'b_stale@hullq.com',
+        accessToken: 'token_b_stale',
+      );
+      nativeStyleAdapter.credentials = credsB;
+      final loginBSuccess = await testService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+      expect(nativeStyleAdapter.storedCredentials?.accessToken, 'token_b_stale');
+
+      // 3. Nun trifft verspäteter WebAuth-Callback von A ein
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_stale_test',
+        email: 'a_stale@hullq.com',
+        accessToken: 'token_a_stale',
+      );
+      callbackBarrierA.complete(credsA);
+
+      final resA = await loginAFuture;
+      expect(resA, isFalse, reason: 'Verspäteter WebAuth-Callback muss abgewiesen werden');
+
+      // 4. VERBINDLICHE PRÜFUNG: B's Credentials im SDK-Store dürfen nicht durch A ersetzt werden
+      expect(nativeStyleAdapter.storedCredentials?.accessToken, 'token_b_stale');
+      expect(await testService.getAuthToken(), 'token_b_stale');
+      expect(await testService.getUserEmail(), 'b_stale@hullq.com');
+    });
   });
 }

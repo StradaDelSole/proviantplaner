@@ -89,6 +89,27 @@ class NativeAuth0Adapter implements Auth0Adapter {
   int _activeGeneration = 0;
   int _committedGeneration = 0;
 
+  Future<void>? _sdkMutationLock;
+
+  Future<T> _runSdkExclusive<T>(Future<T> Function() action) async {
+    final prev = _sdkMutationLock;
+    final completer = Completer<void>();
+    _sdkMutationLock = completer.future;
+    if (prev != null) {
+      try {
+        await prev;
+      } catch (_) {}
+    }
+    try {
+      return await action();
+    } finally {
+      completer.complete();
+      if (_sdkMutationLock == completer.future) {
+        _sdkMutationLock = null;
+      }
+    }
+  }
+
   NativeAuth0Adapter({this.config = Auth0Config.standard}) {
     if (config.domain.isNotEmpty && config.clientId.isNotEmpty) {
       _auth0 = Auth0(config.domain, config.clientId);
@@ -173,24 +194,31 @@ class NativeAuth0Adapter implements Auth0Adapter {
             parameters: parameters,
           );
 
-      // Post-Await Generation Check:
-      // Wurde dieser Login inzwischen durch einen Logout oder neueren Login überholt?
-      if (gen < _activeGeneration || _committedGeneration > gen) {
-        // Callback ist veraltet.
-        // Das SDK hat die Credentials bereits im CredentialsManager gespeichert.
-        // Falls noch KEINE neuere Generation committet wurde (_committedGeneration < gen),
-        // bereinigen wir die versehentlich gespeicherten Credentials.
-        // Hat aber bereits eine neuere Generation committet (_committedGeneration >= gen),
-        // dürfen wir die Credentials keinesfalls anrühren!
-        if (_committedGeneration < gen) {
-          try {
-            await client.credentialsManager.clearCredentials();
-          } catch (_) {}
+      return await _runSdkExclusive(() async {
+        // Post-Await Generation Check unter SDK-Mutex:
+        // Wurde dieser Login inzwischen durch einen Logout oder neueren Login überholt?
+        if (gen < _activeGeneration || _committedGeneration > gen) {
+          // Callback ist veraltet.
+          // Das SDK hat die Credentials bereits im CredentialsManager gespeichert.
+          // Falls noch KEINE neuere Generation committet wurde (_committedGeneration < gen),
+          // bereinigen wir die versehentlich gespeicherten Credentials.
+          // Hat aber bereits eine neuere Generation committet (_committedGeneration >= gen),
+          // dürfen wir die Credentials keinesfalls anrühren!
+          if (_committedGeneration < gen) {
+            try {
+              await client.credentialsManager.clearCredentials();
+            } catch (_) {}
+          }
+          return null;
         }
-        return null;
-      }
 
-      return credentials;
+        // Falls während WebAuth ein asynchroner Clear lief, Credentials sicherstellen:
+        try {
+          await client.credentialsManager.storeCredentials(credentials);
+        } catch (_) {}
+
+        return credentials;
+      });
     } on WebAuthenticationException catch (e) {
       if (e.isUserCancelledException) {
         return null;
@@ -274,20 +302,27 @@ class NativeAuth0Adapter implements Auth0Adapter {
 
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) return;
-    try {
-      final success = await client.credentialsManager.clearCredentials();
-      if (!success) {
-        throw const Auth0ClearCredentialsException(
-          'SDK CredentialsManager.clearCredentials gab false zurück',
+
+    return _runSdkExclusive(() async {
+      if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
+        return;
+      }
+
+      try {
+        final success = await client.credentialsManager.clearCredentials();
+        if (!success) {
+          throw const Auth0ClearCredentialsException(
+            'SDK CredentialsManager.clearCredentials gab false zurück',
+          );
+        }
+      } catch (e) {
+        if (e is Auth0ClearCredentialsException) rethrow;
+        throw Auth0ClearCredentialsException(
+          'Fehler beim Löschen der Auth0-Credentials im CredentialsManager',
+          e,
         );
       }
-    } catch (e) {
-      if (e is Auth0ClearCredentialsException) rethrow;
-      throw Auth0ClearCredentialsException(
-        'Fehler beim Löschen der Auth0-Credentials im CredentialsManager',
-        e,
-      );
-    }
+    });
   }
 }
 
@@ -311,6 +346,27 @@ class FakeAuth0Adapter implements Auth0Adapter {
 
   int _activeGeneration = 0;
   int _committedGeneration = 0;
+
+  Future<void>? _sdkMutationLock;
+
+  Future<T> _runSdkExclusive<T>(Future<T> Function() action) async {
+    final prev = _sdkMutationLock;
+    final completer = Completer<void>();
+    _sdkMutationLock = completer.future;
+    if (prev != null) {
+      try {
+        await prev;
+      } catch (_) {}
+    }
+    try {
+      return await action();
+    } finally {
+      completer.complete();
+      if (_sdkMutationLock == completer.future) {
+        _sdkMutationLock = null;
+      }
+    }
+  }
 
   int loginCallCount = 0;
   int logoutCallCount = 0;
@@ -386,39 +442,34 @@ class FakeAuth0Adapter implements Auth0Adapter {
     lastScopes = scopes;
     lastScheme = customScheme;
 
+    Credentials? res;
     if (loginCompleter != null) {
-      final res = await loginCompleter!.future;
+      res = await loginCompleter!.future;
       credentials = res;
-      if (res != null && _committedGeneration <= gen) {
-        // Simuliere natives SDK: CredentialsManager wird befüllt
-        storedCredentials = res;
+    } else {
+      if (isUserCancelled) {
+        return null;
       }
+      if (shouldThrowOnLogin) {
+        throw customException ?? Exception('Auth0 login failed');
+      }
+      res = credentials;
+    }
+
+    if (res == null) {
+      return null;
+    }
+
+    return await _runSdkExclusive(() async {
       if (gen < _activeGeneration || _committedGeneration > gen) {
         if (_committedGeneration < gen) {
           storedCredentials = null;
         }
         return null;
       }
+      storedCredentials = res;
       return res;
-    }
-
-    if (isUserCancelled) {
-      return null;
-    }
-    if (shouldThrowOnLogin) {
-      throw customException ?? Exception('Auth0 login failed');
-    }
-    if (credentials != null && _committedGeneration <= gen) {
-      // Simuliere natives SDK: CredentialsManager wird befüllt
-      storedCredentials = credentials;
-    }
-    if (gen < _activeGeneration || _committedGeneration > gen) {
-      if (_committedGeneration < gen) {
-        storedCredentials = null;
-      }
-      return null;
-    }
-    return credentials;
+    });
   }
 
   @override
@@ -512,17 +563,34 @@ class FakeAuth0Adapter implements Auth0Adapter {
   @override
   Future<void> clearCredentials({int? generation}) async {
     clearCredentialsCallCount++;
-    if (clearCredentialsCompleter != null) {
-      await clearCredentialsCompleter!.future;
-    }
-    if (shouldThrowOnClear) {
-      throw customException ??
-          const Auth0ClearCredentialsException('Injected native keychain clear failure');
-    }
+
+    // Vorab-Prüfung vor blockiertem Clear (exaktes Verhalten wie NativeAuth0Adapter):
     if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
       return;
     }
-    storedCredentials = null;
-    silentlyRenewedToken = null;
+
+    return _runSdkExclusive(() async {
+      // Prüfung unter Mutex vor blockiertem SDK-Clear:
+      if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
+        return;
+      }
+
+      if (clearCredentialsCompleter != null) {
+        await clearCredentialsCompleter!.future;
+      }
+
+      if (shouldThrowOnClear) {
+        throw customException ??
+            const Auth0ClearCredentialsException('Injected native keychain clear failure');
+      }
+
+      // Prüfung an der Mutationsgrenze:
+      if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
+        return;
+      }
+
+      storedCredentials = null;
+      silentlyRenewedToken = null;
+    });
   }
 }
