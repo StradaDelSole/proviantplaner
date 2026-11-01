@@ -36,6 +36,7 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.30 | 31.10.2026 | RECEIPT1 gemergt; BACKEND-CORE Phase A Owner-accepted unter P01–P05; BC-1A Planung, Coding nicht freigegeben |
 | v0.31 | 31.10.2026 | BC-1A Phase B Owner-release mit Pflichtcheck für Auth0 SDK/Plattform; kein Merge, kein BC-1B-Go |
 | v0.32 | 31.10.2026 | Owner akzeptiert iOS >=14 und Auth0 Flutter 2.7.x; technischer Compatibility-Check bleibt erforderlich |
+| v0.33 | 01.11.2026 | BC-1A Code Owner Acceptance & Merge PR #44; P05 realer Auth0-/Android-/iOS-Stage bleibt Issue #45 OPEN; BC-1B weiter nicht freigegeben |
 
 ## Verbindlicher Engineering-Prozess ab 30.10.2026
 
@@ -68,9 +69,9 @@ Verbindliche aktuelle Daten-/Domainwahrheit:
 - WATER1: Mindest-Trinkwasser; Tank/Watermaker verändern den Richtwert nicht
 - PIVOT2 Wasser-Unterdeckung: **CHECK**, nicht ACTION_NEEDED
 
-**RECEIPT1 ist Owner-accepted und via PR #34 gemergt.** **BACKEND-CORE Gate A ist am 31.10.2026 vom Owner als Architektur mit P01–P05 als bindenden Implementierungs-/Stage-Gates akzeptiert.** Test-only PR #38 ist nach exaktem HEAD-Review und CI SUCCESS gemergt (Test-HEAD `858238286671730308716aa374d7ae71852748eb`, Merge `7adf9349ccd2bb47a23c3237280c2f5260064332`). Maßgeblich: `docs/impl/BACKEND_CORE_phase_A_owner_acceptance_2026-10-31.md`. **BC-1A ist am 31.10.2026 zur eng begrenzten Phase-B-Implementierung freigegeben, gemäß `docs/impl/BACKEND_CORE_BC1A_phase_B_owner_release_2026-10-31.md` und Issue #40.** **Owner O-BC1A-01 hat iOS 12→14.0 und Auth0 Flutter 2.7.x explizit akzeptiert.** Gemini darf die erforderlichen iOS-Targets und das SDK im freigegebenen BC-1A-Featurebranch ändern, nach Prüfung der tatsächlichen Flutter/Dart/Xcode-Kompatibilität. Kein SDK 3.x/iOS 15/Android-/Java-Minimum-Upgrade ohne neue Freigabe. Kein eigenmächtiger Merge, Backend-Release oder BC-1B-Go. Reale Stage-/Gerätetests offen; bei jedem Sitzungsstart mit GitHub reconciliieren.
+**RECEIPT1 ist Owner-accepted und via PR #34 gemergt.** BACKEND-CORE Gate A ist Owner-accepted unter bindenden P01–P05. **BC-1A Native Auth0 Adapter: CODE OWNER-ACCEPTED am 01.11.2026 und PR #44 gemergt** (verifizierter Implementierungs-HEAD `b592162271ec64ebc812e077a08d7073ef5c0c57`, GitHub Actions 41339157145 SUCCESS, unabhängiger Review 5729781280 PASS, Merge-Commit `5316791e9a66198e114f5934b83778fb0e0f1d4b`). Verbindlich: `docs/impl/BACKEND_CORE_BC1A_code_owner_acceptance_2026-11-01.md`. Akzeptiert bleiben **iOS 14.0 / Auth0 Flutter 2.7.x**; keine eigenmächtige SDK-/Plattformminima-Änderung. **P05 native Auth0-Stage ist NICHT bestanden**, Issue #45 offen: realer Auth0-EU-Tenant, separate Provy Native App, tatsächliche Callback/Logout-URLs und Android-/iOS-Echtgerätetests. Das ist eine Code-, **keine Produktiv-/Store-Freigabe**. Das Setup-Runbook PR #43 ist getrennt und noch offen.
 
-**Nur BC-1A Phase B ist zur begrenzten Implementierung freigegeben; BC-1B, Cloud-Deployment und alle Folgeslices bleiben gesperrt. SDK-/OS-Kompatibilitätscheck ist verpflichtend.**
+**BC-1A Code-Implementierung abgeschlossen und gemergt. BC-1B, Cloud-Deployment und sämtliche Folgeslices sind NICHT freigegeben.** Für P05 gelten die eigenen Evidence-/Owner-Gates in Issue #45. Vor jeder neuen Arbeit origin/main, Owner-Acceptance und aktuelle Issue-/PR-Lage prüfen.
 
 Weiterhin nicht freigegeben:
 - GUEST1
