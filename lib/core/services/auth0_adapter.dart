@@ -17,6 +17,18 @@ class Auth0ClearCredentialsException implements Exception {
   String toString() => 'Auth0ClearCredentialsException: $message (${cause ?? ""})';
 }
 
+/// Exception, wenn das Setzen des dauerhaften Quarantäne-Markers (Revocation Fence)
+/// im sicheren Speicher fehlschlägt oder nicht verifiziert werden kann.
+class Auth0RevocationException implements Exception {
+  final String message;
+  final Object? cause;
+
+  const Auth0RevocationException(this.message, [this.cause]);
+
+  @override
+  String toString() => 'Auth0RevocationException: $message (${cause ?? ""})';
+}
+
 /// Schnittstelle für die Auth0-Authentifizierung.
 ///
 /// Entkoppelt die native Auth0-SDK-Implementierung von der Anwendungslogik,
@@ -65,6 +77,7 @@ class NativeAuth0Adapter implements Auth0Adapter {
   final Auth0Config config;
   late final Auth0? _auth0;
   int _loginRequestId = 0;
+  int _lastSuccessfulLoginRequestId = 0;
 
   NativeAuth0Adapter({this.config = Auth0Config.standard}) {
     if (config.domain.isNotEmpty && config.clientId.isNotEmpty) {
@@ -127,13 +140,23 @@ class NativeAuth0Adapter implements Auth0Adapter {
           );
 
       if (requestId != _loginRequestId) {
-        // Callback kam verspätet nach Logout oder neuem Login an
-        try {
-          await clearCredentials();
-        } catch (_) {}
+        // Callback kam verspätet nach Logout oder neuem Login an.
+        // Ein veralteter Login darf NIEMALS die Credentials eines neueren
+        // Accounts löschen. Wir prüfen daher, ob kein neuerer Login erfolgreich war
+        // und ob die im CredentialsManager befindlichen Credentials überhaupt zu
+        // diesem veralteten Login gehören.
+        if (_lastSuccessfulLoginRequestId <= requestId) {
+          try {
+            final current = await getCredentials();
+            if (current != null && current.user.sub == credentials.user.sub) {
+              await clearCredentials();
+            }
+          } catch (_) {}
+        }
         return null;
       }
 
+      _lastSuccessfulLoginRequestId = requestId;
       return credentials;
     } on WebAuthenticationException catch (e) {
       if (e.isUserCancelledException) {
@@ -148,6 +171,7 @@ class NativeAuth0Adapter implements Auth0Adapter {
   @override
   Future<void> logout({String? customScheme}) async {
     _loginRequestId++;
+    _lastSuccessfulLoginRequestId = _loginRequestId;
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) {
       return;
@@ -241,6 +265,7 @@ class FakeAuth0Adapter implements Auth0Adapter {
   Completer<void>? clearCredentialsCompleter;
 
   int _loginRequestId = 0;
+  int _lastSuccessfulLoginRequestId = 0;
 
   int loginCallCount = 0;
   int logoutCallCount = 0;
@@ -295,8 +320,20 @@ class FakeAuth0Adapter implements Auth0Adapter {
     if (loginCompleter != null) {
       final res = await loginCompleter!.future;
       credentials = res;
-      if (requestId == _loginRequestId) {
+      if (res != null && _lastSuccessfulLoginRequestId <= requestId) {
+        // Simuliere natives SDK: CredentialsManager wird befüllt
         storedCredentials = res;
+      }
+      if (requestId != _loginRequestId) {
+        if (_lastSuccessfulLoginRequestId <= requestId) {
+          if (storedCredentials?.user.sub == res?.user.sub) {
+            storedCredentials = null;
+          }
+        }
+        return null;
+      }
+      if (res != null) {
+        _lastSuccessfulLoginRequestId = requestId;
       }
       return res;
     }
@@ -307,17 +344,30 @@ class FakeAuth0Adapter implements Auth0Adapter {
     if (shouldThrowOnLogin) {
       throw customException ?? Exception('Auth0 login failed');
     }
-    if (requestId == _loginRequestId) {
+    if (credentials != null && _lastSuccessfulLoginRequestId <= requestId) {
+      // Simuliere natives SDK: CredentialsManager wird befüllt
       storedCredentials = credentials;
+    }
+    if (requestId != _loginRequestId) {
+      if (_lastSuccessfulLoginRequestId <= requestId) {
+        if (storedCredentials?.user.sub == credentials?.user.sub) {
+          storedCredentials = null;
+        }
+      }
+      return null;
+    }
+    if (credentials != null) {
+      _lastSuccessfulLoginRequestId = requestId;
     }
     return credentials;
   }
 
   @override
   Future<void> logout({String? customScheme}) async {
+    final requestId = ++_loginRequestId;
     logoutCallCount++;
     lastScheme = customScheme;
-    await clearCredentials();
+    await clearCredentials(requestId: requestId);
   }
 
   @override
@@ -390,9 +440,9 @@ class FakeAuth0Adapter implements Auth0Adapter {
   }
 
   @override
-  Future<void> clearCredentials() async {
+  Future<void> clearCredentials({int? requestId}) async {
     clearCredentialsCallCount++;
-    _loginRequestId++;
+    final id = requestId ?? ++_loginRequestId;
     if (clearCredentialsCompleter != null) {
       await clearCredentialsCompleter!.future;
     }
@@ -400,7 +450,9 @@ class FakeAuth0Adapter implements Auth0Adapter {
       throw customException ??
           const Auth0ClearCredentialsException('Injected native keychain clear failure');
     }
-    storedCredentials = null;
-    silentlyRenewedToken = null;
+    if (_lastSuccessfulLoginRequestId <= id) {
+      storedCredentials = null;
+      silentlyRenewedToken = null;
+    }
   }
 }

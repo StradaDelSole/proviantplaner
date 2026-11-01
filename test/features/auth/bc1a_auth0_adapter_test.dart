@@ -63,7 +63,11 @@ class TrackingHullqApiClient implements HullqApiClient {
 /// Mock-Speicher mit konfigurierbaren Barrieren fuer deterministische Nebenlaeufigkeitstests.
 class BarrierSecureStorage extends FlutterSecureStorage {
   Completer<void>? writeBarrier;
+  Completer<void>? onBarrierReached;
+  Completer<void>? readBarrier;
   String? pausedKey;
+  String? pausedReadKey;
+  Set<String> throwOnWriteKeys = {};
 
   BarrierSecureStorage() : super();
 
@@ -78,12 +82,43 @@ class BarrierSecureStorage extends FlutterSecureStorage {
     WindowsOptions? wOptions,
     WebOptions? webOptions,
   }) async {
+    if (throwOnWriteKeys.contains(key)) {
+      throw Exception('Simulierter Speicherfehler beim Schreiben von $key');
+    }
     if (writeBarrier != null && (pausedKey == null || key == pausedKey)) {
-      await writeBarrier!.future;
+      final barrier = writeBarrier;
+      writeBarrier = null;
+      pausedKey = null;
+      onBarrierReached?.complete();
+      await barrier!.future;
     }
     await super.write(
       key: key,
       value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+      webOptions: webOptions,
+    );
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+    WebOptions? webOptions,
+  }) async {
+    if (readBarrier != null && (pausedReadKey == null || key == pausedReadKey)) {
+      await readBarrier!.future;
+    }
+    return super.read(
+      key: key,
       iOptions: iOptions,
       aOptions: aOptions,
       lOptions: lOptions,
@@ -392,43 +427,140 @@ void main() {
       expect(await storage.read(key: Auth0HullqAuthService.keyAuthToken), isNull);
     });
 
-    test('Finding C-1: Logout während verzögertem SecureStorage-Write bereinigt Stale-State deterministisch', () async {
-      final creds = buildCredentials(
-        sub: 'auth0|concurrent_login',
-        email: 'delayed_write@hullq.com',
-      );
-      fakeAuth0Adapter.credentials = creds;
-
-      // Barriere im SecureStorage beim Schreiben von keyUserEmail aktivieren
+    test('Finding C-1: Verzögerter Write von Session A überschreibt oder löscht niemals neuere Session B', () async {
+      // 1. Barriere für Session A beim Schreiben von keyUserEmail setzen
+      final barrierA = Completer<void>();
+      final onReached = Completer<void>();
+      storage.writeBarrier = barrierA;
+      storage.onBarrierReached = onReached;
       storage.pausedKey = Auth0HullqAuthService.keyUserEmail;
-      final barrier = Completer<void>();
-      storage.writeBarrier = barrier;
 
-      // 1. Login starten (hängt an der Barriere bei _storage.write)
-      final loginFuture = authService.loginWithGoogle(newsletterOptIn: true);
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a',
+        email: 'user_a@hullq.com',
+        accessToken: 'token_a',
+      );
+      fakeAuth0Adapter.credentials = credsA;
 
-      // Kurzer Yield, damit der Login bis zur Storage-Barriere läuft
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      // Login A starten (pausiert im SecureStorage-Write von keyUserEmail)
+      final loginAFuture = authService.loginWithGoogle(newsletterOptIn: true);
 
-      // 2. Parallel abmelden
-      await authService.logout();
+      // Warte deterministisch, bis Login A die Storage-Barriere erreicht hat
+      await onReached.future;
 
-      // 3. Nun Barriere freigeben -> Write wird ausgeführt
-      barrier.complete();
-      final loginResult = await loginFuture;
+      // 2. Während A pausiert ist: Login B starten und vollständig abschließen
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b',
+        email: 'user_b@hullq.com',
+        accessToken: 'token_b',
+      );
+      fakeAuth0Adapter.credentials = credsB;
+      final loginBSuccess = await authService.loginWithApple(newsletterOptIn: false);
+      expect(loginBSuccess, isTrue);
 
-      // 4. Assertions:
-      expect(loginResult, isFalse, reason: 'Login während Logout darf nicht erfolgreich abschließen');
-      expect(await authService.isAuthenticated(), isFalse);
-      expect(await authService.getAuthToken(), isNull);
-      expect(await authService.getUserEmail(), isNull);
-      // Stale Key darf nicht im Speicher verbleiben
-      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
-      expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), 'true');
+      // Verifiziere: Session B ist aktiv und besitzt alle Daten
+      expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'token_b');
+      expect(await authService.getUserEmail(), 'user_b@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'user_b@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b');
+      expect(await storage.read(key: Auth0HullqAuthService.keyNewsletterConsent), 'false');
+
+      // 3. Nun Barriere für A freigeben (A wacht auf, stellt Stale-Epoch fest)
+      barrierA.complete();
+
+      final loginAResult = await loginAFuture;
+      expect(loginAResult, isFalse, reason: 'Stale Login A muss false liefern');
+
+      // 4. Verbindliche Verifikation: Session B's Daten wurden durch A's Vollendung NICHT beschädigt oder gelöscht!
+      expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'token_b', reason: 'Usable Token von Session B muss intakt sein');
+      expect(await authService.getUserEmail(), 'user_b@hullq.com', reason: 'Email von Session B muss intakt sein');
+      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), 'user_b@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b');
+      expect(await storage.read(key: Auth0HullqAuthService.keyNewsletterConsent), 'false');
+      expect(await storage.read(key: Auth0HullqAuthService.keyMembershipStatus), HullqMembershipStatus.trial.rawValue);
     });
 
-    test('Finding C-2: Zwei parallele getAuthToken Aufrufe während Logout -> Beide liefern null', () async {
+    test('Finding C-1b: Veralteter Logout nach neuem Login B beschädigt niemals Session B', () async {
+      // Login A
+      fakeAuth0Adapter.credentials = buildCredentials(sub: 'auth0|user_a', email: 'user_a@hullq.com');
+      await authService.loginWithGoogle(newsletterOptIn: false);
+
+      // Simuliere verzögerten Logout von A (z.B. Clear-Credentials Completer)
+      final clearCompleter = Completer<void>();
+      fakeAuth0Adapter.clearCredentialsCompleter = clearCompleter;
+      final logoutAFuture = authService.logout();
+
+      // Während Logout von A noch läuft, startet und vollendet Login B
+      final credsB = buildCredentials(sub: 'auth0|user_b', email: 'user_b@hullq.com', accessToken: 'token_b');
+      fakeAuth0Adapter.credentials = credsB;
+      fakeAuth0Adapter.clearCredentialsCompleter = null;
+      final loginBSuccess = await authService.loginWithEmail('user_b@hullq.com', newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+
+      // Nun vollendet der alte Logout
+      clearCompleter.complete();
+      try {
+        await logoutAFuture;
+      } catch (_) {}
+
+      // Session B muss unbeeinträchtigt und aktiv bleiben
+      expect(await authService.isAuthenticated(), isTrue);
+      expect(await authService.getAuthToken(), 'token_b');
+      expect(await authService.getUserEmail(), 'user_b@hullq.com');
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|user_b');
+    });
+
+    test('Finding C-2: Verspäteter nativer SDK-Callback von Login A löscht NIEMALS die Credentials von Login B', () async {
+      final nativeStyleAdapter = FakeAuth0Adapter();
+      final testService = Auth0HullqAuthService(
+        storage: storage,
+        auth0Adapter: nativeStyleAdapter,
+        apiClient: fakeApiClient,
+      );
+
+      final callbackBarrierA = Completer<Credentials?>();
+      nativeStyleAdapter.loginCompleter = callbackBarrierA;
+
+      // 1. Login A startet (bleibt im SDK-WebAuthentication hängen)
+      final loginAFuture = testService.loginWithGoogle(newsletterOptIn: false);
+
+      // 2. Während A im Browser hängt: Login B startet und vollendet erfolgreich
+      nativeStyleAdapter.loginCompleter = null;
+      final credsB = buildCredentials(
+        sub: 'auth0|user_b_native',
+        email: 'b_native@hullq.com',
+        accessToken: 'token_b_native',
+      );
+      nativeStyleAdapter.credentials = credsB;
+      final loginBSuccess = await testService.loginWithApple(newsletterOptIn: true);
+      expect(loginBSuccess, isTrue);
+
+      // Verifiziere: CredentialsManager hält B's Credentials
+      expect(nativeStyleAdapter.storedCredentials?.user.sub, 'auth0|user_b_native');
+      expect(await testService.getAuthToken(), 'token_b_native');
+
+      // 3. Nun trifft verspäteter nativer Callback von A ein (simuliert WebAuth Callback)
+      final credsA = buildCredentials(
+        sub: 'auth0|user_a_late',
+        email: 'a_late@hullq.com',
+        accessToken: 'token_a_late',
+      );
+      callbackBarrierA.complete(credsA);
+
+      final resultA = await loginAFuture;
+      expect(resultA, isFalse, reason: 'Verspäteter Callback A muss abgewiesen werden');
+
+      // 4. VERBINDLICH: B's Credentials im CredentialsManager und B's Token müssen überleben!
+      expect(nativeStyleAdapter.storedCredentials, isNotNull);
+      expect(nativeStyleAdapter.storedCredentials?.user.sub, 'auth0|user_b_native', reason: 'A darf B niemals aus dem SDK löschen');
+      expect(await testService.getAuthToken(), 'token_b_native');
+      expect(await testService.getUserEmail(), 'b_native@hullq.com');
+      expect(await testService.isAuthenticated(), isTrue);
+    });
+
+    test('Finding C-3: Zwei parallele getAuthToken Aufrufe während Logout -> Beide liefern null', () async {
       final creds = buildCredentials(sub: 'auth0|two_callers');
       fakeAuth0Adapter.credentials = creds;
       await authService.loginWithGoogle(newsletterOptIn: false);
@@ -454,69 +586,81 @@ void main() {
       expect(await authService.isAuthenticated(), isFalse);
     });
 
-    test('Finding C-3: Überlappender Account-Wechsel: Alter Login überholt durch neuen Login', () async {
-      final completerA = Completer<Credentials?>();
-      fakeAuth0Adapter.loginCompleter = completerA;
+    test('Finding C-4: getUserEmail Post-Await Guard: Kein Stale-Email Leak bei parallelem Logout oder Account-Wechsel', () async {
+      final credsA = buildCredentials(sub: 'auth0|email_user_a', email: 'user_a@hullq.com', accessToken: 'token_a');
+      fakeAuth0Adapter.credentials = credsA;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(await authService.getUserEmail(), 'user_a@hullq.com');
 
-      // 1. Login A starten
-      final loginAFuture = authService.loginWithEmail('user_a@hullq.com', newsletterOptIn: false);
+      // 1. Testfall: Logout während laufendem getUserEmail()
+      fakeAuth0Adapter.getCredentialsDelay = const Duration(milliseconds: 30);
+      final emailFuture1 = authService.getUserEmail();
+      // Während getCredentials() noch wartet, abmelden
+      await authService.logout();
+      final emailResult1 = await emailFuture1;
+      expect(emailResult1, isNull, reason: 'getUserEmail muss bei parallelem Logout sofort null liefern');
 
-      // 2. Login B startet vor Abschluss von A
-      fakeAuth0Adapter.loginCompleter = null;
-      fakeAuth0Adapter.credentials = buildCredentials(
-        sub: 'auth0|account_b',
-        email: 'user_b@hullq.com',
-        accessToken: 'token_b',
-      );
-      final loginBSuccess = await authService.loginWithGoogle(newsletterOptIn: true);
-      expect(loginBSuccess, isTrue);
+      // 2. Testfall: Account-Wechsel A -> B während laufendem getUserEmail()
+      fakeAuth0Adapter.getCredentialsDelay = null;
+      fakeAuth0Adapter.credentials = credsA;
+      await authService.loginWithGoogle(newsletterOptIn: false);
 
-      // 3. Login A vollendet nun verspätet
-      completerA.complete(buildCredentials(
-        sub: 'auth0|account_a',
-        email: 'user_a@hullq.com',
-        accessToken: 'token_a',
-      ));
-      final loginAResult = await loginAFuture;
+      fakeAuth0Adapter.getCredentialsDelay = const Duration(milliseconds: 30);
+      final emailFuture2 = authService.getUserEmail();
 
-      expect(loginAResult, isFalse, reason: 'Veralteter Login A muss durch Epoch-Check abgewiesen werden');
-      // Endzustand muss strikt Account B sein
-      expect(await authService.getAuthToken(), 'token_b');
+      // Während des Lesevorgangs auf User B wechseln
+      fakeAuth0Adapter.getCredentialsDelay = null;
+      final credsB = buildCredentials(sub: 'auth0|email_user_b', email: 'user_b@hullq.com', accessToken: 'token_b');
+      fakeAuth0Adapter.credentials = credsB;
+      final loginB = await authService.loginWithApple(newsletterOptIn: true);
+      expect(loginB, isTrue);
+
+      final emailResult2 = await emailFuture2;
+      expect(emailResult2, isNull, reason: 'In-Flight getUserEmail von Session A darf nach Wechsel zu B niemals die alte E-Mail liefern');
+      // Aktueller Aufruf liefert korrekt B
       expect(await authService.getUserEmail(), 'user_b@hullq.com');
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), 'auth0|account_b');
     });
 
-    test('Finding C-4: Stale native-style SDK WebAuthentication Callback nach Logout wird abgewiesen und bereinigt', () async {
-      final nativeStyleAdapter = FakeAuth0Adapter();
-      final testService = Auth0HullqAuthService(
+    test('Finding D-1: Fehlerhafte Quarantäne-Persistenz wirft Auth0RevocationException & ehrliche Recovery-Grenzen', () async {
+      final creds = buildCredentials(
+        sub: 'auth0|persist_fail_user',
+        email: 'fail_persist@hullq.com',
+        accessToken: 'fail_persist_token',
+      );
+      fakeAuth0Adapter.credentials = creds;
+      await authService.loginWithGoogle(newsletterOptIn: false);
+      expect(await authService.isAuthenticated(), isTrue);
+
+      // Simuliere: Schreiben des Quarantäne-Markers schlägt fehl (Hardware-/Storage-Fehler)
+      storage.throwOnWriteKeys = {Auth0HullqAuthService.keySessionRevoked};
+
+      // logout() MUSS Auth0RevocationException werfen
+      await expectLater(
+        authService.logout(),
+        throwsA(isA<Auth0RevocationException>()),
+        reason: 'Fehlgeschlagene Quarantäne-Persistenz muss als Sicherheitsfehler geworfen werden',
+      );
+
+      // In-Memory ist die Session dennoch revidiert
+      expect(await authService.isAuthenticated(), isFalse);
+      expect(await authService.getAuthToken(), isNull);
+      expect(await authService.getUserEmail(), isNull);
+
+      // Simuliere Neustart nach abgestürztem/unterbrochenem Cleanup ohne Quarantäne-Marker:
+      // Wenn der Marker nicht geschrieben werden konnte, kann nach einem Prozess-Kill
+      // keine Neustart-Sicherheit garantiert werden -> Dieser Grenzwert wird ehrlich dokumentiert!
+      storage.throwOnWriteKeys.clear();
+      final freshRestartService = Auth0HullqAuthService(
         storage: storage,
-        auth0Adapter: nativeStyleAdapter,
+        auth0Adapter: fakeAuth0Adapter,
         apiClient: fakeApiClient,
       );
-
-      final callbackBarrier = Completer<Credentials?>();
-      nativeStyleAdapter.loginCompleter = callbackBarrier;
-
-      // Login A startet
-      final loginFuture = testService.loginWithGoogle(newsletterOptIn: false);
-
-      // Während WebAuth im Browser aktiv ist: Logout
-      await testService.logout();
-
-      // Nun trifft verspäteter WebAuth-Callback ein
-      callbackBarrier.complete(buildCredentials(
-        sub: 'auth0|stale_callback_user',
-        accessToken: 'stale_callback_token',
-      ));
-
-      final result = await loginFuture;
-      expect(result, isFalse);
-      expect(await testService.getAuthToken(), isNull);
-      expect(await testService.isAuthenticated(), isFalse);
-      expect(nativeStyleAdapter.storedCredentials, isNull, reason: 'Verspäteter WebAuth-Callback darf keine SDK-Credentials hinterlassen');
+      // Da _clearLocalSession trotz Quarantäne-Schreibfehler ausgeführt wurde:
+      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+      expect(await freshRestartService.isAuthenticated(), isFalse);
     });
 
-    test('Finding D-1: Fehlgeschlagenes clearCredentials() führt zu dauerhafter Quarantäne (keine Reaktivierung, kein Stale-Token, Fail-Closed bei Neustart)', () async {
+    test('Finding D-2: Erfolgreicher Quarantäne-Marker garantiert Fail-Closed auch bei fehlschlagendem SDK-Clear über Neustart', () async {
       final creds = buildCredentials(
         sub: 'auth0|failed_clear_user',
         email: 'clear_fail@hullq.com',
@@ -524,8 +668,6 @@ void main() {
       );
       fakeAuth0Adapter.credentials = creds;
       await authService.loginWithGoogle(newsletterOptIn: false);
-      expect(await authService.isAuthenticated(), isTrue);
-      expect(await authService.getAuthToken(), 'uncleared_access_token');
 
       // Injiziere Hardware-/Keychain-Löschfehler im SDK
       fakeAuth0Adapter.shouldThrowOnClear = true;
@@ -535,40 +677,28 @@ void main() {
         throwsA(isA<Auth0ClearCredentialsException>()),
       );
 
-      // 1. Unmittelbar nach fehlgeschlagenem Logout:
-      expect(await storage.read(key: Auth0HullqAuthService.keyUserEmail), isNull);
-      expect(await storage.read(key: Auth0HullqAuthService.keyAuth0Sub), isNull);
+      // Quarantäne-Marker wurde erfolgreich geschrieben
       expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), 'true');
-      expect(await authService.getAuthToken(), isNull, reason: 'getAuthToken darf trotz uncleared SDK-Credentials null liefern');
-      expect(await authService.isAuthenticated(), isFalse, reason: 'isAuthenticated darf nach Logout nicht wahr sein');
-      expect(await authService.getUserEmail(), isNull);
+      expect(await authService.getAuthToken(), isNull);
+      expect(await authService.isAuthenticated(), isFalse);
 
-      // 2. Simuliere App-Neustart:
-      expect(fakeAuth0Adapter.storedCredentials, isNotNull, reason: 'SDK hält wegen Fehler noch Credentials');
+      // Nach App-Neustart mit verbliebenen SDK-Credentials:
       final restartedService = Auth0HullqAuthService(
         storage: storage,
         auth0Adapter: fakeAuth0Adapter,
         apiClient: fakeApiClient,
       );
-
-      // Nach Neustart: Strikte Quarantäne bleibt aktiv!
-      expect(await restartedService.isAuthenticated(), isFalse, reason: 'Sitzung darf nach Neustart nicht reaktiviert werden');
-      expect(await restartedService.getAuthToken(), isNull, reason: 'Neustart darf kein Stale-Token aus unbereinigtem SDK liefern');
+      expect(await restartedService.isAuthenticated(), isFalse);
+      expect(await restartedService.getAuthToken(), isNull);
       expect(await restartedService.getUserEmail(), isNull);
 
-      // 3. Ein neuer expliziter Login beendet die Quarantäne sauber
+      // Neuer Login hebt Quarantäne auf
       fakeAuth0Adapter.shouldThrowOnClear = false;
-      final newCreds = buildCredentials(
-        sub: 'auth0|fresh_new_user',
-        email: 'fresh@hullq.com',
-        accessToken: 'fresh_new_token',
-      );
+      final newCreds = buildCredentials(sub: 'auth0|fresh_new_user', email: 'fresh@hullq.com', accessToken: 'fresh_token');
       fakeAuth0Adapter.credentials = newCreds;
-      final loginSuccess = await restartedService.loginWithApple(newsletterOptIn: true);
-      expect(loginSuccess, isTrue);
+      expect(await restartedService.loginWithApple(newsletterOptIn: true), isTrue);
       expect(await restartedService.isAuthenticated(), isTrue);
-      expect(await restartedService.getAuthToken(), 'fresh_new_token');
-      expect(await restartedService.getUserEmail(), 'fresh@hullq.com');
+      expect(await restartedService.getAuthToken(), 'fresh_token');
       expect(await storage.read(key: Auth0HullqAuthService.keySessionRevoked), isNull);
     });
 

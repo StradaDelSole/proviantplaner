@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 3 (Findings C & D: Ownership Fencing, Preemption Guards & Verifiable Quarantine)
+
+- **Finding C – BLOCKER (Session-Eigentümerschaft, Preemption-Guards & native Callbacks):**
+  - `_safeStorageWrite` schützt aktive Sessions vor verspäteten Writes früherer Epochen: Beendet ein asynchroner Speicher-Write aus einer veralteten Epoche, wird die neue Session nicht durch Löschen des Schlüssels beschädigt, sondern der aktive Zustand der neuen Session (`_activeSessionEmail` etc.) unverzüglich restauriert.
+  - `_rollbackStaleLoginSession` an strikte Epochenbindung gekoppelt: Bricht ein Login ab oder schlägt fehl, während bereits eine neuere Epoche aktiv ist (`_sessionEpoch != epoch`), wird kein lokaler Speicher und kein SDK-Zustand manipuliert.
+  - Asynchrone Preemption in `logout()` und `deleteAccount()`: Jeder asynchrone Schritt (nach Quarantäne-Marker, nach lokalem Cache-Clear, nach SDK-Logout) prüft `if (currentEpoch != _sessionEpoch) return;`. Ein verspäteter Logout kann eine inzwischen erfolgreich gestartete Session B weder lokal noch im SDK leeren.
+  - `getUserEmail()` durch Post-Await Epochen- und Sub-Check (`creds.user.sub == expectedSub`) abgesichert: Bei nebenläufigem Logout oder Account-Wechsel während des asynchronen Lesens wird strikt `null` zurückgegeben; kein E-Mail-Leak veralteter Sessions.
+  - Nativer Callback-Schutz in `NativeAuth0Adapter` und `FakeAuth0Adapter`: Verspätete Callbacks aus `login()` löschen niemals SDK-Credentials einer neueren Session (`_lastSuccessfulLoginRequestId <= requestId` und Sub-Gleichheit).
+  - Deterministische Tests C-1 (verzögerter Write von Session A beschädigt Session B nicht), C-1b (stale Logout nach Login B beschädigt B nicht), C-2 (verspäteter SDK-Callback von A löscht B nicht), C-3 (parallele `getAuthToken`-Calls bei Logout) und C-4 (`getUserEmail` Guard).
+- **Finding D – BLOCKER (Verifizierte, absturzsichere Quarantäne & ehrliche Recovery-Grenzen):**
+  - Schreib- und Leseverifikation beim Setzen des Quarantänemarkers (`keySessionRevoked: 'true'`): Schlägt das Schreiben oder die unmittelbare Leseverifikation fehl, wird `quarantinePersisted = false` deklariert und eine typisierte `Auth0RevocationException` geworfen (kein stilles Ignorieren fehlerhafter Persistenz).
+  - `MoreScreen` und UI fangen `Auth0RevocationException` ab und warnen wahrheitsgemäß per SnackBar (`Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.`), ohne falsche Abmeldegarantien zu suggerieren.
+  - Deterministische Tests D-1 (injizierter SecureStorage-Schreibfehler wirft `Auth0RevocationException`, UI fängt ehrlich ab, Recovery-Grenzen dokumentiert) und D-2 (erfolgreicher Quarantänemarker garantiert Fail-Closed über App-Neustart hinweg auch bei fehlschlagendem SDK-Clear).
+
 ## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 2 (Findings C, D, E)
 
 - **Finding C – BLOCKER (Dauerhafte Session-Konsistenz über asynchrone Grenzen & Barrier-Absicherung):**

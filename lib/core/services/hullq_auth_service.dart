@@ -177,6 +177,12 @@ class Auth0HullqAuthService implements HullqAuthService {
   int _inFlightEpoch = 0;
   bool _lastNewsletterConsent = false;
 
+  // Aktive Session-Werte zur Absicherung von Session-Fencing & Rollback
+  String? _activeSessionSub;
+  String? _activeSessionEmail;
+  HullqMembershipStatus _activeMembershipStatus = HullqMembershipStatus.trial;
+  bool _activeNewsletterConsent = false;
+
   bool _isRevokedForEpoch(int epoch) => _isSessionRevoked && _revokedEpoch >= epoch;
 
   Auth0HullqAuthService({
@@ -197,12 +203,42 @@ class Auth0HullqAuthService implements HullqAuthService {
     if (epoch != _sessionEpoch || _isRevokedForEpoch(epoch)) return false;
     await _storage.write(key: key, value: value);
     if (epoch != _sessionEpoch || _isRevokedForEpoch(epoch)) {
-      try {
-        await _storage.delete(key: key);
-      } catch (_) {}
+      // Wenn dieser Schreibvorgang veraltet ist, darf er NIEMALS die Daten
+      // einer neueren aktiven Session löschen oder überschreiben!
+      if (_sessionEpoch > epoch && !_isSessionRevoked) {
+        final activeVal = _getActiveSessionValue(key);
+        if (activeVal != null) {
+          try {
+            await _storage.write(key: key, value: activeVal);
+          } catch (_) {}
+        } else {
+          try {
+            await _storage.delete(key: key);
+          } catch (_) {}
+        }
+      } else {
+        try {
+          await _storage.delete(key: key);
+        } catch (_) {}
+      }
       return false;
     }
     return true;
+  }
+
+  String? _getActiveSessionValue(String key) {
+    switch (key) {
+      case keyUserEmail:
+        return _activeSessionEmail;
+      case keyAuth0Sub:
+        return _activeSessionSub;
+      case keyMembershipStatus:
+        return _activeMembershipStatus.rawValue;
+      case keyNewsletterConsent:
+        return _activeNewsletterConsent.toString();
+      default:
+        return null;
+    }
   }
 
   Future<bool> _handleLogin({
@@ -265,7 +301,12 @@ class Auth0HullqAuthService implements HullqAuthService {
         return false;
       }
 
-      // Erfolgreich: Session ist aktiv, Quarantäne aufheben
+      // Erfolgreich: Session ist aktiv, Quarantäne aufheben & aktive Werte setzen
+      _activeSessionEmail = userEmail;
+      _activeSessionSub = userSub;
+      _activeNewsletterConsent = newsletterOptIn;
+      _activeMembershipStatus = HullqMembershipStatus.trial;
+
       await _storage.delete(key: keySessionRevoked);
       _isSessionRevoked = false;
       _revokedEpoch = -1;
@@ -277,9 +318,12 @@ class Auth0HullqAuthService implements HullqAuthService {
   }
 
   Future<void> _rollbackStaleLoginSession(int epoch) async {
-    if (_sessionEpoch == epoch || _isRevokedForEpoch(epoch)) {
-      await _clearLocalSession(preserveNewsletterConsent: false);
+    // Striktes Session-Ownership: Eine veraltete Generation darf NIEMALS
+    // die Daten oder SDK-Credentials einer neueren Generation löschen!
+    if (_sessionEpoch != epoch) {
+      return;
     }
+    await _clearLocalSession(preserveNewsletterConsent: false);
     if (_isRevokedForEpoch(epoch)) {
       try {
         await _auth0Adapter.clearCredentials();
@@ -317,26 +361,71 @@ class Auth0HullqAuthService implements HullqAuthService {
   @override
   Future<void> logout() async {
     _sessionEpoch++;
-    _revokedEpoch = _sessionEpoch;
+    final currentEpoch = _sessionEpoch;
+    _revokedEpoch = currentEpoch;
     _isSessionRevoked = true;
     _inFlightTokenRetrieval = null;
     _lastNewsletterConsent = false;
+    _activeSessionSub = null;
+    _activeSessionEmail = null;
+    _activeMembershipStatus = HullqMembershipStatus.trial;
+    _activeNewsletterConsent = false;
 
-    // 1. Quarantäne-Marker dauerhaft im Speicher ablegen (Fail-Closed gegen Reaktivierung)
+    // 1. Quarantäne-Marker dauerhaft im Speicher ablegen und verifizieren (Fail-Closed)
+    bool quarantinePersisted = false;
+    Object? quarantineError;
     try {
       await _storage.write(key: keySessionRevoked, value: 'true');
-    } catch (_) {}
+      final verified = await _storage.read(key: keySessionRevoked);
+      quarantinePersisted = (verified == 'true');
+    } catch (e) {
+      quarantinePersisted = false;
+      quarantineError = e;
+    }
+
+    if (currentEpoch != _sessionEpoch) {
+      // Eine neuere Session (z.B. Login B) hat bereits begonnen!
+      // Diese veraltete Logout-Operation darf NIEMALS neuere Session-Daten löschen.
+      if (!_isSessionRevoked) {
+        try {
+          await _storage.delete(key: keySessionRevoked);
+        } catch (_) {}
+      }
+      return;
+    }
 
     // 2. Lokale Metadaten bereinigen
     await _clearLocalSession(preserveNewsletterConsent: false);
 
+    if (currentEpoch != _sessionEpoch) {
+      return;
+    }
+
     // 3. SDK-Logout und CredentialsManager leeren
+    Object? sdkClearError;
     try {
       await _auth0Adapter.logout();
     } catch (e) {
+      sdkClearError = e;
+    }
+
+    if (currentEpoch != _sessionEpoch) {
+      return;
+    }
+
+    // 4. Strikte Fehlerbehandlung: Keine falsche Behauptung neustartsicherer Quarantäne
+    if (!quarantinePersisted) {
+      throw Auth0RevocationException(
+        'Dauerhafter Quarantäne-Marker konnte nicht im sicheren Speicher persistiert werden. '
+        'Sitzung wurde im Arbeitsspeicher beendet, Neustart-Quarantäne kann nicht garantiert werden.',
+        quarantineError,
+      );
+    }
+
+    if (sdkClearError != null) {
       throw Auth0ClearCredentialsException(
         'Logout unvollständig: SDK-Credentials konnten nicht sicher bereinigt werden',
-        e,
+        sdkClearError,
       );
     }
   }
@@ -348,23 +437,66 @@ class Auth0HullqAuthService implements HullqAuthService {
     // Lokale Anmeldedaten und Tokens werden sicher bereinigt, ohne eine
     // fälschliche Fernlöschung vorzutäuschen.
     _sessionEpoch++;
-    _revokedEpoch = _sessionEpoch;
+    final currentEpoch = _sessionEpoch;
+    _revokedEpoch = currentEpoch;
     _isSessionRevoked = true;
     _inFlightTokenRetrieval = null;
     _lastNewsletterConsent = false;
+    _activeSessionSub = null;
+    _activeSessionEmail = null;
+    _activeMembershipStatus = HullqMembershipStatus.trial;
+    _activeNewsletterConsent = false;
 
+    // 1. Quarantäne-Marker dauerhaft im Speicher ablegen und verifizieren (Fail-Closed)
+    bool quarantinePersisted = false;
+    Object? quarantineError;
     try {
       await _storage.write(key: keySessionRevoked, value: 'true');
-    } catch (_) {}
+      final verified = await _storage.read(key: keySessionRevoked);
+      quarantinePersisted = (verified == 'true');
+    } catch (e) {
+      quarantinePersisted = false;
+      quarantineError = e;
+    }
+
+    if (currentEpoch != _sessionEpoch) {
+      if (!_isSessionRevoked) {
+        try {
+          await _storage.delete(key: keySessionRevoked);
+        } catch (_) {}
+      }
+      return;
+    }
 
     await _clearLocalSession(preserveNewsletterConsent: false);
 
+    if (currentEpoch != _sessionEpoch) {
+      return;
+    }
+
+    Object? sdkClearError;
     try {
       await _auth0Adapter.clearCredentials();
     } catch (e) {
+      sdkClearError = e;
+    }
+
+    if (currentEpoch != _sessionEpoch) {
+      return;
+    }
+
+    if (!quarantinePersisted) {
+      throw Auth0RevocationException(
+        'Dauerhafter Quarantäne-Marker konnte nicht im sicheren Speicher persistiert werden. '
+        'Sitzung wurde im Arbeitsspeicher beendet, Neustart-Quarantäne kann nicht garantiert werden.',
+        quarantineError,
+      );
+    }
+
+    if (sdkClearError != null) {
       throw Auth0ClearCredentialsException(
         'Lokales Abmelden unvollständig: SDK-Credentials konnten nicht sicher bereinigt werden',
-        e,
+        sdkClearError,
       );
     }
   }
@@ -467,23 +599,32 @@ class Auth0HullqAuthService implements HullqAuthService {
   Future<String?> getUserEmail() async {
     final currentEpoch = _sessionEpoch;
     if (_isRevokedForEpoch(currentEpoch)) return null;
+
     final revoked = await _storage.read(key: keySessionRevoked);
     if (revoked == 'true') {
       _isSessionRevoked = true;
       _revokedEpoch = _sessionEpoch;
       return null;
     }
+    if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) return null;
 
     final expectedSub = await _storage.read(key: keyAuth0Sub);
     if (expectedSub == null || expectedSub.isEmpty) return null;
+    if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) return null;
 
     try {
       final creds = await _auth0Adapter.getCredentials();
+      if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) return null;
       if (creds != null && creds.user.sub == expectedSub && creds.user.email != null) {
         return creds.user.email;
       }
     } catch (_) {}
-    return _storage.read(key: keyUserEmail);
+
+    final storedEmail = await _storage.read(key: keyUserEmail);
+    if (currentEpoch != _sessionEpoch || _isRevokedForEpoch(currentEpoch)) {
+      return null;
+    }
+    return storedEmail;
   }
 
   @override

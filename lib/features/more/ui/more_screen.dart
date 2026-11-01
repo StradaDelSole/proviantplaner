@@ -67,6 +67,19 @@ class MoreScreen extends ConsumerWidget {
             ),
           );
         }
+      } on Auth0RevocationException {
+        ref.invalidate(entitlementLevelProvider);
+        ref.invalidate(canCreateTripProvider);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.',
+              ),
+            ),
+          );
+        }
       } on Auth0ClearCredentialsException {
         ref.invalidate(entitlementLevelProvider);
         ref.invalidate(canCreateTripProvider);
@@ -94,6 +107,19 @@ class MoreScreen extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.accountLogoutNotice)),
+        );
+      }
+    } on Auth0RevocationException {
+      ref.invalidate(entitlementLevelProvider);
+      ref.invalidate(canCreateTripProvider);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Sicherheitswarnung: Abmelde-Quarantäne konnte nicht dauerhaft gespeichert werden.',
+            ),
+          ),
         );
       }
     } on Auth0ClearCredentialsException {
