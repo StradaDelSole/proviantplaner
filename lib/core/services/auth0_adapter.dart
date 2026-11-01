@@ -34,6 +34,15 @@ class Auth0RevocationException implements Exception {
 /// Entkoppelt die native Auth0-SDK-Implementierung von der Anwendungslogik,
 /// um deterministische Tests und plattformspezifische Absicherung zu ermöglichen.
 abstract class Auth0Adapter {
+  /// Liefert die aktuell registrierte Generations-ID.
+  int get currentGeneration;
+
+  /// Registriert eine neue Generation zur Entwertung älterer Operationen.
+  void setGeneration(int generation);
+
+  /// Markiert eine Generation als erfolgreich committet.
+  void markCommitted(int generation);
+
   /// Startet den Auth0 Universal Login Flow via WebAuthentication.
   ///
   /// Gibt [Credentials] bei Erfolg zurück, oder `null` wenn der Login
@@ -49,12 +58,13 @@ abstract class Auth0Adapter {
       'email',
       'offline_access',
     },
+    int? generation,
   });
 
   /// Führt den Auth0 Logout durch und bereinigt die Session.
   ///
   /// Wirft [Auth0ClearCredentialsException], wenn das lokale Bereinigen fehlschlägt.
-  Future<void> logout({String? customScheme});
+  Future<void> logout({String? customScheme, int? generation});
 
   /// Ruft gespeicherte [Credentials] aus dem CredentialsManager ab.
   Future<Credentials?> getCredentials();
@@ -68,7 +78,7 @@ abstract class Auth0Adapter {
   /// Löscht gespeicherte Credentials aus dem CredentialsManager.
   ///
   /// Wirft [Auth0ClearCredentialsException], wenn das Löschen fehlschlägt.
-  Future<void> clearCredentials();
+  Future<void> clearCredentials({int? generation});
 }
 
 /// Produktionsreife native Implementierung des [Auth0Adapter] mit dem offiziellen
@@ -76,14 +86,34 @@ abstract class Auth0Adapter {
 class NativeAuth0Adapter implements Auth0Adapter {
   final Auth0Config config;
   late final Auth0? _auth0;
-  int _loginRequestId = 0;
-  int _lastSuccessfulLoginRequestId = 0;
+  int _activeGeneration = 0;
+  int _committedGeneration = 0;
 
   NativeAuth0Adapter({this.config = Auth0Config.standard}) {
     if (config.domain.isNotEmpty && config.clientId.isNotEmpty) {
       _auth0 = Auth0(config.domain, config.clientId);
     } else {
       _auth0 = null;
+    }
+  }
+
+  @override
+  int get currentGeneration => _activeGeneration;
+
+  @override
+  void setGeneration(int generation) {
+    if (generation > _activeGeneration) {
+      _activeGeneration = generation;
+    }
+  }
+
+  @override
+  void markCommitted(int generation) {
+    if (generation > _committedGeneration) {
+      _committedGeneration = generation;
+      if (generation > _activeGeneration) {
+        _activeGeneration = generation;
+      }
     }
   }
 
@@ -104,6 +134,7 @@ class NativeAuth0Adapter implements Auth0Adapter {
       'email',
       'offline_access',
     },
+    int? generation,
   }) async {
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) {
@@ -116,7 +147,10 @@ class NativeAuth0Adapter implements Auth0Adapter {
       return null;
     }
 
-    final requestId = ++_loginRequestId;
+    final gen = generation ?? ++_activeGeneration;
+    if (gen > _activeGeneration) {
+      _activeGeneration = gen;
+    }
 
     try {
       final Map<String, String> parameters = {};
@@ -139,24 +173,23 @@ class NativeAuth0Adapter implements Auth0Adapter {
             parameters: parameters,
           );
 
-      if (requestId != _loginRequestId) {
-        // Callback kam verspätet nach Logout oder neuem Login an.
-        // Ein veralteter Login darf NIEMALS die Credentials eines neueren
-        // Accounts löschen. Wir prüfen daher, ob kein neuerer Login erfolgreich war
-        // und ob die im CredentialsManager befindlichen Credentials überhaupt zu
-        // diesem veralteten Login gehören.
-        if (_lastSuccessfulLoginRequestId <= requestId) {
+      // Post-Await Generation Check:
+      // Wurde dieser Login inzwischen durch einen Logout oder neueren Login überholt?
+      if (gen < _activeGeneration || _committedGeneration > gen) {
+        // Callback ist veraltet.
+        // Das SDK hat die Credentials bereits im CredentialsManager gespeichert.
+        // Falls noch KEINE neuere Generation committet wurde (_committedGeneration < gen),
+        // bereinigen wir die versehentlich gespeicherten Credentials.
+        // Hat aber bereits eine neuere Generation committet (_committedGeneration >= gen),
+        // dürfen wir die Credentials keinesfalls anrühren!
+        if (_committedGeneration < gen) {
           try {
-            final current = await getCredentials();
-            if (current != null && current.user.sub == credentials.user.sub) {
-              await clearCredentials();
-            }
+            await client.credentialsManager.clearCredentials();
           } catch (_) {}
         }
         return null;
       }
 
-      _lastSuccessfulLoginRequestId = requestId;
       return credentials;
     } on WebAuthenticationException catch (e) {
       if (e.isUserCancelledException) {
@@ -169,9 +202,12 @@ class NativeAuth0Adapter implements Auth0Adapter {
   }
 
   @override
-  Future<void> logout({String? customScheme}) async {
-    _loginRequestId++;
-    _lastSuccessfulLoginRequestId = _loginRequestId;
+  Future<void> logout({String? customScheme, int? generation}) async {
+    final gen = generation ?? ++_activeGeneration;
+    if (gen > _activeGeneration) {
+      _activeGeneration = gen;
+    }
+
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) {
       return;
@@ -187,8 +223,11 @@ class NativeAuth0Adapter implements Auth0Adapter {
       // Best-effort remote logout
     }
 
-    // 2. Lokale SDK-Credentials bereinigen (verbindlich, wirft bei Fehler)
-    await clearCredentials();
+    // 2. Lokale SDK-Credentials bereinigen:
+    // Nur wenn dieser Logout noch aktuell ist und nicht von einem neueren Login überholt wurde!
+    if (gen >= _activeGeneration && _committedGeneration <= gen) {
+      await clearCredentials(generation: gen);
+    }
   }
 
   @override
@@ -227,7 +266,12 @@ class NativeAuth0Adapter implements Auth0Adapter {
   }
 
   @override
-  Future<void> clearCredentials() async {
+  Future<void> clearCredentials({int? generation}) async {
+    if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
+      // Veralteter Clear-Befehl – darf keine neueren Credentials löschen
+      return;
+    }
+
     final client = _auth0;
     if (!_isSupportedPlatform || client == null) return;
     try {
@@ -263,9 +307,10 @@ class FakeAuth0Adapter implements Auth0Adapter {
   Completer<Credentials?>? loginCompleter;
   Completer<Credentials?>? getCredentialsCompleter;
   Completer<void>? clearCredentialsCompleter;
+  Completer<void>? webAuthLogoutCompleter;
 
-  int _loginRequestId = 0;
-  int _lastSuccessfulLoginRequestId = 0;
+  int _activeGeneration = 0;
+  int _committedGeneration = 0;
 
   int loginCallCount = 0;
   int logoutCallCount = 0;
@@ -297,6 +342,26 @@ class FakeAuth0Adapter implements Auth0Adapter {
   });
 
   @override
+  int get currentGeneration => _activeGeneration;
+
+  @override
+  void setGeneration(int generation) {
+    if (generation > _activeGeneration) {
+      _activeGeneration = generation;
+    }
+  }
+
+  @override
+  void markCommitted(int generation) {
+    if (generation > _committedGeneration) {
+      _committedGeneration = generation;
+      if (generation > _activeGeneration) {
+        _activeGeneration = generation;
+      }
+    }
+  }
+
+  @override
   Future<Credentials?> login({
     String? connection,
     String? loginHint,
@@ -308,9 +373,13 @@ class FakeAuth0Adapter implements Auth0Adapter {
       'email',
       'offline_access',
     },
+    int? generation,
   }) async {
     loginCallCount++;
-    final requestId = ++_loginRequestId;
+    final gen = generation ?? ++_activeGeneration;
+    if (gen > _activeGeneration) {
+      _activeGeneration = gen;
+    }
     lastConnection = connection;
     lastLoginHint = loginHint;
     lastAudience = audience;
@@ -320,20 +389,15 @@ class FakeAuth0Adapter implements Auth0Adapter {
     if (loginCompleter != null) {
       final res = await loginCompleter!.future;
       credentials = res;
-      if (res != null && _lastSuccessfulLoginRequestId <= requestId) {
+      if (res != null && _committedGeneration <= gen) {
         // Simuliere natives SDK: CredentialsManager wird befüllt
         storedCredentials = res;
       }
-      if (requestId != _loginRequestId) {
-        if (_lastSuccessfulLoginRequestId <= requestId) {
-          if (storedCredentials?.user.sub == res?.user.sub) {
-            storedCredentials = null;
-          }
+      if (gen < _activeGeneration || _committedGeneration > gen) {
+        if (_committedGeneration < gen) {
+          storedCredentials = null;
         }
         return null;
-      }
-      if (res != null) {
-        _lastSuccessfulLoginRequestId = requestId;
       }
       return res;
     }
@@ -344,30 +408,36 @@ class FakeAuth0Adapter implements Auth0Adapter {
     if (shouldThrowOnLogin) {
       throw customException ?? Exception('Auth0 login failed');
     }
-    if (credentials != null && _lastSuccessfulLoginRequestId <= requestId) {
+    if (credentials != null && _committedGeneration <= gen) {
       // Simuliere natives SDK: CredentialsManager wird befüllt
       storedCredentials = credentials;
     }
-    if (requestId != _loginRequestId) {
-      if (_lastSuccessfulLoginRequestId <= requestId) {
-        if (storedCredentials?.user.sub == credentials?.user.sub) {
-          storedCredentials = null;
-        }
+    if (gen < _activeGeneration || _committedGeneration > gen) {
+      if (_committedGeneration < gen) {
+        storedCredentials = null;
       }
       return null;
-    }
-    if (credentials != null) {
-      _lastSuccessfulLoginRequestId = requestId;
     }
     return credentials;
   }
 
   @override
-  Future<void> logout({String? customScheme}) async {
-    final requestId = ++_loginRequestId;
+  Future<void> logout({String? customScheme, int? generation}) async {
+    final gen = generation ?? ++_activeGeneration;
+    if (gen > _activeGeneration) {
+      _activeGeneration = gen;
+    }
     logoutCallCount++;
     lastScheme = customScheme;
-    await clearCredentials(requestId: requestId);
+
+    // Optional: Simuliere asynchronen WebAuthentication.logout() Await
+    if (webAuthLogoutCompleter != null) {
+      await webAuthLogoutCompleter!.future;
+    }
+
+    if (gen >= _activeGeneration && _committedGeneration <= gen) {
+      await clearCredentials(generation: gen);
+    }
   }
 
   @override
@@ -440,9 +510,8 @@ class FakeAuth0Adapter implements Auth0Adapter {
   }
 
   @override
-  Future<void> clearCredentials({int? requestId}) async {
+  Future<void> clearCredentials({int? generation}) async {
     clearCredentialsCallCount++;
-    final id = requestId ?? ++_loginRequestId;
     if (clearCredentialsCompleter != null) {
       await clearCredentialsCompleter!.future;
     }
@@ -450,9 +519,10 @@ class FakeAuth0Adapter implements Auth0Adapter {
       throw customException ??
           const Auth0ClearCredentialsException('Injected native keychain clear failure');
     }
-    if (_lastSuccessfulLoginRequestId <= id) {
-      storedCredentials = null;
-      silentlyRenewedToken = null;
+    if (generation != null && (generation < _activeGeneration || _committedGeneration > generation)) {
+      return;
     }
+    storedCredentials = null;
+    silentlyRenewedToken = null;
   }
 }

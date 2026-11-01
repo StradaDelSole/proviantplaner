@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 4 (Exclusive Operation Coordinator & Fail-Safe Quarantine)
+
+- **Finding C-R3-1 – BLOCKER (Marker-Fencing & kein Unrevoking älterer Logins):**
+  - Mutex-geschützte Commit-Phase in `Auth0HullqAuthService._runExclusive`: Das Löschen des Quarantänemarkers `keySessionRevoked` ist atomar und generation-fenced. Wenn während des Awaits ein neuerer Logout stattfindet, restauriert der Login den Quarantänemarker sofort (`write(keySessionRevoked, 'true')`), bricht ab und liefert strikt `false`.
+  - Neuer deterministischer Test `Finding C-R3-1`: Login A pausiert im `_storage.delete(keySessionRevoked)`, Logout B vollendet; A wacht auf, stellt den Marker wieder her, B's Quarantäne bleibt auf Dauer und über Kaltstart hinweg unangreifbar.
+- **Finding C-R3-2 & C-R3-4 – BLOCKER (Nativer SDK-Logout und Callback-Ownership):**
+  - Generation-Fencing im `NativeAuth0Adapter` und `FakeAuth0Adapter` (`_activeGeneration`, `_committedGeneration`): Wenn ein älterer nativer Logout aus seinem asynchronen Browser-Redirect `webAuthentication.logout()` erwacht, darf er `clearCredentials()` nur ausführen, wenn er nicht durch einen neueren Login überholt wurde.
+  - Verspätete WebAuth-Callbacks für denselben oder einen anderen Account (`same-sub`) können niemals SDK-Credentials einer neueren Generation löschen oder überschreiben.
+  - Neue deterministische Tests: `Finding C-R3-2` (alter nativer Logout wacht auf, nachdem neuer Login B committet hat -> B's Credentials bleiben intakt) und `Finding C-R3-4` (verspäteter WebAuth-Callback bei erneutem Login derselben Sub-ID löscht nicht die frischen Credentials).
+- **Finding C-R3-3 & C-R3-3b – BLOCKER (Eliminierung blinder Rewrites & Drei-Generationen-Interleaving):**
+  - Sämtliche blinden Lese-/Wiederherstellungsversuche (`_safeStorageWrite`) wurden vollständig eliminiert und durch eine strikte FIFO-Mutationssperre (`_runExclusive`) ersetzt.
+  - Neue deterministische Tests: `Finding C-R3-3` (Drei-Generationen-Interleaving A→B→C: A und B verwerfen und überschreiben C niemals) und `Finding C-R3-3b` (A's Rollback während aktivem Login B löscht keine Daten von B).
+- **Finding D-R3 – PARTIALLY CLOSED -> FULLY CLOSED (Fail-Safe Quarantäne-Persistenz & Crash-Simulation):**
+  - Schlägt das Schreiben des Quarantänemarkers fehl, bricht `logout()` unverzüglich mit `Auth0RevocationException` ab, ohne unvollständige Folgeschritte vorzutäuschen.
+  - Neuer deterministischer Test `Finding D-R3`: Simuliert einen Hardware-Schreibfehler und sofortigen Kaltstart (Prozess-Absturz). Weist transparent und ehrlich die physikalische Grenze unbeschreibbarer Hardware aus und belegt die verlässliche Selbstheilung bei der nächsten regulären Abmeldung.
+
 ## 2026-11-01 – BACKEND-CORE BC-1A Amendment Round 3 (Findings C & D: Ownership Fencing, Preemption Guards & Verifiable Quarantine)
 
 - **Finding C – BLOCKER (Session-Eigentümerschaft, Preemption-Guards & native Callbacks):**
