@@ -1,61 +1,90 @@
-# BACKEND-CORE BC-1A – Auth0 Native Application: Owner Setup & Stage Verification
+# BACKEND-CORE P05 – Provy Auth0 Native Owner Setup & Stage Verification
 
-**Status:** OWNER ACTION CHECKLIST / NOT PROVISIONED / NOT DEPLOYED.  
-**Date:** 31.10.2026 · **Issue:** #40 · **Verified baseline:** `origin/main` `5c4b8c5bb54a5f1a498eadfd8c6d8bbf2aae8ce5`.  
-**Binding release:** `docs/impl/BACKEND_CORE_BC1A_phase_B_owner_release_2026-10-31.md`; Owner accepted iOS 14.0 and `auth0_flutter >=2.7.0 <3.0.0`.  
-**Purpose:** Define exactly what Owner must configure **inside Auth0** and what Gemini must verify against the repo. This is neither an app-creation claim nor permission to deploy.
+**Status: RECONCILED RUNBOOK / P05 OPEN / NO LIVE-TENANT EVIDENCE.**  
+**Original:** 31.10.2026. **Reconciled:** 02.11.2026.  
+**Current `main` baseline at reconciliation:** `44e5e929bc5e4965b1f3cff4f491cc76b6aa6631`.  
+**Tracking:** P05 issue [#45](https://github.com/StradaDelSole/proviantplaner/issues/45); BC-1A code issue #40.  
+**BC-1A:** OWNER-ACCEPTED and merged via PR #44 (implementation HEAD `b592162271ec64ebc812e077a08d7073ef5c0c57`, reviewed PASS 5729781280, CI 41339157145 SUCCESS, merge `5316791e9a66198e114f5934b83778fb0e0f1d4b`). Owner-acceptance record: `docs/impl/BACKEND_CORE_BC1A_code_owner_acceptance_2026-11-01.md`. Owner-acceptance documentation PR #46 merged at `44e5e929bc5e4965b1f3cff4f491cc76b6aa6631`.
 
-## 1. Verified repo values – do not conflate with live Auth0 configuration
+**Purpose:** Operational read-only preflight and later Owner-controlled configuration of a *separate Provy Native Application* in the existing EU Auth0 tenant, followed by actual physical-device evidence. This runbook does **not** constitute a Phase-B coding release, permission for cloud provisioning/deployment, verified tenant configuration, or Store readiness. No change to the shared HullQ identity or HullQ application.
 
-| Key | Repo evidence | Assessment |
+## 1. Verified source truth vs unknown live state (02.11.2026)
+
+| Property | Verified current repository evidence | Live Auth0 / device evidence |
 | --- | --- | --- |
-| Android applicationId | `android/app/build.gradle`: `com.hullq.proviantplaner` | Confirmed source value; unchanged by this checklist |
-| iOS bundle ID | `ios/Runner.xcodeproj/project.pbxproj`: `com.hullq.proviantplaner` | Confirmed source value; platform target must be moved 12→14 in BC-1A implementation |
-| API audience **configured** | `backend/wrangler.toml`: `https://api.planer.hullq.com` | **Not proof** that an Auth0 API with exactly this Identifier is registered |
-| JWT issuer **configured** | `backend/wrangler.toml`: `https://auth.hullq.com/` | **Not proof** custom domain actually exists / is configured |
-| Current API backend URL | `lib/core/services/hullq_api_client.dart`: `https://api.planer.hullq.com` | Endpoint configuration; not a verified deployed Stage API |
-| Existing shared Auth0 | Existing HullQ EU tenant, region EU | Owner to confirm actual hostname, API and application in dashboard |
+| Android applicationId | `android/app/build.gradle` = `com.hullq.proviantplaner` | NOT VERIFIED |
+| iOS bundle ID | `ios/Runner.xcodeproj/project.pbxproj` = `com.hullq.proviantplaner` | NOT VERIFIED |
+| Android manifest placeholders | `auth0Domain: "auth.hullq.com"`, `auth0Scheme: "provy"` **already implemented** in `android/app/build.gradle` | Native browser callback NOT TESTED |
+| iOS custom URL scheme | `CFBundleURLSchemes = $(PRODUCT_BUNDLE_IDENTIFIER)` **already implemented** in `ios/Runner/Info.plist` | Native browser callback NOT TESTED |
+| iOS deployment target | `IPHONEOS_DEPLOYMENT_TARGET = 14.0` **already implemented** | iOS physical build NOT TESTED |
+| Auth0 Flutter dependency | `auth0_flutter >=2.7.0 <3.0.0`; BC-1A acceptance records lockfile resolution to **2.7.0** | Device compatibility NOT TESTED |
+| SDK domain required by accepted code | `Auth0Config.expectedNativeDomain = "auth.hullq.com"`; `isValid` rejects other domains | Whether Auth0 custom domain `auth.hullq.com` exists, is verified, TLS-ready and serves this tenant: UNKNOWN |
+| SDK public client ID | `AUTH0_CLIENT_ID` compile-time `--dart-define`, default empty; empty or known placeholder fails closed | Provy Native Application and Client ID: UNKNOWN |
+| Provy API audience | `https://api.planer.hullq.com` required by `Auth0Config.isValid` and configured in `backend/wrangler.toml` | Auth0 API registration and minted token `aud`: UNKNOWN |
+| Backend expected issuer | `AUTH0_ISSUER_BASE_URL = "https://auth.hullq.com/"` in `backend/wrangler.toml` | Live token `iss` and issuer configuration: UNKNOWN |
+| Backend D1 / R2 | `backend/wrangler.toml` contains development/placeholder resources | No cloud deployment or functional API inferred |
+| Credential handling | Native `webAuthentication(useCredentialsManager: false)`, SDK store/clear within generation-checked mutation coordinator; see accepted source | Actual logout, restart and secure-storage failure behavior NOT TESTED |
 
-Do not silently use a sample `.eu.auth0.com` hostname, placeholder, or repo domain as though it has been validated. The Auth0 SDK domain host, token `iss` and backend JWT issuer validation must be consistent. Any change to Worker `AUTH0_ISSUER_BASE_URL` or `AUTH0_AUDIENCE` is **out of scope** for BC-1A unless explicitly authorized separately. The Flutter client must request an **access token for the configured Provy API audience**, not send its ID token as API bearer.
+**Critical gate:** Neither the presence of `auth.hullq.com` in source nor its appearance in a browser proves it is configured as the Auth0 custom domain of the *existing EU tenant*. If the tenant only exposes an ordinary `*.eu.auth0.com` hostname, **STOP**. Do not substitute it in `--dart-define`, change Worker issuer/audience, create DNS records or silently modify HullQ. Decide and separately authorize either proper custom-domain provisioning with DNS/TLS/issuer review, or a separately reviewed architecture/configuration change.
 
-## 2. Owner-only Auth0 setup – no secret sharing
+## 2. Owner read-only preflight — BEFORE creating or modifying anything
 
-1. Log in to the **existing EU Auth0 tenant**. Do not create a separate tenant or edit HullQ's production app.
-2. Go to **Applications → Applications → Create Application**, name e.g. `Provy_Dev_Native`, choose **Native**. A distinct Provy Native client in the existing shared tenant prevents accidental changes to HullQ login applications. This **name is a suggestion**, not an already existing resource.
-3. In the new app's **Settings**, verify OIDC conformant/RS256 as supported. Enable only the required identity connections (email and optionally Google/Apple if actually configured); do not invent social connection IDs or imply they work until tested.
-4. Record **Auth0 Domain (hostname only, no protocol)** and **Client ID**. The Client ID is a public identifier for mobile apps; **never share or commit Client Secret**, management API tokens, refresh tokens, MFA recovery codes or tenant-admin access.
-5. Under **Applications → APIs**, inspect the API identifier used for Provy. Confirm whether it is **exactly** `https://api.planer.hullq.com` and whether the configured JWT Issuer (`https://auth.hullq.com/`) is correct for the tokens emitted with the chosen domain. If not, **STOP** and report a sanitized mismatch; do not silently change backend config or create a duplicate API.
-6. Under **Application URIs**, register the **exact callback and logout URLs** derived from the chosen mobile SDK scheme. Use the same URLs in **Allowed Callback URLs** and **Allowed Logout URLs**, subject to the mobile SDK actually configured by Gemini. Save changes. No wildcard callbacks.
-7. Keep **real Stage** login tests (including cancellation/logout/browser callback and valid audience token) open until the Native app and actual Android/iOS binaries can be exercised. Do not claim Stage passed from mocks.
+1. Sign into the **existing HullQ EU Auth0 tenant** via the official [Auth0 Dashboard](https://manage.auth0.com/). Confirm tenant name/region; do not create a second tenant.
+2. Check **Branding → Custom Domains** (or the current equivalent): is the exact hostname `auth.hullq.com` present, verified and ready? Record only hostname and status. If absent/pending, STOP at the critical gate above. Do not alter Cloudflare DNS at this stage.
+3. Inspect **Applications → APIs**: does an API exist whose **Identifier/Audience** is exactly `https://api.planer.hullq.com`? If absent or different, STOP and report the discrepancy. Do not create a duplicate API or silently change the Worker config.
+4. Inspect **Applications → Applications**: is there already a distinct **Provy** application of **Native** type? Distinguish it from all existing HullQ applications; do not change the latter. If there is no Provy Native application, report that fact before creating it.
+5. Record which identity connections are available/enabled, without changing shared tenant-wide connection behavior. A login button or an enabled connection is not evidence of successful mobile login.
+6. Do not share Client Secrets, tenant admin credentials, access/refresh/ID tokens, MFA recovery codes or private signing material. A public Native Client ID and nonsecret hostname/audience may be recorded for review.
 
-## 3. Provisional URL plan – replace `<AUTH0_DOMAIN>` with the verified hostname
+**Stop/decision:** If any domain, API audience or application mismatch exists, collect only sanitized metadata and request explicit Owner/architecture authorization before any provisioning, backend modification or native build.
 
-The exact Android scheme must be chosen and wired by Gemini as part of BC-1A. An *illustrative* unique lowercase scheme is `provy`; it is **not yet configured** in Android/Manifest or Auth0:
+## 3. Owner-controlled Provy Native setup (ONLY after read-only gate and explicit authorization)
 
-| Platform | Example callback **and** logout URL |
-| --- | --- |
-| Android (example custom scheme) | `provy://<AUTH0_DOMAIN>/android/com.hullq.proviantplaner/callback` |
-| iOS 14+ (bundle ID custom scheme) | `com.hullq.proviantplaner://<AUTH0_DOMAIN>/ios/com.hullq.proviantplaner/callback` |
+- In the existing EU tenant, create a **distinct Native Application** named e.g. `Provy_Dev_Native` **only if one is not already present and the Owner expressly authorizes creation**. Never repurpose or edit the HullQ application.
+- Verify application type Native, OIDC settings and RS256 where the UI offers them. Use a public Native Client ID, not a Client Secret inside a distributed mobile build.
+- Enable only explicitly approved identity connections for this app and check any required consent / upstream provider configuration separately.
+- Confirm `auth.hullq.com` is the *actual* usable Auth0 custom domain, and the API identifier is `https://api.planer.hullq.com`, before registering redirects or attempting a build.
+- Register **both exact URIs** below, comma-separated, in **Allowed Callback URLs** and **Allowed Logout URLs**, but **only after the domain and actual SDK/manifest IDs have been reconfirmed**. These are source-derived intended values, **not verified tenant registrations**:
 
-**Security tradeoff:** Mobile custom URL schemes are susceptible to app impersonation. Auth0 SDK uses Authorization Code + PKCE, but verifiable Android App Links / modern iOS Universal Links are preferable when correctly configured. HTTPS callbacks **must not** be enabled casually without associated-domain/app-link setup and matching device tests. iOS Universal Links on supported later OS versions may be a subsequent hardened enhancement; iOS 14 compatibility must be retained. Never copy examples as actual registered URIs without verifying the SDK's chosen scheme and signed app identifiers.
+  - Android: `provy://auth.hullq.com/android/com.hullq.proviantplaner/callback`
+  - iOS: `com.hullq.proviantplaner://auth.hullq.com/ios/com.hullq.proviantplaner/callback`
 
-## 4. Gemini/BC-1A implementation checklist (after release already granted)
+- The accepted BC-1A code uses the **custom-scheme** iOS flow with iOS 14 compatibility. Do **not** add an HTTPS/Universal-Link redirect and call it functional without the separately validated SDK arguments, associated-domain setup, real device and Owner decision. Be mindful that custom URL schemes carry app-impersonation risk; PKCE reduces risk but is not identical to app-verified links.
+- Keep `AUTH0_CLIENT_ID` configured only through the approved build-time mechanism (`--dart-define=AUTH0_CLIENT_ID=...`), with reviewed staging practices. Do not commit operational secrets or log credentials. Domain, audience and scheme changes are **not** authorized by this document; accepted `Auth0Config` validates these strictly.
 
-- On an isolated feature branch from verified latest `main`: use the approved `auth0_flutter` **2.7.x** (`^2.7.0` and `'>=2.7.0 <3.0.0'` are equivalent constraints in Dart pub semantics); check in the resolved lockfile, verify Flutter >=3.24, Dart >=3.5, iOS target >=14, Android/Java baseline unchanged.
-- Configure Android `auth0Domain` and `auth0Scheme` manifest placeholders consistent with chosen callback; iOS `CFBundleURLTypes` and all required CocoaPods/Swift Package settings; no arbitrary sample Client IDs in production builds.
-- Auth0 credentials manager and production-safe DI; no hard-coded `auth0_<connection>_token`, no fake login success, no storing access/refresh tokens in ordinary preferences/logs/backups.
-- Never automatically call existing `GET /v1/me` to create account, never infer `member` from Auth0 login or network errors. Cloud registration and server entitlements belong to later BC-1B.
-- Deletion button must not lie about a completed remote deletion. It must not delete the common HullQ Auth0 identity.
-- Test canceled/failed login, app restart, account switch, double refresh+logout, offline local operation, expired/audience-mismatch tokens. Full CI exact HEAD and independent review before merge.
-- Verify real OAuth consent and Apple/Google connection behavior only when Owner has enabled them; a displayed button is not proof of connection.
-- Stage physical Android/iOS callback/logout, signature/issuer/audience and Store-v1 privacy acceptance remain **P05**; do not declare them DONE until tested.
+## 4. Actual Stage evidence required for P05 — issue #45 is authoritative
 
-## 5. Owner handoff – nonsecret values only
+**Start with Android, then iOS; do not convert green CI or simulated tests into real-device evidence.**
 
-To unblock **real** Stage login tests, Owner can supply a **sanitized** record with: exact Domain hostname, new Native Application Client ID, registered API Audience, which login connections were enabled, and whether proposed Android/iOS callback+logout entries were saved. Send **no Client Secret or tokens**. Config values may be copied to the approved build configuration after security review; avoid logging them alongside sensitive session data.
+| Gate | Required evidence | Initial state |
+| --- | --- | --- |
+| Tenant consistency | Verified EU tenant, functional exact custom domain, Provy Native Client ID, exact API audience, approved connections and saved callback/logout URIs | OPEN |
+| Android | Real build SHA, device model/OS version and build logs; login with PKCE and browser callback, cancel, access-token audience/issuer validation, logout, re-launch, offline and account-switch behavior | OPEN |
+| iOS | Real iOS 14-compatible build and physical device information; corresponding callback/logout/login/cancel/restart/offline evidence | OPEN |
+| Auth semantics | No synthetic token, no automatic `GET /v1/me` account projection, no unverified `member` status or false deletion; expired credentials and secure-storage failures handled honestly | OPEN (device stage) |
+| Security / privacy | No tenant secrets/tokens in logs; shared HullQ/Auth0 user preserved; record accepted limitations when durable OS secure storage fails | OPEN |
+| Independent verification | Exact build/commit refs, test logs or redacted evidence, independent P05 review and **separate explicit Owner Stage acceptance** | OPEN |
 
-## Official platform docs (checked 31.10.2026)
+P01–P04 (later backend/data/backup gates), BC-1B, Cloudflare D1/R2 provisioning, cloud deployment and Store v1 remain **out of scope and not automatically released**. P05 must not be closed simply because BC-1A code is accepted.
 
-- Pinned version requirements and callback patterns: https://pub.dev/packages/auth0_flutter/versions/2.7.0
-- Auth0 Flutter login flow guide: https://developer.auth0.com/resources/guides/mobile/flutter/basic-authentication
-- Auth0 Auth0 Flutter sample: https://github.com/auth0-samples/auth0-flutter-samples
+## 5. Sanitized Owner handoff (read-only gate)
+
+After inspecting the dashboard, report only:
+
+- Existing EU Auth0 tenant name or hostname (nonsecret): `...`
+- `auth.hullq.com` custom domain: `ready / missing / pending / unknown`
+- Provy API identifier `https://api.planer.hullq.com`: `exists and matches / different / missing`
+- Separate Provy Native Application: `exists / not created`; if existing, public Client ID (optional)
+- Approved/available connections: names only
+- Allowed callback/logout URIs: `not configured / saved / mismatch / unknown`
+- No live Android/iOS testing is implied.
+
+## 6. Documentation and evidence precedence
+
+- Canonical `main` + `AGENTS.md`, `GEMINI.md`, `docs/ENGINEERING_STANDARD_v1.0.md` and BC-1A accepted owner record.
+- [P05 tracking issue #45](https://github.com/StradaDelSole/proviantplaner/issues/45).
+- [Auth0 Flutter v2.7.0 package documentation](https://pub.dev/packages/auth0_flutter/versions/2.7.0).
+- [Auth0 Flutter native callback/logout quickstart](https://developer.auth0.com/resources/guides/mobile/flutter/basic-authentication).
+- [Auth0 custom domain / issuer guidance](https://auth0.com/blog/custom-domains-complete-guide/).
+
+**Do not merge this documentation PR before exact-HEAD CI and an independent review followed by explicit Owner Acceptance. This documentation update changes no production code and does not authorize any Auth0 resource modification.**
