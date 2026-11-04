@@ -290,8 +290,12 @@ void main() {
       await tester.pumpWidget(buildAppWithOverrides(initialLocation: '/trips/new'));
       await tester.pumpAndSettle();
 
-      // Törnname eingeben
+      // Törnname eingeben und Datum wählen (QA-RAPID-01 / #52)
       await tester.enterText(find.byType(TextField).first, 'Ostsee TK Törn');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
       // Tiefkühlfach Schalter aktivieren

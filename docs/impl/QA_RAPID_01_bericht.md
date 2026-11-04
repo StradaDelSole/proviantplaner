@@ -32,6 +32,21 @@
    - **Neu:** Test füllt Törnname (`'Sommerurlaub'`) und wählt ein Startdatum via DatePickerDialog aus, bevor der Submit-Button betätigt wird.
    - **Begründung:** Ohne Name und Datum blockiert der Wizard nun richtigerweise die Törnerstellung mit einem Validierungshinweis.
 
+3. `test/features/boat/pivot3b_water_and_setup_test.dart` (2 Journeys):
+   - **Bisher:** Klick auf wizard_submit_trip_button ohne Eingabe von Name und Startdatum.
+   - **Neu:** Explizite Eingabe von Name und Auswahl des Datums im Kalenderdialog vor Absenden.
+   - **Begründung:** Entspricht der neuen Pflichtvalidierung aus #52.
+
+4. `test/features/shopping_list/fb2_b_ui_test.dart`:
+   - **Bisher:** Klick auf Submit nach Eingabe des Namens, aber ohne Datumsauswahl.
+   - **Neu:** Auswahl des Startdatums im Kalenderdialog vor Submit.
+   - **Begründung:** Entspricht der neuen Pflichtvalidierung aus #52.
+
+5. `test/features/ux/ux_a_navigation_test.dart`:
+   - **Bisher:** Törn-Erstellung ohne Name und Datum.
+   - **Neu:** Eingabe von Name und Datum vor Törn-Erstellung.
+   - **Begründung:** Entspricht der neuen Pflichtvalidierung aus #52.
+
 ---
 
 ## 3. Nachweise und Qualitätssicherung
