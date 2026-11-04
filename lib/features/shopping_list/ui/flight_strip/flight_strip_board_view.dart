@@ -234,41 +234,6 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
           ),
         ),
 
-        // Search-First Empty State Banner wenn noch keine Artikel übernommen sind (PIVOT1 / UX Decision 12)
-        if (!hasAdoptedItems && _searchQuery.isEmpty)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.search, size: 22, color: theme.colorScheme.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.emptyListTitle,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        l10n.emptyListSubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
         // 2. Horizontale Kategorie-Auswahl (10 Hauptkategorien)
         if (_searchQuery.trim().isEmpty) ...[
           SizedBox(
@@ -457,9 +422,45 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
               : ListView.builder(
                   key: const ValueKey('flight_strip_list_view'),
                   padding: const EdgeInsets.only(top: 6, bottom: 12),
-                  itemCount: filteredItems.length,
+                  itemCount: filteredItems.length + (!hasAdoptedItems && _searchQuery.isEmpty ? 1 : 0),
                   itemBuilder: (ctx, index) {
-                    final item = filteredItems[index];
+                    if (!hasAdoptedItems && _searchQuery.isEmpty && index == 0) {
+                      return Container(
+                        key: const ValueKey('empty_list_banner'),
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: theme.colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.search, size: 22, color: theme.colorScheme.primary),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.emptyListTitle,
+                                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    l10n.emptyListSubtitle,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    final itemIndex = (!hasAdoptedItems && _searchQuery.isEmpty) ? index - 1 : index;
+                    final item = filteredItems[itemIndex];
                     return ProductStripWidget(
                       key: ValueKey('strip_widget_${item.id}'),
                       data: widget.data,

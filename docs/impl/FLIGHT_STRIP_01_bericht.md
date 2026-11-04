@@ -84,7 +84,7 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 8. `Suche filtert sofort über den gesamten 232-Varianten-Katalog`
 9. `Interner Schalter schaltet nahtlos zwischen Flight-Strip-Board und PlanningView um`
 10. `Nachtwache-Modus rendert strikt in Rot/Schwarz ohne bunte Fremdfarben`
-11. `Schmaler 320px-Viewport verursacht keinen RenderFlex-Overflow`
+11. `Schmaler 320px-Viewport verursacht keinen RenderFlex-Overflow` (Empty-State-Banner als List-Item in der scrollbaren Ansicht integriert, um festen Header-Overflow auf Kleinstgeräten zuverlässig zu verhindern)
 
 ### C. Bestehende Regressionstests (alle grün)
 - `shopping_list_ui_test.dart` (4/4 Tests bestanden)
@@ -113,3 +113,4 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
    - Auf den Tray unten tippen: Korb klappt auf, zeigt übernommene Artikel mit `- / +` Steppern und „Einkauf starten“.
 6. **A/B-Umschalter:**
    - Oben in der Leiste auf das Listen-Icon tippen: Ansicht schaltet nahtlos zur klassischen Baum-Ansicht (`PlanningView`) um. Erneut tippen: Zurück zum Strip-Board.
+
