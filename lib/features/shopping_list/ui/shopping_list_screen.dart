@@ -12,6 +12,7 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_provide
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'widgets/catalog_search_delegate.dart';
 import 'widgets/custom_item_sheet.dart';
+import 'flight_strip/flight_strip_board_view.dart';
 import 'widgets/planning_view.dart';
 import 'widgets/provisioning_review_sheet.dart';
 import 'widgets/shopping_view.dart';
@@ -95,6 +96,19 @@ class ShoppingListScreen extends ConsumerWidget {
               },
             ),
             orElse: () => const SizedBox.shrink(),
+          ),
+          IconButton(
+            key: const ValueKey('toggle_flight_strip_board_button'),
+            icon: Icon(ref.watch(flightStripBoardEnabledProvider)
+                ? Icons.table_rows_outlined
+                : Icons.view_agenda_outlined),
+            tooltip: ref.watch(flightStripBoardEnabledProvider)
+                ? l10n.switchToClassicList
+                : l10n.switchToFlightStripBoard,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            onPressed: () {
+              ref.read(flightStripBoardEnabledProvider.notifier).update((v) => !v);
+            },
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -222,46 +236,69 @@ class ShoppingListScreen extends ConsumerWidget {
               // Sortier-Umschalter und Stopp-Filter
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SegmentedButton<ShoppingListSortMode>(
-                        segments: [
-                          ButtonSegment(
-                            value: ShoppingListSortMode.category,
-                            label: Text(l10n.byCategory),
-                            icon: const Icon(Icons.category_outlined),
-                          ),
-                          ButtonSegment(
-                            value: ShoppingListSortMode.department,
-                            label: Text(l10n.byDepartment),
-                            icon: const Icon(Icons.storefront_outlined),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 360;
+                    final segmented = SegmentedButton<ShoppingListSortMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ShoppingListSortMode.category,
+                          label: Text(l10n.byCategory),
+                          icon: const Icon(Icons.category_outlined),
+                        ),
+                        ButtonSegment(
+                          value: ShoppingListSortMode.department,
+                          label: Text(l10n.byDepartment),
+                          icon: const Icon(Icons.storefront_outlined),
+                        ),
+                      ],
+                      selected: {sortMode},
+                      onSelectionChanged: (newSelection) {
+                        ref.read(shoppingListViewModeProvider.notifier).state =
+                            newSelection.first;
+                      },
+                    );
+
+                    if (isNarrow) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          segmented,
+                          const SizedBox(height: 6),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
                           ),
                         ],
-                        selected: {sortMode},
-                        onSelectionChanged: (newSelection) {
-                          ref.read(shoppingListViewModeProvider.notifier).state =
-                              newSelection.first;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
-                  ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(child: segmented),
+                        const SizedBox(width: 8),
+                        _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
+                      ],
+                    );
+                  },
                 ),
               ),
               const Divider(height: 1),
               // Einheitliche Liste je nach Sortierung
               Expanded(
                 child: sortMode == ShoppingListSortMode.category
-                    ? PlanningView(data: data, selectedStopId: selectedStopId)
+                    ? (ref.watch(flightStripBoardEnabledProvider)
+                        ? FlightStripBoardView(data: data, selectedStopId: selectedStopId)
+                        : PlanningView(data: data, selectedStopId: selectedStopId))
                     : ShoppingView(data: data, selectedStopId: selectedStopId),
               ),
             ],
           );
         },
       ),
-      floatingActionButton: listDataAsync.maybeWhen(
+      floatingActionButton: (sortMode == ShoppingListSortMode.category &&
+              ref.watch(flightStripBoardEnabledProvider))
+          ? null
+          : listDataAsync.maybeWhen(
         data: (data) => FloatingActionButton.extended(
           heroTag: 'fab_add_position',
           icon: const Icon(Icons.add),
@@ -279,7 +316,10 @@ class ShoppingListScreen extends ConsumerWidget {
         ),
         orElse: () => null,
       ),
-      bottomNavigationBar: listDataAsync.maybeWhen(
+      bottomNavigationBar: (sortMode == ShoppingListSortMode.category &&
+              ref.watch(flightStripBoardEnabledProvider))
+          ? null
+          : listDataAsync.maybeWhen(
         data: (data) {
           final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull ?? data.stops.firstOrNull;
           final stopLabel = activeStop != null

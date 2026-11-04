@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-04 – FLIGHT-STRIP-01: Flight-Strip-Board für Vorratsliste (#56)
+
+- **Echtes Flutter Flight-Strip-Board (3-Ebenen-Architektur gemäß Issue #56):**
+  - **Ebene 1 (Basket Tray):** Permanentes Arbeitsziel am unteren Bildschirmrand (`BasketTrayWidget`), zeigt Artikelanzahl (`basketSummary`), Gesamtgewicht & Volumen (`totalWeightVolumeSummary`) und ist zu einer vollwertigen Korb-Übersicht aufklappbar. Im Korb können Mengen direkt angepasst (`- / +`), Positionen entfernt und der Einkauf gestartet werden.
+  - **Ebene 2 (Produktgruppen & Subgruppen):** 10 Hauptkategorien und 47 Subgruppen aus dem Provy-Katalog mit dedizierter maritimer Material-3-Farbpalette (`FlightStripColors`), Barrierefreiheits-Icons und In-Basket-Zählern. Horizontal scrollbare Kategorie- und Subgruppen-Chips.
+  - **Ebene 3 (Product Strips):** ATC-Flugstreifen-Design (`ProductStripWidget`) mit Farbkennzeichnung, Produktname, Gebindegröße und Kühlwarenhinweis. Direkt auf dem Streifen bedienbare Mengensteuerung (`- / Count / +`) mit mindestens 44x44 dp großen Touch-Targets.
+- **Interaktions-Semantik (Owner Decision A):**
+  - **Swipe-Right:** Übernimmt den Artikel sofort mit der exakt auf dem Streifen sichtbaren Menge und Gebindegröße in den Korb — ohne störenden Zwischen-Bestätigungsdialog. Haptisches Feedback (`mediumImpact`), SnackBar-Bestätigung mit direkter "Rückgängig"-Aktion.
+  - **Swipe-Left:** Überspringt das Produkt temporär für den aktuellen Durchlauf (nicht gelöscht). SnackBar-Bestätigung mit "Rückgängig". Übersicht der übersprungenen Artikel und "Alle wiederherstellen"-Option.
+  - **Barrierefreie Alternativen:** Eindeutige Schaltflächen ("In den Korb" mit Warenkorb-Symbol) direkt auf den Streifen für Touch-Bedienung ohne Gestenzwang.
+- **Suchfunktion:** Prominente, integrierte Suchleiste am oberen Rand durchsucht sofort alle 232 Katalog-Varianten nach Name, Tags, Warengruppe und Abteilung.
+- **Interner A/B-Umschalter:** Schalter in der AppBar (`toggle_flight_strip_board_button`) ermöglicht nahtloses Umschalten zwischen dem neuen Flight-Strip-Board und der klassischen `PlanningView` ohne Datenverlust.
+- **Volle Nachtwache- und Viewport-Kompatibilität:** Im Nachtwache-Modus strikt Rot auf Schwarz gemäß Designregel 13; auf schmalen 320px-Viewports ohne RenderFlex-Overflow.
+- **Qualitätssicherung:** Neue dedizierte Testsuite `test/features/shopping_list/flight_strip_board_test.dart` (11 Tests, alle grün) deckt alle Kerninteraktionen, Gesten, Barrierefreiheit, Suche, Umschaltung und Randfälle ab.
+
 ## 2026-11-04 – QA-RAPID-01 Android UX Usability Fixes (#47, #48, #52, #53, #55)
 
 - **#48 (HIGH) – Navigation Trap in MoreScreen behoben:**

@@ -1111,5 +1111,65 @@
   "selectDate": "Seleccionar fecha",
   "tripNameRequired": "Por favor, introduce un nombre para el viaje.",
   "startDateRequired": "Por favor, selecciona una fecha de inicio.",
-  "tripNameHint": "p. ej. Vacaciones de verano, Navegación Croacia"
+  "tripNameHint": "p. ej. Vacaciones de verano, Navegación Croacia",
+  "flightStripBoardTitle": "Tablero Flight-Strip",
+  "classicListViewTitle": "Lista clásica",
+  "switchToFlightStripBoard": "Cambiar a tablero Flight-Strip",
+  "switchToClassicList": "Cambiar a lista clásica",
+  "basketTitle": "Cesta",
+  "basketSummary": "{count, plural, =0{Cesta vacía} =1{1 artículo en la cesta} other{{count} artículos en la cesta}}",
+  "@basketSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addedToBasketMessage": "{name} añadido a la cesta ({count} {unit})",
+  "@addedToBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemSkippedMessage": "{name} omitido",
+  "@itemSkippedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allSubgroups": "Todos",
+  "showSkippedItems": "{count, plural, =1{Mostrar 1 artículo omitido} other{Mostrar {count} artículos omitidos}}",
+  "@showSkippedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hideSkippedItems": "Ocultar omitidos",
+  "restoreAllSkipped": "Restaurar todos",
+  "inBasketBadge": "En cesta: {count}",
+  "@inBasketBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addToBasketTooltip": "Añadir a la cesta",
+  "skipItemTooltip": "Omitir",
+  "swipeActionAdd": "A la cesta",
+  "swipeActionSkip": "Omitir",
+  "emptyBasketTitle": "Tu cesta está vacía",
+  "emptyBasketSubtitle": "Desliza tiras a la derecha o toca + para añadir productos."
 }
