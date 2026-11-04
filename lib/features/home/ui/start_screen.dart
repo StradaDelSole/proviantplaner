@@ -79,7 +79,7 @@ class StartScreen extends ConsumerWidget {
             tooltip: l10n.settings,
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              context.go('/more');
+              context.push('/more');
             },
           ),
           const SizedBox(width: 8),

@@ -1219,6 +1219,9 @@
       }
     }
   },
-  "backupReceiptMissingError": "A receipt file is missing from local storage. Backup aborted."
+  "backupReceiptMissingError": "A receipt file is missing from local storage. Backup aborted.",
+  "selectDate": "Select date",
+  "tripNameRequired": "Please enter a trip name.",
+  "startDateRequired": "Please select a start date.",
+  "tripNameHint": "e.g. Summer Cruise, Sailing Croatia"
 }
-

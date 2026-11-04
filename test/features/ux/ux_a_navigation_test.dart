@@ -143,6 +143,14 @@ void main() {
       expect(find.text('Katamaran'), findsNothing);
       expect(find.text('Einrumpf (Monohull)'), findsNothing);
 
+      // Name eingeben und Datum wählen (QA-RAPID-01 / #52)
+      await tester.enterText(find.byType(TextField).first, 'UX-A Törn');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
       // Scrollen und Törn anlegen antippen
       final createButton = find.text('Törn erstellen');
       expect(createButton, findsOneWidget);

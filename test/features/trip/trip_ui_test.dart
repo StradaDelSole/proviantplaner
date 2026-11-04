@@ -67,9 +67,10 @@ void main() {
       await tester.pumpWidget(buildTestableWidget(const TripWizardScreen()));
       await tester.pumpAndSettle();
 
-      // Sektion 1
+      // Sektion 1 (QA-RAPID-01 / Issue #52: neutrales Startformular, kein vorgegebenes "Törn Kroatien")
       expect(find.text('1. Törn'), findsOneWidget);
-      expect(find.text('Törn Kroatien'), findsOneWidget);
+      expect(find.text('Törnname'), findsOneWidget);
+      expect(find.text('Datum auswählen'), findsOneWidget);
 
       // Sektion 2
       expect(find.text('2. Boot'), findsOneWidget);

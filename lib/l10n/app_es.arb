@@ -1107,6 +1107,9 @@
       }
     }
   },
-  "backupReceiptMissingError": "Falta un recibo en el almacenamiento local. Copia de seguridad cancelada."
+  "backupReceiptMissingError": "Falta un recibo en el almacenamiento local. Copia de seguridad cancelada.",
+  "selectDate": "Seleccionar fecha",
+  "tripNameRequired": "Por favor, introduce un nombre para el viaje.",
+  "startDateRequired": "Por favor, selecciona una fecha de inicio.",
+  "tripNameHint": "p. ej. Vacaciones de verano, Navegación Croacia"
 }
-

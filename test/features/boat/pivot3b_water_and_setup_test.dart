@@ -585,6 +585,14 @@ void main() {
       await tester.tap(profileOption);
       await tester.pumpAndSettle();
 
+      // Name eingeben und Datum wählen (QA-RAPID-01 / #52)
+      await tester.enterText(find.byType(TextField).first, 'SY Windrose Törn');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
       // Trip erstellen
       final createButton = find.byKey(const Key('wizard_submit_trip_button'));
       expect(createButton, findsOneWidget);
@@ -653,6 +661,14 @@ void main() {
       expect(profiles.length, equals(1));
       expect(profiles.first.name, equals('Bavaria Cruiser 37'));
       expect(profiles.first.hasWatermaker, isTrue);
+
+      // Name eingeben und Datum wählen (QA-RAPID-01 / #52)
+      await tester.enterText(find.byType(TextField).first, 'Bavaria Törn');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
 
       // Trip erstellen
       final createButton = find.byKey(const Key('wizard_submit_trip_button'));
