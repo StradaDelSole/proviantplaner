@@ -15,6 +15,7 @@ import 'package:proviantplaner/features/kitty/domain/models/kitty_models.dart';
 import 'package:proviantplaner/features/shopping_list/data/supplier_service.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 
 /// Bildschirm "Mehr" mit Kontostatus, Sicherung, Darstellung und Abmeldung/Löschung (SC-MORE-01).
 class MoreScreen extends ConsumerWidget {
@@ -226,9 +227,31 @@ class MoreScreen extends ConsumerWidget {
     final authState = ref.watch(authNotifierProvider);
     final isNightwatch = ref.watch(themeControllerProvider) == AppThemeMode.nightwatch;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.navMore),
+    void handleBack() {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else if (tripId != null) {
+        context.go('/trips/$tripId');
+      } else {
+        context.go('/');
+      }
+    }
+
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          handleBack();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: l10n.backToHome,
+            onPressed: handleBack,
+          ),
+          title: Text(l10n.navMore),
         actions: [
           IconButton(
             tooltip: l10n.nightwatchTitle,
@@ -321,7 +344,8 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 32),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader(ThemeData theme, String title) {
@@ -641,13 +665,6 @@ class MoreScreen extends ConsumerWidget {
           return Scaffold(
             appBar: AppBar(
               title: Text(l10n.savedSuppliersTitle),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: l10n.addSupplier,
-                  onPressed: () => _showAddEditSupplierDialog(context, ref),
-                ),
-              ],
             ),
             body: suppliersAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -665,12 +682,6 @@ class MoreScreen extends ConsumerWidget {
                           Text(
                             l10n.savedSuppliersEmpty,
                             textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            icon: const Icon(Icons.add),
-                            label: Text(l10n.addSupplier),
-                            onPressed: () => _showAddEditSupplierDialog(context, ref),
                           ),
                         ],
                       ),

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-04 – QA-RAPID-01 Android UX Usability Fixes (#47, #48, #52, #53, #55)
+
+- **#48 (HIGH) – Navigation Trap in MoreScreen behoben:**
+  - `start_screen.dart`: Navigation zu `/more` erfolgt nun via `context.push('/more')` statt `context.go('/more')`, wodurch der Back-Stack erhalten bleibt.
+  - `more_screen.dart`: `Scaffold` mit `PopScope` und führendem Zurück-Button (`AppBar(leading: IconButton(...))`) ausgestattet. Ein verlässlicher Rückweg zum Startbildschirm (`/`) bzw. Törn-Kontext (`/trips/$tripId`) ist sowohl per UI-Button als auch per Android-System-Geste/Back-Button garantiert.
+- **#53 (HIGH) – RenderFlex Overflow in Tageszeilen ("Tage im Detail") behoben:**
+  - `trip_overview_screen.dart`: Starres `Row`-Layout in `_buildDaysInDetailTile` durch responsives `Wrap(spacing: 8, runSpacing: 8, children: [...])` ersetzt.
+  - Restaurant-FilterChips brechen auf schmalen Displays (z. B. 320–360 logical px) oder bei vergrößerter Schriftskalierung (1.5x) ohne Layout-Overflow um.
+- **#55 (HIGH) – Falscher Kühlhinweis bei Brot (isCooled) behoben:**
+  - `shopping_list_models.dart`: Die fehlerhafte Heuristik `(shelfLifeDays > 0 && shelfLifeDays <= 3)` wurde entfernt. `isCooled` basiert nun strikt auf Katalogdaten (`variant?.chill == ChillRequirement.fridge || storageHints.contains('cool_first')`).
+  - Baguette, Brötchen und Weißbrot (`chill: none`) werden auf Booten ohne Kühlschrank nicht mehr fälschlich als kühlpflichtig markiert. Echte Kühlware (`chill: fridge`) löst weiterhin zuverlässig die Kühlwarnung aus; Tiefkühlware (`chill: freezer`) ist via `isFrozen` getrennt typisiert.
+- **#52 (MEDIUM) – Törnerstellung ohne Vorbelegung ("Törn Kroatien" / Startdatum):**
+  - `trip_wizard_screen.dart`: Törnname startet für neue Törns vollständig leer (mit neutralem Platzhalter `hintText`). `_startDate` ist initial `null` (keine ungefragte Datumsfestlegung).
+  - Beide Felder werden vor dem Speichern validiert; fehlt ein Wert, weist ein SnackBar den Nutzer darauf hin (`tripNameRequired`, `startDateRequired`).
+  - Lokalisierungs-Keys für alle 6 Sprachen (`de`, `en`, `es`, `fr`, `hr`, `pt`) ergänzt.
+- **#47 (MEDIUM) – Doppelte Bedienelemente "Lieferant hinzufügen" bereinigt:**
+  - `more_screen.dart`: In `_showSuppliersDialog` die redundante Plus-Aktion in der `AppBar` sowie den redundanten zentrierten Button im Leerzustand entfernt. Es verbleibt genau ein eindeutiger, barrierefreier Aktions-Button in der unteren Navigationsleiste für den leeren und befüllten Zustand.
+- **Regressionstests:**
+  - Neue dedizierte Testsuite `test/features/ux/qa_rapid_01_android_fixes_test.dart` (9 Tests, alle grün) deckt alle 5 Findings isoliert und im Screen-Kontext ab.
+  - Vorhandene Tests `trip_ui_test.dart` und `fix_a_journey_test.dart` an die validierte neutrale Törnerstellung angepasst.
+
 ## 2026-11-01 – BACKEND-CORE BC-1A Final Coordinator Correction (Findings C4-1 & C4-2)
 
 - **Finding C4-1 – BLOCKER (Unkoordinierte Mutationen im Token-Abruf vollständig eliminiert):**

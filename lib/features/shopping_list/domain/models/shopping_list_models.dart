@@ -134,9 +134,13 @@ class ShoppingListItemView {
   double get effectivePackSize =>
       item.customPackageSize ?? (variant?.pack.size ?? customPackageSize);
 
-  /// Gibt an, ob der Artikel gekühlt gelagert werden muss.
+  /// Gibt an, ob der Artikel gekühlt gelagert werden muss (Katalog chill: fridge oder cool_first-Hinweis).
   bool get isCooled =>
-      storageHints.contains('cool_first') || (shelfLifeDays > 0 && shelfLifeDays <= 3);
+      variant?.chill == ChillRequirement.fridge ||
+      storageHints.contains('cool_first');
+
+  /// Gibt an, ob der Artikel tiefgekühlt gelagert werden muss (Katalog chill: freezer).
+  bool get isFrozen => variant?.chill == ChillRequirement.freezer;
 
   /// Prüft, ob der Artikel für einen Stopp abgehakt (gekauft) ist.
   bool isBoughtAtStop(int stopId) =>

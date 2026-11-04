@@ -1405,6 +1405,9 @@
       }
     }
   },
-  "backupReceiptMissingError": "Ein Beleg fehlt im lokalen Speicher. Sicherung abgebrochen."
+  "backupReceiptMissingError": "Ein Beleg fehlt im lokalen Speicher. Sicherung abgebrochen.",
+  "selectDate": "Datum auswählen",
+  "tripNameRequired": "Bitte gib einen Törnnamen ein.",
+  "startDateRequired": "Bitte wähle ein Startdatum aus.",
+  "tripNameHint": "z. B. Sommerurlaub, Törn Kroatien"
 }
-

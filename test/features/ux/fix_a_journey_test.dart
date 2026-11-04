@@ -205,6 +205,14 @@ void main() {
       expect(find.text('2. Boot'), findsOneWidget);
       expect(find.text('3. Crew (1)'), findsOneWidget);
 
+      // Enter trip name and select date (QA-RAPID-01 / #52: clean slate form)
+      await tester.enterText(find.byType(TextField).first, 'Sommerurlaub');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.calendar_today));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
       // Tap submit button to create trip
       final createButton = find.byKey(const Key('wizard_submit_trip_button'));
       expect(createButton, findsOneWidget);

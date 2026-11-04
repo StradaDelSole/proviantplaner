@@ -1107,6 +1107,9 @@
       }
     }
   },
-  "backupReceiptMissingError": "Un reçu est manquant dans le stockage local. Sauvegarde annulée."
+  "backupReceiptMissingError": "Un reçu est manquant dans le stockage local. Sauvegarde annulée.",
+  "selectDate": "Sélectionner la date",
+  "tripNameRequired": "Veuillez entrer un nom pour le voyage.",
+  "startDateRequired": "Veuillez sélectionner une date de début.",
+  "tripNameHint": "p. ex. Croisière d'été, Navigation Croatie"
 }
-

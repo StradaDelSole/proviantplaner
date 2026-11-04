@@ -806,28 +806,32 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   color: theme.colorScheme.surfaceContainerLowest,
                   child: ListTile(
                     title: Text('${l10n.day} ${day.dayNumber} ${day.portName != null && day.portName!.isNotEmpty ? "· ${day.portName}" : ""}'),
-                    subtitle: Row(
-                      children: [
-                        FilterChip(
-                          label: Text(l10n.lunchRestaurant),
-                          selected: day.lunchRestaurant,
-                          onSelected: (val) async {
-                            final service = ref.read(tripServiceProvider);
-                            await service.toggleLunchRestaurant(day);
-                            await _loadTripDetails();
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        FilterChip(
-                          label: Text(l10n.eveningRestaurant),
-                          selected: day.dinnerRestaurant,
-                          onSelected: (val) async {
-                            final service = ref.read(tripServiceProvider);
-                            await service.toggleEveningRestaurant(day);
-                            await _loadTripDetails();
-                          },
-                        ),
-                      ],
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilterChip(
+                            label: Text(l10n.lunchRestaurant),
+                            selected: day.lunchRestaurant,
+                            onSelected: (val) async {
+                              final service = ref.read(tripServiceProvider);
+                              await service.toggleLunchRestaurant(day);
+                              await _loadTripDetails();
+                            },
+                          ),
+                          FilterChip(
+                            label: Text(l10n.eveningRestaurant),
+                            selected: day.dinnerRestaurant,
+                            onSelected: (val) async {
+                              final service = ref.read(tripServiceProvider);
+                              await service.toggleEveningRestaurant(day);
+                              await _loadTripDetails();
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 )),

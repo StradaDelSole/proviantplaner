@@ -24,7 +24,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   // Sektion 1: Törn
   final _nameController = TextEditingController();
   late final TextEditingController _daysController;
-  DateTime _startDate = DateTime.now();
+  DateTime? _startDate;
   int _daysCount = 7;
   bool _isCharter = true;
   bool _initializedDefaults = false;
@@ -65,10 +65,6 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     super.didChangeDependencies();
     if (!_initializedDefaults) {
       _initializedDefaults = true;
-      final l10n = AppLocalizations.of(context);
-      if (l10n != null && _nameController.text.isEmpty) {
-        _nameController.text = l10n.defaultTripName;
-      }
     }
   }
 
@@ -220,14 +216,27 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   }
 
   Future<void> _submitTrip() async {
-    if (_nameController.text.trim().isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.tripNameRequired)),
+      );
+      return;
+    }
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.startDateRequired)),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
       final tripService = ref.read(tripServiceProvider);
       final tripId = await tripService.createTripWithCrew(
-        name: _nameController.text.trim(),
-        startDate: _startDate,
+        name: name,
+        startDate: _startDate!,
         daysCount: _daysCount,
         isCharter: _isCharter,
         boatType: 'monohull',
@@ -362,6 +371,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
               controller: _nameController,
               decoration: InputDecoration(
                 labelText: l10n.tripName,
+                hintText: l10n.tripNameHint,
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -369,12 +379,17 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.startDate),
-              subtitle: Text('${_startDate.day}.${_startDate.month}.${_startDate.year}'),
+              subtitle: Text(
+                _startDate != null
+                    ? '${_startDate!.day}.${_startDate!.month}.${_startDate!.year}'
+                    : l10n.selectDate,
+              ),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
+                final now = DateTime.now();
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _startDate,
+                  initialDate: _startDate ?? now,
                   firstDate: DateTime(2020),
                   lastDate: DateTime(2035),
                 );

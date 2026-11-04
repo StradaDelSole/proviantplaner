@@ -1107,6 +1107,9 @@
       }
     }
   },
-  "backupReceiptMissingError": "Račun nedostaje u lokalnoj pohrani. Sigurnosno kopiranje prekinuto."
+  "backupReceiptMissingError": "Račun nedostaje u lokalnoj pohrani. Sigurnosno kopiranje prekinuto.",
+  "selectDate": "Odaberi datum",
+  "tripNameRequired": "Molimo unesite naziv plovidbe.",
+  "startDateRequired": "Molimo odaberite datum početka.",
+  "tripNameHint": "npr. Ljetno jedrenje, Plovidba Hrvatska"
 }
-
