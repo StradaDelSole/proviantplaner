@@ -32,6 +32,8 @@ PROVY (Arbeitstitel) ist ein **offline-first, skippergeführter Proviantplaner m
 
 **Wichtig:** Code-PASS/CI-Green bedeutet NICHT automatisch, dass der Nutzer seine Aufgabe auf realem Gerät erfolgreich ausführen kann. Owner hat PR #60 nach Pixel-Test wegen Shopping-Journey-Mängeln **nicht** produktseitig akzeptiert. Cloud-Produktionsreife darf nicht aus bestandenen Emulator-Spikes abgeleitet werden.
 
+**HCD-SHOP-01 Gate A Stand (06.11.2026):** Codebasierte Ursachenanalyse, Architekturvarianten, Failure-/Concurrency-Matrix und Invariant-to-Test-Nachweise sind in `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` als **CANDIDATE / REVIEW OPEN** dokumentiert. Empfohlen: eine einzige offene, nach Abteilungen gruppierte Scroll-Liste mit angehefteter Sicht auf den nächsten Artikel, getrennt eingeklapptes „Erledigt (N)“, persistenzwahrhaftem Abhaken/Undo und ohne doppeltes Provider-Invalidieren. Noch **keine unabhängige Gate-A-Abnahme, keine Gemini-Implementierung, keine Pixel-Bestätigung**. Erst nach Gate A + Owner-Phase-B-Freigabe coden.
+
 ## 3. Priorisierte Umsetzung und Zuständigkeiten
 
 | Reihenfolge | Paket / Issue | Rolle | Freigabe- und Abschlussbedingung |
