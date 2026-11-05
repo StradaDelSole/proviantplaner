@@ -17,7 +17,7 @@ Verbindliche **Owner-accepted Planungsunterlagen** dieses Dokumentations-PRs:
 - `docs/design/PROVY_HCD_SHOPPING_JOURNEY_PLAN_2026-11-05.md` – chronologischer Einkaufsablauf und Daten-/Screen-Entscheidungen.
 - `docs/qa/PROVY_HCD_REAL_DEVICE_ACCEPTANCE_2026-11-05.md` – echte Aufgaben-/Gerätetests.
 - `docs/roadmap/PROVY_RELEASE_BACKEND_READINESS_PLAN_2026-11-05.md` – Release- und Backend-Gates; keine automatische Cloud-Freigabe.
-- `docs/impl/HCD_SHOP_01_PHASE_A_GEMINI_BRIEF_2026-11-05.md` – nächster vorbereitet **nur Phase-A-Planung**, kein Coding.
+- `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` – Phase-A-Entwurf, unabhängiger Review und Phase-B-Release noch offen; früherer Gemini-Phase-A-Brief ist historisch.
 
 Eine Roadmap ist **keine** Freigabe eines PR-Merges, Cloud-Deploys oder neuen High-Risk-Implementierungsslices. Ältere Statusabschnitte in diesem README sind historische Kontextbelege und können nicht ohne erneute Reconciliation als aktueller Gate-Status gelten.
 
