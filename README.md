@@ -2,6 +2,12 @@
 
 Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung auf Segeltörns. Eigenständige App ohne Bootsinhalte; die Mitglied-Version wird über ein HullQ-Konto freigeschaltet.
 
+## Verbindliches Produktprinzip: Human-Centered Design (Owner-Entscheidung 05.11.2026)
+
+**PROVY wird um reale Aufgaben und reale Nutzungssituationen von Skippern und Crew gebaut, nicht um Software-Features.** Weniger Denken/Suchen/Fehler, wahrheitsgetreues Feedback, Undo und selbstbestimmte Assistenz sind Produktanforderungen. Wesentliche neue oder veränderte UX-Flows erhalten einen schlanken, dokumentierten **HCD-Pass** mit Aufgaben-/Kontextbeschreibung, heuristischer Prüfung und risikogerechter Beobachtung realer Nutzer. Für die drei Store-v1-Kernreisen (Törn & Proviant, Einkauf & Crew, Bordkasse & Abrechnung) gehört echte Aufgabenbeobachtung zur UX-Abnahme; CI allein genügt nicht.
+
+Verbindliche Grundlage: `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md`. Sie ergänzt die bereits eingefrorenen UX-Entscheidungen, Benchmark-Strategie und Engineering-Gates, ohne deren Scope oder Freigaben eigenmächtig zu ändern. **Kein automatischer Implementierungs-Slice, Merge oder Release.**
+
 ## Engineering- und Review-Prozess (Owner-Entscheidung 30.10.2026)
 
 Für **jede neue Provy-Sitzung** gelten AGENTS.md, GEMINI.md und docs/ENGINEERING_STANDARD_v1.0.md. Bei High-Risk-Slices (Persistenz/Backup/Restore, Auth/Backend, Offline-Synchronisierung, Nebenläufigkeit, Finanzen, Migration) ist die zweistufige Arbeitsweise verbindlich: **Phase A Architektur- und Failure-Review ohne Code → unabhängiges Architecture Gate → Phase B Implementierung mit negativen und konkurrierenden Tests → unabhängiger Code-Review am exakten HEAD → Owner Acceptance**. Vorlagen: docs/templates/ARCHITECTURE_GATE_TEMPLATE.md und docs/templates/IMPLEMENTATION_BRIEF_TEMPLATE.md. Nach zwei verwandten Amendments Architektur neu bewerten statt blind weiterpatchen.
