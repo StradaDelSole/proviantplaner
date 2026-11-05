@@ -38,7 +38,14 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
   String? _selectedGroupId;
   final Set<String> _skippedItemIds = {};
   final Set<String> _transferredItemIds = {};
+  final Set<String> _pendingOperations = {};
+  final Map<String, int> _itemKeyGenerations = {};
   bool _showSkipped = false;
+
+  @override
+  void didUpdateWidget(FlightStripBoardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+  }
 
   @override
   void initState() {
@@ -68,20 +75,74 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     });
   }
 
-  Future<void> _handleAddToBasket(ShoppingListItemView item, int packages) async {
+  Future<bool> _handleConfirmSwipeToBasket(ShoppingListItemView item, int packages) async {
+    // F3: Parallelitäts- und Race-Schutz gegen mehrfache schnelle Aktionen
+    if (_pendingOperations.contains(item.id)) return false;
+    _pendingOperations.add(item.id);
+
     final l10n = AppLocalizations.of(context)!;
     final tripId = widget.data.trip.id;
     final itemName = item.localizedName(context);
     final unitStr = item.unit.isNotEmpty ? item.unit : l10n.unitPackage;
 
+    // F1: Vorherigen Zustand erfassen
+    final bool wasInBasket = item.isOnList;
+    final int priorEffectivePackages = item.effectivePackages;
+
+    // F1: Idempotenz bei unveränderter Menge für bereits ausgewählte Artikel
+    if (wasInBasket && packages == priorEffectivePackages) {
+      _pendingOperations.remove(item.id);
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.alreadyInBasketMessage(itemName, packages, unitStr)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return false; // Streifen schnappt zurück, bleibt sichtbar
+    }
+
+    try {
+      // F3: Persistenz abwarten
+      await ref.read(shoppingListServiceProvider).adoptItem(
+            tripId: tripId,
+            listItemId: item.item.id,
+            packages: packages,
+          );
+      return true;
+    } catch (e) {
+      _pendingOperations.remove(item.id);
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.errorSavingItem(itemName)),
+          action: SnackBarAction(
+            label: l10n.retry,
+            onPressed: () => _handleQuickAddToBasket(item, packages),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return false; // F3: Bei Persistenzfehler schnappt Streifen zurück
+    }
+  }
+
+  void _handleDismissedToBasket(ShoppingListItemView item, int packages) {
+    _pendingOperations.remove(item.id);
+    final l10n = AppLocalizations.of(context)!;
+    final tripId = widget.data.trip.id;
+    final itemName = item.localizedName(context);
+    final unitStr = item.unit.isNotEmpty ? item.unit : l10n.unitPackage;
+
+    final bool wasInBasket = item.isOnList;
+    final int priorEffectivePackages = item.effectivePackages;
+    final int? priorOverriddenPackages = item.item.overriddenPackages;
+
     setState(() {
       _transferredItemIds.add(item.id);
     });
-    await ref.read(shoppingListServiceProvider).adoptItem(
-          tripId: tripId,
-          listItemId: item.item.id,
-          packages: packages,
-        );
     ref.invalidate(tripShoppingListProvider(tripId));
 
     if (!mounted) return;
@@ -92,19 +153,45 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
         action: SnackBarAction(
           label: l10n.undo,
           onPressed: () async {
-            setState(() {
-              _transferredItemIds.remove(item.id);
-            });
-            await ref.read(shoppingListServiceProvider).unadoptItem(
-                  tripId: tripId,
-                  listItemId: item.item.id,
+            try {
+              if (wasInBasket) {
+                // F1: War bereits im Korb -> Vorherige Menge wiederherstellen, NICHT löschen!
+                await ref.read(shoppingListServiceProvider).adoptItem(
+                      tripId: tripId,
+                      listItemId: item.item.id,
+                      packages: priorOverriddenPackages ?? priorEffectivePackages,
+                    );
+              } else {
+                // F1: Neu hinzugefügt -> Unadopt und aus Transferred-Set entfernen
+                setState(() {
+                  _transferredItemIds.remove(item.id);
+                  _itemKeyGenerations[item.id] = (_itemKeyGenerations[item.id] ?? 0) + 1;
+                });
+                await ref.read(shoppingListServiceProvider).unadoptItem(
+                      tripId: tripId,
+                      listItemId: item.item.id,
+                    );
+              }
+              ref.invalidate(tripShoppingListProvider(tripId));
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.errorSavingItem(itemName))),
                 );
-            ref.invalidate(tripShoppingListProvider(tripId));
+              }
+            }
           },
         ),
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+
+  Future<void> _handleQuickAddToBasket(ShoppingListItemView item, int packages) async {
+    final confirmed = await _handleConfirmSwipeToBasket(item, packages);
+    if (confirmed) {
+      _handleDismissedToBasket(item, packages);
+    }
   }
 
   void _handleSkip(ShoppingListItemView item) {
@@ -461,11 +548,15 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
                     }
                     final itemIndex = (!hasAdoptedItems && _searchQuery.isEmpty) ? index - 1 : index;
                     final item = filteredItems[itemIndex];
+                    final gen = _itemKeyGenerations[item.id] ?? 0;
                     return ProductStripWidget(
                       key: ValueKey('strip_widget_${item.id}'),
                       data: widget.data,
                       item: item,
-                      onAddToBasket: (packages) => _handleAddToBasket(item, packages),
+                      generation: gen,
+                      onConfirmSwipeToBasket: (packages) => _handleConfirmSwipeToBasket(item, packages),
+                      onDismissedToBasket: (packages) => _handleDismissedToBasket(item, packages),
+                      onQuickAddToBasket: (packages) => _handleQuickAddToBasket(item, packages),
                       onSkip: () => _handleSkip(item),
                       onTapDetails: () {
                         AddOrEditItemSheet.show(
@@ -483,6 +574,13 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
         BasketTrayWidget(
           data: widget.data,
           selectedStopId: widget.selectedStopId,
+          onItemRemoved: (itemId) {
+            // F2: Nach Löschen im Korb sofort wieder auf dem Board anzeigen
+            setState(() {
+              _transferredItemIds.remove(itemId);
+              _itemKeyGenerations[itemId] = (_itemKeyGenerations[itemId] ?? 0) + 1;
+            });
+          },
         ),
       ],
     );

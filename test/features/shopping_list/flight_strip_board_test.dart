@@ -34,6 +34,25 @@ import 'package:proviantplaner/features/shopping_list/ui/widgets/planning_view.d
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 
+class FailingShoppingListService extends ShoppingListService {
+  bool shouldFailAdopt = false;
+
+  FailingShoppingListService({
+    required super.tripDao,
+    required super.listItemDao,
+    required super.catalogRepository,
+    required super.tripService,
+  });
+
+  @override
+  Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
+    if (shouldFailAdopt) {
+      throw Exception('Simulierter DB-Fehler beim Speichern');
+    }
+    return super.adoptItem(tripId: tripId, listItemId: listItemId, packages: packages);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -92,13 +111,14 @@ void main() {
     ThemeData? theme,
     bool flightStripEnabled = true,
     ShoppingListSortMode sortMode = ShoppingListSortMode.category,
+    ShoppingListService? customShoppingListService,
   }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
         catalogRepositoryProvider.overrideWithValue(catalogRepo),
         tripServiceProvider.overrideWithValue(tripService),
-        shoppingListServiceProvider.overrideWithValue(shoppingListService),
+        shoppingListServiceProvider.overrideWithValue(customShoppingListService ?? shoppingListService),
         flightStripBoardEnabledProvider.overrideWith((ref) => flightStripEnabled),
         shoppingListViewModeProvider.overrideWith((ref) => sortMode),
       ],
@@ -426,6 +446,190 @@ void main() {
 
       expect(find.byType(FlightStripBoardView), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+
+    testWidgets('F1: Bestehende Basket-Einträge schützen – Erneuter Rechts-Swipe & Undo bewahren Originalmenge, Override & Stopp-Allokation', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // 1. Ersten Artikel der ersten Kategorie vorab mit 3 Packungen in den Korb legen
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 3);
+
+      final dbBefore = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbBefore?.isAdopted, isTrue);
+      expect(dbBefore?.overriddenPackages, 3);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      final stripFinder = find.byKey(ValueKey('strip_widget_${testItem.id}'));
+      expect(stripFinder, findsOneWidget);
+
+      // Erneuter Rechts-Swipe auf den bereits im Korb liegenden Streifen
+      await tester.fling(stripFinder, const Offset(600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // F1: Streifen wird nicht gelöscht, sondern schnappt zurück
+      expect(stripFinder, findsOneWidget);
+      expect(find.textContaining('bereits im Korb'), findsOneWidget);
+
+      // DB-Zustand prüfen: isAdopted und Menge 3 bleiben erhalten
+      final dbAfter = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbAfter?.isAdopted, isTrue);
+      expect(dbAfter?.overriddenPackages, 3);
+    });
+
+    testWidgets('F2: Strip wieder sichtbar machen – Nach Basket-Löschung erscheint der Streifen sofort wieder im Katalog & in der Suche ohne Navigation', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // 1. Suche nach Spaghetti und übernimm den Streifen
+      final searchField = find.byKey(const ValueKey('flight_strip_search_field'));
+      await tester.enterText(searchField, 'Spaghetti');
+      await tester.pumpAndSettle();
+
+      final spaghettiStrip = find.descendant(
+        of: find.byType(ProductStripWidget),
+        matching: find.text('Spaghetti'),
+      );
+      expect(spaghettiStrip, findsOneWidget);
+
+      // Fling Right in den Korb
+      final stripWidget = find.byType(ProductStripWidget).first;
+      await tester.fling(stripWidget, const Offset(600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // Streifen ist übertragen und nicht mehr in der unübernommenen Trefferliste
+      expect(spaghettiStrip, findsNothing);
+
+      // 2. Korb aufklappen
+      ScaffoldMessenger.of(tester.element(find.byType(FlightStripBoardView))).hideCurrentSnackBar();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('basket_expand_button')));
+      await tester.pumpAndSettle();
+
+      // Löschen-Button im Korb betätigen
+      final deleteBtn = find.descendant(
+        of: find.byKey(const ValueKey('flight_strip_basket_tray')),
+        matching: find.byIcon(Icons.delete_outline),
+      );
+      expect(deleteBtn, findsOneWidget);
+      await tester.tap(deleteBtn);
+      await tester.pumpAndSettle();
+
+      // 3. F2: Sofort nach dem Löschen muss Spaghetti wieder auf dem Board / in der Suche erscheinen!
+      await tester.tap(find.byKey(const ValueKey('basket_expand_button')));
+      await tester.pumpAndSettle();
+
+      expect(spaghettiStrip, findsOneWidget);
+
+      // Re-Add ohne Navigation sofort möglich
+      final addBtn = find.descendant(
+        of: find.byType(ProductStripWidget),
+        matching: find.byIcon(Icons.add_shopping_cart),
+      );
+      expect(addBtn, findsOneWidget);
+      await tester.tap(addBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('in den Korb gelegt'), findsOneWidget);
+    });
+
+    testWidgets('F3: Fehlerbehandlung – Bei Persistenzfehler schnappt Streifen zurück, zeigt Fehler-SnackBar mit Retry und schützt vor Datenverlust', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final failingService = FailingShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      failingService.shouldFailAdopt = true;
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: failingService));
+      await tester.pumpAndSettle();
+
+      final firstStrip = find.byType(ProductStripWidget).first;
+      expect(firstStrip, findsOneWidget);
+
+      // Swipe Right mit fehlschlagendem Service
+      await tester.drag(firstStrip, const Offset(500, 0));
+      await tester.pumpAndSettle();
+
+      // F3: Streifen schnappt zurück (nicht dauerhaft ausgeblendet)
+      expect(firstStrip, findsOneWidget);
+
+      // Fehler-SnackBar sichtbar mit Erneut versuchen
+      expect(find.textContaining('Fehler beim Speichern'), findsOneWidget);
+      final retryBtn = find.text('Erneut versuchen');
+      expect(retryBtn, findsOneWidget);
+
+      // Korb meldet keine falsche Erfolgsmenge
+      expect(find.text('Korb leer'), findsOneWidget);
+
+      // Fehlerzustand beheben und Retry ausführen
+      failingService.shouldFailAdopt = false;
+      await tester.tap(retryBtn);
+      await tester.pumpAndSettle();
+
+      // Jetzt ist die Übernahme erfolgreich
+      expect(find.textContaining('in den Korb gelegt'), findsOneWidget);
+    });
+
+    testWidgets('F4: Mengensteuerung – Minus bei Menge 1 entfernt Artikel weder auf Strip noch im Korb (Minimum 1)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      // Artikel mit genau 1 Packung vorab übernehmen
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final firstItem = initialData.allItems.first;
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: firstItem.item.id, packages: 1);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // 1. Auf dem Streifen auf Minus tippen
+      final stripMinus = find.byKey(ValueKey('strip_minus_${firstItem.id}'));
+      expect(stripMinus, findsOneWidget);
+      await tester.tap(stripMinus);
+      await tester.pumpAndSettle();
+
+      // DB-Prüfung: Artikel bleibt mit 1 Packung übernommen, wird NICHT entfernt!
+      final dbItem1 = await db.listItemDao.getListItemById(firstItem.item.id);
+      expect(dbItem1?.isAdopted, isTrue);
+      expect(dbItem1?.overriddenPackages, 1);
+
+      // 2. Korb aufklappen und Minus im Korb tippen
+      await tester.tap(find.byKey(const ValueKey('basket_expand_button')));
+      await tester.pumpAndSettle();
+
+      final basketMinus = find.descendant(
+        of: find.byKey(const ValueKey('flight_strip_basket_tray')),
+        matching: find.byIcon(Icons.remove),
+      );
+      expect(basketMinus, findsOneWidget);
+      await tester.tap(basketMinus);
+      await tester.pumpAndSettle();
+
+      // DB-Prüfung: Artikel bleibt weiterhin mit 1 Packung im Korb
+      final dbItem2 = await db.listItemDao.getListItemById(firstItem.item.id);
+      expect(dbItem2?.isAdopted, isTrue);
+      expect(dbItem2?.overriddenPackages, 1);
     });
   });
 }

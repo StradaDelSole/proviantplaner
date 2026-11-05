@@ -1171,5 +1171,27 @@
   "swipeActionAdd": "Au panier",
   "swipeActionSkip": "Ignorer",
   "emptyBasketTitle": "Votre panier est vide",
-  "emptyBasketSubtitle": "Glissez les bandes vers la droite ou appuyez sur + pour ajouter des produits."
+  "emptyBasketSubtitle": "Glissez les bandes vers la droite ou appuyez sur + pour ajouter des produits.",
+  "alreadyInBasketMessage": "{name} est déjà dans le panier ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Erreur lors de l'enregistrement de {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

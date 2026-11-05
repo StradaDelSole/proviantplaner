@@ -1469,5 +1469,27 @@
   "swipeActionAdd": "In den Korb",
   "swipeActionSkip": "Überspringen",
   "emptyBasketTitle": "Dein Korb ist noch leer",
-  "emptyBasketSubtitle": "Wische Streifen nach rechts oder tippe auf +, um Produkte hinzuzufügen."
+  "emptyBasketSubtitle": "Wische Streifen nach rechts oder tippe auf +, um Produkte hinzuzufügen.",
+  "alreadyInBasketMessage": "{name} ist bereits im Korb ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Fehler beim Speichern von {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

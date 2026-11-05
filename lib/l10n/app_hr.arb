@@ -1171,5 +1171,27 @@
   "swipeActionAdd": "U košaricu",
   "swipeActionSkip": "Preskoči",
   "emptyBasketTitle": "Vaša košarica je prazna",
-  "emptyBasketSubtitle": "Povucite trake udesno ili dodirnite + za dodavanje proizvoda."
+  "emptyBasketSubtitle": "Povucite trake udesno ili dodirnite + za dodavanje proizvoda.",
+  "alreadyInBasketMessage": "{name} je već u košarici ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Pogreška pri spremanju {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

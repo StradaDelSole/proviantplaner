@@ -1171,5 +1171,27 @@
   "swipeActionAdd": "Para a cesta",
   "swipeActionSkip": "Ignorar",
   "emptyBasketTitle": "Sua cesta está vazia",
-  "emptyBasketSubtitle": "Deslize as tiras para a direita ou toque em + para adicionar produtos."
+  "emptyBasketSubtitle": "Deslize as tiras para a direita ou toque em + para adicionar produtos.",
+  "alreadyInBasketMessage": "{name} já está no cesto ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Erro ao salvar {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

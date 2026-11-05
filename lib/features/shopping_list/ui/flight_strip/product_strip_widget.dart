@@ -18,7 +18,10 @@ import 'flight_strip_colors.dart';
 class ProductStripWidget extends ConsumerStatefulWidget {
   final TripShoppingListData data;
   final ShoppingListItemView item;
-  final Future<void> Function(int packages) onAddToBasket;
+  final int generation;
+  final Future<bool> Function(int packages) onConfirmSwipeToBasket;
+  final void Function(int packages) onDismissedToBasket;
+  final Future<void> Function(int packages) onQuickAddToBasket;
   final VoidCallback onSkip;
   final VoidCallback? onTapDetails;
 
@@ -26,7 +29,10 @@ class ProductStripWidget extends ConsumerStatefulWidget {
     super.key,
     required this.data,
     required this.item,
-    required this.onAddToBasket,
+    this.generation = 0,
+    required this.onConfirmSwipeToBasket,
+    required this.onDismissedToBasket,
+    required this.onQuickAddToBasket,
     required this.onSkip,
     this.onTapDetails,
   });
@@ -69,16 +75,13 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
     if (widget.item.isOnList) {
       final current = widget.item.effectivePackages;
       if (current <= 1) {
-        await ref.read(shoppingListServiceProvider).unadoptItem(
-              tripId: widget.data.trip.id,
-              listItemId: widget.item.item.id,
-            );
-      } else {
-        await ref.read(shoppingListServiceProvider).setPackages(
-              widget.item,
-              current - 1,
-            );
+        // F4: Minus bei Menge 1 darf Artikel nicht stillschweigend entfernen (Mindestmenge 1)
+        return;
       }
+      await ref.read(shoppingListServiceProvider).setPackages(
+            widget.item,
+            current - 1,
+          );
       ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     } else {
       if (_stagedPackages > 1) {
@@ -128,7 +131,7 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
         : packUnit;
 
     return Dismissible(
-      key: ValueKey('strip_${widget.item.id}_${widget.item.isOnList}_$activePackages'),
+      key: ValueKey('strip_dismissible_${widget.item.id}_${widget.generation}'),
       direction: DismissDirection.horizontal,
       background: _buildSwipeBackground(
         alignment: Alignment.centerLeft,
@@ -142,15 +145,21 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
         icon: Icons.skip_next_outlined,
         label: l10n.swipeActionSkip,
       ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          return await widget.onConfirmSwipeToBasket(activePackages);
+        } else if (direction == DismissDirection.endToStart) {
+          widget.onSkip();
+          return true;
+        }
+        return false;
+      },
       onDismissed: (direction) {
         if (direction == DismissDirection.startToEnd) {
-          // Swipe Right: Direkt in den Korb mit der sichtbaren Menge (Owner Decision A)
           HapticFeedback.mediumImpact();
-          widget.onAddToBasket(activePackages);
+          widget.onDismissedToBasket(activePackages);
         } else if (direction == DismissDirection.endToStart) {
-          // Swipe Left: Überspringen für diesen Durchgang
           HapticFeedback.lightImpact();
-          widget.onSkip();
         }
       },
       child: Container(
@@ -370,7 +379,7 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
                           tooltip: l10n.addToBasketTooltip,
                           onPressed: () async {
                             HapticFeedback.mediumImpact();
-                            await widget.onAddToBasket(activePackages);
+                            await widget.onQuickAddToBasket(activePackages);
                           },
                         ),
                       ],

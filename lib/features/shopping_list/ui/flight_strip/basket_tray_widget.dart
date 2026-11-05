@@ -17,11 +17,13 @@ import 'flight_strip_colors.dart';
 class BasketTrayWidget extends ConsumerStatefulWidget {
   final TripShoppingListData data;
   final int? selectedStopId;
+  final void Function(String listItemId)? onItemRemoved;
 
   const BasketTrayWidget({
     super.key,
     required this.data,
     this.selectedStopId,
+    this.onItemRemoved,
   });
 
   @override
@@ -255,16 +257,13 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                         tooltip: l10n.removeFromList,
                                         onPressed: () async {
                                           if (item.effectivePackages <= 1) {
-                                            await ref.read(shoppingListServiceProvider).unadoptItem(
-                                                  tripId: widget.data.trip.id,
-                                                  listItemId: item.item.id,
-                                                );
-                                          } else {
-                                            await ref.read(shoppingListServiceProvider).setPackages(
-                                                  item,
-                                                  item.effectivePackages - 1,
-                                                );
+                                            // F4: Minus bei 1 entfernt Artikel nicht stillschweigend (Minimum 1)
+                                            return;
                                           }
+                                          await ref.read(shoppingListServiceProvider).setPackages(
+                                                item,
+                                                item.effectivePackages - 1,
+                                              );
                                           ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
@@ -299,6 +298,7 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                                 tripId: widget.data.trip.id,
                                                 listItemId: item.item.id,
                                               );
+                                          widget.onItemRemoved?.call(item.id);
                                           ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),

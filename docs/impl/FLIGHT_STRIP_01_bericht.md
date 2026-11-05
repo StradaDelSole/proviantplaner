@@ -73,7 +73,7 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - `npm run typecheck --prefix backend`: **0 Errors**
 
 ### B. Neue dedizierte Testsuite
-`test/features/shopping_list/flight_strip_board_test.dart` (11 Tests, alle grün):
+`test/features/shopping_list/flight_strip_board_test.dart` (15 Tests, alle grün):
 1. `Strip-Board rendert mit Basket-Tray, Kategorie-Chips und Strips`
 2. `Mengensteuerung auf dem Strip (− / Count / +) mit barrierefreien Touch-Targets`
 3. `SWIPE RIGHT übernimmt Artikel sofort in den Korb OHNE Bestätigungsdialog (Owner Decision A)`
@@ -114,3 +114,31 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 6. **A/B-Umschalter:**
    - Oben in der Leiste auf das Listen-Icon tippen: Ansicht schaltet nahtlos zur klassischen Baum-Ansicht (`PlanningView`) um. Erneut tippen: Zurück zum Strip-Board.
 
+---
+
+## 6. Review Amendment 1 (Review 5777458856, Findings F1-F4)
+
+**Datum:** 05.11.2026  
+**PR:** #60  
+**Status:** IMPLEMENTIERT & VOLLSTÄNDIG GETESTET – BEREIT FÜR RE-REVIEW
+
+### Behebung der Findings F1-F4:
+
+1. **F1 - Bestehende Basket-Einträge schützen:**
+   - *Idempotenz:* Bei erneutem Rechts-Swipe auf einen bereits im Korb liegenden Streifen mit gleicher Menge wird kein Re-Adopt ausgeführt und keine Stopp-Allokation zurückgesetzt. Es erscheint ein informativer SnackBar (`alreadyInBasketMessage`), und der Streifen schnappt zurück.
+   - *Erhaltungs-Undo:* Tappt der Nutzer bei einem bereits im Korb liegenden Artikel nach Mengenänderung auf "Rückgängig", wird die vorherige Packungsmenge (`priorOverriddenPackages ?? priorEffectivePackages`) wiederhergestellt - der Artikel wird nicht destruktiv gelöscht. Nur für neu übernommene Artikel ruft Undo `unadoptItem` auf.
+2. **F2 - Strip wieder sichtbar machen:**
+   - Nach dem Löschen eines Artikels im Basket Tray (`Icons.delete_outline`) wird der Streifen über die `onItemRemoved`-Rückmeldung und einen generationenbasierten Dismissible-Lifecycle (`ValueKey('strip_dismissible_${item.id}_${gen}')`) sofort wieder im Katalog und in der Suche eingeblendet, ohne Neuladen oder Navigation.
+3. **F3 - Persistenz-Fehlerbehandlung & Parallelitätsschutz:**
+   - Ein asynchrones Operationen-Tracking (`_pendingOperations`) verhindert Doppel-Aktionen und Race Conditions bei schnellem Mehrfachwischen.
+   - Bei Persistenzfehlern fängt `confirmDismiss` die Exception ab, lässt den Streifen in die Ausgangsposition zurückschnappen (`return false`), und zeigt einen Fehler-SnackBar (`errorSavingItem`) mit "Erneut versuchen" (`retry`), sodass kein Artikel verloren geht und kein falscher Transfer gemeldet wird.
+4. **F4 - Robuste Mengensteuerung:**
+   - Minus (`-`) bei Menge 1 auf dem Produktstreifen sowie im Basket Tray belässt den Wert auf 1 (Mindestmenge) und löscht den Artikel niemals stillschweigend. Die Löschung erfolgt ausschließlich über das Mülleimer-Symbol im Korb.
+
+### Testsuite-Erweiterung:
+`test/features/shopping_list/flight_strip_board_test.dart` (15 Tests, alle bestanden):
+- Tests 1-11: Kerninteraktionen, Barrierefreiheit, Nachtwache, Suche, Umschaltung.
+- Test 12 (F1): `Bestehende Basket-Einträge schützen - Erneuter Rechts-Swipe & Undo bewahren Originalmenge, Override & Stopp-Allokation`
+- Test 13 (F2): `Strip wieder sichtbar machen - Nach Basket-Löschung erscheint der Streifen sofort wieder im Katalog & in der Suche ohne Navigation`
+- Test 14 (F3): `Fehlerbehandlung - Bei Persistenzfehler schnappt Streifen zurück, zeigt Fehler-SnackBar mit Retry und schützt vor Datenverlust`
+- Test 15 (F4): `Mengensteuerung - Minus bei Menge 1 entfernt Artikel weder auf Strip noch im Korb (Minimum 1)`

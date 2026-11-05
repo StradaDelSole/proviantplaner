@@ -1283,5 +1283,27 @@
   "swipeActionAdd": "To Basket",
   "swipeActionSkip": "Skip",
   "emptyBasketTitle": "Your basket is empty",
-  "emptyBasketSubtitle": "Swipe strips right or tap + to add products."
+  "emptyBasketSubtitle": "Swipe strips right or tap + to add products.",
+  "alreadyInBasketMessage": "{name} is already in basket ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Error saving {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-05 â FLIGHT-STRIP-01: Review Amendment 1 (#56, PR #60)
+
+- **F1 â Bestehende Basket-Einträge schützen (Idempotenz & Erhaltungs-Undo):**
+  - Erneuter Rechts-Swipe auf einen bereits im Korb liegenden Streifen mit unveränderter Menge führt keinen schädlichen Re-Adopt oder Reset von Stopp-Allokationen durch, sondern meldet informativ via SnackBar (alreadyInBasketMessage), dass der Artikel bereits im Korb liegt.
+  - Das Antippen von Rückgängig (Undo) stellt für bereits im Korb gewesene Artikel exakt die vorherige Packungsmenge (priorOverriddenPackages ?? priorEffectivePackages) wieder her, statt den Artikel destruktiv mit unadoptItem zu löschen. Nur neu hinzugefügte Artikel rufen bei Undo unadoptItem auf.
+- **F2 â Strip wieder sichtbar machen (Reaktivierung nach Korb-Löschung):**
+  - Nach dem Löschen eines Artikels aus dem Basket Tray (Icons.delete_outline) wird der Streifen über onItemRemoved und einen generationenbasierten Dismissible-Lifecycle sofort wieder im Katalog und in der Suche sichtbar, ohne dass der Screen neu geladen oder navigiert werden muss.
+- **F3 â Persistenz-Fehlerbehandlung & Parallelitätsschutz:**
+  - _pendingOperations-Set schützt gegen Race Conditions bei schnellen Mehrfach-Swipes oder simultanen Stepper-Aktionen.
+  - Schlägt das Speichern in die Datenbank fehl, fängt confirmDismiss den Fehler ab, der Streifen schnappt automatisch in seine Ausgangsposition zurück (return false), und ein lokalisierter Fehler-SnackBar (errorSavingItem) mit Erneut versuchen-Schaltfläche (retry) wird angezeigt. Kein falscher Erfolgs-Transfer.
+- **F4 â Robuste Mengensteuerung (Mindestmenge 1):**
+  - Das Antippen von Minus (-) bei Menge 1 auf dem Produktstreifen sowie im Basket Tray belässt die Menge auf dem zulässigen Minimum von 1 und entfernt den Artikel niemals stillschweigend. Die Entfernung aus dem Korb erfolgt ausschließlich über die dedizierte Lösch-Schaltfläche im Basket Tray.
+- **Lokalisierung:**
+  - Neue Strings alreadyInBasketMessage und errorSavingItem in allen 6 unterstützten Sprachen (de, en, es, fr, hr, pt) hinzugefügt.
+- **Qualitätssicherung:**
+  - Testsuite test/features/shopping_list/flight_strip_board_test.dart um 4 Integrationstests (F1âF4) erweitert (insgesamt 15 Tests, alle bestanden). Testet echte Datenbank-Zustände, Stopp-Allokationen, In-Memory-Failure-Injektion (FailingShoppingListService) und Reaktivierung.
+
 ## 2026-11-04 – FLIGHT-STRIP-01: Flight-Strip-Board für Vorratsliste (#56)
 
 - **Echtes Flutter Flight-Strip-Board (3-Ebenen-Architektur gemäß Issue #56):**
