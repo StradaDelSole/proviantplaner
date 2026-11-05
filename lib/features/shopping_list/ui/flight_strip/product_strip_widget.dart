@@ -78,8 +78,6 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
             listItemId: widget.item.item.id,
             delta: -1,
           );
-      if (!mounted) return;
-      ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     } else {
       if (_stagedPackages > 1) {
         setState(() => _stagedPackages--);
@@ -95,8 +93,6 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
             listItemId: widget.item.item.id,
             delta: 1,
           );
-      if (!mounted) return;
-      ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     } else {
       setState(() => _stagedPackages++);
     }
@@ -131,6 +127,7 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
     return Dismissible(
       key: ValueKey('strip_dismissible_${widget.item.id}_${widget.generation}'),
       direction: DismissDirection.horizontal,
+      resizeDuration: const Duration(milliseconds: 180),
       background: _buildSwipeBackground(
         alignment: Alignment.centerLeft,
         color: isNightwatch ? const Color(0xFF8B0000) : Colors.green.shade700,

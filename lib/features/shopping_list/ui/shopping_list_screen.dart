@@ -187,6 +187,8 @@ class ShoppingListScreen extends ConsumerWidget {
         ],
       ),
       body: listDataAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => NotFoundScreen(message: l10n.tripNotFound),
         data: (data) {

@@ -261,8 +261,6 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                                 listItemId: item.item.id,
                                                 delta: -1,
                                               );
-                                          if (!context.mounted) return;
-                                          ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
                                       Text(
@@ -282,8 +280,6 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                                 listItemId: item.item.id,
                                                 delta: 1,
                                               );
-                                          if (!context.mounted) return;
-                                          ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
 
@@ -300,7 +296,6 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                               );
                                           if (!context.mounted) return;
                                           widget.onItemRemoved?.call(item.id);
-                                          ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
                                     ],

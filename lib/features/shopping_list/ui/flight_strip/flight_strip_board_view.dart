@@ -76,7 +76,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
   }
 
   Future<bool> _handleConfirmSwipeToBasket(ShoppingListItemView item, int packages) async {
-    // F3: Parallelitäts- und Race-Schutz gegen mehrfache schnelle Aktionen
+        // F3: Parallelitäts- und Race-Schutz gegen mehrfache schnelle Aktionen
     if (_pendingOperations.contains(item.id)) return false;
     _pendingOperations.add(item.id);
 
@@ -132,7 +132,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
   }
 
   void _handleDismissedToBasket(ShoppingListItemView item, int packages) {
-    _pendingOperations.remove(item.id);
+        _pendingOperations.remove(item.id);
     if (!mounted) return;
 
     final l10n = AppLocalizations.of(context)!;
@@ -143,7 +143,6 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     setState(() {
       _transferredItemIds.add(item.id);
     });
-    ref.invalidate(tripShoppingListProvider(tripId));
 
     // F6-B: Sicher gekapselter Service und IDs vor SnackBarAction-Übergabe
     final service = ref.read(shoppingListServiceProvider);
@@ -170,9 +169,6 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
                 tripId: tripId,
                 listItemId: itemId,
               );
-              if (mounted) {
-                ref.invalidate(tripShoppingListProvider(tripId));
-              }
             } catch (e) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -284,7 +280,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     final activeCatView = widget.data.categories
         .where((c) => c.category.id == _selectedCategoryId)
         .firstOrNull;
-    final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);
+    final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList) && _pendingOperations.isEmpty;
 
     return Column(
       children: [
@@ -473,7 +469,9 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
 
         // 5. Scrollbare Liste der Produkt-Strips
         Expanded(
-          child: filteredItems.isEmpty
+          child: ColoredBox(
+            color: theme.scaffoldBackgroundColor,
+            child: filteredItems.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -508,68 +506,77 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
                     ),
                   ),
                 )
-              : ListView.builder(
+              : CustomScrollView(
                   key: const ValueKey('flight_strip_list_view'),
-                  padding: const EdgeInsets.only(top: 6, bottom: 12),
-                  itemCount: filteredItems.length + (!hasAdoptedItems && _searchQuery.isEmpty ? 1 : 0),
-                  itemBuilder: (ctx, index) {
-                    if (!hasAdoptedItems && _searchQuery.isEmpty && index == 0) {
-                      return Container(
-                        key: const ValueKey('empty_list_banner'),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.search, size: 22, color: theme.colorScheme.primary),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.emptyListTitle,
-                                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    l10n.emptyListSubtitle,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                  slivers: [
+                    if (!hasAdoptedItems && _searchQuery.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Container(
+                          key: const ValueKey('empty_list_banner'),
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: theme.colorScheme.outlineVariant),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.search, size: 22, color: theme.colorScheme.primary),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.emptyListTitle,
+                                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                                     ),
-                                  ),
-                                ],
+                                    Text(
+                                      l10n.emptyListSubtitle,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      );
-                    }
-                    final itemIndex = (!hasAdoptedItems && _searchQuery.isEmpty) ? index - 1 : index;
-                    final item = filteredItems[itemIndex];
-                    final gen = _itemKeyGenerations[item.id] ?? 0;
-                    return ProductStripWidget(
-                      key: ValueKey('strip_widget_${item.id}'),
-                      data: widget.data,
-                      item: item,
-                      generation: gen,
-                      onConfirmSwipeToBasket: (packages) => _handleConfirmSwipeToBasket(item, packages),
-                      onDismissedToBasket: (packages) => _handleDismissedToBasket(item, packages),
-                      onQuickAddToBasket: (packages) => _handleQuickAddToBasket(item, packages),
-                      onSkip: () => _handleSkip(item),
-                      onTapDetails: () {
-                        AddOrEditItemSheet.show(
-                          context,
-                          data: widget.data,
-                          item: item,
-                        );
-                      },
-                    );
-                  },
+                      ),
+                    SliverPadding(
+                      padding: const EdgeInsets.only(top: 6, bottom: 12),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (ctx, index) {
+                            final item = filteredItems[index];
+                            final gen = _itemKeyGenerations[item.id] ?? 0;
+                            return ProductStripWidget(
+                              key: ValueKey('strip_widget_${item.id}'),
+                              data: widget.data,
+                              item: item,
+                              generation: gen,
+                              onConfirmSwipeToBasket: (packages) => _handleConfirmSwipeToBasket(item, packages),
+                              onDismissedToBasket: (packages) => _handleDismissedToBasket(item, packages),
+                              onQuickAddToBasket: (packages) => _handleQuickAddToBasket(item, packages),
+                              onSkip: () => _handleSkip(item),
+                              onTapDetails: () {
+                                AddOrEditItemSheet.show(
+                                  context,
+                                  data: widget.data,
+                                  item: item,
+                                );
+                              },
+                            );
+                          },
+                          childCount: filteredItems.length,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+          ),
         ),
 
         // 6. Permanenter Warenkorb-Tray am Fuß

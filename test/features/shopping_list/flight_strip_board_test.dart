@@ -178,7 +178,13 @@ void main() {
         databaseProvider.overrideWithValue(db),
         catalogRepositoryProvider.overrideWithValue(catalogRepo),
         tripServiceProvider.overrideWithValue(tripService),
-        shoppingListServiceProvider.overrideWithValue(customShoppingListService ?? shoppingListService),
+        shoppingListServiceProvider.overrideWith((ref) {
+          final s = customShoppingListService ?? shoppingListService;
+          s.onTripDataChanged = (tId) {
+            ref.read(tripDataVersionProvider(tId).notifier).update((v) => v + 1);
+          };
+          return s;
+        }),
         flightStripBoardEnabledProvider.overrideWith((ref) => flightStripEnabled),
         shoppingListViewModeProvider.overrideWith((ref) => sortMode),
       ],
@@ -1047,6 +1053,39 @@ void main() {
       // Kanonischer DB-Zustand: Artikel wurde sauber unadopted (isAdopted = false)
       final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
       expect(dbItem?.isAdopted, isFalse);
+    });
+
+    testWidgets('#61: Swipe-Stabilität & Flicker-Prävention – Kein Unmount/Ladekreis während Provider-Reload beim Streifen-Transfer', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      final firstStrip = find.byType(ProductStripWidget).first;
+      expect(firstStrip, findsOneWidget);
+
+      // Fling Right in den Korb
+      await tester.fling(firstStrip, const Offset(600, 0), 1000);
+      
+      // Während der Animation und des Provider-Updates (Teil-Pump ohne Settle):
+      // Weder Ladekreis noch unmountetes Board darf auftreten
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
     });
   });
 }
