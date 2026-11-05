@@ -21,6 +21,8 @@ Verbindliche **Owner-accepted Planungsunterlagen** dieses Dokumentations-PRs:
 
 Eine Roadmap ist **keine** Freigabe eines PR-Merges, Cloud-Deploys oder neuen High-Risk-Implementierungsslices. Ältere Statusabschnitte in diesem README sind historische Kontextbelege und können nicht ohne erneute Reconciliation als aktueller Gate-Status gelten.
 
+**SHOP-01 Gate A (06.11.2026, CANDIDATE):** `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md`. Noch keine unabhängige Gate-A-/Phase-B-Freigabe.
+
 ## Engineering- und Review-Prozess (Owner-Entscheidung 30.10.2026)
 
 Für **jede neue Provy-Sitzung** gelten AGENTS.md, GEMINI.md und docs/ENGINEERING_STANDARD_v1.0.md. Bei High-Risk-Slices (Persistenz/Backup/Restore, Auth/Backend, Offline-Synchronisierung, Nebenläufigkeit, Finanzen, Migration) ist die zweistufige Arbeitsweise verbindlich: **Phase A Architektur- und Failure-Review ohne Code → unabhängiges Architecture Gate → Phase B Implementierung mit negativen und konkurrierenden Tests → unabhängiger Code-Review am exakten HEAD → Owner Acceptance**. Vorlagen: docs/templates/ARCHITECTURE_GATE_TEMPLATE.md und docs/templates/IMPLEMENTATION_BRIEF_TEMPLATE.md. Nach zwei verwandten Amendments Architektur neu bewerten statt blind weiterpatchen.
