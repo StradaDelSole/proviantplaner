@@ -38,6 +38,15 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.32 | 31.10.2026 | Owner akzeptiert iOS >=14 und Auth0 Flutter 2.7.x; technischer Compatibility-Check bleibt erforderlich |
 | v0.33 | 01.11.2026 | BC-1A Code Owner Acceptance & Merge PR #44; P05 realer Auth0-/Android-/iOS-Stage bleibt Issue #45 OPEN; BC-1B weiter nicht freigegeben |
 
+## Verbindliches Produktprinzip: Human-Centered Design (Owner 05.11.2026)
+
+**Verbindliche Source of Truth:** `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md`.
+
+- Für neue oder wesentlich geänderte Consumer-Flows vor dem Coding dokumentieren: Nutzergruppe, reale Aufgabe, Einsatzkontext (Planen/Shoppen/Unterwegs/Abrechnung), Reibungspunkt, Erfolgskriterium und Fehler-/Offline-/Undo-/Accessibility-Pfade.
+- Den **HCD-Pass** in UX-/Slice-Review durchführen: NN/g-Heuristik (sichtbarer Status, Recognition, Fehlervermeidung und Nutzerkontrolle), bestehende Benchmark-Strategie und Tests anhand realistischer Aufgaben. Geräte-, Owner- und unabhängige Usability-Beobachtungen nicht mit grünen automatisierten Tests gleichsetzen. Für Micro-Fixes risikobasierte kurze Begründung.
+- Für die Store-v1-Kernreisen Törn & Proviant, Einkauf & Crew-Sharing sowie Bordkasse & Abrechnung vor öffentlicher UX-Abnahme reale, dokumentierte Aufgabentests vorsehen; HCD-OPEN melden, solange diese Nachweise fehlen.
+- Bereits owner-accepted Informationsarchitektur und Interaktionsentscheidungen bleiben eingefroren. Neue Erkenntnisse, die einen Freeze oder Daten-/Security-Gate berühren, **nur als Owner-Entscheidungsvorschlag** vorlegen. Das HCD-Prinzip gibt selbst keinen Implementierungs-Slice, Merge, Cloud-Deploy oder Store-Release frei.
+
 ## Verbindlicher Engineering-Prozess ab 30.10.2026
 
 **Vor jeder neuen oder wiederaufgenommenen Sitzung** zuerst AGENTS.md und docs/ENGINEERING_STANDARD_v1.0.md vollständig lesen; neben dem aktuellen GitHub-Stand sind beide bindende Prozessquellen. Für High-Risk-Aufgaben (DB/Dateisystem/Backup, Concurrency, Auth/Security, Backend/APIs, Finanzen, Offline-Sync, Migration) sind **zwei getrennte Phasen Pflicht**:
