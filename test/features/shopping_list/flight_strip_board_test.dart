@@ -1087,5 +1087,66 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.byType(FlightStripBoardView), findsOneWidget);
     });
+
+    testWidgets('FLICKER-61-B: Bereits gefüllter Korb blendet bei weiterem Swipe unter keinen Umständen den empty_list_banner ein', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllableService = ControllableShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final item1 = initialData.categories.first.groups.first.variants[0];
+      final item2 = initialData.categories.first.groups.first.variants[1];
+
+      // Korb vorab mit item1 füllen -> hasAdoptedItems = true
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: item1.item.id);
+
+      final adoptCompleter = Completer<void>();
+      controllableService.adoptDelay = adoptCompleter;
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: controllableService));
+      await tester.pumpAndSettle();
+
+      // Vor dem Swipe: Kein empty_list_banner vorhanden
+      expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
+
+      // Streifen von item2 finden und nach rechts wischen
+      final strip2 = find.byKey(ValueKey('strip_widget_${item2.id}'));
+      expect(strip2, findsOneWidget);
+      await tester.fling(strip2, const Offset(600, 0), 1000);
+
+      // Während die Persistenz in _pendingOperations hängt:
+      // UI mehrfach pumpen und assertieren, dass empty_list_banner NIEMALS aufflackert
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+
+      // DB-Schreiben abschließen
+      adoptCompleter.complete();
+      await tester.pumpAndSettle();
+
+      // Nach Abschluss weiterhin kein empty_list_banner
+      expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
+      expect(find.text('Rückgängig'), findsOneWidget);
+
+      // Undo ausführen
+      await tester.tap(find.text('Rückgängig'));
+      await tester.pumpAndSettle();
+
+      // Auch nach Undo von item2 bleibt item1 im Korb -> immer noch KEIN empty_list_banner
+      expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
+    });
   });
 }

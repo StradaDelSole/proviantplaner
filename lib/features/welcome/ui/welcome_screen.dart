@@ -115,10 +115,40 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     super.dispose();
   }
 
+  bool _isSubmitting = false;
+  bool _showContinueAnyway = false;
+
   Future<void> _handleGetStarted() async {
-    await ref.read(welcomeCompletedProvider.notifier).completeWelcome();
-    if (!mounted) return;
-    context.go('/');
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      await ref.read(welcomeCompletedProvider.notifier).completeWelcome();
+      if (!mounted) return;
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _showContinueAnyway = true;
+      });
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          key: const ValueKey('welcome_error_snackbar'),
+          content: Text(l10n.welcomeStorageError),
+          action: SnackBarAction(
+            key: const ValueKey('welcome_retry_snackbar_action'),
+            label: l10n.retry,
+            onPressed: _handleGetStarted,
+          ),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -267,6 +297,24 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                       const Spacer(flex: 3),
 
                       // 4. Barrierefreier CTA-Button "Los geht's"
+                      if (_showContinueAnyway) ...[
+                        TextButton(
+                          key: const ValueKey('welcome_continue_anyway_button'),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ref.read(welcomeCompletedProvider.notifier).continueWithoutPersistence();
+                            context.go('/');
+                          },
+                          child: Text(
+                            l10n.welcomeContinueAnyway,
+                            style: TextStyle(
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       SlideTransition(
                         position: _ctaSlide,
                         child: FadeTransition(

@@ -12,6 +12,7 @@ abstract class WelcomeStorage {
 }
 
 /// Produktionsimplementierung über FlutterSecureStorage.
+/// Behandelt Persistenzfehler wahrheitsgetreu und verschluckt keine Ausnahmen (W2).
 class SecureWelcomeStorage implements WelcomeStorage {
   final FlutterSecureStorage _storage;
   static const String key = 'provy_welcome_seen_v1';
@@ -20,35 +21,45 @@ class SecureWelcomeStorage implements WelcomeStorage {
 
   @override
   Future<bool> hasSeenWelcome() async {
-    try {
-      final value = await _storage.read(key: key);
-      return value == 'true';
-    } catch (_) {
-      return false;
-    }
+    final value = await _storage.read(key: key);
+    return value == 'true';
   }
 
   @override
   Future<void> setSeenWelcome() async {
-    try {
-      await _storage.write(key: key, value: 'true');
-    } catch (_) {
-      // Speicherfehler beim Schreiben fangen, um UI-Fluss nicht zu blockieren
-    }
+    await _storage.write(key: key, value: 'true');
   }
 }
 
 /// In-Memory-Implementierung für deterministische Tests.
 class MemoryWelcomeStorage implements WelcomeStorage {
   bool _seen;
+  bool shouldFailWrite;
+  bool shouldFailRead;
+  int writeCalls = 0;
+  int readCalls = 0;
 
-  MemoryWelcomeStorage({bool initialSeen = false}) : _seen = initialSeen;
+  MemoryWelcomeStorage({
+    bool initialSeen = false,
+    this.shouldFailWrite = false,
+    this.shouldFailRead = false,
+  }) : _seen = initialSeen;
 
   @override
-  Future<bool> hasSeenWelcome() async => _seen;
+  Future<bool> hasSeenWelcome() async {
+    readCalls++;
+    if (shouldFailRead) {
+      throw Exception('Simulierter Lesefehler im WelcomeStorage');
+    }
+    return _seen;
+  }
 
   @override
   Future<void> setSeenWelcome() async {
+    writeCalls++;
+    if (shouldFailWrite) {
+      throw Exception('Simulierter Schreibfehler im WelcomeStorage');
+    }
     _seen = true;
   }
 }
@@ -69,9 +80,22 @@ final welcomeCompletedProvider =
 class WelcomeCompletedNotifier extends StateNotifier<AsyncValue<bool>> {
   final WelcomeStorage _storage;
   final dynamic _db;
+  bool _isCompleting = false;
 
   WelcomeCompletedNotifier(this._storage, [this._db]) : super(const AsyncValue.loading()) {
     _load();
+  }
+
+  /// Wiederholt den Ladevorgang nach einem Fehler (W1).
+  Future<void> retry() async {
+    state = const AsyncValue.loading();
+    await _load();
+  }
+
+  /// Erlaubt bei wiederholten/dauerhaften Speicherfehlern das Starten ohne Persistenz (W2),
+  /// damit der Nutzer durch Gerätedefekte (z.B. Keystore-Defekt) nicht dauerhaft ausgesperrt wird.
+  void continueWithoutPersistence() {
+    state = const AsyncValue.data(true);
   }
 
   Future<void> _load() async {
@@ -84,7 +108,12 @@ class WelcomeCompletedNotifier extends StateNotifier<AsyncValue<bool>> {
       if (_db != null) {
         final trips = await _db.tripDao.getAllTrips();
         if (trips.isNotEmpty) {
-          await _storage.setSeenWelcome();
+          try {
+            await _storage.setSeenWelcome();
+          } catch (_) {
+            // Wenn bei existierenden Trips das Zwischenspeichern fehlschlägt,
+            // wird der Nutzer trotzdem nicht blockiert.
+          }
           state = const AsyncValue.data(true);
           return;
         }
@@ -95,9 +124,16 @@ class WelcomeCompletedNotifier extends StateNotifier<AsyncValue<bool>> {
     }
   }
 
+  /// Schließt das Welcome wahrheitsgetreu ab (W2).
+  /// Behauptet bei fehlgeschlagener Speicherung keinen Erfolg und verhindert Concurrency.
   Future<void> completeWelcome() async {
-    await _storage.setSeenWelcome();
-    state = const AsyncValue.data(true);
+    if (_isCompleting) return;
+    _isCompleting = true;
+    try {
+      await _storage.setSeenWelcome();
+      state = const AsyncValue.data(true);
+    } finally {
+      _isCompleting = false;
+    }
   }
 }
-

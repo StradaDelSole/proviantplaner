@@ -1199,5 +1199,7 @@
   "welcomeStepSettlement": "Obračun",
   "welcomeGetStarted": "Započni",
   "welcomeBrandHeadline": "Planiraj pametnije. Jedri lakše.",
-  "welcomeBrandSubline": "Izračunaj zalihe. Podijeli troškove posade. Obračunaj bez stresa."
+  "welcomeBrandSubline": "Izračunaj zalihe. Podijeli troškove posade. Obračunaj bez stresa.",
+  "welcomeStorageError": "Nije moguće spremiti status dobrodošlice.",
+  "welcomeContinueAnyway": "Svejedno nastavi"
 }

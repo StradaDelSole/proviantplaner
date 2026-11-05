@@ -222,8 +222,8 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 **PR:** #60  
 **Commits:**
 - `037ff8f` fix(flight-strip): resolve swipe flicker by stabilizing provider reload and dismissible (#61)
-- `daa3f0f` feat(welcome): implement animated PROVY brand welcome screen with seen-state (#62)
-**Status:** IMPLEMENTIERT, CI VOLLSTÄNDIG ERFOLGREICH (RUN 42102232420) – BEREIT FÜR INDEPENDENT REVIEW
+- `6dbed3320ed02eeb8937e8d7c523a8c031452cd5` feat(welcome): implement animated PROVY brand welcome screen with seen-state (#62)
+**Status:** IMPLEMENTIERT, CI VOLLSTÄNDIG ERFOLGREICH (RUN 42102955269) – BEREIT FÜR INDEPENDENT REVIEW
 
 ### A – Schwarzes Swipe-Flackern beheben (#61)
 - `ShoppingListScreen`: `skipLoadingOnReload: true` und `skipLoadingOnRefresh: true` bei `listDataAsync.when(...)` konfiguriert. Verhindert das vorübergehende Unmounten des gesamten Boards und das Einblenden des Ladekreises während Daten-Reloads.
@@ -249,3 +249,35 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - Themes: Nachtwache strikt `#FF3B30` auf `#000000`. Alle 6 Sprachen (`de`, `en`, `es`, `fr`, `hr`, `pt`).
 - Persistenz & Gate: `WelcomeStorage` (`FlutterSecureStorage`-Key `provy_welcome_seen_v1`). Bestehende Törns in DB überspringen Welcome automatisch (`welcomeCompletedProvider`). Bootstrap-Gate `appStartupRecoveryProvider` in `main.dart` unverändert beibehalten; `AppStartupRecoveryLoadingScreen` im PROVY-Markenstil gestaltet.
 - **Tests:** 7 Tests in `test/features/welcome/welcome_screen_test.dart` (alle grün).
+
+---
+
+## 10. Review Amendment 1 (Review 5791807714: Findings W1, W2, FLICKER-61-B)
+
+**Datum:** 05.11.2026  
+**PR:** #60  
+**Status:** IMPLEMENTIERT & VOLLSTÄNDIG GETESTET – BEREIT FÜR RE-REVIEW
+
+### 1. W1 – Kein Home-Screen vor abgeschlossenem Welcome-Check
+- **Ursache:** Während `welcomeCompletedProvider.isLoading` gab der GoRouter-Redirect `null` zurück, wodurch GoRouter die Initial-Location `'/'` aufrief und `StartScreen` („Meine Törns“) gerendert wurde, bevor der asynchrone Keystore-/DB-Check abgeschlossen war.
+- **Lösung:**
+  - `GoRouter`-Redirect fängt unaufgelöste Ladezustände ab und leitet explizit auf `/welcome-loading` (`WelcomeGateLoadingScreen`) um.
+  - Fehlerzustände beim initialen Laden leiten auf `/welcome-error` (`WelcomeGateErrorScreen`) mit `retry()` und Notfall-Bypass um.
+  - Deep-Links (z.B. `/trips/new`) werden für Erstnutzer vor Welcome-Abschluss gesperrt und nach `/welcome` umgeleitet.
+  - GoRouter nutzt `AppRouterRefreshNotifier` als `refreshListenable`, wodurch die Router-Instanz stabil bleibt und Navigation-History nicht re-initialisiert wird.
+- **Tests:** 5 neue deterministische Tests in `test/features/welcome/welcome_screen_test.dart` (W1.1 bis W1.5).
+
+### 2. W2 – Wahrheitsgetreue Welcome-Persistenz
+- **Ursache:** `SecureWelcomeStorage.setSeenWelcome()` fing Exceptions blind ab und `completeWelcome()` meldete dennoch Erfolg. Bei nachfolgendem Neustart wurde der WelcomeScreen erneut angezeigt.
+- **Lösung:**
+  - `SecureWelcomeStorage.setSeenWelcome()` und `hasSeenWelcome()` verschlucken keine Dateisystem-/Keystore-Exceptions.
+  - `completeWelcome()` fängt Schreibfehler nicht ab, sondern propagiert sie an den Aufrufer, ohne den `AsyncValue`-State fälschlicherweise auf `data(true)` zu setzen.
+  - Concurrency-Guard (`_isCompleting`) verhindert parallele Speicheraufrufe bei schnellem Mehrfach-Tippen auf den CTA.
+  - `WelcomeScreen` zeigt bei Speicherfehlern eine SnackBar mit „Erneut versuchen“ (`welcome_retry_snackbar_action`) und blendet die Notfall-Option „Trotzdem fortfahren“ (`welcome_continue_anyway_button`) ein, um Nutzer bei Gerätedefekten nicht dauerhaft auszusperren.
+- **Tests:** 4 neue deterministische Tests in `test/features/welcome/welcome_screen_test.dart` (W2.1 bis W2.4).
+
+### 3. FLICKER-61-B – Fachlich korrekter Empty-State
+- **Ursache:** In `FlightStripBoardView` wurde `hasAdoptedItems` fälschlicherweise an `&& _pendingOperations.isEmpty` gekoppelt. Wenn bereits Artikel im Korb lagen und ein weiterer Artikel gewischt wurde, wurde während der anhängigen Operation fälschlicherweise `hasAdoptedItems = false` evaluiert und der `empty_list_banner` temporär eingeblendet.
+- **Lösung:**
+  - `hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);` rein fachlich aus dem tatsächlichen Korb-Inhalt abgeleitet.
+- **Test:** Test 25 in `test/features/shopping_list/flight_strip_board_test.dart` (`FLICKER-61-B: Bereits gefüllter Korb blendet bei weiterem Swipe unter keinen Umständen den empty_list_banner ein`).

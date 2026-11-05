@@ -1199,5 +1199,7 @@
   "welcomeStepSettlement": "Liquidación",
   "welcomeGetStarted": "Comenzar",
   "welcomeBrandHeadline": "Planifica mejor. Navega ligero.",
-  "welcomeBrandSubline": "Calcula provisiones. Comparte gastos de tripulación. Liquida con calma."
+  "welcomeBrandSubline": "Calcula provisiones. Comparte gastos de tripulación. Liquida con calma.",
+  "welcomeStorageError": "No se pudo guardar el estado de bienvenida.",
+  "welcomeContinueAnyway": "Continuar de todos modos"
 }

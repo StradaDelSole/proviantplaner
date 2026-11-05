@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-05 – PIXEL-QA-61 + BRAND-WELCOME-01: Review Amendment 1 (PR #60, Findings W1, W2, FLICKER-61-B)
+
+- **W1 – Stabiler Lade- & Fehlerzustand vor Welcome-Check:**
+  - `GoRouter`-Redirect in `lib/core/routing/app_router.dart` sperrt Startseite und Törnrouten (inkl. Deep-Links) während `welcomeCompletedProvider.isLoading` via `/welcome-loading` (`WelcomeGateLoadingScreen`).
+  - Expliziter Fehlerbildschirm `/welcome-error` (`WelcomeGateErrorScreen`) mit wiederholbarem `retry()` und Notfall-Bypass (`continueWithoutPersistence()`).
+  - `AppRouterRefreshNotifier` als `refreshListenable` verhindert das Neu-Erzeugen der `GoRouter`-Instanz und bewahrt den Navigationszustand.
+- **W2 – Wahrheitsgetreue Persistenz im WelcomeStorage:**
+  - `SecureWelcomeStorage.setSeenWelcome()` und `hasSeenWelcome()` verschlucken keine Dateisystem-/Keystore-Exceptions mehr.
+  - `completeWelcome()` meldet bei Schreibfehlern keinen persistenten Erfolg und verhindert Concurrency bei schnellem Mehrfach-Tippen.
+  - `WelcomeScreen` fängt Speicherfehler ab, zeigt eine SnackBar mit Wiederholen-Aktion und bietet bei dauerhaftem Keystore-Defekt den `welcome_continue_anyway_button`, um Nutzer nicht auszusperren.
+- **FLICKER-61-B – Robuster fachlicher Empty-State:**
+  - `hasAdoptedItems` in `FlightStripBoardView` prüft rein fachlich `widget.data.allItems.any((it) => it.isOnList)` ohne die fehlerhafte `_pendingOperations.isEmpty`-Bedingung.
+  - Ein bereits befüllter Basket blendet bei weiteren Swipes unter keinen Umständen mehr fälschlicherweise den `empty_list_banner` ein.
+- **Qualitätssicherung:**
+  - Deterministische Tests für W1 (9 Tests), W2 (7 Tests) in `test/features/welcome/welcome_screen_test.dart`.
+  - Regressionstest für FLICKER-61-B in `test/features/shopping_list/flight_strip_board_test.dart` (insgesamt 25 Tests grün).
+
 ## 2026-11-05 – BRAND-WELCOME-01: Animierter PROVY Welcome-Screen (#62, PR #60)
 
 - **Animierter Brand-Welcome-Screen:**

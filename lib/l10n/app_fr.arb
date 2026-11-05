@@ -1199,5 +1199,7 @@
   "welcomeStepSettlement": "Décompte",
   "welcomeGetStarted": "C'est parti",
   "welcomeBrandHeadline": "Planifier mieux. Naviguer plus léger.",
-  "welcomeBrandSubline": "Calculer les vivres. Partager les frais d'équipage. Régler en toute sérénité."
+  "welcomeBrandSubline": "Calculer les vivres. Partager les frais d'équipage. Régler en toute sérénité.",
+  "welcomeStorageError": "Impossible d'enregistrer l'état de bienvenue.",
+  "welcomeContinueAnyway": "Continuer quand même"
 }

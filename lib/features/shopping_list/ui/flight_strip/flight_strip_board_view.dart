@@ -280,7 +280,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     final activeCatView = widget.data.categories
         .where((c) => c.category.id == _selectedCategoryId)
         .firstOrNull;
-    final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList) && _pendingOperations.isEmpty;
+    final hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);
 
     return Column(
       children: [

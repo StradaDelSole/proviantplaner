@@ -1199,5 +1199,7 @@
   "welcomeStepSettlement": "Acerto de contas",
   "welcomeGetStarted": "Começar",
   "welcomeBrandHeadline": "Planeie melhor. Navegue mais leve.",
-  "welcomeBrandSubline": "Calcule mantimentos. Partilhe custos da tripulação. Acerte contas com facilidade."
+  "welcomeBrandSubline": "Calcule mantimentos. Partilhe custos da tripulação. Acerte contas com facilidade.",
+  "welcomeStorageError": "Não foi possível guardar o estado de boas-vindas.",
+  "welcomeContinueAnyway": "Continuar mesmo assim"
 }

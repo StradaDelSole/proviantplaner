@@ -1515,5 +1515,13 @@
   "welcomeBrandSubline": "Proviant berechnen. Crewkosten teilen. Entspannt abrechnen.",
   "@welcomeBrandSubline": {
     "description": "Brand Welcome subline"
+  },
+  "welcomeStorageError": "Status konnte nicht gespeichert werden.",
+  "@welcomeStorageError": {
+    "description": "Fehlermeldung bei Speicherfehler im WelcomeStorage"
+  },
+  "welcomeContinueAnyway": "Trotzdem fortfahren",
+  "@welcomeContinueAnyway": {
+    "description": "Schaltflaeche um bei Speicherfehler ohne Persistenz fortzufahren"
   }
 }

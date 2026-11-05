@@ -1329,5 +1329,13 @@
   "welcomeBrandSubline": "Plan provisions. Share crew costs. Settle with ease.",
   "@welcomeBrandSubline": {
     "description": "Brand Welcome subline"
+  },
+  "welcomeStorageError": "Could not save onboarding status.",
+  "@welcomeStorageError": {
+    "description": "Error message when welcome status could not be saved"
+  },
+  "welcomeContinueAnyway": "Continue anyway",
+  "@welcomeContinueAnyway": {
+    "description": "Button to continue without saving onboarding status"
   }
 }
