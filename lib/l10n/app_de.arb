@@ -28,7 +28,7 @@
   "@welcomeHeadline": {
     "description": "Überschrift auf dem Startbildschirm"
   },
-  "welcomeSubline": "Proviant kalkulieren, Vorräte verwalten und Bordkasse fair aufteilen.",
+  "welcomeSubline": "Proviant berechnen, Vorräte verwalten und Ausgaben fair aufteilen.",
   "@welcomeSubline": {
     "description": "Untertitel auf dem Startbildschirm"
   },
@@ -1491,5 +1491,29 @@
         "type": "String"
       }
     }
+  },
+  "welcomeStepPlanning": "Proviantplanung",
+  "@welcomeStepPlanning": {
+    "description": "Erster Schritt der Welcome-Route"
+  },
+  "welcomeStepCosts": "Bordkasse",
+  "@welcomeStepCosts": {
+    "description": "Zweiter Schritt der Welcome-Route"
+  },
+  "welcomeStepSettlement": "Abrechnung",
+  "@welcomeStepSettlement": {
+    "description": "Dritter Schritt der Welcome-Route"
+  },
+  "welcomeGetStarted": "Los geht's",
+  "@welcomeGetStarted": {
+    "description": "Schaltfläche zum Starten der App"
+  },
+  "welcomeBrandHeadline": "Smarter planen. Leichter segeln.",
+  "@welcomeBrandHeadline": {
+    "description": "Brand Welcome headline"
+  },
+  "welcomeBrandSubline": "Proviant berechnen. Crewkosten teilen. Entspannt abrechnen.",
+  "@welcomeBrandSubline": {
+    "description": "Brand Welcome subline"
   }
 }

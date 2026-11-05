@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-11-05 – BRAND-WELCOME-01: Animierter PROVY Welcome-Screen (#62, PR #60)
+
+- **Animierter Brand-Welcome-Screen:**
+  - `WelcomeScreen` als Einstiegsscreen vor „Meine Törns“ (`StartScreen`) implementiert.
+  - Verbatim freigegebenes Branding:
+    - Wordmark: `PROVY` (abgeleitet aus `AppConfig.appName.toUpperCase()`).
+    - Headline: „Provision smarter. Sail lighter.“ / „Smarter planen. Leichter segeln.“
+    - Subline: „Plan provisions. Share crew costs. Settle with ease.“ / „Proviant berechnen. Crewkosten teilen. Entspannt abrechnen.“
+    - 3 maritime Wegpunkte:
+      - 01 Proviantplanung (`welcomeStepPlanning`)
+      - 02 Bordkasse (`welcomeStepCosts`)
+      - 03 Abrechnung (`welcomeStepSettlement`)
+    - Barrierefreier CTA-Button „Get started“ / „Los geht's“ (`welcomeGetStarted`).
+- **Maritime Routenlinie (CustomPainter):**
+  - Sanft geschwungene nautische Wegpunktlinie (`_RoutePainter`), synchron animiert mit gestaffeltem Fade/Slide der Markenelemente (`Curves.easeOutCubic`, ca. 1.2s Gesamtdauer, kein Loop).
+- **Barrierefreiheit & Themes:**
+  - Vollständige Unterstützung für reduzierte Bewegung: Bei `MediaQuery.disableAnimations == true` schließt der AnimationController sofort ab und rendert eine statische, sofort interaktive Ansicht.
+  - Nachtwache-Modus: Strikt Rot (`#FF3B30`) auf Schwarz (`#000000`).
+  - Barrierefreie Mindest-Touch-Targets (>= 44x44 dp) und Viewport-Sicherheit für kleine Displays (320px Breite).
+  - Unterstützung aller 6 Sprachen (`de`, `en`, `es`, `fr`, `hr`, `pt`).
+- **Persistenz & Architektur:**
+  - `WelcomeStorage` mit `SecureWelcomeStorage` (`FlutterSecureStorage`-Key `provy_welcome_seen_v1`) und `MemoryWelcomeStorage` für Tests.
+  - `welcomeCompletedProvider` steuert Riverpod-Zustand.
+  - Routing: `/welcome`-Route und GoRouter-Redirect (erstmaliger Start leitet nach `/welcome`, Folgestarts direkt nach `/`).
+  - Bootstrap-Gate `appStartupRecoveryProvider` in `main.dart` unverändert beibehalten; `AppStartupRecoveryLoadingScreen` im PROVY-Markenstil gestaltet.
+- **Qualitätssicherung:**
+  - 7 neue deterministische Unit- & Widget-Tests in `test/features/welcome/welcome_screen_test.dart` (alle grün).
+
+## 2026-11-05 – PIXEL-QA-61: Swipe-Flicker-Behebung (#61, PR #60)
+
+- **Swipe-Stabilität & Flicker-Prävention (Pixel 7 Pro):**
+  - `skipLoadingOnReload: true` und `skipLoadingOnRefresh: true` in `ShoppingListScreen` für `listDataAsync.when(...)` ergänzt. Verhindert das vorübergehende Unmounten des gesamten Boards und das Einblenden des Ladekreises während Daten-Reloads.
+  - Redundante `ref.invalidate(tripShoppingListProvider(...))` in `FlightStripBoardView`, `BasketTrayWidget` und `ProductStripWidget` entfernt; die Reaktivität läuft zuverlässig über `ShoppingListService.onTripDataChanged` und `tripDataVersionProvider`.
+  - `CustomScrollView` mit `SliverToBoxAdapter` und `SliverList` in `FlightStripBoardView` eingeführt. Hält Element-Indizes stabil, verhindert Gesten-Abbrüche bei Dismissible-Animationen und löst RenderFlex-Overflows auf 320px-Displays.
+  - `resizeDuration: 180ms` auf `Dismissible` in `ProductStripWidget` konfiguriert für zügiges und flüssiges Einklappen.
+  - Feste Hintergrundfarbe (`ColoredBox(color: theme.scaffoldBackgroundColor)`) im Listenbereich über alle Farbmodi (Hell, Dunkel, Nachtwache).
+- **Qualitätssicherung:**
+  - Deterministischer Regressionstest in `test/features/shopping_list/flight_strip_board_test.dart` ergänzt (insgesamt 24 Tests, alle grün).
+
 ## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 3 (#56, PR #60)
 
 - **F6-A – Quick-Add nach Unmount abgesichert:**

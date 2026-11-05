@@ -105,20 +105,38 @@ class AppStartupRecoveryLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isNightwatch = theme.scaffoldBackgroundColor == const Color(0xFF000000);
+    final primaryColor = isNightwatch
+        ? const Color(0xFFFF3B30)
+        : theme.colorScheme.primary;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
               Text(
-                l10n?.appTitle ?? AppConfig.appName,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+                AppConfig.appName.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSans',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 6.0,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
               ),
             ],
           ),

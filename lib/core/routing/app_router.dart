@@ -2,6 +2,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/features/welcome/data/welcome_storage.dart';
+import 'package:proviantplaner/features/welcome/ui/welcome_screen.dart';
 import 'package:proviantplaner/features/home/ui/start_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
@@ -16,10 +18,30 @@ import 'package:proviantplaner/features/more/ui/more_screen.dart';
 /// Provider für den GoRouter der Anwendung.
 /// Ermöglicht deklarative Navigation gemäß den technischen Leitplanken.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final welcomeState = ref.watch(welcomeCompletedProvider);
+
   return GoRouter(
     initialLocation: '/',
     errorBuilder: (context, state) => const NotFoundScreen(),
+    redirect: (context, state) {
+      if (welcomeState.isLoading) return null;
+      final hasSeen = welcomeState.value ?? false;
+      final isWelcomeRoute = state.matchedLocation == '/welcome';
+
+      if (!hasSeen && state.matchedLocation == '/') {
+        return '/welcome';
+      }
+      if (hasSeen && isWelcomeRoute) {
+        return '/';
+      }
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: '/',
         name: 'start',

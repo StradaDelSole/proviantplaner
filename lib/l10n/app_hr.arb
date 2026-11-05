@@ -7,7 +7,7 @@
   "navFund": "Blagajna",
   "navMore": "Više",
   "welcomeHeadline": "Opskrba i brodska blagajna – jednostavno i pregledno",
-  "welcomeSubline": "Izračunaj zalihe, upravljaj namirnicama i pravedno podijeli troškove plovidbe.",
+  "welcomeSubline": "Izračunajte zalihe, upravljajte zalihama i pravedno podijelite troškove.",
   "tripWizardTitle": "Nova plovidba",
   "stepBasic": "Osnovni podaci",
   "stepBoat": "Brod i područje",
@@ -1193,5 +1193,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "welcomeStepPlanning": "Planiranje zaliha",
+  "welcomeStepCosts": "Brodska blagajna",
+  "welcomeStepSettlement": "Obračun",
+  "welcomeGetStarted": "Započni",
+  "welcomeBrandHeadline": "Planiraj pametnije. Jedri lakše.",
+  "welcomeBrandSubline": "Izračunaj zalihe. Podijeli troškove posade. Obračunaj bez stresa."
 }

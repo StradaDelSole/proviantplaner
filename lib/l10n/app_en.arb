@@ -1305,5 +1305,29 @@
         "type": "String"
       }
     }
+  },
+  "welcomeStepPlanning": "Provision planning",
+  "@welcomeStepPlanning": {
+    "description": "First step of welcome route"
+  },
+  "welcomeStepCosts": "Crew costs",
+  "@welcomeStepCosts": {
+    "description": "Second step of welcome route"
+  },
+  "welcomeStepSettlement": "Settlement",
+  "@welcomeStepSettlement": {
+    "description": "Third step of welcome route"
+  },
+  "welcomeGetStarted": "Get started",
+  "@welcomeGetStarted": {
+    "description": "Button to enter the app"
+  },
+  "welcomeBrandHeadline": "Provision smarter. Sail lighter.",
+  "@welcomeBrandHeadline": {
+    "description": "Brand Welcome headline"
+  },
+  "welcomeBrandSubline": "Plan provisions. Share crew costs. Settle with ease.",
+  "@welcomeBrandSubline": {
+    "description": "Brand Welcome subline"
   }
 }

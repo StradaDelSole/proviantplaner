@@ -7,7 +7,7 @@
   "navFund": "Caisse de bord",
   "navMore": "Plus",
   "welcomeHeadline": "Avitaillement et caisse de bord – tout simplement",
-  "welcomeSubline": "Calculer les provisions, gérer les stocks et partager équitablement la caisse de bord.",
+  "welcomeSubline": "Calculez le ravitaillement, gérez les stocks et partagez les frais équitablement.",
   "tripWizardTitle": "Nouvelle croisière",
   "stepBasic": "Données de base",
   "stepBoat": "Bateau et zone",
@@ -1193,5 +1193,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "welcomeStepPlanning": "Planification des vivres",
+  "welcomeStepCosts": "Caisse de bord",
+  "welcomeStepSettlement": "Décompte",
+  "welcomeGetStarted": "C'est parti",
+  "welcomeBrandHeadline": "Planifier mieux. Naviguer plus léger.",
+  "welcomeBrandSubline": "Calculer les vivres. Partager les frais d'équipage. Régler en toute sérénité."
 }

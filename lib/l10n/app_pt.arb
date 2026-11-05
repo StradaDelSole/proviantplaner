@@ -7,7 +7,7 @@
   "navFund": "Caixa de bordo",
   "navMore": "Mais",
   "welcomeHeadline": "Mantimentos e caixa de bordo – simples e prático",
-  "welcomeSubline": "Calcular mantimentos, gerir provisões e repartir as despesas a bordo com justiça.",
+  "welcomeSubline": "Calcule mantimentos, gira o stock e divida as despesas de forma justa.",
   "tripWizardTitle": "Nova viagem",
   "stepBasic": "Dados básicos",
   "stepBoat": "Barco e bacia",
@@ -1193,5 +1193,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "welcomeStepPlanning": "Planeamento de mantimentos",
+  "welcomeStepCosts": "Caixa de bordo",
+  "welcomeStepSettlement": "Acerto de contas",
+  "welcomeGetStarted": "Começar",
+  "welcomeBrandHeadline": "Planeie melhor. Navegue mais leve.",
+  "welcomeBrandSubline": "Calcule mantimentos. Partilhe custos da tripulação. Acerte contas com facilidade."
 }

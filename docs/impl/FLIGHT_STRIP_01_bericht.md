@@ -213,3 +213,39 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - Tests 16-21: Review Amendment 2 (F5.1-F5.4, F6.1-F6.2).
 - Test 22 (F6-A): `F6-A: Quick-Add nach Unmount – Verzögertes adoptItem bei Ansichtswechsel wirft kein setState after dispose und persistiert DB korrekt`
 - Test 23 (F6-B): `F6-B: Undo nach Ansichtswechsel – Noch sichtbare SnackBar greift nach Unmount nicht auf ungültigen Ref zu und stellt Zustand wieder her`
+
+---
+
+## 9. PIXEL-QA-61 + BRAND-WELCOME-01 (#61, #62)
+
+**Datum:** 05.11.2026  
+**PR:** #60  
+**Commits:**
+- `037ff8f` fix(flight-strip): resolve swipe flicker by stabilizing provider reload and dismissible (#61)
+- `daa3f0f` feat(welcome): implement animated PROVY brand welcome screen with seen-state (#62)
+**Status:** IMPLEMENTIERT, CI VOLLSTÄNDIG ERFOLGREICH (RUN 42102232420) – BEREIT FÜR INDEPENDENT REVIEW
+
+### A – Schwarzes Swipe-Flackern beheben (#61)
+- `ShoppingListScreen`: `skipLoadingOnReload: true` und `skipLoadingOnRefresh: true` bei `listDataAsync.when(...)` konfiguriert. Verhindert das vorübergehende Unmounten des gesamten Boards und das Einblenden des Ladekreises während Daten-Reloads.
+- Redundante `ref.invalidate(tripShoppingListProvider(...))` in `FlightStripBoardView`, `BasketTrayWidget` und `ProductStripWidget` entfernt; Reaktivität läuft zuverlässig über `ShoppingListService.onTripDataChanged` und `tripDataVersionProvider`.
+- `CustomScrollView` mit `SliverToBoxAdapter` und `SliverList` in `FlightStripBoardView` eingeführt. Hält Element-Indizes stabil, verhindert Gesten-Abbrüche bei Dismissible-Animationen und löst RenderFlex-Overflows auf 320px-Displays.
+- `resizeDuration: 180ms` auf `Dismissible` in `ProductStripWidget` für flüssiges Einklappen.
+- Feste Hintergrundfarbe (`ColoredBox(color: theme.scaffoldBackgroundColor)`) im Listenbereich über alle Themes.
+- **Test:** Test 24 in `test/features/shopping_list/flight_strip_board_test.dart` (`#61: Swipe-Stabilität & Flicker-Prävention – Kein Unmount/Ladekreis während Provider-Reload beim Streifen-Transfer`).
+
+### B – Animierter PROVY Welcome-Screen (#62)
+- `WelcomeScreen`: Einstiegsscreen vor „Meine Törns“ (`StartScreen`).
+- Verbatim freigegebenes Branding:
+  - Wordmark: `PROVY` (`AppConfig.appName.toUpperCase()`).
+  - Headline: „Provision smarter. Sail lighter.“ (`welcomeBrandHeadline`).
+  - Subline: „Plan provisions. Share crew costs. Settle with ease.“ (`welcomeBrandSubline`).
+  - 3 maritime Wegpunkte:
+    - 01 Proviantplanung (`welcomeStepPlanning`)
+    - 02 Bordkasse (`welcomeStepCosts`)
+    - 03 Abrechnung (`welcomeStepSettlement`)
+  - Barrierefreier CTA „Get started“ / „Los geht's“ (`welcomeGetStarted`).
+- Maritime Wegpunktlinie (`_RoutePainter`, `CustomPainter`), gestaffelt animiert (`Curves.easeOutCubic`, ~1.2s Gesamtdauer, kein Endlosloop).
+- Barrierefreiheit: Sofortiger statischer Render bei `MediaQuery.disableAnimations == true`. Mindest-Touch-Target >= 44x44 dp, Viewport-Sicherheit für 320px Breite.
+- Themes: Nachtwache strikt `#FF3B30` auf `#000000`. Alle 6 Sprachen (`de`, `en`, `es`, `fr`, `hr`, `pt`).
+- Persistenz & Gate: `WelcomeStorage` (`FlutterSecureStorage`-Key `provy_welcome_seen_v1`). Bestehende Törns in DB überspringen Welcome automatisch (`welcomeCompletedProvider`). Bootstrap-Gate `appStartupRecoveryProvider` in `main.dart` unverändert beibehalten; `AppStartupRecoveryLoadingScreen` im PROVY-Markenstil gestaltet.
+- **Tests:** 7 Tests in `test/features/welcome/welcome_screen_test.dart` (alle grün).

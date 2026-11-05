@@ -7,7 +7,7 @@
   "navFund": "Bordkasse",
   "navMore": "Más",
   "welcomeHeadline": "Provisiones y fondo común – fácil y claro",
-  "welcomeSubline": "Calcula provisiones, gestiona víveres y reparte los gastos a bordo con justicia.",
+  "welcomeSubline": "Calcula provisiones, gestiona compras y reparte gastos de forma justa.",
   "tripWizardTitle": "Nueva travesía",
   "stepBasic": "Datos básicos",
   "stepBoat": "Barco y zona",
@@ -1193,5 +1193,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "welcomeStepPlanning": "Planificación de provisiones",
+  "welcomeStepCosts": "Fondo común",
+  "welcomeStepSettlement": "Liquidación",
+  "welcomeGetStarted": "Comenzar",
+  "welcomeBrandHeadline": "Planifica mejor. Navega ligero.",
+  "welcomeBrandSubline": "Calcula provisiones. Comparte gastos de tripulación. Liquida con calma."
 }
