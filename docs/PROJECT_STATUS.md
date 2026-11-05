@@ -47,6 +47,8 @@ PROVY (Arbeitstitel) ist ein **offline-first, skippergeführter Proviantplaner m
 | Vor Store v1 | #71 unabhängige HCD-Tests, #22 Guest Shopping, #49 Legal, PDF i18n | je eigener Slice | drei E2E-Tasks mit echten Nicht-Entwicklern, Release-Evidenz |
 | Nach Kernstabilisierung | #21 Command Center, #1/#2 + B2B, weitere Komfortfeatures | Owner priorisiert | nicht vor Kernnutzbarkeit freigeben |
 
+**Nächster Schritt nach 06.11.2026:** Unabhängiger Gate-A-Review des bereits dokumentierten Architekturvorschlags `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md`. Die ursprüngliche Gemini-Phase-A-Anweisung ist durch den vorliegenden Entwurf überholt. Erst nach Gate-A-Acceptance und separater Owner-Phase-B-Freigabe darf Gemini Produktionscode ändern.
+
 **Prozessregel:** Ein Paket wird nur als `DONE` markiert, wenn Owner Acceptance, exakter PR-HEAD/CI, negative/regressive Tests, nötiger physischer oder Stage-Nachweis und Merge/Issue-Closure dokumentiert sind. Sonst `OPEN`, auch wenn Code lokal grün ist. Priorität ist **keine** automatische Coding-Freigabe.
 
 ## 4. Explizite noch offene Produktentscheidungen
