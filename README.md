@@ -8,6 +8,19 @@ Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung a
 
 Verbindliche Grundlage: `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md`. Sie ergänzt die bereits eingefrorenen UX-Entscheidungen, Benchmark-Strategie und Engineering-Gates, ohne deren Scope oder Freigaben eigenmächtig zu ändern. **Kein automatischer Implementierungs-Slice, Merge oder Release.**
 
+## Aktueller Arbeitsstand / Implementation Gates (Owner 05.11.2026)
+
+**Einziger kompakter, datierter Gate-Einstieg:** `docs/PROJECT_STATUS.md` – vor jeder Session auf aktuellen GitHub-`main`/PR-HEAD/Issues überprüfen. **PR #60 Code/CI grün, reale Pixel-7-Pro-UX-Product Acceptance HOLD**; kein Merge bis reale Shopping-Journey korrigiert und bestätigt. Das Shopping-HCD-Masterregister ist #64, Backend/Release #65; ausführbare Pakete #66–#71.
+
+Verbindliche **Owner-accepted Planungsunterlagen** dieses Dokumentations-PRs:
+- `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md` – Grundsatz und HCD-Pass.
+- `docs/design/PROVY_HCD_SHOPPING_JOURNEY_PLAN_2026-11-05.md` – chronologischer Einkaufsablauf und Daten-/Screen-Entscheidungen.
+- `docs/qa/PROVY_HCD_REAL_DEVICE_ACCEPTANCE_2026-11-05.md` – echte Aufgaben-/Gerätetests.
+- `docs/roadmap/PROVY_RELEASE_BACKEND_READINESS_PLAN_2026-11-05.md` – Release- und Backend-Gates; keine automatische Cloud-Freigabe.
+- `docs/impl/HCD_SHOP_01_PHASE_A_GEMINI_BRIEF_2026-11-05.md` – nächster vorbereitet **nur Phase-A-Planung**, kein Coding.
+
+Eine Roadmap ist **keine** Freigabe eines PR-Merges, Cloud-Deploys oder neuen High-Risk-Implementierungsslices. Ältere Statusabschnitte in diesem README sind historische Kontextbelege und können nicht ohne erneute Reconciliation als aktueller Gate-Status gelten.
+
 ## Engineering- und Review-Prozess (Owner-Entscheidung 30.10.2026)
 
 Für **jede neue Provy-Sitzung** gelten AGENTS.md, GEMINI.md und docs/ENGINEERING_STANDARD_v1.0.md. Bei High-Risk-Slices (Persistenz/Backup/Restore, Auth/Backend, Offline-Synchronisierung, Nebenläufigkeit, Finanzen, Migration) ist die zweistufige Arbeitsweise verbindlich: **Phase A Architektur- und Failure-Review ohne Code → unabhängiges Architecture Gate → Phase B Implementierung mit negativen und konkurrierenden Tests → unabhängiger Code-Review am exakten HEAD → Owner Acceptance**. Vorlagen: docs/templates/ARCHITECTURE_GATE_TEMPLATE.md und docs/templates/IMPLEMENTATION_BRIEF_TEMPLATE.md. Nach zwei verwandten Amendments Architektur neu bewerten statt blind weiterpatchen.
