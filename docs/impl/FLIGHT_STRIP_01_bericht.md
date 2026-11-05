@@ -281,3 +281,8 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - **Lösung:**
   - `hasAdoptedItems = widget.data.allItems.any((it) => it.isOnList);` rein fachlich aus dem tatsächlichen Korb-Inhalt abgeleitet.
 - **Test:** Test 25 in `test/features/shopping_list/flight_strip_board_test.dart` (`FLICKER-61-B: Bereits gefüllter Korb blendet bei weiterem Swipe unter keinen Umständen den empty_list_banner ein`).
+
+
+### 4. Test-Reconciliation für bestehende Suite (`test/widget_test.dart`)
+- **Ursache:** Die historischen Smoke-Tests für `StartScreen` in `test/widget_test.dart` starteten `ProviantplanerApp` ohne Override des `welcomeStorageProvider`. Durch das neue W1-Gate leitete GoRouter Erstnutzer deterministisch nach `/welcome-loading` bzw. `/welcome` um, wodurch `StartScreen`-Zusicherungen nicht erreicht wurden und `CircularProgressIndicator` im Loading-Screen `pumpAndSettle()` blockierte.
+- **Lösung:** `test/widget_test.dart` stellt für die gezielten `StartScreen`-Prüfungen `welcomeStorageProvider.overrideWithValue(MemoryWelcomeStorage(initialSeen: true))` bereit.
