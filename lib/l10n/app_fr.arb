@@ -7,7 +7,7 @@
   "navFund": "Caisse de bord",
   "navMore": "Plus",
   "welcomeHeadline": "Avitaillement et caisse de bord – tout simplement",
-  "welcomeSubline": "Calculer les provisions, gérer les stocks et partager équitablement la caisse de bord.",
+  "welcomeSubline": "Calculez le ravitaillement, gérez les stocks et partagez les frais équitablement.",
   "tripWizardTitle": "Nouvelle croisière",
   "stepBasic": "Données de base",
   "stepBoat": "Bateau et zone",
@@ -1111,5 +1111,95 @@
   "selectDate": "Sélectionner la date",
   "tripNameRequired": "Veuillez entrer un nom pour le voyage.",
   "startDateRequired": "Veuillez sélectionner une date de début.",
-  "tripNameHint": "p. ex. Croisière d'été, Navigation Croatie"
+  "tripNameHint": "p. ex. Croisière d'été, Navigation Croatie",
+  "flightStripBoardTitle": "Tableau Flight-Strip",
+  "classicListViewTitle": "Liste classique",
+  "switchToFlightStripBoard": "Passer au tableau Flight-Strip",
+  "switchToClassicList": "Passer à la liste classique",
+  "basketTitle": "Panier",
+  "basketSummary": "{count, plural, =0{Panier vide} =1{1 article dans le panier} other{{count} articles dans le panier}}",
+  "@basketSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addedToBasketMessage": "{name} ajouté au panier ({count} {unit})",
+  "@addedToBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemSkippedMessage": "{name} ignoré",
+  "@itemSkippedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allSubgroups": "Tous",
+  "showSkippedItems": "{count, plural, =1{Afficher 1 article ignoré} other{Afficher {count} articles ignorés}}",
+  "@showSkippedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hideSkippedItems": "Masquer les ignorés",
+  "restoreAllSkipped": "Tout restaurer",
+  "inBasketBadge": "Au panier: {count}",
+  "@inBasketBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addToBasketTooltip": "Ajouter au panier",
+  "skipItemTooltip": "Ignorer",
+  "swipeActionAdd": "Au panier",
+  "swipeActionSkip": "Ignorer",
+  "emptyBasketTitle": "Votre panier est vide",
+  "emptyBasketSubtitle": "Glissez les bandes vers la droite ou appuyez sur + pour ajouter des produits.",
+  "alreadyInBasketMessage": "{name} est déjà dans le panier ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Erreur lors de l'enregistrement de {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeStepPlanning": "Planification des vivres",
+  "welcomeStepCosts": "Caisse de bord",
+  "welcomeStepSettlement": "Décompte",
+  "welcomeGetStarted": "C'est parti",
+  "welcomeBrandHeadline": "Planifier mieux. Naviguer plus léger.",
+  "welcomeBrandSubline": "Calculer les vivres. Partager les frais d'équipage. Régler en toute sérénité.",
+  "welcomeStorageError": "Impossible d'enregistrer l'état de bienvenue.",
+  "welcomeContinueAnyway": "Continuer quand même"
 }

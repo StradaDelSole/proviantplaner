@@ -1,5 +1,131 @@
 # Changelog
 
+## 2026-11-05 – PIXEL-QA-61 + BRAND-WELCOME-01: Review Amendment 1 (PR #60, Findings W1, W2, FLICKER-61-B)
+
+- **W1 – Stabiler Lade- & Fehlerzustand vor Welcome-Check:**
+  - `GoRouter`-Redirect in `lib/core/routing/app_router.dart` sperrt Startseite und Törnrouten (inkl. Deep-Links) während `welcomeCompletedProvider.isLoading` via `/welcome-loading` (`WelcomeGateLoadingScreen`).
+  - Expliziter Fehlerbildschirm `/welcome-error` (`WelcomeGateErrorScreen`) mit wiederholbarem `retry()` und Notfall-Bypass (`continueWithoutPersistence()`).
+  - `AppRouterRefreshNotifier` als `refreshListenable` verhindert das Neu-Erzeugen der `GoRouter`-Instanz und bewahrt den Navigationszustand.
+- **W2 – Wahrheitsgetreue Persistenz im WelcomeStorage:**
+  - `SecureWelcomeStorage.setSeenWelcome()` und `hasSeenWelcome()` verschlucken keine Dateisystem-/Keystore-Exceptions mehr.
+  - `completeWelcome()` meldet bei Schreibfehlern keinen persistenten Erfolg und verhindert Concurrency bei schnellem Mehrfach-Tippen.
+  - `WelcomeScreen` fängt Speicherfehler ab, zeigt eine SnackBar mit Wiederholen-Aktion und bietet bei dauerhaftem Keystore-Defekt den `welcome_continue_anyway_button`, um Nutzer nicht auszusperren.
+- **FLICKER-61-B – Robuster fachlicher Empty-State:**
+  - `hasAdoptedItems` in `FlightStripBoardView` prüft rein fachlich `widget.data.allItems.any((it) => it.isOnList)` ohne die fehlerhafte `_pendingOperations.isEmpty`-Bedingung.
+  - Ein bereits befüllter Basket blendet bei weiteren Swipes unter keinen Umständen mehr fälschlicherweise den `empty_list_banner` ein.
+- **Qualitätssicherung:**
+  - Deterministische Tests für W1 (9 Tests), W2 (7 Tests) in `test/features/welcome/welcome_screen_test.dart`.
+  - Regressionstest für FLICKER-61-B in `test/features/shopping_list/flight_strip_board_test.dart` (insgesamt 25 Tests grün).
+
+## 2026-11-05 – BRAND-WELCOME-01: Animierter PROVY Welcome-Screen (#62, PR #60)
+
+- **Animierter Brand-Welcome-Screen:**
+  - `WelcomeScreen` als Einstiegsscreen vor „Meine Törns“ (`StartScreen`) implementiert.
+  - Verbatim freigegebenes Branding:
+    - Wordmark: `PROVY` (abgeleitet aus `AppConfig.appName.toUpperCase()`).
+    - Headline: „Provision smarter. Sail lighter.“ / „Smarter planen. Leichter segeln.“
+    - Subline: „Plan provisions. Share crew costs. Settle with ease.“ / „Proviant berechnen. Crewkosten teilen. Entspannt abrechnen.“
+    - 3 maritime Wegpunkte:
+      - 01 Proviantplanung (`welcomeStepPlanning`)
+      - 02 Bordkasse (`welcomeStepCosts`)
+      - 03 Abrechnung (`welcomeStepSettlement`)
+    - Barrierefreier CTA-Button „Get started“ / „Los geht's“ (`welcomeGetStarted`).
+- **Maritime Routenlinie (CustomPainter):**
+  - Sanft geschwungene nautische Wegpunktlinie (`_RoutePainter`), synchron animiert mit gestaffeltem Fade/Slide der Markenelemente (`Curves.easeOutCubic`, ca. 1.2s Gesamtdauer, kein Loop).
+- **Barrierefreiheit & Themes:**
+  - Vollständige Unterstützung für reduzierte Bewegung: Bei `MediaQuery.disableAnimations == true` schließt der AnimationController sofort ab und rendert eine statische, sofort interaktive Ansicht.
+  - Nachtwache-Modus: Strikt Rot (`#FF3B30`) auf Schwarz (`#000000`).
+  - Barrierefreie Mindest-Touch-Targets (>= 44x44 dp) und Viewport-Sicherheit für kleine Displays (320px Breite).
+  - Unterstützung aller 6 Sprachen (`de`, `en`, `es`, `fr`, `hr`, `pt`).
+- **Persistenz & Architektur:**
+  - `WelcomeStorage` mit `SecureWelcomeStorage` (`FlutterSecureStorage`-Key `provy_welcome_seen_v1`) und `MemoryWelcomeStorage` für Tests.
+  - `welcomeCompletedProvider` steuert Riverpod-Zustand.
+  - Routing: `/welcome`-Route und GoRouter-Redirect (erstmaliger Start leitet nach `/welcome`, Folgestarts direkt nach `/`).
+  - Bootstrap-Gate `appStartupRecoveryProvider` in `main.dart` unverändert beibehalten; `AppStartupRecoveryLoadingScreen` im PROVY-Markenstil gestaltet.
+- **Qualitätssicherung:**
+  - 7 neue deterministische Unit- & Widget-Tests in `test/features/welcome/welcome_screen_test.dart` (alle grün).
+
+## 2026-11-05 – PIXEL-QA-61: Swipe-Flicker-Behebung (#61, PR #60)
+
+- **Swipe-Stabilität & Flicker-Prävention (Pixel 7 Pro):**
+  - `skipLoadingOnReload: true` und `skipLoadingOnRefresh: true` in `ShoppingListScreen` für `listDataAsync.when(...)` ergänzt. Verhindert das vorübergehende Unmounten des gesamten Boards und das Einblenden des Ladekreises während Daten-Reloads.
+  - Redundante `ref.invalidate(tripShoppingListProvider(...))` in `FlightStripBoardView`, `BasketTrayWidget` und `ProductStripWidget` entfernt; die Reaktivität läuft zuverlässig über `ShoppingListService.onTripDataChanged` und `tripDataVersionProvider`.
+  - `CustomScrollView` mit `SliverToBoxAdapter` und `SliverList` in `FlightStripBoardView` eingeführt. Hält Element-Indizes stabil, verhindert Gesten-Abbrüche bei Dismissible-Animationen und löst RenderFlex-Overflows auf 320px-Displays.
+  - `resizeDuration: 180ms` auf `Dismissible` in `ProductStripWidget` konfiguriert für zügiges und flüssiges Einklappen.
+  - Feste Hintergrundfarbe (`ColoredBox(color: theme.scaffoldBackgroundColor)`) im Listenbereich über alle Farbmodi (Hell, Dunkel, Nachtwache).
+- **Qualitätssicherung:**
+  - Deterministischer Regressionstest in `test/features/shopping_list/flight_strip_board_test.dart` ergänzt (insgesamt 24 Tests, alle grün).
+
+## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 3 (#56, PR #60)
+
+- **F6-A – Quick-Add nach Unmount abgesichert:**
+  - `_handleConfirmSwipeToBasket` prüft `mounted` unmittelbar nach erfolgreichem `adoptItem` und gibt `false` zurück, falls das Board während des DB-Writes disposed wurde.
+  - `_handleQuickAddToBasket` prüft `mounted` nach dem `await` und bricht sofort ab, ohne nachfolgende UI-Aktionen auszulösen.
+  - `_handleDismissedToBasket` besitzt einen strikten `if (!mounted) return;`-Guard an der obersten Methodengrenze, bevor `context`, `setState` oder `ref` berührt werden können.
+  - Verhindert `setState() called after dispose` bei verzögertem erfolgreichem Hinzufügen und Ansichtswechsel; der Artikel wird in der Datenbank konsistent als übernommen persistiert.
+- **F6-B – Undo nach Ansichtswechsel lifecycle-sicher gestaltet:**
+  - In `_handleDismissedToBasket` werden `ShoppingListService`, `itemId`, `itemKey` und `tripId` vor Erstellung des `SnackBarAction`-Closures sicher lokal gekapselt.
+  - Beim Antippen von „Rückgängig“ auf einer im Scaffold noch sichtbaren SnackBar nach Wechsel zur klassischen `PlanningView` ruft die Aktion ausschließlich den gekapselten Service auf (`service.unadoptItem`). Es erfolgt kein Zugriff auf den disposeden Riverpod `WidgetRef`, `BuildContext` oder `setState`.
+  - Der Artikel wird sauber aus der Datenbank entfernt und die aktive Sicht wird reaktiv via Versionstracking aktualisiert.
+- **Hygiene (Queue-Cleanup):**
+  - `_runSequentialForItem` in `ShoppingListService` bereinigt `_itemMutationQueues[listItemId]` bei Abschluss der Queue via Identitätsprüfung.
+- **Qualitätssicherung:**
+  - 2 neue deterministische Regressionstests in `test/features/shopping_list/flight_strip_board_test.dart` ergänzt (insgesamt 23 Tests, alle grün):
+    - `F6-A: Quick-Add nach Unmount – Verzögertes adoptItem bei Ansichtswechsel wirft kein setState after dispose und persistiert DB korrekt`
+    - `F6-B: Undo nach Ansichtswechsel – Noch sichtbare SnackBar greift nach Unmount nicht auf ungültigen Ref zu und stellt Zustand wieder her`
+  - `dart analyze lib test`: 0 Issues.
+  - `npm run typecheck --prefix backend`: 0 Errors.
+
+## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 2 (#56, PR #60)
+
+- **F5 – Keine verlorenen Mengenänderungen (Serialisierte FIFO-Mengenmutationen pro Artikel):**
+  - Race Condition bei schnellen Mehrfachtaps auf `+` / `-` (sowohl auf dem `ProductStripWidget` als auch im `BasketTrayWidget`) behoben.
+  - Implementierung einer strikt serialisierten, artikelspezifischen Mutations-Queue (`_runSequentialForItem`) im `ShoppingListService`. Die Methode `adjustPackagesDelta` liest vor jeder Modifikation den aktuellen Zustand aus der Drift-Datenbank und führt die Delta-Schritte in FIFO-Reihenfolge aus. Keine Nutzereingaben werden verworfen (zwei schnelle Plus-Taps von 1 ergeben garantiert 3; zwei schnelle Minus-Taps von 3 ergeben 1).
+  - Bestehende Stopp-Allokationen (`getAllocationsForListItem`) bleiben bei Mengenreduktion garantiert geschützt: Die Zielmenge wird auf `max(minPackages, totalAllocated)` begrenzt, sodass die Gesamtpackungszahl niemals unter die Summe bereits zugewiesener Stopp-Mengen fallen kann (`AllocationExceededException` ausgeschlossen).
+- **F6 – Sichere asynchrone UI-Lebenszyklen (Unmount & View-Toggle):**
+  - `mounted`- und `context.mounted`-Prüfungen nach sämtlichen asynchronen Aktionen (Löschen im Korb, Speichern, Undo, Überspringen und Stepper) in `FlightStripBoardView`, `BasketTrayWidget` und `ProductStripWidget` hinzugefügt.
+  - Schützt zuverlässig vor `setState()` und Riverpod-Provider-Invalidierungen auf bereits disposeden Widgets bei schnellem Ansichtswechsel (`toggle_flight_strip_board_button`) oder Navigation während laufender I/O-Vorgänge.
+- **F1 – Vollständige Testabsicherung für Stopp-Allokationen:**
+  - Test F1 (`Bestehende Basket-Einträge schützen`) um eine reale Stopp-Zuweisung (2 Packungen an Stopp 2 via `ListItemAllocation`) erweitert und verifiziert, dass die Allokation über idempotente Swipes und Updates hinweg unberührt erhalten bleibt.
+- **Qualitätssicherung:**
+  - Testsuite `test/features/shopping_list/flight_strip_board_test.dart` um 6 neue Tests erweitert (insgesamt 21 Tests, alle grün):
+    - 4x F5 Tests: Schnelle `+`-Taps (1 -> 3), schnelle `-`-Taps (3 -> 1), asynchrone Verzögerung & gemischte Interaktion Strip/Tray, Allokationssummen-Schutz beim Dekrementieren.
+    - 2x F6 Tests: Asynchrones Löschen mit Widget-Unmount/Ansichtswechsel, Asynchrones Undo mit Unmount/Ansichtswechsel (kein `setState() called after dispose`).
+  - `dart analyze lib test`: 0 Issues.
+  - `npm run typecheck --prefix backend`: 0 Errors.
+
+## 2026-11-05 â FLIGHT-STRIP-01: Review Amendment 1 (#56, PR #60)
+
+- **F1 â Bestehende Basket-Einträge schützen (Idempotenz & Erhaltungs-Undo):**
+  - Erneuter Rechts-Swipe auf einen bereits im Korb liegenden Streifen mit unveränderter Menge führt keinen schädlichen Re-Adopt oder Reset von Stopp-Allokationen durch, sondern meldet informativ via SnackBar (alreadyInBasketMessage), dass der Artikel bereits im Korb liegt.
+  - Das Antippen von Rückgängig (Undo) stellt für bereits im Korb gewesene Artikel exakt die vorherige Packungsmenge (priorOverriddenPackages ?? priorEffectivePackages) wieder her, statt den Artikel destruktiv mit unadoptItem zu löschen. Nur neu hinzugefügte Artikel rufen bei Undo unadoptItem auf.
+- **F2 â Strip wieder sichtbar machen (Reaktivierung nach Korb-Löschung):**
+  - Nach dem Löschen eines Artikels aus dem Basket Tray (Icons.delete_outline) wird der Streifen über onItemRemoved und einen generationenbasierten Dismissible-Lifecycle sofort wieder im Katalog und in der Suche sichtbar, ohne dass der Screen neu geladen oder navigiert werden muss.
+- **F3 â Persistenz-Fehlerbehandlung & Parallelitätsschutz:**
+  - _pendingOperations-Set schützt gegen Race Conditions bei schnellen Mehrfach-Swipes oder simultanen Stepper-Aktionen.
+  - Schlägt das Speichern in die Datenbank fehl, fängt confirmDismiss den Fehler ab, der Streifen schnappt automatisch in seine Ausgangsposition zurück (return false), und ein lokalisierter Fehler-SnackBar (errorSavingItem) mit Erneut versuchen-Schaltfläche (retry) wird angezeigt. Kein falscher Erfolgs-Transfer.
+- **F4 â Robuste Mengensteuerung (Mindestmenge 1):**
+  - Das Antippen von Minus (-) bei Menge 1 auf dem Produktstreifen sowie im Basket Tray belässt die Menge auf dem zulässigen Minimum von 1 und entfernt den Artikel niemals stillschweigend. Die Entfernung aus dem Korb erfolgt ausschließlich über die dedizierte Lösch-Schaltfläche im Basket Tray.
+- **Lokalisierung:**
+  - Neue Strings alreadyInBasketMessage und errorSavingItem in allen 6 unterstützten Sprachen (de, en, es, fr, hr, pt) hinzugefügt.
+- **Qualitätssicherung:**
+  - Testsuite test/features/shopping_list/flight_strip_board_test.dart um 4 Integrationstests (F1âF4) erweitert (insgesamt 15 Tests, alle bestanden). Testet echte Datenbank-Zustände, Stopp-Allokationen, In-Memory-Failure-Injektion (FailingShoppingListService) und Reaktivierung.
+
+## 2026-11-04 – FLIGHT-STRIP-01: Flight-Strip-Board für Vorratsliste (#56)
+
+- **Echtes Flutter Flight-Strip-Board (3-Ebenen-Architektur gemäß Issue #56):**
+  - **Ebene 1 (Basket Tray):** Permanentes Arbeitsziel am unteren Bildschirmrand (`BasketTrayWidget`), zeigt Artikelanzahl (`basketSummary`), Gesamtgewicht & Volumen (`totalWeightVolumeSummary`) und ist zu einer vollwertigen Korb-Übersicht aufklappbar. Im Korb können Mengen direkt angepasst (`- / +`), Positionen entfernt und der Einkauf gestartet werden.
+  - **Ebene 2 (Produktgruppen & Subgruppen):** 10 Hauptkategorien und 47 Subgruppen aus dem Provy-Katalog mit dedizierter maritimer Material-3-Farbpalette (`FlightStripColors`), Barrierefreiheits-Icons und In-Basket-Zählern. Horizontal scrollbare Kategorie- und Subgruppen-Chips.
+  - **Ebene 3 (Product Strips):** ATC-Flugstreifen-Design (`ProductStripWidget`) mit Farbkennzeichnung, Produktname, Gebindegröße und Kühlwarenhinweis. Direkt auf dem Streifen bedienbare Mengensteuerung (`- / Count / +`) mit mindestens 44x44 dp großen Touch-Targets.
+- **Interaktions-Semantik (Owner Decision A):**
+  - **Swipe-Right:** Übernimmt den Artikel sofort mit der exakt auf dem Streifen sichtbaren Menge und Gebindegröße in den Korb — ohne störenden Zwischen-Bestätigungsdialog. Haptisches Feedback (`mediumImpact`), SnackBar-Bestätigung mit direkter "Rückgängig"-Aktion.
+  - **Swipe-Left:** Überspringt das Produkt temporär für den aktuellen Durchlauf (nicht gelöscht). SnackBar-Bestätigung mit "Rückgängig". Übersicht der übersprungenen Artikel und "Alle wiederherstellen"-Option.
+  - **Barrierefreie Alternativen:** Eindeutige Schaltflächen ("In den Korb" mit Warenkorb-Symbol) direkt auf den Streifen für Touch-Bedienung ohne Gestenzwang.
+- **Suchfunktion:** Prominente, integrierte Suchleiste am oberen Rand durchsucht sofort alle 232 Katalog-Varianten nach Name, Tags, Warengruppe und Abteilung.
+- **Interner A/B-Umschalter:** Schalter in der AppBar (`toggle_flight_strip_board_button`) ermöglicht nahtloses Umschalten zwischen dem neuen Flight-Strip-Board und der klassischen `PlanningView` ohne Datenverlust.
+- **Volle Nachtwache- und Viewport-Kompatibilität:** Im Nachtwache-Modus strikt Rot auf Schwarz gemäß Designregel 13; auf schmalen 320px-Viewports ohne RenderFlex-Overflow.
+- **Qualitätssicherung:** Neue dedizierte Testsuite `test/features/shopping_list/flight_strip_board_test.dart` (11 Tests, alle grün) deckt alle Kerninteraktionen, Gesten, Barrierefreiheit, Suche, Umschaltung und Randfälle ab.
+
 ## 2026-11-04 – QA-RAPID-01 Android UX Usability Fixes (#47, #48, #52, #53, #55)
 
 - **#48 (HIGH) – Navigation Trap in MoreScreen behoben:**

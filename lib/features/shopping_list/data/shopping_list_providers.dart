@@ -51,6 +51,11 @@ typedef ShoppingListViewMode = ShoppingListSortMode;
 /// Filter nach Einkaufsstopp (null = Alle Stopps).
 final selectedStopFilterProvider = StateProvider<int?>((ref) => null);
 
+/// Experimenteller Schalter für das Flight-Strip-Board (Issue #56 / FLIGHT-STRIP-01).
+/// Ermöglicht nahtloses Umschalten zwischen dem neuen Flight-Strip-Board
+/// und der klassischen Planungsansicht (PlanningView) zu Test- und Vergleichszwecken.
+final flightStripBoardEnabledProvider = StateProvider<bool>((ref) => true);
+
 /// Lädt und aktualisiert die Vorratsliste für einen Törn.
 final tripShoppingListProvider =
     FutureProvider.family<TripShoppingListData, int>((ref, tripId) async {
