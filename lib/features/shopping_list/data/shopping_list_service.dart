@@ -123,12 +123,17 @@ class ShoppingListService {
     final previous = _itemMutationQueues[listItemId] ?? Future.value();
     final completer = Completer<T>();
 
-    _itemMutationQueues[listItemId] = previous.then((_) async {
+    late final Future<void> current;
+    current = previous.then((_) async {
       try {
         final result = await action();
         completer.complete(result);
       } catch (e, st) {
         completer.completeError(e, st);
+      } finally {
+        if (identical(_itemMutationQueues[listItemId], current)) {
+          _itemMutationQueues.remove(listItemId);
+        }
       }
     }, onError: (_) async {
       try {
@@ -136,9 +141,14 @@ class ShoppingListService {
         completer.complete(result);
       } catch (e, st) {
         completer.completeError(e, st);
+      } finally {
+        if (identical(_itemMutationQueues[listItemId], current)) {
+          _itemMutationQueues.remove(listItemId);
+        }
       }
     });
 
+    _itemMutationQueues[listItemId] = current;
     return completer.future;
   }
 

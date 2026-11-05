@@ -57,6 +57,7 @@ class FailingShoppingListService extends ShoppingListService {
 
 class ControllableShoppingListService extends ShoppingListService {
   Completer<void>? unadoptDelay;
+  Completer<void>? adoptDelay;
   Duration simulatedDelay = Duration.zero;
 
   ControllableShoppingListService({
@@ -65,6 +66,22 @@ class ControllableShoppingListService extends ShoppingListService {
     required super.catalogRepository,
     required super.tripService,
   });
+
+  @override
+  Future<void> adoptItem({
+    required int tripId,
+    required int listItemId,
+    int? packages,
+  }) async {
+    if (adoptDelay != null) {
+      await adoptDelay!.future;
+    }
+    return super.adoptItem(
+      tripId: tripId,
+      listItemId: listItemId,
+      packages: packages,
+    );
+  }
 
   @override
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
@@ -932,6 +949,104 @@ void main() {
 
       // F6: Kein Crash / setState after dispose
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('F6-A: Quick-Add nach Unmount – Verzögertes adoptItem bei Ansichtswechsel wirft kein setState after dispose und persistiert DB korrekt', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllableService = ControllableShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final adoptCompleter = Completer<void>();
+      controllableService.adoptDelay = adoptCompleter;
+
+      final initialData = await controllableService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: controllableService));
+      await tester.pumpAndSettle();
+
+      // Quick-Add-Button (Icons.add_shopping_cart) auf dem ersten Streifen antippen
+      final firstStrip = find.byType(ProductStripWidget).first;
+      final quickAddBtn = find.descendant(
+        of: firstStrip,
+        matching: find.byIcon(Icons.add_shopping_cart),
+      );
+      expect(quickAddBtn, findsOneWidget);
+
+      await tester.tap(quickAddBtn);
+      await tester.pump(); // Startet adoptItem, blockiert auf adoptCompleter
+
+      // Benutzer schaltet Ansicht um zur klassischen PlanningView (FlightStripBoardView wird unmounted!)
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanningView), findsOneWidget);
+      expect(find.byType(FlightStripBoardView), findsNothing);
+
+      // Jetzt wird die verzögerte Übernahme erfolgreich aufgelöst
+      adoptCompleter.complete();
+      await tester.pumpAndSettle();
+
+      // F6-A: Kein setState() called after dispose Fehler geworfen!
+      expect(tester.takeException(), isNull);
+
+      // Datenbankzustand: Artikel ist erfolgreich in der DB als übernommen markiert
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.isAdopted, isTrue);
+      expect(dbItem?.overriddenPackages, 1);
+    });
+
+    testWidgets('F6-B: Undo nach Ansichtswechsel – Noch sichtbare SnackBar greift nach Unmount nicht auf ungültigen Ref zu und stellt Zustand wieder her', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      // 1. Rechts-Swipe auf erstem Streifen -> Übernahme in den Korb
+      final firstStrip = find.byType(ProductStripWidget).first;
+      await tester.fling(firstStrip, const Offset(600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // Artikel ist in DB übernommen
+      expect((await db.listItemDao.getListItemById(testItem.item.id))?.isAdopted, isTrue);
+
+      // SnackBar mit "Rückgängig" ist im Scaffold sichtbar
+      final undoBtn = find.text('Rückgängig');
+      expect(undoBtn, findsOneWidget);
+
+      // 2. Ansicht umschalten zur klassischen PlanningView während SnackBar sichtbar bleibt
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanningView), findsOneWidget);
+      expect(find.byType(FlightStripBoardView), findsNothing);
+
+      // SnackBar ist weiterhin sichtbar im Scaffold
+      expect(undoBtn, findsOneWidget);
+
+      // 3. Auf noch sichtbares "Rückgängig" in der klassischen Ansicht tippen
+      await tester.tap(undoBtn);
+      await tester.pumpAndSettle();
+
+      // F6-B: Kein Framework-/Provider-Fehler ("Cannot use ref after the widget was disposed")
+      expect(tester.takeException(), isNull);
+
+      // Kanonischer DB-Zustand: Artikel wurde sauber unadopted (isAdopted = false)
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.isAdopted, isFalse);
     });
   });
 }

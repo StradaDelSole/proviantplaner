@@ -180,3 +180,36 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - Test 19 (F5.4): `F5 - Minus-Taps respektieren bestehende Stopp-Allokationssumme (kann nicht unter Allokation fallen)`
 - Test 20 (F6.1): `F6 - Asynchrones Loeschen im Basket mit Unmount/Ansichtswechsel wirft kein setState after dispose`
 - Test 21 (F6.2): `F6 - Asynchrones Undo nach Swipe mit Unmount/Ansichtswechsel wirft kein setState after dispose`
+---
+
+## 8. Review Amendment 3 (Review 5778684149, Findings F6-A & F6-B)
+
+**Datum:** 05.11.2026  
+**PR:** #60  
+**Status:** IMPLEMENTIERT & VOLLSTÄNDIG GETESTET – BEREIT FÜR RE-REVIEW
+
+### Behebung der Findings F6-A & F6-B:
+
+1. **F6-A – Quick-Add nach Unmount abgesichert:**
+   - *Problem:* Bei verzögerter Persistenz (z. B. I/O-Latenz auf SQLite) und gleichzeitigem Ansichtswechsel (`toggle_flight_strip_board_button`) vor Abschluss von `adoptItem` versuchte das bereits unmountete `FlightStripBoardView`, via `_handleQuickAddToBasket` nach `_handleDismissedToBasket` zu springen und auf `context`, `setState` und `ref.invalidate` zuzugreifen.
+   - *Lösung:*
+     1. In `_handleConfirmSwipeToBasket` wird nach dem `await ...adoptItem(...)` explizit `if (!mounted) return false;` geprüft.
+     2. In `_handleQuickAddToBasket` bricht `if (!mounted) return;` die Ausführung sofort ab.
+     3. In `_handleDismissedToBasket` verhindert `if (!mounted) return;` als oberste Zeile jeglichen Zugriff auf Context, State oder Ref.
+     4. Die Datenbankschreibung wird im Hintergrund regulär abgeschlossen (`isAdopted = true`), ohne dass eine Exception auf dem unmounteten Widget ausgelöst wird.
+2. **F6-B – Undo nach Ansichtswechsel lifecycle-sicher gestaltet:**
+   - *Problem:* Da eine SnackBar dem übergeordneten `ScaffoldMessenger` der Vorratsliste angehört, bleibt sie beim Umschalten zwischen Flight-Strip-Board und klassischer `PlanningView` sichtbar. Wurde nach dem Ansichtswechsel auf „Rückgängig“ getippt, griff das SnackBar-Closure auf den disposeden Riverpod `WidgetRef` zu (`ref.read(shoppingListServiceProvider)`), was zu einer Framework-Exception führte.
+   - *Lösung:*
+     1. Vor Erzeugung des `SnackBarAction`-Closures in `_handleDismissedToBasket` werden `shoppingListService`, `itemId`, `itemKey` und `tripId` als lokale Variablen sicher erfasst.
+     2. Das `onPressed`-Callback ruft ausschließlich `service.unadoptItem` auf. Es greift bei `!mounted` weder auf `ref`, `context` noch `setState` zu.
+     3. Der Artikel wird sauber in der Drift-Datenbank zurückgesetzt; der übergeordnete `tripShoppingListProvider` aktualisiert sich reaktiv über das `onTripDataChanged`-Signal für die nun aktive Planungsansicht.
+3. **Hygiene (Queue-Cleanup):**
+   - Die `_itemMutationQueues`-Map in `ShoppingListService` bereinigt ihren Eintrag via `identical(_itemMutationQueues[listItemId], current)` im `finally`-Block, sobald eine Queue abgeschlossen ist.
+
+### Testsuite-Erweiterung:
+`test/features/shopping_list/flight_strip_board_test.dart` (23 Tests, alle grün):
+- Tests 1-11: Basis-Funktionen & Barrierefreiheit.
+- Tests 12-15: Review Amendment 1 (F1-F4).
+- Tests 16-21: Review Amendment 2 (F5.1-F5.4, F6.1-F6.2).
+- Test 22 (F6-A): `F6-A: Quick-Add nach Unmount – Verzögertes adoptItem bei Ansichtswechsel wirft kein setState after dispose und persistiert DB korrekt`
+- Test 23 (F6-B): `F6-B: Undo nach Ansichtswechsel – Noch sichtbare SnackBar greift nach Unmount nicht auf ungültigen Ref zu und stellt Zustand wieder her`

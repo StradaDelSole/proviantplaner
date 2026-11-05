@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 3 (#56, PR #60)
+
+- **F6-A – Quick-Add nach Unmount abgesichert:**
+  - `_handleConfirmSwipeToBasket` prüft `mounted` unmittelbar nach erfolgreichem `adoptItem` und gibt `false` zurück, falls das Board während des DB-Writes disposed wurde.
+  - `_handleQuickAddToBasket` prüft `mounted` nach dem `await` und bricht sofort ab, ohne nachfolgende UI-Aktionen auszulösen.
+  - `_handleDismissedToBasket` besitzt einen strikten `if (!mounted) return;`-Guard an der obersten Methodengrenze, bevor `context`, `setState` oder `ref` berührt werden können.
+  - Verhindert `setState() called after dispose` bei verzögertem erfolgreichem Hinzufügen und Ansichtswechsel; der Artikel wird in der Datenbank konsistent als übernommen persistiert.
+- **F6-B – Undo nach Ansichtswechsel lifecycle-sicher gestaltet:**
+  - In `_handleDismissedToBasket` werden `ShoppingListService`, `itemId`, `itemKey` und `tripId` vor Erstellung des `SnackBarAction`-Closures sicher lokal gekapselt.
+  - Beim Antippen von „Rückgängig“ auf einer im Scaffold noch sichtbaren SnackBar nach Wechsel zur klassischen `PlanningView` ruft die Aktion ausschließlich den gekapselten Service auf (`service.unadoptItem`). Es erfolgt kein Zugriff auf den disposeden Riverpod `WidgetRef`, `BuildContext` oder `setState`.
+  - Der Artikel wird sauber aus der Datenbank entfernt und die aktive Sicht wird reaktiv via Versionstracking aktualisiert.
+- **Hygiene (Queue-Cleanup):**
+  - `_runSequentialForItem` in `ShoppingListService` bereinigt `_itemMutationQueues[listItemId]` bei Abschluss der Queue via Identitätsprüfung.
+- **Qualitätssicherung:**
+  - 2 neue deterministische Regressionstests in `test/features/shopping_list/flight_strip_board_test.dart` ergänzt (insgesamt 23 Tests, alle grün):
+    - `F6-A: Quick-Add nach Unmount – Verzögertes adoptItem bei Ansichtswechsel wirft kein setState after dispose und persistiert DB korrekt`
+    - `F6-B: Undo nach Ansichtswechsel – Noch sichtbare SnackBar greift nach Unmount nicht auf ungültigen Ref zu und stellt Zustand wieder her`
+  - `dart analyze lib test`: 0 Issues.
+  - `npm run typecheck --prefix backend`: 0 Errors.
+
 ## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 2 (#56, PR #60)
 
 - **F5 – Keine verlorenen Mengenänderungen (Serialisierte FIFO-Mengenmutationen pro Artikel):**

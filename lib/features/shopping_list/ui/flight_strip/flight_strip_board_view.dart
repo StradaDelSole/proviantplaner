@@ -110,6 +110,8 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
             listItemId: item.item.id,
             packages: packages,
           );
+      _pendingOperations.remove(item.id);
+      if (!mounted) return false;
       return true;
     } catch (e) {
       _pendingOperations.remove(item.id);
@@ -131,6 +133,8 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
 
   void _handleDismissedToBasket(ShoppingListItemView item, int packages) {
     _pendingOperations.remove(item.id);
+    if (!mounted) return;
+
     final l10n = AppLocalizations.of(context)!;
     final tripId = widget.data.trip.id;
     final itemName = item.localizedName(context);
@@ -141,7 +145,11 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     });
     ref.invalidate(tripShoppingListProvider(tripId));
 
-    if (!mounted) return;
+    // F6-B: Sicher gekapselter Service und IDs vor SnackBarAction-Übergabe
+    final service = ref.read(shoppingListServiceProvider);
+    final itemId = item.item.id;
+    final itemKey = item.id;
+
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -153,14 +161,15 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
               // F1 / F6: Item wurde neu zum Korb hinzugefügt -> Unadopt & Transferred-Reset bei mounted
               if (mounted) {
                 setState(() {
-                  _transferredItemIds.remove(item.id);
-                  _itemKeyGenerations[item.id] = (_itemKeyGenerations[item.id] ?? 0) + 1;
+                  _transferredItemIds.remove(itemKey);
+                  _itemKeyGenerations[itemKey] = (_itemKeyGenerations[itemKey] ?? 0) + 1;
                 });
               }
-              await ref.read(shoppingListServiceProvider).unadoptItem(
-                    tripId: tripId,
-                    listItemId: item.item.id,
-                  );
+              // F6-B: Service direkt aufrufen - kein Zugriff auf unmounted ref oder context
+              await service.unadoptItem(
+                tripId: tripId,
+                listItemId: itemId,
+              );
               if (mounted) {
                 ref.invalidate(tripShoppingListProvider(tripId));
               }
@@ -180,6 +189,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
 
   Future<void> _handleQuickAddToBasket(ShoppingListItemView item, int packages) async {
     final confirmed = await _handleConfirmSwipeToBasket(item, packages);
+    if (!mounted) return;
     if (confirmed) {
       _handleDismissedToBasket(item, packages);
     }
