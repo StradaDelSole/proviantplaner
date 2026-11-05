@@ -1,4 +1,4 @@
-# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.32
+# Arbeitsanleitung für Gemini (Docs-to-Code) – v0.34
 
 Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas anderes tust.
 
@@ -38,6 +38,8 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 | v0.32 | 31.10.2026 | Owner akzeptiert iOS >=14 und Auth0 Flutter 2.7.x; technischer Compatibility-Check bleibt erforderlich |
 | v0.33 | 01.11.2026 | BC-1A Code Owner Acceptance & Merge PR #44; P05 realer Auth0-/Android-/iOS-Stage bleibt Issue #45 OPEN; BC-1B weiter nicht freigegeben |
 
+| v0.34 | 05.11.2026 | HCD- und Pixel-QA-Owner-Entscheidungen: aktuelle Statusquelle `docs/PROJECT_STATUS.md`, Shopping-Journey- und Backend/Release-Gates #64–#71, zuerst nur Phase A #66; echte Gerätetests zusätzlich zu grünem CI; keine automatische Implementierung/Merges |
+
 ## Verbindliches Produktprinzip: Human-Centered Design (Owner 05.11.2026)
 
 **Verbindliche Source of Truth:** `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md`.
@@ -46,6 +48,8 @@ Diese Datei liest du zu Beginn JEDER Sitzung vollständig, bevor du etwas andere
 - Den **HCD-Pass** in UX-/Slice-Review durchführen: NN/g-Heuristik (sichtbarer Status, Recognition, Fehlervermeidung und Nutzerkontrolle), bestehende Benchmark-Strategie und Tests anhand realistischer Aufgaben. Geräte-, Owner- und unabhängige Usability-Beobachtungen nicht mit grünen automatisierten Tests gleichsetzen. Für Micro-Fixes risikobasierte kurze Begründung.
 - Für die Store-v1-Kernreisen Törn & Proviant, Einkauf & Crew-Sharing sowie Bordkasse & Abrechnung vor öffentlicher UX-Abnahme reale, dokumentierte Aufgabentests vorsehen; HCD-OPEN melden, solange diese Nachweise fehlen.
 - Bereits owner-accepted Informationsarchitektur und Interaktionsentscheidungen bleiben eingefroren. Neue Erkenntnisse, die einen Freeze oder Daten-/Security-Gate berühren, **nur als Owner-Entscheidungsvorschlag** vorlegen. Das HCD-Prinzip gibt selbst keinen Implementierungs-Slice, Merge, Cloud-Deploy oder Store-Release frei.
+
+**Aktueller Owner-Auftrag (05.11.2026; vor jeder Sitzung Live-GitHub prüfen):** PR #60 hat Code-/CI-PASS, aber **Owner-UX-HOLD** nach realem Pixel-7-Pro-Test. Nichts automatisch mergen. Einstieg über `docs/PROJECT_STATUS.md`; HCD-Gesamtplan: `docs/design/PROVY_HCD_SHOPPING_JOURNEY_PLAN_2026-11-05.md`, Testmatrix: `docs/qa/PROVY_HCD_REAL_DEVICE_ACCEPTANCE_2026-11-05.md`, Backend-/Release-Gates: `docs/roadmap/PROVY_RELEASE_BACKEND_READINESS_PLAN_2026-11-05.md`. GitHub-Register #64/#65 und konkrete Arbeitspakete #66–#71. **Nächster vorbereiteter Schritt nur Phase-A-Reconciliation für #66**, `docs/impl/HCD_SHOP_01_PHASE_A_GEMINI_BRIEF_2026-11-05.md`; kein Coding, keine Datenbankmigration, kein Backend-Deploy ohne gesondertes Owner-Phase-B-Go. **Mengenempfehlungspolitik explizit zur Diskussion offen; kein globaler Engine-Änderungsscope.** Dokumentierte Review-Evidence (Code/CI, Owner-Gerätetest, unabhängige Nutzertests, Stage) niemals gleichsetzen.
 
 ## Verbindlicher Engineering-Prozess ab 30.10.2026
 
