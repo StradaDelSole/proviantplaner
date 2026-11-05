@@ -256,14 +256,12 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                         padding: EdgeInsets.zero,
                                         tooltip: l10n.removeFromList,
                                         onPressed: () async {
-                                          if (item.effectivePackages <= 1) {
-                                            // F4: Minus bei 1 entfernt Artikel nicht stillschweigend (Minimum 1)
-                                            return;
-                                          }
-                                          await ref.read(shoppingListServiceProvider).setPackages(
-                                                item,
-                                                item.effectivePackages - 1,
+                                          await ref.read(shoppingListServiceProvider).adjustPackagesDelta(
+                                                tripId: widget.data.trip.id,
+                                                listItemId: item.item.id,
+                                                delta: -1,
                                               );
+                                          if (!context.mounted) return;
                                           ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
@@ -279,10 +277,12 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                         padding: EdgeInsets.zero,
                                         tooltip: l10n.addToList,
                                         onPressed: () async {
-                                          await ref.read(shoppingListServiceProvider).setPackages(
-                                                item,
-                                                item.effectivePackages + 1,
+                                          await ref.read(shoppingListServiceProvider).adjustPackagesDelta(
+                                                tripId: widget.data.trip.id,
+                                                listItemId: item.item.id,
+                                                delta: 1,
                                               );
+                                          if (!context.mounted) return;
                                           ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },
                                       ),
@@ -298,6 +298,7 @@ class _BasketTrayWidgetState extends ConsumerState<BasketTrayWidget> {
                                                 tripId: widget.data.trip.id,
                                                 listItemId: item.item.id,
                                               );
+                                          if (!context.mounted) return;
                                           widget.onItemRemoved?.call(item.id);
                                           ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
                                         },

@@ -1,6 +1,8 @@
 /// Service für die Verwaltung und Gruppierung der Vorratsliste (Slice S4).
 library;
 
+import 'dart:async';
+
 import 'package:proviantplaner/core/database/app_database.dart';
 import 'package:proviantplaner/core/database/daos.dart';
 import 'package:proviantplaner/core/database/tables.dart';
@@ -114,6 +116,31 @@ class ShoppingListService {
     required this.tripService,
     this.onTripDataChanged,
   });
+
+  final Map<int, Future<void>> _itemMutationQueues = {};
+
+  Future<T> _runSequentialForItem<T>(int listItemId, Future<T> Function() action) {
+    final previous = _itemMutationQueues[listItemId] ?? Future.value();
+    final completer = Completer<T>();
+
+    _itemMutationQueues[listItemId] = previous.then((_) async {
+      try {
+        final result = await action();
+        completer.complete(result);
+      } catch (e, st) {
+        completer.completeError(e, st);
+      }
+    }, onError: (_) async {
+      try {
+        final result = await action();
+        completer.complete(result);
+      } catch (e, st) {
+        completer.completeError(e, st);
+      }
+    });
+
+    return completer.future;
+  }
 
   Future<T> _runGuarded<T>(String operationName, Future<T> Function() action) {
     return tripService.runGuarded<T>(action, operationName: operationName);
@@ -415,29 +442,74 @@ class ShoppingListService {
 
   /// Setzt die Packungsanzahl direkt per Eingabe (FEEDBACK_R1 Punkt 5 & 6).
   Future<void> setPackages(ShoppingListItemView itemView, int packages) async {
-    return _runGuarded('setPackages', () async {
-      if (packages <= 0) {
-        await listItemDao.unadoptItem(itemView.item.id);
-      } else {
-        await listItemDao.adoptItem(itemView.item.id, packages: packages);
-      }
-      _notifyTripDataChanged(itemView.item.tripId);
+    return _runSequentialForItem(itemView.item.id, () async {
+      return _runGuarded('setPackages', () async {
+        if (packages <= 0) {
+          await listItemDao.unadoptItem(itemView.item.id);
+        } else {
+          await listItemDao.adoptItem(itemView.item.id, packages: packages);
+        }
+        _notifyTripDataChanged(itemView.item.tripId);
+      });
+    });
+  }
+
+  /// Ändert die Packungsanzahl eines ListItems um [delta] (+1 / -1) atomar und serialisiert (F5).
+  /// Verhindert Lost Updates bei schnellen Mehrfachtaps, garantiert Mindestmenge [minPackages]
+  /// und stellt sicher, dass die Gesamtmenge bestehende Stopp-Allokationen nicht unterschreitet.
+  Future<int> adjustPackagesDelta({
+    required int tripId,
+    required int listItemId,
+    required int delta,
+    int minPackages = 1,
+  }) async {
+    return _runSequentialForItem(listItemId, () async {
+      return _runGuarded('adjustPackagesDelta', () async {
+        final item = await listItemDao.getListItemById(listItemId);
+        if (item == null) {
+          throw ArgumentError('ListItem mit ID $listItemId nicht gefunden');
+        }
+
+        // Aktuelle effektive Packungsanzahl aus der DB ermitteln
+        final currentPackages = item.overriddenPackages ??
+            (item.calculatedPackages > 0 ? item.calculatedPackages : 1);
+
+        // Summe expliziter Stopp-Allokationen ermitteln
+        final allocations = await listItemDao.getAllocationsForListItem(listItemId);
+        final totalAllocated = allocations.fold<int>(0, (sum, a) => sum + a.allocatedPackages);
+
+        // Mindestmenge ist das Maximum aus minPackages (Standard: 1) und totalAllocated
+        final effectiveMin = totalAllocated > minPackages ? totalAllocated : minPackages;
+
+        final targetPackages = (currentPackages + delta).clamp(effectiveMin, 999999);
+
+        if (targetPackages != currentPackages || !item.isAdopted) {
+          await listItemDao.adoptItem(listItemId, packages: targetPackages);
+          _notifyTripDataChanged(tripId);
+        }
+
+        return targetPackages;
+      });
     });
   }
 
   /// Übernimmt einen einzelnen Vorschlag auf die Vorratsliste (FB1-B).
   Future<void> adoptItem({required int tripId, required int listItemId, int? packages}) async {
-    return _runGuarded('adoptItem', () async {
-      await listItemDao.adoptItem(listItemId, packages: packages);
-      _notifyTripDataChanged(tripId);
+    return _runSequentialForItem(listItemId, () async {
+      return _runGuarded('adoptItem', () async {
+        await listItemDao.adoptItem(listItemId, packages: packages);
+        _notifyTripDataChanged(tripId);
+      });
     });
   }
 
   /// Entfernt eine Position von der Vorratsliste (FB1-B).
   Future<void> unadoptItem({required int tripId, required int listItemId}) async {
-    return _runGuarded('unadoptItem', () async {
-      await listItemDao.unadoptItem(listItemId);
-      _notifyTripDataChanged(tripId);
+    return _runSequentialForItem(listItemId, () async {
+      return _runGuarded('unadoptItem', () async {
+        await listItemDao.unadoptItem(listItemId);
+        _notifyTripDataChanged(tripId);
+      });
     });
   }
 

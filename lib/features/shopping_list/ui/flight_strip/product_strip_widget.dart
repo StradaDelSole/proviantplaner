@@ -73,15 +73,12 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
   Future<void> _handleDecrement() async {
     HapticFeedback.selectionClick();
     if (widget.item.isOnList) {
-      final current = widget.item.effectivePackages;
-      if (current <= 1) {
-        // F4: Minus bei Menge 1 darf Artikel nicht stillschweigend entfernen (Mindestmenge 1)
-        return;
-      }
-      await ref.read(shoppingListServiceProvider).setPackages(
-            widget.item,
-            current - 1,
+      await ref.read(shoppingListServiceProvider).adjustPackagesDelta(
+            tripId: widget.data.trip.id,
+            listItemId: widget.item.item.id,
+            delta: -1,
           );
+      if (!mounted) return;
       ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     } else {
       if (_stagedPackages > 1) {
@@ -93,11 +90,12 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
   Future<void> _handleIncrement() async {
     HapticFeedback.selectionClick();
     if (widget.item.isOnList) {
-      final current = widget.item.effectivePackages;
-      await ref.read(shoppingListServiceProvider).setPackages(
-            widget.item,
-            current + 1,
+      await ref.read(shoppingListServiceProvider).adjustPackagesDelta(
+            tripId: widget.data.trip.id,
+            listItemId: widget.item.item.id,
+            delta: 1,
           );
+      if (!mounted) return;
       ref.invalidate(tripShoppingListProvider(widget.data.trip.id));
     } else {
       setState(() => _stagedPackages++);

@@ -142,3 +142,41 @@ Gemäß der Owner-Vorgabe aus Issue #56 wurde ein echtes, voll funktionsfähiges
 - Test 13 (F2): `Strip wieder sichtbar machen - Nach Basket-Löschung erscheint der Streifen sofort wieder im Katalog & in der Suche ohne Navigation`
 - Test 14 (F3): `Fehlerbehandlung - Bei Persistenzfehler schnappt Streifen zurück, zeigt Fehler-SnackBar mit Retry und schützt vor Datenverlust`
 - Test 15 (F4): `Mengensteuerung - Minus bei Menge 1 entfernt Artikel weder auf Strip noch im Korb (Minimum 1)`
+---
+
+## 7. Review Amendment 2 (Review 5778264835, Findings F5, F6 & F1)
+
+**Datum:** 05.11.2026  
+**PR:** #60  
+**Status:** IMPLEMENTIERT & VOLLSTÄNDIG GETESTET – BEREIT FÜR RE-REVIEW
+
+### Behebung der Findings F5, F6 & F1:
+
+1. **F5 – Keine verlorenen Mengenänderungen (FIFO-Mutations-Queue pro Artikel):**
+   - *Problem:* Schnelle wiederholte Klicks auf `+` oder `-` auf bereits übernommenen Artikeln (sowohl auf `ProductStripWidget` als auch im `BasketTrayWidget`) führten zu Race Conditions, da nachfolgende Taps veraltete Zwischenzustände aus dem UI-State auslasen oder parallele DB-Schreibvorgänge sich gegenseitig überschrieben (z. B. 1 -> `+`, `+` ergab 2 statt 3).
+   - *Lösung:* Einführung einer deterministischen sequentiellen FIFO-Queue pro Artikel (`_runSequentialForItem<T>(listItemId, ...)`) im `ShoppingListService`.
+   - Die Methode `adjustPackagesDelta({tripId, listItemId, delta, minPackages = 1})` arbeitet strikt linearisiert:
+     1. Liest vor jedem Delta den frischen Datensatz direkt aus der Drift-Datenbank (`getItemById(listItemId)`).
+     2. Berechnet die Summe aller bereits bestehenden Stopp-Zuweisungen (`getAllocationsForListItem(listItemId)`).
+     3. Verhindert das Absinken unter `minPackages` und unter die Summe der Stopp-Allokationen (`max(minPackages, totalAllocated)`).
+     4. Schreibt die aktualisierte Packungsmenge atomar in die Datenbank und benachrichtigt verbundene Streams.
+   - Sowohl `ProductStripWidget` als auch `BasketTrayWidget` rufen für `+` und `-` einheitlich `adjustPackagesDelta` auf. Keine Nutzereingaben werden verschluckt; schnelle Taps werden vollständig abgebildet (1 -> `+`, `+` = 3; 3 -> `-`, `-` = 1).
+2. **F6 – Sichere asynchrone UI-Lebenszyklen (Unmount & View-Toggle):**
+   - *Problem:* Wenn der Nutzer während einer laufenden asynchronen Persistenz-Operation (z. B. Löschen im Korb, Undo nach Swipe oder Stepper-Klick) die Ansicht über `toggle_flight_strip_board_button` zur `PlanningView` umschaltete oder navigierte, wurden auf den disposeden Widgets `setState()` oder Riverpod `ref.invalidate(...)` aufgerufen, was zu Framework-Exceptions führte.
+   - *Lösung:* Konsequente Absicherung mit `if (!mounted) return;` bzw. `if (!context.mounted) return;` nach allen `await`-Aufrufen in:
+     - `FlightStripBoardView`: `onItemRemoved`-Handler, `_handleConfirmSwipeToBasket`, `_handleSkip` und Undo-SnackBar-Aktionen.
+     - `BasketTrayWidget`: Lösch-Schaltfläche (`unadoptItem`), Stepper-Minus und Stepper-Plus.
+     - `ProductStripWidget`: `_handleDecrement` und `_handleIncrement`.
+3. **F1 – Vollständige Testabsicherung für Stopp-Allokationen:**
+   - In `test/features/shopping_list/flight_strip_board_test.dart` (Test F1) wurde eine reale Stopp-Zuweisung (2 Packungen an Stopp 2 via `ListItemAllocation`) hinzugefügt. Der Test belegt explizit, dass die Allokation über den idempotenten Rechts-Swipe hinweg unverändert in der Datenbank überlebt.
+
+### Testsuite-Erweiterung:
+`test/features/shopping_list/flight_strip_board_test.dart` (21 Tests, alle grün):
+- Tests 1-11: Basis-Funktionen & Barrierefreiheit.
+- Tests 12-15: Review Amendment 1 (F1-F4).
+- Test 16 (F5.1): `F5 - Schnelle Plus-Taps auf Strip addieren zuverlaessig jeden Tap ohne Verlust (1 -> 3)`
+- Test 17 (F5.2): `F5 - Schnelle Minus-Taps auf Strip reduzieren zuverlaessig jeden Tap ohne Verlust (3 -> 1)`
+- Test 18 (F5.3): `F5 - Serialisierung bei asynchroner Verzoegerung und gemischter Interaktion Strip & Basket Tray` (prüft mit künstlicher I/O-Verzögerung 1 -> 4 -> 2)
+- Test 19 (F5.4): `F5 - Minus-Taps respektieren bestehende Stopp-Allokationssumme (kann nicht unter Allokation fallen)`
+- Test 20 (F6.1): `F6 - Asynchrones Loeschen im Basket mit Unmount/Ansichtswechsel wirft kein setState after dispose`
+- Test 21 (F6.2): `F6 - Asynchrones Undo nach Swipe mit Unmount/Ansichtswechsel wirft kein setState after dispose`

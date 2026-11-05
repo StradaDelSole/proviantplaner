@@ -12,7 +12,9 @@
 /// - Nachtwache-Modus (Rot auf Schwarz) und schmale Viewports (320px).
 library;
 
+import 'dart:async';
 import 'dart:io';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -50,6 +52,47 @@ class FailingShoppingListService extends ShoppingListService {
       throw Exception('Simulierter DB-Fehler beim Speichern');
     }
     return super.adoptItem(tripId: tripId, listItemId: listItemId, packages: packages);
+  }
+}
+
+class ControllableShoppingListService extends ShoppingListService {
+  Completer<void>? unadoptDelay;
+  Duration simulatedDelay = Duration.zero;
+
+  ControllableShoppingListService({
+    required super.tripDao,
+    required super.listItemDao,
+    required super.catalogRepository,
+    required super.tripService,
+  });
+
+  @override
+  Future<void> unadoptItem({required int tripId, required int listItemId}) async {
+    if (unadoptDelay != null) {
+      await unadoptDelay!.future;
+    }
+    if (simulatedDelay > Duration.zero) {
+      await Future<void>.delayed(simulatedDelay);
+    }
+    return super.unadoptItem(tripId: tripId, listItemId: listItemId);
+  }
+
+  @override
+  Future<int> adjustPackagesDelta({
+    required int tripId,
+    required int listItemId,
+    required int delta,
+    int minPackages = 1,
+  }) async {
+    if (simulatedDelay > Duration.zero) {
+      await Future<void>.delayed(simulatedDelay);
+    }
+    return super.adjustPackagesDelta(
+      tripId: tripId,
+      listItemId: listItemId,
+      delta: delta,
+      minPackages: minPackages,
+    );
   }
 }
 
@@ -455,14 +498,35 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      // 1. Ersten Artikel der ersten Kategorie vorab mit 3 Packungen in den Korb legen
+      // 1. Zweiten Stopp anlegen
+      final stop2Id = await db.tripDao.addShoppingStop(
+        ShoppingStopsCompanion.insert(
+          tripId: tripId,
+          dayNumber: const Value(3),
+          name: 'Hvar Nachkauf',
+        ),
+      );
+
+      // 2. Ersten Artikel der ersten Kategorie vorab mit 3 Packungen in den Korb legen
       final initialData = await shoppingListService.loadShoppingList(tripId);
       final testItem = initialData.categories.first.groups.first.variants.first;
       await shoppingListService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 3);
 
+      // 3. Echte Stopp-Allokation von 2 Packungen an Stopp 2 anlegen
+      await db.listItemDao.setAllocation(
+        tripId: tripId,
+        listItemId: testItem.item.id,
+        shoppingStopId: stop2Id,
+        packages: 2,
+      );
+
       final dbBefore = await db.listItemDao.getListItemById(testItem.item.id);
       expect(dbBefore?.isAdopted, isTrue);
       expect(dbBefore?.overriddenPackages, 3);
+      final allocBefore = await db.listItemDao.getAllocationsForListItem(testItem.item.id);
+      expect(allocBefore.length, 1);
+      expect(allocBefore.first.allocatedPackages, 2);
+      expect(allocBefore.first.shoppingStopId, stop2Id);
 
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
@@ -482,6 +546,12 @@ void main() {
       final dbAfter = await db.listItemDao.getListItemById(testItem.item.id);
       expect(dbAfter?.isAdopted, isTrue);
       expect(dbAfter?.overriddenPackages, 3);
+
+      // F1: Stopp-Allokation bleibt unverändert erhalten!
+      final allocAfter = await db.listItemDao.getAllocationsForListItem(testItem.item.id);
+      expect(allocAfter.length, 1);
+      expect(allocAfter.first.allocatedPackages, 2);
+      expect(allocAfter.first.shoppingStopId, stop2Id);
     });
 
     testWidgets('F2: Strip wieder sichtbar machen – Nach Basket-Löschung erscheint der Streifen sofort wieder im Katalog & in der Suche ohne Navigation', (tester) async {
@@ -630,6 +700,238 @@ void main() {
       final dbItem2 = await db.listItemDao.getListItemById(firstItem.item.id);
       expect(dbItem2?.isAdopted, isTrue);
       expect(dbItem2?.overriddenPackages, 1);
+    });
+
+    testWidgets('F5: Keine verlorenen Mengenänderungen – Schnelle Plus-Taps auf dem Strip erhöhen Menge linear (1 -> +,+ = 3)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 1);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      final plusBtn = find.byKey(ValueKey('strip_plus_${testItem.id}'));
+      expect(plusBtn, findsOneWidget);
+
+      // Zwei schnelle Plus-Taps ohne pumpAndSettle dazwischen
+      await tester.tap(plusBtn);
+      await tester.tap(plusBtn);
+      await tester.pumpAndSettle();
+
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.overriddenPackages, 3);
+      expect(find.text('3'), findsWidgets);
+    });
+
+    testWidgets('F5: Keine verlorenen Mengenänderungen – Schnelle Minus-Taps verringern Menge linear (3 -> -,- = 1)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 3);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      final minusBtn = find.byKey(ValueKey('strip_minus_${testItem.id}'));
+      expect(minusBtn, findsOneWidget);
+
+      // Zwei schnelle Minus-Taps ohne pumpAndSettle dazwischen
+      await tester.tap(minusBtn);
+      await tester.tap(minusBtn);
+      await tester.pumpAndSettle();
+
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.overriddenPackages, 1);
+      expect(find.text('1'), findsWidgets);
+    });
+
+    testWidgets('F5: Verzögerte Service-Ausführung & gemischte Strip-/Tray-Parallelität verliert keine Eingabe', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final delayedService = ControllableShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      delayedService.simulatedDelay = const Duration(milliseconds: 20);
+
+      final initialData = await delayedService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await delayedService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 1);
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: delayedService));
+      await tester.pumpAndSettle();
+
+      // Korb aufklappen
+      await tester.tap(find.byKey(const ValueKey('basket_expand_button')));
+      await tester.pumpAndSettle();
+
+      // Tap 1 auf Strip Plus, Tap 2 im Korb Plus
+      final stripPlus = find.byKey(ValueKey('strip_plus_${testItem.id}'));
+      final basketPlus = find.descendant(
+        of: find.byKey(const ValueKey('flight_strip_basket_tray')),
+        matching: find.byIcon(Icons.add),
+      );
+
+      await tester.tap(stripPlus);
+      await tester.tap(basketPlus);
+      await tester.pumpAndSettle();
+
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.overriddenPackages, 3);
+    });
+
+    testWidgets('F5: Allokationssummen-Schutz beim Verringern (Menge darf Summe bestehender Stopp-Allokationen nicht unterschreiten)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final stop2Id = await db.tripDao.addShoppingStop(
+        ShoppingStopsCompanion.insert(
+          tripId: tripId,
+          dayNumber: const Value(3),
+          name: 'Stopp 2',
+        ),
+      );
+
+      final initialData = await shoppingListService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await shoppingListService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 3);
+
+      // 2 Packungen an Stopp 2 allokieren (Summe = 2)
+      await db.listItemDao.setAllocation(
+        tripId: tripId,
+        listItemId: testItem.item.id,
+        shoppingStopId: stop2Id,
+        packages: 2,
+      );
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      final minusBtn = find.byKey(ValueKey('strip_minus_${testItem.id}'));
+
+      // 1. Minus-Tap: 3 -> 2 (erlaubt)
+      await tester.tap(minusBtn);
+      await tester.pumpAndSettle();
+      expect((await db.listItemDao.getListItemById(testItem.item.id))?.overriddenPackages, 2);
+
+      // 2. Minus-Tap: Versuch von 2 auf 1 -> geschützt, bleibt bei 2
+      await tester.tap(minusBtn);
+      await tester.pumpAndSettle();
+      expect((await db.listItemDao.getListItemById(testItem.item.id))?.overriddenPackages, 2);
+
+      // Allokation weiterhin intakt
+      final alloc = await db.listItemDao.getAllocationsForListItem(testItem.item.id);
+      expect(alloc.first.allocatedPackages, 2);
+    });
+
+    testWidgets('F6: Sicherer asynchroner UI-Lebenszyklus – Korb-Löschung bei unmounted / navigierter Ansicht wirft kein setState after dispose', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllableService = ControllableShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final unadoptCompleter = Completer<void>();
+      controllableService.unadoptDelay = unadoptCompleter;
+
+      final initialData = await controllableService.loadShoppingList(tripId);
+      final testItem = initialData.categories.first.groups.first.variants.first;
+      await controllableService.adoptItem(tripId: tripId, listItemId: testItem.item.id, packages: 2);
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: controllableService));
+      await tester.pumpAndSettle();
+
+      // Korb aufklappen
+      await tester.tap(find.byKey(const ValueKey('basket_expand_button')));
+      await tester.pumpAndSettle();
+
+      // Löschen antippen -> unadoptItem startet und blockiert auf unadoptCompleter
+      final deleteBtn = find.descendant(
+        of: find.byKey(const ValueKey('flight_strip_basket_tray')),
+        matching: find.byIcon(Icons.delete_outline),
+      );
+      await tester.tap(deleteBtn);
+      await tester.pump(); // Startet async unadopt
+
+      // Benutzer schaltet die Ansicht zur klassischen PlanningView um (unmountet FlightStripBoardView & BasketTrayWidget!)
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PlanningView), findsOneWidget);
+      expect(find.byType(FlightStripBoardView), findsNothing);
+
+      // Jetzt löst die asynchrone DB-Operation auf
+      unadoptCompleter.complete();
+      await tester.pumpAndSettle();
+
+      // F6: Kein setState() called after dispose Fehler geworfen!
+      expect(tester.takeException(), isNull);
+
+      // Artikel wurde in DB sauber entfernt
+      final dbItem = await db.listItemDao.getListItemById(testItem.item.id);
+      expect(dbItem?.isAdopted, isFalse);
+    });
+
+    testWidgets('F6: Sicherer asynchroner UI-Lebenszyklus – Undo bei unmounted Widget wirft kein setState after dispose', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controllableService = ControllableShoppingListService(
+        tripDao: db.tripDao,
+        listItemDao: db.listItemDao,
+        catalogRepository: catalogRepo,
+        tripService: tripService,
+      );
+      final unadoptCompleter = Completer<void>();
+      controllableService.unadoptDelay = unadoptCompleter;
+
+      await tester.pumpWidget(buildTestApp(customShoppingListService: controllableService));
+      await tester.pumpAndSettle();
+
+      // Ersten Streifen nach rechts wischen
+      final firstStrip = find.byType(ProductStripWidget).first;
+      await tester.fling(firstStrip, const Offset(600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // Undo-Button auf SnackBar antippen
+      final undoBtn = find.text('Rückgängig');
+      expect(undoBtn, findsOneWidget);
+      await tester.tap(undoBtn);
+      await tester.pump(); // Startet Undo mit unadoptItem
+
+      // Benutzer schaltet Ansicht um
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.pumpAndSettle();
+
+      // Verzögerte DB-Löschung auflösen
+      unadoptCompleter.complete();
+      await tester.pumpAndSettle();
+
+      // F6: Kein Crash / setState after dispose
+      expect(tester.takeException(), isNull);
     });
   });
 }

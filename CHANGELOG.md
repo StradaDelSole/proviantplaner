@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-05 – FLIGHT-STRIP-01: Review Amendment 2 (#56, PR #60)
+
+- **F5 – Keine verlorenen Mengenänderungen (Serialisierte FIFO-Mengenmutationen pro Artikel):**
+  - Race Condition bei schnellen Mehrfachtaps auf `+` / `-` (sowohl auf dem `ProductStripWidget` als auch im `BasketTrayWidget`) behoben.
+  - Implementierung einer strikt serialisierten, artikelspezifischen Mutations-Queue (`_runSequentialForItem`) im `ShoppingListService`. Die Methode `adjustPackagesDelta` liest vor jeder Modifikation den aktuellen Zustand aus der Drift-Datenbank und führt die Delta-Schritte in FIFO-Reihenfolge aus. Keine Nutzereingaben werden verworfen (zwei schnelle Plus-Taps von 1 ergeben garantiert 3; zwei schnelle Minus-Taps von 3 ergeben 1).
+  - Bestehende Stopp-Allokationen (`getAllocationsForListItem`) bleiben bei Mengenreduktion garantiert geschützt: Die Zielmenge wird auf `max(minPackages, totalAllocated)` begrenzt, sodass die Gesamtpackungszahl niemals unter die Summe bereits zugewiesener Stopp-Mengen fallen kann (`AllocationExceededException` ausgeschlossen).
+- **F6 – Sichere asynchrone UI-Lebenszyklen (Unmount & View-Toggle):**
+  - `mounted`- und `context.mounted`-Prüfungen nach sämtlichen asynchronen Aktionen (Löschen im Korb, Speichern, Undo, Überspringen und Stepper) in `FlightStripBoardView`, `BasketTrayWidget` und `ProductStripWidget` hinzugefügt.
+  - Schützt zuverlässig vor `setState()` und Riverpod-Provider-Invalidierungen auf bereits disposeden Widgets bei schnellem Ansichtswechsel (`toggle_flight_strip_board_button`) oder Navigation während laufender I/O-Vorgänge.
+- **F1 – Vollständige Testabsicherung für Stopp-Allokationen:**
+  - Test F1 (`Bestehende Basket-Einträge schützen`) um eine reale Stopp-Zuweisung (2 Packungen an Stopp 2 via `ListItemAllocation`) erweitert und verifiziert, dass die Allokation über idempotente Swipes und Updates hinweg unberührt erhalten bleibt.
+- **Qualitätssicherung:**
+  - Testsuite `test/features/shopping_list/flight_strip_board_test.dart` um 6 neue Tests erweitert (insgesamt 21 Tests, alle grün):
+    - 4x F5 Tests: Schnelle `+`-Taps (1 -> 3), schnelle `-`-Taps (3 -> 1), asynchrone Verzögerung & gemischte Interaktion Strip/Tray, Allokationssummen-Schutz beim Dekrementieren.
+    - 2x F6 Tests: Asynchrones Löschen mit Widget-Unmount/Ansichtswechsel, Asynchrones Undo mit Unmount/Ansichtswechsel (kein `setState() called after dispose`).
+  - `dart analyze lib test`: 0 Issues.
+  - `npm run typecheck --prefix backend`: 0 Errors.
+
 ## 2026-11-05 â FLIGHT-STRIP-01: Review Amendment 1 (#56, PR #60)
 
 - **F1 â Bestehende Basket-Einträge schützen (Idempotenz & Erhaltungs-Undo):**

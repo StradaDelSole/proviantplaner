@@ -89,14 +89,14 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     final bool wasInBasket = item.isOnList;
     final int priorEffectivePackages = item.effectivePackages;
 
-    // F1: Idempotenz bei unveränderter Menge für bereits ausgewählte Artikel
-    if (wasInBasket && packages == priorEffectivePackages) {
+    // F1: Idempotenz bei bereits im Korb liegenden Artikeln (keine destruktive Änderung)
+    if (wasInBasket) {
       _pendingOperations.remove(item.id);
       if (!mounted) return false;
       ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.alreadyInBasketMessage(itemName, packages, unitStr)),
+          content: Text(l10n.alreadyInBasketMessage(itemName, priorEffectivePackages, unitStr)),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -136,10 +136,6 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     final itemName = item.localizedName(context);
     final unitStr = item.unit.isNotEmpty ? item.unit : l10n.unitPackage;
 
-    final bool wasInBasket = item.isOnList;
-    final int priorEffectivePackages = item.effectivePackages;
-    final int? priorOverriddenPackages = item.item.overriddenPackages;
-
     setState(() {
       _transferredItemIds.add(item.id);
     });
@@ -154,25 +150,20 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
           label: l10n.undo,
           onPressed: () async {
             try {
-              if (wasInBasket) {
-                // F1: War bereits im Korb -> Vorherige Menge wiederherstellen, NICHT löschen!
-                await ref.read(shoppingListServiceProvider).adoptItem(
-                      tripId: tripId,
-                      listItemId: item.item.id,
-                      packages: priorOverriddenPackages ?? priorEffectivePackages,
-                    );
-              } else {
-                // F1: Neu hinzugefügt -> Unadopt und aus Transferred-Set entfernen
+              // F1 / F6: Item wurde neu zum Korb hinzugefügt -> Unadopt & Transferred-Reset bei mounted
+              if (mounted) {
                 setState(() {
                   _transferredItemIds.remove(item.id);
                   _itemKeyGenerations[item.id] = (_itemKeyGenerations[item.id] ?? 0) + 1;
                 });
-                await ref.read(shoppingListServiceProvider).unadoptItem(
-                      tripId: tripId,
-                      listItemId: item.item.id,
-                    );
               }
-              ref.invalidate(tripShoppingListProvider(tripId));
+              await ref.read(shoppingListServiceProvider).unadoptItem(
+                    tripId: tripId,
+                    listItemId: item.item.id,
+                  );
+              if (mounted) {
+                ref.invalidate(tripShoppingListProvider(tripId));
+              }
             } catch (e) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -209,6 +200,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
         action: SnackBarAction(
           label: l10n.undo,
           onPressed: () {
+            if (!mounted) return;
             setState(() {
               _skippedItemIds.remove(item.id);
             });
@@ -575,7 +567,8 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
           data: widget.data,
           selectedStopId: widget.selectedStopId,
           onItemRemoved: (itemId) {
-            // F2: Nach Löschen im Korb sofort wieder auf dem Board anzeigen
+            // F2 / F6: Nach Löschen im Korb sofort wieder auf dem Board anzeigen (nur wenn mounted)
+            if (!mounted) return;
             setState(() {
               _transferredItemIds.remove(itemId);
               _itemKeyGenerations[itemId] = (_itemKeyGenerations[itemId] ?? 0) + 1;
