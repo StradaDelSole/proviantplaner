@@ -1,6 +1,8 @@
 # HCD-SHOP-01 – Startbrief für Gemini: Architektur-/Implementierungsreconciliation ohne Code
 
-**Status:** FIRST NEXT STEP PREPARED, **PHASE A ONLY** – ohne produktiven Coding-Release; nach unabhängiger Prüfung und Owner-Freigabe Phase B.  
+> **SUPERSEDED AS NEXT ACTION – 06.11.2026:** Die Phase-A-Reconciliation ist inzwischen als **Gate-A-Kandidat** in `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` dokumentiert. **Diesen alten Gemini-Phase-A-Auftrag nicht erneut ausführen oder als Coding-Freigabe missverstehen.** Nächster Schritt: unabhängiger Gate-A-Review, dann separater Owner-Phase-B-Release. Historischer Auftrag bleibt nachverfolgbar.
+
+**Historischer Status:** FIRST NEXT STEP PREPARED, **PHASE A ONLY** – ohne produktiven Coding-Release; nach unabhängiger Prüfung und Owner-Freigabe Phase B.  
 **Issued:** 05.11.2026; Owner accepted HCD product direction and requested that all measures be tracked and implemented via normal gated workflow.  
 **Issue:** #66, Parent #64, PR #60 current Owner UX HOLD.  
 **Related:** #67 #68, #21, #61 #62; governance `AGENTS.md`, `GEMINI.md`, `docs/ENGINEERING_STANDARD_v1.0.md`.
