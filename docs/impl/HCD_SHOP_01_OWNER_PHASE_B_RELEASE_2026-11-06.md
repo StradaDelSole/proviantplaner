@@ -21,7 +21,7 @@
 
 ## Exakter freigegebener Coding-Umfang
 
-**Jetzt freigegeben:** ausschließlich **#66 Schritt 0 + Schritt 1** nach `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_DRAFT_2026-11-06.md` (ab diesem Owner-Release als bindender Phase-B-Brief mit Stop nach Step 1). Ziele: Basis-Rot-Test; stabiler Einkaufs-Scrollable bei Reload, drei Errorzustände, keine doppelte manuelle Invalidierung, truthful `toggleBought` false/exception, pro Item Pending/Undo guard, Mounted-/Recovery-Sicherheit. Codeoberfläche vorzugsweise `shopping_mode_screen.dart`, passende neue Tests; keine Service-/DAO-/Provider-/Schema-/Ledger-/Auth-/Backend-Änderung.
+**Jetzt freigegeben:** ausschließlich **#66 Schritt 0 + Schritt 1** nach **freigegebenem** `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_2026-11-06.md` (ab diesem Owner-Release als bindender Phase-B-Brief mit Stop nach Step 1). Ziele: Basis-Rot-Test; stabiler Einkaufs-Scrollable bei Reload, drei Errorzustände, keine doppelte manuelle Invalidierung, truthful `toggleBought` false/exception, pro Item Pending/Undo guard, Mounted-/Recovery-Sicherheit. Codeoberfläche vorzugsweise `shopping_mode_screen.dart`, passende neue Tests; keine Service-/DAO-/Provider-/Schema-/Ledger-/Auth-/Backend-Änderung.
 
 **Für den zweiten Teil konzeptionell freigegeben, aber am Zwischen-Gate gestoppt:** nach positivem Owner Pixel-Check `Erledigt (N)`/ListView.builder nach S1, lokale UI-Transformation, sechs ARB-Locales, Tests.
 
