@@ -1,4 +1,7 @@
-# Phase B – Implementation Brief: PROVY HCD-SHOP-01 / #66
+# Phase B – ARCHIVED DRAFT: PROVY HCD-SHOP-01 / #66
+
+> **SUPERSEDED 06.11.2026:** Owner hat S1, zweistufigen Ablauf/Pixeltst und #66-vor-#60-Integration sowie Phase B ausdrücklich freigegeben. **NICHT diesen Draft als Gemini-Auftrag verwenden.** Kanonischer RELEASED-Brief: `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_2026-11-06.md`; Owner-Gate: `docs/impl/HCD_SHOP_01_OWNER_PHASE_B_RELEASE_2026-11-06.md`. Nur Step 0/1 jetzt, STOP vor Step 2 bis Pixel und Owner-Fortsetzung.
+
 
 **Status:** **DRAFT / NOT RELEASED** – Code erst nach expliziter Owner-Zustimmung zu S1, Zweistufenverfahren und #60-Integration.  
 **Erstellt:** 06.11.2026.  
