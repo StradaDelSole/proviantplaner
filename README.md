@@ -2,6 +2,27 @@
 
 Mobile App (Flutter, iOS und Android) für die Proviant- und Bordkassenplanung auf Segeltörns. Eigenständige App ohne Bootsinhalte; die Mitglied-Version wird über ein HullQ-Konto freigeschaltet.
 
+## Verbindliches Produktprinzip: Human-Centered Design (Owner-Entscheidung 05.11.2026)
+
+**PROVY wird um reale Aufgaben und reale Nutzungssituationen von Skippern und Crew gebaut, nicht um Software-Features.** Weniger Denken/Suchen/Fehler, wahrheitsgetreues Feedback, Undo und selbstbestimmte Assistenz sind Produktanforderungen. Wesentliche neue oder veränderte UX-Flows erhalten einen schlanken, dokumentierten **HCD-Pass** mit Aufgaben-/Kontextbeschreibung, heuristischer Prüfung und risikogerechter Beobachtung realer Nutzer. Für die drei Store-v1-Kernreisen (Törn & Proviant, Einkauf & Crew, Bordkasse & Abrechnung) gehört echte Aufgabenbeobachtung zur UX-Abnahme; CI allein genügt nicht.
+
+Verbindliche Grundlage: `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md`. Sie ergänzt die bereits eingefrorenen UX-Entscheidungen, Benchmark-Strategie und Engineering-Gates, ohne deren Scope oder Freigaben eigenmächtig zu ändern. **Kein automatischer Implementierungs-Slice, Merge oder Release.**
+
+## Aktueller Arbeitsstand / Implementation Gates (Owner 05.11.2026)
+
+**Einziger kompakter, datierter Gate-Einstieg:** `docs/PROJECT_STATUS.md` – vor jeder Session auf aktuellen GitHub-`main`/PR-HEAD/Issues überprüfen. **PR #60 Code/CI grün, reale Pixel-7-Pro-UX-Product Acceptance HOLD**; kein Merge bis reale Shopping-Journey korrigiert und bestätigt. Das Shopping-HCD-Masterregister ist #64, Backend/Release #65; ausführbare Pakete #66–#71.
+
+Verbindliche **Owner-accepted Planungsunterlagen** dieses Dokumentations-PRs:
+- `docs/design/PROVY_HUMAN_CENTERED_DESIGN_v0.1.md` – Grundsatz und HCD-Pass.
+- `docs/design/PROVY_HCD_SHOPPING_JOURNEY_PLAN_2026-11-05.md` – chronologischer Einkaufsablauf und Daten-/Screen-Entscheidungen.
+- `docs/qa/PROVY_HCD_REAL_DEVICE_ACCEPTANCE_2026-11-05.md` – echte Aufgaben-/Gerätetests.
+- `docs/roadmap/PROVY_RELEASE_BACKEND_READINESS_PLAN_2026-11-05.md` – Release- und Backend-Gates; keine automatische Cloud-Freigabe.
+- `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` – **Independent Gate A PASS** am geprüften Doc-HEAD `c05329a5`. **Owner Phase B für #66 Schritt 0/1 erteilt 06.11.2026**, siehe `docs/impl/HCD_SHOP_01_OWNER_PHASE_B_RELEASE_2026-11-06.md`; freigegebener Coding-Brief: `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_2026-11-06.md`. STOP vor Schritt 2 für echten Pixel-Test.
+
+Eine Roadmap ist **keine** Freigabe eines PR-Merges, Cloud-Deploys oder neuen High-Risk-Implementierungsslices. Ältere Statusabschnitte in diesem README sind historische Kontextbelege und können nicht ohne erneute Reconciliation als aktueller Gate-Status gelten.
+
+**SHOP-01 (06.11.2026): Independent Gate A PASS, Owner Phase B Schritt 0/1 RELEASED.** Gemini darf nur den roten Baseline-Test und Schritt 1 implementieren; danach STOP für independent Exact-HEAD-Code-Review und echten Pixel-7-Pro-Test. **Noch keine Code-/Pixel-Abnahme oder Merge-Freigabe.** Details `docs/PROJECT_STATUS.md`.
+
 ## Engineering- und Review-Prozess (Owner-Entscheidung 30.10.2026)
 
 Für **jede neue Provy-Sitzung** gelten AGENTS.md, GEMINI.md und docs/ENGINEERING_STANDARD_v1.0.md. Bei High-Risk-Slices (Persistenz/Backup/Restore, Auth/Backend, Offline-Synchronisierung, Nebenläufigkeit, Finanzen, Migration) ist die zweistufige Arbeitsweise verbindlich: **Phase A Architektur- und Failure-Review ohne Code → unabhängiges Architecture Gate → Phase B Implementierung mit negativen und konkurrierenden Tests → unabhängiger Code-Review am exakten HEAD → Owner Acceptance**. Vorlagen: docs/templates/ARCHITECTURE_GATE_TEMPLATE.md und docs/templates/IMPLEMENTATION_BRIEF_TEMPLATE.md. Nach zwei verwandten Amendments Architektur neu bewerten statt blind weiterpatchen.
