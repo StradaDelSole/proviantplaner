@@ -17,11 +17,11 @@ Verbindliche **Owner-accepted Planungsunterlagen** dieses Dokumentations-PRs:
 - `docs/design/PROVY_HCD_SHOPPING_JOURNEY_PLAN_2026-11-05.md` – chronologischer Einkaufsablauf und Daten-/Screen-Entscheidungen.
 - `docs/qa/PROVY_HCD_REAL_DEVICE_ACCEPTANCE_2026-11-05.md` – echte Aufgaben-/Gerätetests.
 - `docs/roadmap/PROVY_RELEASE_BACKEND_READINESS_PLAN_2026-11-05.md` – Release- und Backend-Gates; keine automatische Cloud-Freigabe.
-- `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` – **Independent Gate A PASS** am geprüften Doc-HEAD `c05329a5`; **Owner Phase-B-Entscheidung noch offen**. Nachweis: `docs/impl/HCD_SHOP_01_GATE_A_PASS_RECORD_2026-11-06.md`; Implementation Draft: `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_DRAFT_2026-11-06.md`.
+- `docs/impl/HCD_SHOP_01_ARCHITECTURE_GATE_A_2026-11-06.md` – **Independent Gate A PASS** am geprüften Doc-HEAD `c05329a5`. **Owner Phase B für #66 Schritt 0/1 erteilt 06.11.2026**, siehe `docs/impl/HCD_SHOP_01_OWNER_PHASE_B_RELEASE_2026-11-06.md`; freigegebener Coding-Brief: `docs/impl/HCD_SHOP_01_PHASE_B_IMPLEMENTATION_BRIEF_2026-11-06.md`. STOP vor Schritt 2 für echten Pixel-Test.
 
 Eine Roadmap ist **keine** Freigabe eines PR-Merges, Cloud-Deploys oder neuen High-Risk-Implementierungsslices. Ältere Statusabschnitte in diesem README sind historische Kontextbelege und können nicht ohne erneute Reconciliation als aktueller Gate-Status gelten.
 
-**SHOP-01 Gate A (06.11.2026): PASS durch unabhängigen Claude-Re-Review** an exakt `c05329a5`; F-01–F-10 geschlossen, CI dieses Doc-HEAD grün. **Noch kein Owner Phase-B-Go, keine Code- oder Pixel-Abnahme.** Details `docs/PROJECT_STATUS.md`.
+**SHOP-01 (06.11.2026): Independent Gate A PASS, Owner Phase B Schritt 0/1 RELEASED.** Gemini darf nur den roten Baseline-Test und Schritt 1 implementieren; danach STOP für independent Exact-HEAD-Code-Review und echten Pixel-7-Pro-Test. **Noch keine Code-/Pixel-Abnahme oder Merge-Freigabe.** Details `docs/PROJECT_STATUS.md`.
 
 ## Engineering- und Review-Prozess (Owner-Entscheidung 30.10.2026)
 
