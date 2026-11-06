@@ -71,7 +71,12 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       if (!mounted) return;
 
       if (!success) {
-        _showErrorSnackBar(l10n);
+        _showToggleErrorSnackBar(
+          listItemId: listItemId,
+          stopId: stopId,
+          desiredIsBought: isBought,
+          l10n: l10n,
+        );
         ref.invalidate(tripShoppingListProvider(widget.tripId));
       } else if (service.onTripDataChanged == null) {
         // Fallback für Testumgebungen mit rohem Service-Mock ohne onTripDataChanged-Verdrahtung
@@ -81,7 +86,12 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       // die Reaktivität über tripDataVersionProvider aus.
     } catch (_) {
       if (!mounted) return;
-      _showErrorSnackBar(l10n);
+      _showToggleErrorSnackBar(
+        listItemId: listItemId,
+        stopId: stopId,
+        desiredIsBought: isBought,
+        l10n: l10n,
+      );
       ref.invalidate(tripShoppingListProvider(widget.tripId));
     } finally {
       if (mounted) {
@@ -92,7 +102,13 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
     }
   }
 
-  void _showErrorSnackBar(AppLocalizations l10n) {
+  void _showToggleErrorSnackBar({
+    required int listItemId,
+    required int stopId,
+    required bool desiredIsBought,
+    required AppLocalizations l10n,
+  }) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(l10n.technicalErrorMessage),
@@ -100,7 +116,7 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         action: SnackBarAction(
           label: l10n.retry,
           onPressed: () {
-            ref.invalidate(tripShoppingListProvider(widget.tripId));
+            _handleToggleBought(listItemId, stopId, desiredIsBought, l10n);
           },
         ),
       ),

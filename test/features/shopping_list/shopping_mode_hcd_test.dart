@@ -235,7 +235,7 @@ void main() {
   }
 
   group('HCD-SHOP-01 Schritt 1: Stabilität, Persistenzwahrheit und Lifecycle (#66)', () {
-    testWidgets('S01-40-POS: 40+ Artikel, mid-scroll Checkmark, kein Spinner, ListView stabil, Offset erhalten', (tester) async {
+    testWidgets('S01-40-POS: 40+ Artikel, 5 Checkmarks in Folge, Scrollable-Identität, ListView stabil, Offset erhalten', (tester) async {
       tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
       tester.view.devicePixelRatio = 2.625;
       addTearDown(() {
@@ -252,6 +252,9 @@ void main() {
 
       expect(find.byType(ListView), findsOneWidget);
       expect(find.textContaining('Supermarkt Marina'), findsWidgets);
+      expect(find.text('0 von 45 erledigt'), findsOneWidget);
+
+      final scrollableBefore = tester.state<ScrollableState>(find.byType(Scrollable));
 
       // Scrolle zu Artikel 20 in der Listenmitte
       final item20Finder = find.text('Artikel 20 (molkerei)');
@@ -259,11 +262,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(item20Finder, findsOneWidget);
 
-      final scrollableState = tester.state<ScrollableState>(find.byType(Scrollable));
-      final initialOffset = scrollableState.position.pixels;
+      final initialOffset = tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels;
       expect(initialOffset, greaterThan(300.0));
+      expect(identical(tester.state<ScrollableState>(find.byType(Scrollable)), scrollableBefore), isTrue);
 
-      final checkboxFinder = find.descendant(
+      final checkbox20Finder = find.descendant(
         of: find.ancestor(of: item20Finder, matching: find.byType(ListTile)),
         matching: find.byType(Checkbox),
       );
@@ -271,40 +274,93 @@ void main() {
       final reloadCompleter = Completer<void>();
       testShoppingListService.reloadCompleter = reloadCompleter;
 
-      // Checkbox antippen
-      await tester.tap(checkboxFinder);
+      // 1. Checkbox antippen
+      await tester.tap(checkbox20Finder);
       await tester.pump();
 
-      // 1. Kein Vollbild-Spinner während Reload!
+      // Kein Vollbild-Spinner während Reload!
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      // 2. ListView bleibt gemountet!
+      // ListView bleibt gemountet & ScrollableState bleibt identisch!
       expect(find.byType(ListView), findsOneWidget);
+      expect(identical(tester.state<ScrollableState>(find.byType(Scrollable)), scrollableBefore), isTrue);
 
       // Reload abschließen
       reloadCompleter.complete();
+      testShoppingListService.reloadCompleter = null;
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // 3. Scrollposition bleibt stabil
-      final postReloadOffset = tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels;
-      expect(postReloadOffset, closeTo(initialOffset, 1.0));
+      // Scrollposition bleibt stabil & ScrollableState identisch
+      expect(tester.state<ScrollableState>(find.byType(Scrollable)).position.pixels, closeTo(initialOffset, 1.0));
+      expect(identical(tester.state<ScrollableState>(find.byType(Scrollable)), scrollableBefore), isTrue);
+      expect(tester.widget<Checkbox>(checkbox20Finder).value, isTrue);
+      expect(find.text('1 von 45 erledigt'), findsOneWidget);
+
+      // 2. Vier weitere aufeinanderfolgende Artikel in der Mitte abhaken (Artikel 21 bis 24)
+      for (int i = 21; i <= 24; i++) {
+        final itemFinder = find.text('Artikel $i (molkerei)');
+        await tester.scrollUntilVisible(itemFinder, 100);
+        await tester.pumpAndSettle();
+        final cbFinder = find.descendant(
+          of: find.ancestor(of: itemFinder, matching: find.byType(ListTile)),
+          matching: find.byType(Checkbox),
+        );
+        await tester.tap(cbFinder);
+        await tester.pumpAndSettle();
+
+        // Nach jedem Häkchen bleibt das Scrollable identisch und die ListView gemountet
+        expect(identical(tester.state<ScrollableState>(find.byType(Scrollable)), scrollableBefore), isTrue);
+        expect(find.byType(ListView), findsOneWidget);
+        expect(tester.widget<Checkbox>(cbFinder).value, isTrue);
+      }
+
+      // Insgesamt 5 Artikel als gekauft markiert
+      expect(find.text('5 von 45 erledigt'), findsOneWidget);
+
+      // Persistierten DB-Status aller 5 Artikel verifizieren
+      for (int i = 20; i <= 24; i++) {
+        final allocs = await db.listItemDao.getAllocationsForListItem(i);
+        final stopAlloc = allocs.firstWhere((a) => a.shoppingStopId == testStopId);
+        expect(stopAlloc.isBought, isTrue, reason: 'Artikel $i muss in DB als gekauft persistiert sein');
+      }
     });
 
-    testWidgets('S01-ASYNC-INITIAL-ERROR: Initialer Ladefehler ohne Daten zeigt Fehlerbildschirm mit Retry', (tester) async {
+    testWidgets('S01-ASYNC-INITIAL-ERROR: Initialer Ladefehler zeigt Fehlerbildschirm und erholt sich nach Retry', (tester) async {
+      bool shouldThrow = true;
+
       await tester.pumpWidget(
         buildTestableWidget(
           additionalOverrides: [
-            tripShoppingListProvider(testTripId).overrideWith((ref) => Future.error(Exception('DB nicht erreichbar'))),
+            tripShoppingListProvider(testTripId).overrideWith((ref) async {
+              ref.watch(tripDataVersionProvider(testTripId));
+              if (shouldThrow) {
+                throw Exception('DB nicht erreichbar');
+              }
+              return testShoppingListService.loadShoppingList(testTripId);
+            }),
           ],
           child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Zeigt eigenständigen Fehlerbildschirm, NICHT generisches "Törn nicht gefunden"
+      // 1. Zeigt eigenständigen Fehlerbildschirm, NICHT generisches "Törn nicht gefunden"
       expect(find.byKey(const Key('shopping_mode_initial_error_scaffold')), findsOneWidget);
       expect(find.byKey(const Key('shopping_mode_initial_retry_button')), findsOneWidget);
       expect(find.text('Technischer Fehler'), findsOneWidget);
+      expect(find.byType(ListView), findsNothing);
+
+      // 2. Retry auslösen: Fehlerbedingung aufheben und Wiederholen-Button drücken
+      shouldThrow = false;
+      await tester.tap(find.byKey(const Key('shopping_mode_initial_retry_button')));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 3. Fehlerbildschirm verschwindet, ListView rendert erfolgreich mit Artikeln
+      expect(find.byKey(const Key('shopping_mode_initial_error_scaffold')), findsNothing);
+      expect(find.byType(ListView), findsOneWidget);
+      expect(find.text('Artikel 1 (obst_gemuese)'), findsOneWidget);
+      expect(find.text('0 von 45 erledigt'), findsOneWidget);
     });
 
     testWidgets('S01-ASYNC-RELOAD-ERROR: Reload-Fehler mit vorhandenen Daten belässt Liste und zeigt Warnbanner mit Retry', (tester) async {
@@ -354,7 +410,14 @@ void main() {
       expect(find.text('Einkaufsstopp nicht gefunden'), findsOneWidget);
     });
 
-    testWidgets('S01-FALSE-THROW: Fehlgeschlagener Schreibvorgang behauptet keinen Erfolg und zeigt Fehler-SnackBar', (tester) async {
+    testWidgets('S01-FALSE-THROW: Fehlgeschlagener Schreibvorgang behauptet keinen Erfolg und führt echten Retry aus', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       await tester.pumpWidget(
         buildTestableWidget(
           child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
@@ -363,27 +426,76 @@ void main() {
       await tester.pumpAndSettle();
 
       final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
-      final checkboxFinder = find.descendant(
+      final checkbox1Finder = find.descendant(
         of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
         matching: find.byType(Checkbox),
       );
 
-      // 1. Simulierter bool=false Fehlschlag
+      // --- TEIL A: Rückgabewert false (z.B. SQLite 0 Zeilen verändert) ---
       testShoppingListService.shouldFailNextToggle = true;
-      await tester.tap(checkboxFinder);
+      await tester.tap(checkbox1Finder);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
 
+      // 1. SnackBar mit Retry-Aktion erscheint
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.text('Erneut versuchen'), findsOneWidget);
 
-      // 2. Simulierter Exception-Fehlschlag
-      testShoppingListService.shouldThrowNextToggle = true;
-      await tester.tap(checkboxFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      // 2. Kein Scheinerfolg: Checkbox bleibt unchecked, Zähler bleibt bei 0 von 45 erledigt
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isFalse);
+      expect(find.text('0 von 45 erledigt'), findsOneWidget);
 
+      // 3. Datenbank-Wahrheit: isBought bleibt false in SQLite
+      var allocs1 = await db.listItemDao.getAllocationsForListItem(1);
+      expect(allocs1.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isFalse);
+
+      // 4. Retry-Aktion auf der SnackBar antippen
+      testShoppingListService.shouldFailNextToggle = false;
+      await tester.tap(find.text('Erneut versuchen'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 5. Nach erfolgreichem Retry: Checkbox ist checked, Zähler ist 1 von 45 erledigt, DB ist true!
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isTrue);
+      expect(find.text('1 von 45 erledigt'), findsOneWidget);
+      allocs1 = await db.listItemDao.getAllocationsForListItem(1);
+      expect(allocs1.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isTrue);
+
+      // --- TEIL B: Exception beim Schreibvorgang (z.B. Dateisystem-Lock / I/O-Fehler) ---
+      final secondItemFinder = find.text('Artikel 2 (obst_gemuese)');
+      final checkbox2Finder = find.descendant(
+        of: find.ancestor(of: secondItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      testShoppingListService.shouldThrowNextToggle = true;
+      await tester.tap(checkbox2Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 1. SnackBar mit Retry-Aktion erscheint
       expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Erneut versuchen'), findsOneWidget);
+
+      // 2. Kein Scheinerfolg: Checkbox 2 bleibt unchecked, Zähler bleibt bei 1 von 45 erledigt
+      expect(tester.widget<Checkbox>(checkbox2Finder).value, isFalse);
+      expect(find.text('1 von 45 erledigt'), findsOneWidget);
+
+      // 3. Datenbank-Wahrheit: isBought von Artikel 2 bleibt false
+      var allocs2 = await db.listItemDao.getAllocationsForListItem(2);
+      expect(allocs2.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isFalse);
+
+      // 4. Retry-Aktion antippen
+      testShoppingListService.shouldThrowNextToggle = false;
+      await tester.tap(find.text('Erneut versuchen'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 5. Nach erfolgreichem Retry: Checkbox 2 ist checked, Zähler ist 2 von 45 erledigt, DB ist true!
+      expect(tester.widget<Checkbox>(checkbox2Finder).value, isTrue);
+      expect(find.text('2 von 45 erledigt'), findsOneWidget);
+      allocs2 = await db.listItemDao.getAllocationsForListItem(2);
+      expect(allocs2.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isTrue);
     });
 
     testWidgets('S01-2TAP: Doppel-Tap auf selbe Checkbox blockiert zweiten Aufruf durch Pending-Guard', (tester) async {
@@ -421,7 +533,7 @@ void main() {
       expect(testShoppingListService.toggleCalls, equals(initialToggleCalls + 1));
     });
 
-    testWidgets('S01-A11Y: Schmaler 320dp-Screen und Nachtwache-Modus ohne Layout-Overflow', (tester) async {
+    testWidgets('S01-A11Y-DARK: Schmaler 320dp-Screen und Dark-Theme mit 1.5x Textskalierung ohne Overflow', (tester) async {
       tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(() {
@@ -432,6 +544,29 @@ void main() {
       await tester.pumpWidget(
         buildTestableWidget(
           themeOverride: AppTheme.darkTheme,
+          child: const MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(1.5)),
+            child: ShoppingModeScreen(tripId: 1, stopId: 1),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Kein RenderFlex overflow aufgetreten
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('S01-A11Y-NIGHTWATCH: Schmaler 320dp-Screen und echtes Nightwatch-Theme (nightwatchTheme) mit 1.5x Textskalierung ohne Overflow', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          themeOverride: AppTheme.nightwatchTheme,
           child: const MediaQuery(
             data: MediaQueryData(textScaler: TextScaler.linear(1.5)),
             child: ShoppingModeScreen(tripId: 1, stopId: 1),
