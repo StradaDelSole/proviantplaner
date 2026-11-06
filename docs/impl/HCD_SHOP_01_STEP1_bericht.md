@@ -83,6 +83,7 @@ Alle 7 dedizierten Tests bestanden:
 
 ### B. Bestehende Suiten
 - `test/features/ux/ux_b_shopping_and_delivery_test.dart`: **12/12 Tests bestanden**
+- `test/features/ux/fix_a_journey_test.dart`: **17/17 Tests bestanden**
 - `test/features/shopping_list/shopping_list_persistence_test.dart`: **Bestanden**
 - `flutter analyze`: **0 Issues (No issues found!)**
 - `npm run typecheck --prefix backend`: **0 Errors**
@@ -102,3 +103,4 @@ Gemäß Owner-Release (`docs/impl/HCD_SHOP_01_OWNER_PHASE_B_RELEASE_2026-11-06.m
 - **Kein Code für Schritt 2 (Footer/Filterung).**
 - **Kein automatischer Merge.**
 - **Bereit für unabhängigen Code-Review und physische Verifikation auf dem Google Pixel 7 Pro durch den Owner.**
+
