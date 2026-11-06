@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-11-06 – HCD-SHOP-01 Step 1: Stability, Persistence Truth & Lifecycle (#66)
+
+- **#66 (STEP 1) – Behebung des Checkout-Scroll-Resets und Full-Screen-Spinners im Einkaufsmodus:**
+  - `shopping_mode_screen.dart`: Das Scrollable (`ListView`) wird nicht mehr bei jedem Riverpod-Reload durch einen Full-Screen-Spinner unmounted (`dataAsync.when` abgelöst). Bei bestehenden Daten (`dataAsync.hasValue`) bleibt die Liste inklusive Scrollposition während asynchroner Datenaktualisierungen stabil gemountet.
+  - Redundantes manuelles `ref.invalidate(tripShoppingListProvider)` beim Checkbox-Toggle ersatzlos entfernt. Die Reaktivität stützt sich strikt und sauber auf `ShoppingListService.onTripDataChanged` und `tripDataVersionProvider`.
+  - Differenzierte Fehler- und Ladezustände:
+    1. Initiales Laden ohne Vorabdaten: Dedizierter Ladeindikator.
+    2. Initialer Fehler ohne Vorabdaten: Vollwertiger Fehlerbildschirm mit Wiederholungs-Button (`retry`), kein irreführender `NotFoundScreen`.
+    3. Reload-Fehler bei bestehenden Daten: Einkaufsliste bleibt voll bedienbar; ein diskretes Warnbanner am oberen Bildschirmrand weist auf den Fehlschlag hin und bietet eine Wiederholungsmöglichkeit (`shopping_mode_reload_error_banner`).
+    4. Nicht existierender Einkaufsstopp: Gezielte Anzeige von `NotFoundScreen` mit `shoppingStopNotFound`.
+  - Wahrhaftige Persistenz und Fehlerbehandlung (`_handleToggleBought`): Rückgabewerte von `toggleBought` werden geprüft. Sowohl ein Rückgabewert von `false` als auch aufgetretene Exceptions zeigen eine informative SnackBar mit Retry-Aktion und behaupten keinen Scheinerfolg.
+  - Per-Item Concurrency Guard (`_pendingItemIds`): Schnelle Mehrfach-Taps auf denselben Artikel werden abgefangen; die Checkbox wird während des Schreibvorgangs deaktiviert, wodurch redundante SQLite-Transaktionen und Race Conditions verhindert werden.
+  - Robuste Lifecycle-Absicherung: Sämtliche `ref`- und `setState`-Zugriffe prüfen strikt `mounted`.
+  - Responsives `AppBar`-Layout: Verhindert RenderFlex-Overflows bei schmalen Displays (320 logical px) und hoher Schriftskalierung (1.5x) durch adaptive Umschaltung auf `IconButton` mit Tooltip.
+- **Regressionstests (`test/features/shopping_list/shopping_mode_hcd_test.dart`):**
+  - Schritt 0 empirisch belegt: Vollständige Reproduktion des Scroll-Resets auf unmodifiziertem `main` (45 Artikel, Offset von 2504.0 px fiel auf 0.0 px zurück).
+  - Schritt 1 verifiziert: 7/7 Tests grün (Scroll-Stabilität bei 40+ Artikeln mit 2504.0 px Erhalt, initialer Fehler, Reload-Fehler mit Warnbanner, ungültiger Stopp, Fehler-SnackBar bei Schreibfehlschlag, Doppel-Tap-Guard und 320dp/1.5x A11Y-Stabilität).
+
 ## 2026-11-04 – QA-RAPID-01 Android UX Usability Fixes (#47, #48, #52, #53, #55)
 
 - **#48 (HIGH) – Navigation Trap in MoreScreen behoben:**
