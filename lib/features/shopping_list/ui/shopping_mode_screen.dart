@@ -13,6 +13,7 @@ import 'package:proviantplaner/core/theme/app_theme.dart';
 import 'package:proviantplaner/features/kitty/data/kitty_providers.dart';
 import 'package:proviantplaner/features/kitty/ui/widgets/expense_sheet.dart';
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_providers.dart';
+import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/domain/models/trip_phase.dart';
@@ -142,18 +143,69 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: l10n.retry,
-          onPressed: () {
+          onPressed: () async {
             if (!mounted) return;
             final currentGen = _itemMutationGenerations[listItemId] ?? 0;
             if (currentGen != generation) {
               return; // Neuere Nutzeraktion hat diesen Retry entwertet
             }
-            final currentData = ref.read(tripShoppingListProvider(widget.tripId)).value;
-            final currentItem = currentData?.allItems.where((it) => it.item.id == listItemId).firstOrNull;
-            final currentIsBought = currentItem?.isBoughtAtStop(stopId) ?? false;
-            if (currentIsBought == desiredIsBought) {
-              return; // Zustand bereits erreicht (reconciled)
+
+            // 1. Aktuelle Daten ermitteln (bei laufendem Reload auf Fertigstellung warten)
+            final asyncState = ref.read(tripShoppingListProvider(widget.tripId));
+            TripShoppingListData currentData;
+            if (asyncState.isLoading) {
+              try {
+                currentData = await ref.read(tripShoppingListProvider(widget.tripId).future);
+              } catch (_) {
+                // Fail-closed: Bei Ladefehler keine Mutation auslösen
+                return;
+              }
+            } else if (asyncState.hasValue && asyncState.value != null && !asyncState.hasError) {
+              currentData = asyncState.value!;
+            } else {
+              // Fail-closed: Keine verlässlichen Daten verfügbar
+              return;
             }
+
+            if (!mounted) return;
+            if ((_itemMutationGenerations[listItemId] ?? 0) != generation) {
+              return; // Während des Ladevorgangs gab es eine neuere Nutzeraktion
+            }
+
+            // 2. Positiv prüfen: Existiert der Einkaufsstopp im Törn noch?
+            final stopExists = currentData.stops.any((s) => s.id == stopId);
+            if (!stopExists) {
+              return; // Fail-closed: Stopp existiert nicht mehr
+            }
+            final isFirstStop = currentData.stops.firstOrNull?.id == stopId;
+
+            // 3. Positiv prüfen: Existiert der Artikel und ist er auf der Einkaufsliste?
+            final currentItem = currentData.allItems.where((it) => it.item.id == listItemId).firstOrNull;
+            if (currentItem == null || !currentItem.isOnList) {
+              return; // Fail-closed: Artikel nicht vorhanden oder abgewählt
+            }
+
+            // 4. Positiv prüfen: Ist dem Stopp eine Packungsmenge > 0 zugeordnet?
+            // Etablierte Mengenlogik inklusive impliziter Restmengen am ersten Stopp:
+            final totalOtherAlloc = currentItem.allocationsByStop.entries
+                .where((e) => e.key != stopId)
+                .fold<int>(0, (sum, e) => sum + e.value.allocatedPackages);
+            final countAtStop = currentItem.packagesAtStop(
+              stopId,
+              isFirstStop: isFirstStop,
+              totalOtherAllocated: totalOtherAlloc,
+            );
+            if (countAtStop <= 0) {
+              return; // Fail-closed: Keine Allokation mehr an diesem Stopp (z. B. verschoben)
+            }
+
+            // 5. Kaufstatus prüfen: Befindet sich der Artikel bereits im Zielzustand?
+            final currentIsBought = currentItem.isBoughtAtStop(stopId);
+            if (currentIsBought == desiredIsBought) {
+              return; // Zustand bereits erreicht (reconciled) -> kein erneuter Schreibvorgang
+            }
+
+            // 6. Erst nach allen positiven Prüfungen die Mutation ausführen:
             _handleToggleBought(
               listItemId,
               stopId,

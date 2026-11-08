@@ -1,7 +1,7 @@
-# HCD-SHOP-01 / #66 – Schritt 1 Abschlussbericht (inkl. Amendments 1 & 2)
+# HCD-SHOP-01 / #66 – Schritt 1 Abschlussbericht (inkl. Amendments 1, 2 & 3)
 ## Checkout-Scrollstabilität, Persistenzwahrheit & Concurrency Guard
 
-**Status:** SCHRITT 1 INKL. AMENDMENTS (R1–R5) VOLLSTÄNDIG IMPLEMENTIERT & VERIFIZIERT – STOP VOR SCHRITT 2 (AWAITING INDEPENDENT RE-REVIEW & PIXEL 7 PRO CHECKPOINT)  
+**Status:** REVIEW – SCHRITT 1 INKL. AMENDMENTS (R1–R6) VOLLSTÄNDIG IMPLEMENTIERT & VERIFIZIERT – STOP VOR SCHRITT 2 (AWAITING INDEPENDENT RE-REVIEW & PIXEL 7 PRO CHECKPOINT)  
 **Datum:** 06.11.2026 / 08.11.2026  
 **Tracking-Issue:** #66  
 **PR:** #72  
@@ -32,9 +32,10 @@ git checkout slice/hcd-shop-01-stable-checkout -- test/features/shopping_list/sh
 # 3. Testlauf ausführen:
 flutter test test/features/shopping_list/shopping_mode_hcd_test.dart --name "S01-40-POS"
 
-# 4. Worktree nach der Verifikation aufräumen:
+# 4. Ausschließlich den temporär angelegten Baseline-Worktree sicher aufräumen
+# (ohne bestehende Arbeitsstände im Haupt-Repository zu berühren):
 cd ../proviantplaner
-git worktree remove ../proviantplaner-baseline
+git worktree remove --force ../proviantplaner-baseline
 ```
 
 ### 1.2 Tatsächlich gemessene Terminal-Ausgabe auf der Baseline (Fail-Before)
@@ -109,15 +110,26 @@ This was caught by the test expectation on the following line:
   1. **Generationszähler pro Artikel (`_itemMutationGenerations`):** Jede Nutzeraktion auf einen Artikel inkrementiert dessen Generation.
   2. **Generation Binding:** Der Retry-Button der SnackBar bindet sich fest an die `generation`, bei der der Fehler auftrat.
   3. **Stale Intent Guard:** Hat der Nutzer den Artikel zwischenzeitlich manuell geändert (z. B. gekauft und wieder entkauft), weicht die aktuelle Generation ab (`currentGen != generation`) $\rightarrow$ der veraltete Retry wird verworfen.
-  4. **State Currency Check:** Vor Ausführung des Retry wird geprüft, ob sich der Artikel bereits im Zielzustand befindet (`currentIsBought == desiredIsBought`).
-  5. **Disposal Guard:** Beim Unmounten von `ShoppingModeScreen` schützt `if (!mounted) return;` zuverlässig vor State- oder Riverpod-Zugriffen. Kein Flutter-Lifecycle-Fehler (`setState after dispose`).
+  4. **Disposal Guard:** Beim Unmounten von `ShoppingModeScreen` schützt `if (!mounted) return;` zuverlässig vor State- oder Riverpod-Zugriffen. Kein Flutter-Lifecycle-Fehler (`setState after dispose`).
+
+### 2.8 Fail-Closed Allokationsvalidierung & Schutz vor Geister-Allokationen (R6)
+- **Problemursache vor R6:**  
+  Ein naiver Check `currentItem?.isBoughtAtStop(stopId) ?? false` setzte fälschlicherweise unterschiedliche Zustände gleich (Artikel nicht gekauft vs. Artikel existiert nicht mehr vs. Stopp existiert nicht mehr vs. Allokation auf einen anderen Hafen verschoben vs. Daten im Lade-/Fehlerzustand). Da `ListItemDao.toggleBought()` bei fehlender Zuordnung eine neue Allokation anlegt (und bei 0 Restmenge auf mindestens 1 Packung aufrundet), konnte ein veralteter Retry nach einer zwischenzeitlichen Mengenverschiebung zu Stopp 2 am Stopp 1 eine unerwünschte Geister-Allokation erzeugen und die Gesamtpackungszahl aufblähen.
+- **Fail-Closed Validierung in `_showToggleErrorSnackBar.onPressed`:**
+  1. **Warten auf laufende Provider-Reloads:** Ist `asyncState.isLoading`, wird `await ref.read(tripShoppingListProvider(widget.tripId).future)` abgewartet. Schlägt das Laden fehl $\rightarrow$ Abbruch ohne Mutation (Fail-closed).
+  2. **Stale Generation Re-Check:** Nach dem asynchronen Laden wird erneut geprüft, ob eine neuere Nutzeraktion stattgefunden hat (`currentGen != generation`) $\rightarrow$ Abbruch.
+  3. **Positiver Stopp-Check:** Es wird positiv geprüft, ob der Einkaufsstopp im Törn (`currentData.stops`) noch existiert.
+  4. **Positiver Artikel-Check:** Es wird positiv geprüft, ob der Artikel existiert und auf der Liste ausgewählt ist (`isOnList`).
+  5. **Positiver Mengen-/Allokations-Check:** Unter strikter Wiederverwendung der etablierten fachlichen Mengenlogik (`packagesAtStop(stopId, isFirstStop: isFirstStop, totalOtherAllocated: totalOtherAlloc)`) wird geprüft, ob dem Stopp eine Menge `> 0` zugeordnet ist. Dies berücksichtigt automatisch sowohl explizite Allokationen als auch implizite Restmengen am Ersteinkauf. Ist `countAtStop <= 0` (z. B. weil alle Packungen zu Stopp 2 verschoben wurden), bricht der Retry sofort fail-closed ab.
+  6. **Reconciliation Check:** Befindet sich der Artikel bereits im Zielzustand (`currentIsBought == desiredIsBought`), wird keine redundante Mutation ausgelöst.
+  7. **Ausführung:** Erst nach erfolgreicher Verifizierung aller Vorbedingungen wird `_handleToggleBought` mit `expectedGeneration: generation` aufgerufen.
 
 ---
 
-## 3. Nachweise & Testabdeckung (R1–R5)
+## 3. Nachweise & Testabdeckung (R1–R6)
 
 ### A. Automatisierte Testsuite [`test/features/shopping_list/shopping_mode_hcd_test.dart`](file:///c:/Users/Lenovo/Desktop/proviantplaner/test/features/shopping_list/shopping_mode_hcd_test.dart)
-Alle 10 dedizierten Tests bestanden:
+Alle 13 dedizierten Tests bestanden:
 
 | Testfall | Beschreibung & Verifikation | Nachweis |
 |---|---|---|
@@ -131,9 +143,12 @@ Alle 10 dedizierten Tests bestanden:
 | `S01-2TAP` | Doppel-Tap auf selbe Checkbox während in-flight Mutation blockiert zweiten Aufruf durch Pending-Guard. | `automatischer Test (S01-2TAP)` |
 | `S01-A11Y-DARK` | Schmaler 320dp-Screen und Dark-Theme mit 1.5x Textskalierung rendert ohne RenderFlex-Overflow. | `automatischer Test (S01-A11Y-DARK)` |
 | `S01-A11Y-NIGHTWATCH` | Schmaler 320dp-Screen und echtes Nightwatch-Theme (`nightwatchTheme`) mit 1.5x Textskalierung rendert ohne RenderFlex-Overflow. | `automatischer Test (S01-A11Y-NIGHTWATCH)` |
+| `S01-R6-A-MOVED-ALLOCATION` | **R6 Regression A:** Artikel initial Stopp 1 zugeordnet $\rightarrow$ Kauf scheitert $\rightarrow$ Artikelmenge vollständig auf Stopp 2 verschoben $\rightarrow$ alter Retry ausgelöst $\rightarrow$ verifiziert in SQLite: keine neue Allokation an Stopp 1, keine Überschreitung der Gesamtpackungszahl, Zuordnung an Stopp 2 unverändert, kein Fehlkauf. | `automatischer Test (S01-R6-A-MOVED-ALLOCATION)` |
+| `S01-R6-B-UNAVAILABLE-DATA` | **R6 Regression B:** Kauf scheitert $\rightarrow$ Provider-Reload schlägt fehl/nicht verfügbar $\rightarrow$ Retry ausgelöst $\rightarrow$ Fail-closed: keine ungesicherte Mutation, kein Absturz. | `automatischer Test (S01-R6-B-UNAVAILABLE-DATA)` |
+| `S01-R6-C-VALID-RETRY` | **R6 Regression C:** Gewöhnlicher fehlgeschlagener Kauf mit weiterhin gültiger Zuordnung wird anschließend per Retry korrekt wiederholt; Erfolg in SQLite nachweisbar. | `automatischer Test (S01-R6-C-VALID-RETRY)` |
 
 ### B. Bestehende Suiten & Linters
-- `test/features/shopping_list/shopping_mode_hcd_test.dart`: **10/10 Tests bestanden**
+- `test/features/shopping_list/shopping_mode_hcd_test.dart`: **13/13 Tests bestanden**
 - `test/features/ux/fix_a_journey_test.dart`: **17/17 Tests bestanden**
 - `flutter analyze`: **0 Issues (No issues found!)**
 - `npm run typecheck --prefix backend`: **0 Errors**
@@ -150,6 +165,7 @@ Alle 10 dedizierten Tests bestanden:
 ## 5. Verbindlicher Stopp-Checkpoint (Phase B Step 1)
 Gemäß Owner-Release (`docs/impl/HCD_SHOP_01_OWNER_PHASE_B_RELEASE_2026-11-06.md`):
 
+- **Status: REVIEW**
 - **Kein Code für Schritt 2 (Footer/Filterung).**
 - **Kein automatischer Merge.**
 - **Bereit für unabhängigen Exact-HEAD-Re-Review und physische Verifikation auf dem Google Pixel 7 Pro durch den Owner.**

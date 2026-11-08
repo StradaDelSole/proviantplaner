@@ -195,6 +195,11 @@ void main() {
   });
 
   tearDown(() async {
+    testShoppingListService.shouldThrowOnLoad = false;
+    testShoppingListService.shouldFailNextToggle = false;
+    testShoppingListService.shouldThrowNextToggle = false;
+    testShoppingListService.reloadCompleter = null;
+    testShoppingListService.toggleCompleter = null;
     await db.close();
   });
 
@@ -688,6 +693,170 @@ void main() {
 
       // Kein RenderFlex overflow aufgetreten
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('S01-R6-A-MOVED-ALLOCATION: Veralteter Retry nach Verschiebung der Allokation erzeugt keine Geister-Allokation', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      // Zweiter Stopp anlegen
+      final stop2Id = await db.tripDao.addShoppingStop(
+        ShoppingStopsCompanion.insert(
+          tripId: testTripId,
+          name: 'Zweiter Hafen',
+          dayNumber: const Value(3),
+          isInitial: const Value(false),
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
+      final checkbox1Finder = find.descendant(
+        of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      // 1. Initialer Fehlschlag erzeugt SnackBar mit Retry-Aktion
+      testShoppingListService.shouldFailNextToggle = true;
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      final retryAction = tester.widget<SnackBarAction>(find.byType(SnackBarAction));
+
+      // 2. Artikel 1 wird vollständig zu stop2Id verschoben (keine Menge mehr an testStopId)
+      final existingAllocs = await db.listItemDao.getAllocationsForListItem(1);
+      final alloc1 = existingAllocs.firstWhere((a) => a.shoppingStopId == testStopId);
+      await db.update(db.listItemAllocations).replace(alloc1.copyWith(shoppingStopId: stop2Id));
+
+      // Provider informieren & UI neu laden
+      testShoppingListService.onTripDataChanged?.call(testTripId);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final callsBeforeRetry = testShoppingListService.toggleCalls;
+
+      // 3. Veraltete Retry-Aktion ausführen
+      retryAction.onPressed();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 4. Verifikation:
+      // Kein Aufruf von toggleBought ausgeführt
+      expect(testShoppingListService.toggleCalls, equals(callsBeforeRetry));
+
+      // In SQLite: Keine neue Allokation am ursprünglichen Stopp angelegt!
+      final allocsAfter = await db.listItemDao.getAllocationsForListItem(1);
+      expect(allocsAfter.where((a) => a.shoppingStopId == testStopId), isEmpty);
+
+      // Keine Überschreitung der Gesamtpackungszahl (genau 1 Packung an stop2Id)
+      expect(allocsAfter.length, equals(1));
+      expect(allocsAfter.first.shoppingStopId, equals(stop2Id));
+      expect(allocsAfter.first.allocatedPackages, equals(1));
+      expect(allocsAfter.first.isBought, isFalse);
+    });
+
+    testWidgets('S01-R6-B-UNAVAILABLE-DATA: Retry während Ladefehler/nicht verfügbarer Daten löst keine Mutation aus (Fail-closed)', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
+      final checkbox1Finder = find.descendant(
+        of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      // 1. Fehlschlag erzeugt SnackBar
+      testShoppingListService.shouldFailNextToggle = true;
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      final retryAction = tester.widget<SnackBarAction>(find.byType(SnackBarAction));
+
+      // 2. Simuliere Fehlerzustand bei Provider-Reload
+      testShoppingListService.shouldThrowOnLoad = true;
+      testShoppingListService.onTripDataChanged?.call(testTripId);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      final callsBeforeRetry = testShoppingListService.toggleCalls;
+
+      // 3. Retry-Aktion bei Fehlerzustand ausführen
+      retryAction.onPressed();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 4. Fail-closed: Keine Mutation ausgeführt, kein Absturz
+      expect(testShoppingListService.toggleCalls, equals(callsBeforeRetry));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('S01-R6-C-VALID-RETRY: Gültiger Kauf-Retry bei bestehender Zuordnung wird erfolgreich persistiert', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
+      final checkbox1Finder = find.descendant(
+        of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      // 1. Initialer Fehlschlag
+      testShoppingListService.shouldFailNextToggle = true;
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isFalse);
+
+      // 2. Retry antippen
+      testShoppingListService.shouldFailNextToggle = false;
+      await tester.tap(find.text('Erneut versuchen'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 3. Verifikation: Checkbox checked, Fortschrittszähler 1 von 45, in SQLite persistiert
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isTrue);
+      expect(find.text('1 von 45 erledigt'), findsOneWidget);
+      final allocs = await db.listItemDao.getAllocationsForListItem(1);
+      expect(allocs.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isTrue);
+      expect(allocs.firstWhere((a) => a.shoppingStopId == testStopId).allocatedPackages, equals(1));
     });
   });
 }
