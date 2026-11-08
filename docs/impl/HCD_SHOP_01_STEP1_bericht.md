@@ -1,8 +1,8 @@
-# HCD-SHOP-01 / #66 – Schritt 1 Abschlussbericht (inkl. Amendment 1)
+# HCD-SHOP-01 / #66 – Schritt 1 Abschlussbericht (inkl. Amendments 1 & 2)
 ## Checkout-Scrollstabilität, Persistenzwahrheit & Concurrency Guard
 
-**Status:** SCHRITT 1 INKL. AMENDMENT 1 (R1–R4) VOLLSTÄNDIG IMPLEMENTIERT & VERIFIZIERT – STOP VOR SCHRITT 2 (AWAITING INDEPENDENT RE-REVIEW & PIXEL 7 PRO CHECKPOINT)  
-**Datum:** 06.11.2026  
+**Status:** SCHRITT 1 INKL. AMENDMENTS (R1–R5) VOLLSTÄNDIG IMPLEMENTIERT & VERIFIZIERT – STOP VOR SCHRITT 2 (AWAITING INDEPENDENT RE-REVIEW & PIXEL 7 PRO CHECKPOINT)  
+**Datum:** 06.11.2026 / 08.11.2026  
 **Tracking-Issue:** #66  
 **PR:** #72  
 **Branch:** `slice/hcd-shop-01-stable-checkout`  
@@ -18,10 +18,26 @@
 
 Das gemeldete Fehlverhalten wurde direkt auf dem unveränderten Baseline-Commit `e00c01d35763790fe430a8c331436e120478f2dd` (`origin/main`) mit dem Test `S01-40-POS` reproduziert.
 
-- **Baseline-Commit:** `e00c01d35763790fe430a8c331436e120478f2dd`
-- **Ausgeführter Befehl:**  
-  `flutter test test/features/shopping_list/shopping_mode_hcd_test.dart --name "S01-40-POS"`
-- **Tatsächlich gemessene Terminal-Ausgabe (Fail-Before):**
+### 1.1 Reproduktionsanleitung für Reviewer (Schritt-für-Schritt)
+Um das Baseline-Fehlverhalten auf einem sauberen `main`-Stand ohne Seiteneffekte nachzustellen:
+
+```bash
+# 1. Separaten Git-Worktree auf den exakten Basis-Commit auschecken:
+git worktree add -d ../proviantplaner-baseline e00c01d35763790fe430a8c331436e120478f2dd
+cd ../proviantplaner-baseline
+
+# 2. Ausschließlich die neue Testdatei aus dem Feature-Branch overlayen (Produktionscode bleibt 100 % unverändert auf main):
+git checkout slice/hcd-shop-01-stable-checkout -- test/features/shopping_list/shopping_mode_hcd_test.dart
+
+# 3. Testlauf ausführen:
+flutter test test/features/shopping_list/shopping_mode_hcd_test.dart --name "S01-40-POS"
+
+# 4. Worktree nach der Verifikation aufräumen:
+cd ../proviantplaner
+git worktree remove ../proviantplaner-baseline
+```
+
+### 1.2 Tatsächlich gemessene Terminal-Ausgabe auf der Baseline (Fail-Before)
 ```text
 00:00 +0: loading test/features/shopping_list/shopping_mode_hcd_test.dart
 00:00 +0: HCD-SHOP-01 Schritt 1: Stabilität, Persistenzwahrheit und Lifecycle (#66) S01-40-POS: 40+ Artikel, 5 Checkmarks in Folge, Scrollable-Identität, ListView stabil, Offset erhalten
@@ -40,7 +56,7 @@ When the exception was thrown, this was the stack:
 ...
 This was caught by the test expectation on the following line:
   test/features/shopping_list/shopping_mode_hcd_test.dart line 282
-════════════════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════
 00:02 +0 -1: HCD-SHOP-01 Schritt 1: Stabilität, Persistenzwahrheit und Lifecycle (#66) S01-40-POS: 40+ Artikel, 5 Checkmarks in Folge, Scrollable-Identität, ListView stabil, Offset erhalten [E]
   Test failed. See exception logs above.
 00:02 +0 -1: Some tests failed.
@@ -51,7 +67,7 @@ This was caught by the test expectation on the following line:
 
 ---
 
-## 2. Schritt 1 & Amendment 1: Implementierte Lösungen
+## 2. Schritt 1 & Amendments: Implementierte Lösungen
 
 ### 2.1 Stabile Listenansicht während Riverpod-Reloads
 - `ShoppingModeScreen` ersetzt das destruktive `dataAsync.when(...)` durch eine differenzierte Zustandshierarchie:
@@ -88,12 +104,20 @@ This was caught by the test expectation on the following line:
 - Responsives `AppBar`-Layout: Bei schmalen Displays (320 logical px) oder vergrößerter Schrift (1.5x) schaltet der Aktions-Button ("Ausgabe erfassen") auf ein kompaktes `IconButton` mit Tooltip um, wodurch RenderFlex-Overflows verhindert werden.
 - Verifiziert sowohl im `AppTheme.darkTheme` als auch im echten `AppTheme.nightwatchTheme`.
 
+### 2.7 Retry-Lifecycle & Intent-Generationsschutz (R5)
+- Um zu verhindern, dass eine veraltete SnackBar-Retry-Aktion eine neuere Nutzerabsicht überschreibt oder nach Verlassen des Screens auf disposed State zugreift:
+  1. **Generationszähler pro Artikel (`_itemMutationGenerations`):** Jede Nutzeraktion auf einen Artikel inkrementiert dessen Generation.
+  2. **Generation Binding:** Der Retry-Button der SnackBar bindet sich fest an die `generation`, bei der der Fehler auftrat.
+  3. **Stale Intent Guard:** Hat der Nutzer den Artikel zwischenzeitlich manuell geändert (z. B. gekauft und wieder entkauft), weicht die aktuelle Generation ab (`currentGen != generation`) $\rightarrow$ der veraltete Retry wird verworfen.
+  4. **State Currency Check:** Vor Ausführung des Retry wird geprüft, ob sich der Artikel bereits im Zielzustand befindet (`currentIsBought == desiredIsBought`).
+  5. **Disposal Guard:** Beim Unmounten von `ShoppingModeScreen` schützt `if (!mounted) return;` zuverlässig vor State- oder Riverpod-Zugriffen. Kein Flutter-Lifecycle-Fehler (`setState after dispose`).
+
 ---
 
-## 3. Nachweise & Testabdeckung (R2 & R3)
+## 3. Nachweise & Testabdeckung (R1–R5)
 
 ### A. Automatisierte Testsuite [`test/features/shopping_list/shopping_mode_hcd_test.dart`](file:///c:/Users/Lenovo/Desktop/proviantplaner/test/features/shopping_list/shopping_mode_hcd_test.dart)
-Alle 8 dedizierten Tests bestanden:
+Alle 10 dedizierten Tests bestanden:
 
 | Testfall | Beschreibung & Verifikation | Nachweis |
 |---|---|---|
@@ -102,14 +126,15 @@ Alle 8 dedizierten Tests bestanden:
 | `S01-ASYNC-RELOAD-ERROR` | Reload-Fehler mit vorhandenen Daten belässt Liste und zeigt Warnbanner. Drücken von `shopping_mode_reload_retry_button` behebt den Fehler; Banner verschwindet. | `automatischer Test (S01-ASYNC-RELOAD-ERROR)` |
 | `S01-ASYNC-MISSING-STOP` | Ungültige Stopp-ID zeigt gezielt `NotFoundScreen(shoppingStopNotFound)`. | `automatischer Test (S01-ASYNC-MISSING-STOP)` |
 | `S01-FALSE-THROW` | Differenziert `false` und `Exception`. Nach Fehlschlag: kein Scheinerfolg (Checkbox unchecked, Zähler unverändert, DB false). Drücken von `Erneut versuchen` auf SnackBar führt echten Retry aus $\rightarrow$ Checkbox checked, Zähler erhöht, DB true. | `automatischer Test (S01-FALSE-THROW)` |
+| `S01-RETRY-STALE-SUPERSEDED` | **R5 Regression 1 & 3:** Fehlgeschlagener Schreibvorgang $\rightarrow$ manuell kaufen $\rightarrow$ manuell entkaufen $\rightarrow$ alter SnackBar-Retry führt keinen heimlichen Neukauf aus. Generation Fencing verwirft den veralteten Request; DB bleibt konsistent. | `automatischer Test (S01-RETRY-STALE-SUPERSEDED)` |
+| `S01-RETRY-DISPOSED-LIFECYCLE` | **R5 Regression 2:** Fehlgeschlagener Schreibvorgang $\rightarrow$ Screen verlassen (Widget disposed) $\rightarrow$ Drücken der veralteten SnackBar-Action wirft keinen Flutter-Lifecycle-Fehler. | `automatischer Test (S01-RETRY-DISPOSED-LIFECYCLE)` |
 | `S01-2TAP` | Doppel-Tap auf selbe Checkbox während in-flight Mutation blockiert zweiten Aufruf durch Pending-Guard. | `automatischer Test (S01-2TAP)` |
 | `S01-A11Y-DARK` | Schmaler 320dp-Screen und Dark-Theme mit 1.5x Textskalierung rendert ohne RenderFlex-Overflow. | `automatischer Test (S01-A11Y-DARK)` |
 | `S01-A11Y-NIGHTWATCH` | Schmaler 320dp-Screen und echtes Nightwatch-Theme (`nightwatchTheme`) mit 1.5x Textskalierung rendert ohne RenderFlex-Overflow. | `automatischer Test (S01-A11Y-NIGHTWATCH)` |
 
-### B. Bestehende Suiten
+### B. Bestehende Suiten & Linters
+- `test/features/shopping_list/shopping_mode_hcd_test.dart`: **10/10 Tests bestanden**
 - `test/features/ux/fix_a_journey_test.dart`: **17/17 Tests bestanden**
-- `test/features/ux/ux_b_shopping_and_delivery_test.dart`: **12/12 Tests bestanden**
-- `test/features/shopping_list/shopping_list_persistence_test.dart`: **Bestanden**
 - `flutter analyze`: **0 Issues (No issues found!)**
 - `npm run typecheck --prefix backend`: **0 Errors**
 

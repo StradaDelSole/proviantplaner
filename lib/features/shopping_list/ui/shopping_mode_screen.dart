@@ -33,6 +33,7 @@ class ShoppingModeScreen extends ConsumerStatefulWidget {
 
 class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
   final Set<int> _pendingItemIds = <int>{};
+  final Map<int, int> _itemMutationGenerations = <int, int>{};
 
   Future<void> _openExpenseSheet(ShoppingStop stop, AppLocalizations l10n) async {
     final kittyData = await ref.read(tripKittyDataProvider(widget.tripId).future);
@@ -51,9 +52,24 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
     int listItemId,
     int stopId,
     bool isBought,
-    AppLocalizations l10n,
-  ) async {
+    AppLocalizations l10n, {
+    int? expectedGeneration,
+  }) async {
+    if (!mounted) return;
     if (_pendingItemIds.contains(listItemId)) return;
+
+    final currentGen = _itemMutationGenerations[listItemId] ?? 0;
+    if (expectedGeneration != null && expectedGeneration != currentGen) {
+      // Veralteter Retry: Der Nutzer hat zwischenzeitlich neu entschieden
+      return;
+    }
+
+    final mutationGen = expectedGeneration ?? (currentGen + 1);
+    _itemMutationGenerations[listItemId] = mutationGen;
+
+    if (expectedGeneration == null) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
 
     setState(() {
       _pendingItemIds.add(listItemId);
@@ -70,11 +86,16 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
 
       if (!mounted) return;
 
+      if (_itemMutationGenerations[listItemId] != mutationGen) {
+        return; // Eine neuere Mutation hat diese Mutation überholt
+      }
+
       if (!success) {
         _showToggleErrorSnackBar(
           listItemId: listItemId,
           stopId: stopId,
           desiredIsBought: isBought,
+          generation: mutationGen,
           l10n: l10n,
         );
         ref.invalidate(tripShoppingListProvider(widget.tripId));
@@ -86,10 +107,14 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
       // die Reaktivität über tripDataVersionProvider aus.
     } catch (_) {
       if (!mounted) return;
+      if (_itemMutationGenerations[listItemId] != mutationGen) {
+        return;
+      }
       _showToggleErrorSnackBar(
         listItemId: listItemId,
         stopId: stopId,
         desiredIsBought: isBought,
+        generation: mutationGen,
         l10n: l10n,
       );
       ref.invalidate(tripShoppingListProvider(widget.tripId));
@@ -106,8 +131,10 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
     required int listItemId,
     required int stopId,
     required bool desiredIsBought,
+    required int generation,
     required AppLocalizations l10n,
   }) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -116,7 +143,24 @@ class _ShoppingModeScreenState extends ConsumerState<ShoppingModeScreen> {
         action: SnackBarAction(
           label: l10n.retry,
           onPressed: () {
-            _handleToggleBought(listItemId, stopId, desiredIsBought, l10n);
+            if (!mounted) return;
+            final currentGen = _itemMutationGenerations[listItemId] ?? 0;
+            if (currentGen != generation) {
+              return; // Neuere Nutzeraktion hat diesen Retry entwertet
+            }
+            final currentData = ref.read(tripShoppingListProvider(widget.tripId)).value;
+            final currentItem = currentData?.allItems.where((it) => it.item.id == listItemId).firstOrNull;
+            final currentIsBought = currentItem?.isBoughtAtStop(stopId) ?? false;
+            if (currentIsBought == desiredIsBought) {
+              return; // Zustand bereits erreicht (reconciled)
+            }
+            _handleToggleBought(
+              listItemId,
+              stopId,
+              desiredIsBought,
+              l10n,
+              expectedGeneration: generation,
+            );
           },
         ),
       ),

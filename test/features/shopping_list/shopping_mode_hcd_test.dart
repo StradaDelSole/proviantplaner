@@ -498,6 +498,117 @@ void main() {
       expect(allocs2.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isTrue);
     });
 
+    testWidgets('S01-RETRY-STALE-SUPERSEDED: Veralteter Retry nach manuellem Kaufen und Entkaufen kauft nicht heimlich neu', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
+      final checkbox1Finder = find.descendant(
+        of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      // 1. Initialer Fehlschlag erzeugt SnackBar mit Generation 1
+      testShoppingListService.shouldFailNextToggle = true;
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      final staleAction = tester.widget<SnackBarAction>(find.byType(SnackBarAction));
+
+      // 2. Nutzer entscheidet sich um: kauft manuell erfolgreich (Gen 2)
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isTrue);
+      expect(find.text('1 von 45 erledigt'), findsOneWidget);
+
+      // 3. Nutzer entkauft wieder manuell erfolgreich (Gen 3)
+      await tester.scrollUntilVisible(firstItemFinder, 200);
+      await tester.pumpAndSettle();
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(firstItemFinder, -200);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isFalse);
+      expect(find.text('0 von 45 erledigt'), findsOneWidget);
+
+      final callsBeforeStaleRetry = testShoppingListService.toggleCalls;
+
+      // 4. Veralteten Retry aus Generation 1 ausführen
+      staleAction.onPressed();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 5. Keine neue Mutation, kein heimlicher Kauf, Status bleibt bei der bewussten Nutzerentscheidung (offen)
+      expect(testShoppingListService.toggleCalls, equals(callsBeforeStaleRetry));
+      expect(tester.widget<Checkbox>(checkbox1Finder).value, isFalse);
+      expect(find.text('0 von 45 erledigt'), findsOneWidget);
+      final allocs1 = await db.listItemDao.getAllocationsForListItem(1);
+      expect(allocs1.firstWhere((a) => a.shoppingStopId == testStopId).isBought, isFalse);
+    });
+
+    testWidgets('S01-RETRY-DISPOSED-LIFECYCLE: Retry nach Verlassen des Screens wirft keinen Lifecycle-Fehler', (tester) async {
+      tester.view.physicalSize = const Size(412 * 2.625, 915 * 2.625);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: ShoppingModeScreen(tripId: testTripId, stopId: testStopId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final firstItemFinder = find.text('Artikel 1 (obst_gemuese)');
+      final checkbox1Finder = find.descendant(
+        of: find.ancestor(of: firstItemFinder, matching: find.byType(ListTile)),
+        matching: find.byType(Checkbox),
+      );
+
+      // 1. Fehlschlag erzeugt SnackBar
+      testShoppingListService.shouldFailNextToggle = true;
+      await tester.tap(checkbox1Finder);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      final action = tester.widget<SnackBarAction>(find.byType(SnackBarAction));
+
+      // 2. Screen verlassen (ShoppingModeScreen wird disposed)
+      await tester.pumpWidget(
+        buildTestableWidget(
+          child: const Scaffold(body: Text('Anderer Screen')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ShoppingModeScreen), findsNothing);
+
+      // 3. Veraltete Action aufrufen
+      action.onPressed();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 4. Kein Flutter-Lifecycle-Fehler (kein setState nach dispose)
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('S01-2TAP: Doppel-Tap auf selbe Checkbox blockiert zweiten Aufruf durch Pending-Guard', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(
