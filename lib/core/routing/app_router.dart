@@ -181,6 +181,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 4. Welcome abgeschlossen:
       // Befindet sich die Navigation noch auf einer Gate-Route, zur Zielroute oder Startseite navigieren.
       if (location == '/welcome' || location == '/welcome-loading' || location == '/welcome-error') {
+        if (location == '/welcome' && state.uri.queryParameters['preview'] == 'true') {
+          return null; // Nichtdestruktive Vorschau für Bestandsnutzer (UX-D)
+        }
         final from = state.uri.queryParameters['from'];
         if (from != null && from.isNotEmpty && from != '/welcome') {
           return from;

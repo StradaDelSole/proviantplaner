@@ -919,7 +919,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     dayNumber: selectedDay,
                   );
                   if (ctx.mounted) Navigator.of(ctx).pop();
-                  if (mounted) _loadTripDetails();
+                  if (mounted) await _loadTripDetails();
                 }
               },
               child: Text(l10n.save),
@@ -990,7 +990,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                     ),
                   );
                   if (ctx.mounted) Navigator.of(ctx).pop();
-                  if (mounted) _loadTripDetails();
+                  if (mounted) await _loadTripDetails();
                 }
               },
               child: Text(l10n.save),
@@ -1032,7 +1032,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
     if (confirmed == true) {
       final service = ref.read(tripServiceProvider);
       await service.deleteShoppingStop(stop.id);
-      if (mounted) _loadTripDetails();
+      if (mounted) await _loadTripDetails();
     }
   }
 
@@ -1055,7 +1055,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
       ref.invalidate(tripCrewByIdProvider(widget.tripId));
       ref.invalidate(tripShoppingListProvider(widget.tripId));
-      if (mounted) _loadTripDetails();
+      if (mounted) await _loadTripDetails();
     }
   }
 
@@ -1100,7 +1100,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       await ref.read(tripServiceProvider).recalculateTrip(widget.tripId);
       ref.invalidate(tripCrewByIdProvider(widget.tripId));
       ref.invalidate(tripShoppingListProvider(widget.tripId));
-      if (mounted) _loadTripDetails();
+      if (mounted) await _loadTripDetails();
     }
   }
 
@@ -1116,7 +1116,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
       await tripService.deleteCrewMemberSafely(member.id);
       ref.invalidate(tripCrewByIdProvider(widget.tripId));
       ref.invalidate(tripShoppingListProvider(widget.tripId));
-      if (mounted) _loadTripDetails();
+      if (mounted) await _loadTripDetails();
     } on CrewMemberHasFinancialHistoryException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1172,6 +1172,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                 top: 16,
               ),
               child: SingleChildScrollView(
+                key: const PageStorageKey('edit_trip_sheet_scroll_view'),
                 controller: scrollController,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1250,7 +1251,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(l10n.lunchInRestaurant, style: theme.textTheme.bodyMedium),
+                      Expanded(
+                        child: Text(l10n.lunchInRestaurant, style: theme.textTheme.bodyMedium),
+                      ),
                       Row(
                         children: [
                           IconButton(
@@ -1274,7 +1277,9 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(l10n.dinnerInRestaurant, style: theme.textTheme.bodyMedium),
+                      Expanded(
+                        child: Text(l10n.dinnerInRestaurant, style: theme.textTheme.bodyMedium),
+                      ),
                       Row(
                         children: [
                           IconButton(
@@ -1471,8 +1476,18 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                         icon: const Icon(Icons.person_add_outlined, size: 18),
                         label: Text(l10n.addCrewMember),
                         onPressed: () async {
+                          final offset = scrollController.hasClients ? scrollController.offset : 0.0;
                           await _addCrewMember(context, l10n);
-                          setSheetState(() {});
+                          if (ctx.mounted) {
+                            setSheetState(() {});
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (scrollController.hasClients && offset > 0) {
+                                if (scrollController.offset < offset) {
+                                  scrollController.jumpTo(offset.clamp(0.0, scrollController.position.maxScrollExtent));
+                                }
+                              }
+                            });
+                          }
                         },
                       ),
                     ],
@@ -1496,15 +1511,35 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined, size: 18),
                               onPressed: () async {
+                                final offset = scrollController.hasClients ? scrollController.offset : 0.0;
                                 await _editCrewMember(context, member, l10n);
-                                setSheetState(() {});
+                                if (ctx.mounted) {
+                                  setSheetState(() {});
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (scrollController.hasClients && offset > 0) {
+                                      if (scrollController.offset < offset) {
+                                        scrollController.jumpTo(offset.clamp(0.0, scrollController.position.maxScrollExtent));
+                                      }
+                                    }
+                                  });
+                                }
                               },
                             ),
                             IconButton(
                               icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
                               onPressed: () async {
+                                final offset = scrollController.hasClients ? scrollController.offset : 0.0;
                                 await _deleteCrewMember(member, l10n);
-                                setSheetState(() {});
+                                if (ctx.mounted) {
+                                  setSheetState(() {});
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (scrollController.hasClients && offset > 0) {
+                                      if (scrollController.offset < offset) {
+                                        scrollController.jumpTo(offset.clamp(0.0, scrollController.position.maxScrollExtent));
+                                      }
+                                    }
+                                  });
+                                }
                               },
                             ),
                           ],
@@ -1543,7 +1578,7 @@ class _TripOverviewScreenState extends ConsumerState<TripOverviewScreen> {
                       ref.invalidate(tripDaysByIdProvider(widget.tripId));
                       ref.invalidate(tripShoppingListProvider(widget.tripId));
                       if (ctx.mounted) Navigator.of(ctx).pop();
-                      if (mounted) _loadTripDetails();
+                      if (mounted) await _loadTripDetails();
                     },
                     child: Text(l10n.save),
                   ),

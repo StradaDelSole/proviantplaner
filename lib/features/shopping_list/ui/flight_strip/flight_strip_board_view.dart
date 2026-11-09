@@ -430,15 +430,17 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
         // 4. Statuszeile für übersprungene Artikel
         if (_skippedItemIds.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
             child: Row(
               children: [
                 Icon(Icons.skip_next_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     l10n.showSkippedItems(_skippedItemIds.length),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -446,20 +448,36 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
                 ),
                 TextButton(
                   key: const ValueKey('toggle_skipped_button'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () {
                     setState(() => _showSkipped = !_showSkipped);
                   },
-                  child: Text(_showSkipped ? l10n.hideSkippedItems : l10n.allSubgroups),
+                  child: Text(
+                    _showSkipped ? l10n.hideSkippedItems : l10n.allSubgroups,
+                    style: const TextStyle(fontSize: 11),
+                  ),
                 ),
                 TextButton(
                   key: const ValueKey('restore_all_skipped_button'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () {
                     setState(() {
                       _skippedItemIds.clear();
                       _showSkipped = false;
                     });
                   },
-                  child: Text(l10n.restoreAllSkipped),
+                  child: Text(
+                    l10n.restoreAllSkipped,
+                    style: const TextStyle(fontSize: 11),
+                  ),
                 ),
               ],
             ),
@@ -507,7 +525,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
                   ),
                 )
               : CustomScrollView(
-                  key: const ValueKey('flight_strip_list_view'),
+                  key: PageStorageKey<String>('flight_strip_list_view_${widget.data.trip.id}'),
                   slivers: [
                     if (!hasAdoptedItems && _searchQuery.isEmpty)
                       SliverToBoxAdapter(

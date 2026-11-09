@@ -125,7 +125,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     try {
       await ref.read(welcomeCompletedProvider.notifier).completeWelcome();
       if (!mounted) return;
-      context.go('/');
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -184,6 +188,16 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (context.canPop())
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: IconButton(
+                            key: const ValueKey('welcome_preview_close_button'),
+                            icon: Icon(Icons.close, color: primaryColor),
+                            tooltip: l10n.cancel,
+                            onPressed: () => context.pop(),
+                          ),
+                        ),
                       const Spacer(flex: 1),
 
                       // 1. Wordmark PROVY

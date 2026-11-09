@@ -250,13 +250,17 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
                                             : theme.colorScheme.primary,
                                       ),
                                       const SizedBox(width: 2),
-                                      Text(
-                                        l10n.inBasketBadge(activePackages),
-                                        style: theme.textTheme.labelSmall?.copyWith(
-                                          color: isNightwatch
-                                              ? const Color(0xFFFF3B30)
-                                              : theme.colorScheme.primary,
-                                          fontWeight: FontWeight.bold,
+                                      Flexible(
+                                        child: Text(
+                                          l10n.inBasketBadge(activePackages),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            color: isNightwatch
+                                                ? const Color(0xFFFF3B30)
+                                                : theme.colorScheme.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -292,11 +296,15 @@ class _ProductStripWidgetState extends ConsumerState<ProductStripWidget> {
                                         color: theme.colorScheme.onTertiaryContainer,
                                       ),
                                       const SizedBox(width: 2),
-                                      Text(
-                                        l10n.reviewInlineFridgeHint,
-                                        style: theme.textTheme.labelSmall?.copyWith(
-                                          fontSize: 10,
-                                          color: theme.colorScheme.onTertiaryContainer,
+                                      Flexible(
+                                        child: Text(
+                                          l10n.reviewInlineFridgeHint,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            fontSize: 10,
+                                            color: theme.colorScheme.onTertiaryContainer,
+                                          ),
                                         ),
                                       ),
                                     ],

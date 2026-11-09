@@ -1201,5 +1201,13 @@
   "welcomeBrandHeadline": "Planiraj pametnije. Jedri lakše.",
   "welcomeBrandSubline": "Izračunaj zalihe. Podijeli troškove posade. Obračunaj bez stresa.",
   "welcomeStorageError": "Nije moguće spremiti status dobrodošlice.",
-  "welcomeContinueAnyway": "Svejedno nastavi"
+  "welcomeContinueAnyway": "Svejedno nastavi",
+  "welcomePreviewTitle": "Ponovno pogledaj dobrodošlicu",
+  "@welcomePreviewTitle": {
+    "description": "Menu entry in more screen to rewatch the welcome screen"
+  },
+  "welcomePreviewSubtitle": "Pogledaj animaciju i uvod",
+  "@welcomePreviewSubtitle": {
+    "description": "Subtitle for welcome preview in more screen"
+  }
 }

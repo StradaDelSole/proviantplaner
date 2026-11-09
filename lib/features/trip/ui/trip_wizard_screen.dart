@@ -45,6 +45,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   late final TextEditingController _fridgeCapacityController;
   late final TextEditingController _freezerCapacityController;
   late final TextEditingController _waterTankController;
+  final ScrollController _scrollController = ScrollController();
 
   // Sektion 3: Crew (Issue #4: Standard 1 Person, Minimum 1)
   final List<CrewMemberInput> _crewMembers = [
@@ -87,6 +88,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     _fridgeCapacityController.dispose();
     _freezerCapacityController.dispose();
     _waterTankController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -132,22 +134,38 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   }
 
   void _addPerson() async {
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => const CrewMemberDialog(),
     );
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() => _crewMembers.add(result));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients && offset > 0) {
+          if (_scrollController.offset < offset) {
+            _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
+          }
+        }
+      });
     }
   }
 
   void _editPerson(int index) async {
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => CrewMemberDialog(initialMember: _crewMembers[index]),
     );
-    if (result != null) {
+    if (result != null && mounted) {
       setState(() => _crewMembers[index] = result);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients && offset > 0) {
+          if (_scrollController.offset < offset) {
+            _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
+          }
+        }
+      });
     }
   }
 
@@ -303,6 +321,8 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                key: const PageStorageKey('trip_wizard_scroll_view'),
+                controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 child: Center(
                   child: ConstrainedBox(

@@ -1201,5 +1201,13 @@
   "welcomeBrandHeadline": "Planifica mejor. Navega ligero.",
   "welcomeBrandSubline": "Calcula provisiones. Comparte gastos de tripulación. Liquida con calma.",
   "welcomeStorageError": "No se pudo guardar el estado de bienvenida.",
-  "welcomeContinueAnyway": "Continuar de todos modos"
+  "welcomeContinueAnyway": "Continuar de todos modos",
+  "welcomePreviewTitle": "Ver bienvenida de nuevo",
+  "@welcomePreviewTitle": {
+    "description": "Menu entry in more screen to rewatch the welcome screen"
+  },
+  "welcomePreviewSubtitle": "Ver animación y recorrido de introducción",
+  "@welcomePreviewSubtitle": {
+    "description": "Subtitle for welcome preview in more screen"
+  }
 }

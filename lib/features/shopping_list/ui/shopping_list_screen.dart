@@ -31,7 +31,35 @@ class ShoppingListScreen extends ConsumerWidget {
     final sortMode = ref.watch(shoppingListViewModeProvider);
     final selectedStopId = ref.watch(selectedStopFilterProvider);
 
-    if (listDataAsync.hasError) {
+    // 1. Initialer Fehler ohne Daten
+    if (listDataAsync.hasError && !listDataAsync.hasValue) {
+      return NotFoundScreen(message: l10n.tripNotFound);
+    }
+
+    // 2. Initiales Laden ohne vorherige Daten
+    if (listDataAsync.isLoading && !listDataAsync.hasValue) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: l10n.previousStep,
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/trips/$tripId');
+              }
+            },
+          ),
+          title: Text(l10n.navShoppingList),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // 3. Vorhandene Daten (aktiv oder während Reload):
+    final data = listDataAsync.value;
+    if (data == null) {
       return NotFoundScreen(message: l10n.tripNotFound);
     }
 
@@ -48,54 +76,44 @@ class ShoppingListScreen extends ConsumerWidget {
             }
           },
         ),
-        title: listDataAsync.when(
-          loading: () => Text(l10n.navShoppingList),
-          error: (_, __) => Text(l10n.navShoppingList),
-          data: (data) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                data.trip.name,
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              data.trip.name,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              l10n.tripDaysStopsSubtitle(data.trip.daysCount, data.stops.length),
+              style: theme.proviantTypography.numberSmall.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              Text(
-                l10n.tripDaysStopsSubtitle(data.trip.daysCount, data.stops.length),
-                style: theme.proviantTypography.numberSmall.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         actions: [
-          listDataAsync.maybeWhen(
-            data: (data) => IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: l10n.searchHint,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: () {
-                showSearch(
-                  context: context,
-                  delegate: CatalogSearchDelegate(
-                    data: data,
-                    parentContext: context,
-                    searchFieldLabel: l10n.searchCatalogPlaceholder,
-                  ),
-                );
-              },
-            ),
-            orElse: () => const SizedBox.shrink(),
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: l10n.searchHint,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: CatalogSearchDelegate(
+                  data: data,
+                  parentContext: context,
+                  searchFieldLabel: l10n.searchCatalogPlaceholder,
+                ),
+              );
+            },
           ),
-          listDataAsync.maybeWhen(
-            data: (data) => IconButton(
-              icon: const Icon(Icons.fact_check_outlined),
-              tooltip: l10n.reviewButtonLabel,
-              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              onPressed: () {
-                ProvisioningReviewSheet.show(context, data: data);
-              },
-            ),
-            orElse: () => const SizedBox.shrink(),
+          IconButton(
+            icon: const Icon(Icons.fact_check_outlined),
+            tooltip: l10n.reviewButtonLabel,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            onPressed: () {
+              ProvisioningReviewSheet.show(context, data: data);
+            },
           ),
           IconButton(
             key: const ValueKey('toggle_flight_strip_board_button'),
@@ -107,6 +125,10 @@ class ShoppingListScreen extends ConsumerWidget {
                 : l10n.switchToFlightStripBoard,
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             onPressed: () {
+              final isCurrentlyBoard = ref.read(flightStripBoardEnabledProvider);
+              if (!isCurrentlyBoard) {
+                ref.read(shoppingListViewModeProvider.notifier).state = ShoppingListSortMode.category;
+              }
               ref.read(flightStripBoardEnabledProvider.notifier).update((v) => !v);
             },
           ),
@@ -186,185 +208,185 @@ class ShoppingListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: listDataAsync.when(
-        skipLoadingOnReload: true,
-        skipLoadingOnRefresh: true,
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => NotFoundScreen(message: l10n.tripNotFound),
-        data: (data) {
-          return Column(
-            children: [
-              // Hinweis 1: Ernährungs-Tags sind kein Allergieschutz
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.allergenNotice,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+      body: Column(
+        children: [
+          // Hinweis 1: Ernährungs-Tags sind kein Allergieschutz
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.allergenNotice,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  ],
-                ),
-              ),
-              // Hinweis 2 (FEEDBACK_R1 Punkt 1): Längere Törns ab 15 Tagen
-              if (data.trip.daysCount >= 15)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onTertiaryContainer),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          l10n.longTripStopsNotice,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onTertiaryContainer,
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-              // Sortier-Umschalter und Stopp-Filter
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isNarrow = constraints.maxWidth < 360;
-                    final segmented = SegmentedButton<ShoppingListSortMode>(
-                      segments: [
-                        ButtonSegment(
-                          value: ShoppingListSortMode.category,
-                          label: Text(l10n.byCategory),
-                          icon: const Icon(Icons.category_outlined),
-                        ),
-                        ButtonSegment(
-                          value: ShoppingListSortMode.department,
-                          label: Text(l10n.byDepartment),
-                          icon: const Icon(Icons.storefront_outlined),
-                        ),
-                      ],
-                      selected: {sortMode},
-                      onSelectionChanged: (newSelection) {
-                        ref.read(shoppingListViewModeProvider.notifier).state =
-                            newSelection.first;
-                      },
-                    );
-
-                    if (isNarrow) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          segmented,
-                          const SizedBox(height: 6),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
-                          ),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(child: segmented),
-                        const SizedBox(width: 8),
-                        _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              const Divider(height: 1),
-              // Einheitliche Liste je nach Sortierung
-              Expanded(
-                child: sortMode == ShoppingListSortMode.category
-                    ? (ref.watch(flightStripBoardEnabledProvider)
-                        ? FlightStripBoardView(data: data, selectedStopId: selectedStopId)
-                        : PlanningView(data: data, selectedStopId: selectedStopId))
-                    : ShoppingView(data: data, selectedStopId: selectedStopId),
-              ),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: (sortMode == ShoppingListSortMode.category &&
-              ref.watch(flightStripBoardEnabledProvider))
-          ? null
-          : listDataAsync.maybeWhen(
-        data: (data) => FloatingActionButton.extended(
-          heroTag: 'fab_add_position',
-          icon: const Icon(Icons.add),
-          label: Text(l10n.item),
-          onPressed: () {
-            showSearch(
-              context: context,
-              delegate: CatalogSearchDelegate(
-                data: data,
-                parentContext: context,
-                searchFieldLabel: l10n.searchCatalogPlaceholder,
-              ),
-            );
-          },
-        ),
-        orElse: () => null,
-      ),
-      bottomNavigationBar: (sortMode == ShoppingListSortMode.category &&
-              ref.watch(flightStripBoardEnabledProvider))
-          ? null
-          : listDataAsync.maybeWhen(
-        data: (data) {
-          final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull ?? data.stops.firstOrNull;
-          final stopLabel = activeStop != null
-              ? '${l10n.day} ${activeStop.dayNumber} · ${activeStop.name}'
-              : l10n.initialShopping;
-
-          return SafeArea(
-            child: Container(
+              ],
+            ),
+          ),
+          // Hinweis 2 (FEEDBACK_R1 Punkt 1): Längere Törns ab 15 Tagen
+          if (data.trip.daysCount >= 15)
+            Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
-              ),
+              color: theme.colorScheme.tertiaryContainer.withOpacity(0.5),
               child: Row(
                 children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      icon: const Icon(Icons.shopping_basket_outlined, size: 20),
-                      label: Text('${l10n.startShopping} · $stopLabel'),
-                      onPressed: () {
-                        final targetStop = activeStop?.id ?? data.stops.firstOrNull?.id;
-                        if (targetStop != null) {
-                          context.push('/trips/$tripId/shop/$targetStop');
-                        }
-                      },
-                    ),
-                  ),
+                  Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onTertiaryContainer),
                   const SizedBox(width: 8),
-                  IconButton.outlined(
-                    tooltip: l10n.switchStop,
-                    icon: const Icon(Icons.swap_horiz),
-                    onPressed: () => _openStopSelection(context, ref, data, selectedStopId, l10n),
+                  Expanded(
+                    child: Text(
+                      l10n.longTripStopsNotice,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-          );
-        },
-        orElse: () => const SizedBox.shrink(),
+          // Sortier-Umschalter und Stopp-Filter
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 360;
+                final segmented = SegmentedButton<ShoppingListSortMode>(
+                  segments: [
+                    ButtonSegment(
+                      value: ShoppingListSortMode.category,
+                      label: Text(l10n.byCategory),
+                      icon: const Icon(Icons.category_outlined),
+                    ),
+                    ButtonSegment(
+                      value: ShoppingListSortMode.department,
+                      label: Text(l10n.byDepartment),
+                      icon: const Icon(Icons.storefront_outlined),
+                    ),
+                  ],
+                  selected: {sortMode},
+                  onSelectionChanged: (newSelection) {
+                    ref.read(shoppingListViewModeProvider.notifier).state =
+                        newSelection.first;
+                  },
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      segmented,
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
+                      ),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: segmented),
+                    const SizedBox(width: 8),
+                    _buildStopFilterChip(context, ref, data, selectedStopId, theme, l10n),
+                  ],
+                );
+              },
+            ),
+          ),
+          const Divider(height: 1),
+          // Einheitliche Liste je nach Sortierung - permanent gemountet mit stabilen Keys
+          Expanded(
+            child: sortMode == ShoppingListSortMode.category
+                ? (ref.watch(flightStripBoardEnabledProvider)
+                    ? FlightStripBoardView(
+                        key: ValueKey('flight_strip_board_view_${data.trip.id}'),
+                        data: data,
+                        selectedStopId: selectedStopId,
+                      )
+                    : PlanningView(
+                        key: ValueKey('planning_view_${data.trip.id}'),
+                        data: data,
+                        selectedStopId: selectedStopId,
+                      ))
+                : ShoppingView(
+                    key: ValueKey('shopping_view_${data.trip.id}'),
+                    data: data,
+                    selectedStopId: selectedStopId,
+                  ),
+          ),
+        ],
       ),
+      floatingActionButton: (sortMode == ShoppingListSortMode.category &&
+              ref.watch(flightStripBoardEnabledProvider))
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'fab_add_position',
+              icon: const Icon(Icons.add),
+              label: Text(l10n.item),
+              onPressed: () {
+                showSearch(
+                  context: context,
+                  delegate: CatalogSearchDelegate(
+                    data: data,
+                    parentContext: context,
+                    searchFieldLabel: l10n.searchCatalogPlaceholder,
+                  ),
+                );
+              },
+            ),
+      bottomNavigationBar: (sortMode == ShoppingListSortMode.category &&
+              ref.watch(flightStripBoardEnabledProvider))
+          ? null
+          : Builder(
+              builder: (ctx) {
+                final activeStop = data.stops.where((s) => s.id == selectedStopId).firstOrNull ?? data.stops.firstOrNull;
+                final stopLabel = activeStop != null
+                    ? '${l10n.day} ${activeStop.dayNumber} · ${activeStop.name}'
+                    : l10n.initialShopping;
+
+                return SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                            icon: const Icon(Icons.shopping_basket_outlined, size: 20),
+                            label: Text('${l10n.startShopping} · $stopLabel'),
+                            onPressed: () {
+                              final targetStop = activeStop?.id ?? data.stops.firstOrNull?.id;
+                              if (targetStop != null) {
+                                context.push('/trips/$tripId/shop/$targetStop');
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.outlined(
+                          tooltip: l10n.switchStop,
+                          icon: const Icon(Icons.swap_horiz),
+                          onPressed: () => _openStopSelection(context, ref, data, selectedStopId, l10n),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 

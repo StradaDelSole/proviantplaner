@@ -1337,5 +1337,13 @@
   "welcomeContinueAnyway": "Continue anyway",
   "@welcomeContinueAnyway": {
     "description": "Button to continue without saving onboarding status"
+  },
+  "welcomePreviewTitle": "Rewatch Welcome",
+  "@welcomePreviewTitle": {
+    "description": "Menu entry in more screen to rewatch the welcome screen"
+  },
+  "welcomePreviewSubtitle": "View animation and introduction preview",
+  "@welcomePreviewSubtitle": {
+    "description": "Subtitle for welcome preview in more screen"
   }
 }

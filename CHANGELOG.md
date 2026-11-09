@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-09 – UX-RECOVERY-INTEGRATED-01: Integrierte UX-Recovery, Scrollstabilität & Pixel-7-Pro-Abnahme
+
+- **UX-A – Flight-Strip-Board als Standard beim Öffnen der Vorratsliste:**
+  - `shoppingListSortModeProvider` startet per Default in `ShoppingListSortMode.category`. Das Flight-Strip-Board mit 10 Farbkategorien, Steppern (- / Zähler / +), horizontalem Kategorie-Karussell, Suchleiste und permanentem Basket-Tray am Fuß ist sofort beim Betreten der Vorratsliste aktiv.
+  - Das Umschalten via AppBar-Button wechselt nahtlos zwischen Flight-Strip-Board (`category`) und Abteilungsansicht (`department`).
+  - Schnelle Übernahme via dediziertem Quick-Add-Button (`In den Korb legen`) oder Wischgeste nach rechts (`Übernehmen`). Wischgeste nach links (`Überspringen`) mit Undo-SnackBar.
+- **UX-B – Scrollstabilität der Vorratsliste:**
+  - `ShoppingListScreen`: Ersetzt das destruktive `listDataAsync.when(...)`-Rebuild durch eine zustandsbewahrende Struktur (`hasValue`). Während asynchroner Riverpod-Reloads bleibt der Scrollable-Tree (`CustomScrollView`, `ListView`) permanent gemountet.
+  - Stabile `PageStorageKey`s für `FlightStripBoardView`, `PlanningView` und `ShoppingView` sichern Scrollposition und Viewport-Identität bei Hintergrund-Updates.
+  - Differenzierte Fehler- und Ladezustände: Initiales Laden ohne Daten zeigt `CircularProgressIndicator`, initialer Fehler zeigt `NotFoundScreen`, Reloads bei bestehenden Daten behalten die Ansicht ohne Flackern oder Scrollsprünge bei.
+- **UX-C – Behebung des Crew-Scrollfehlers (Wizard & Edit-Sheet):**
+  - `TripOverviewScreen`: Asynchrones `_loadTripDetails()` in Crew-Aktionen (`_addCrewMember`, `_editCrewMember`, `_deleteCrewMember`) wird ordnungsgemäß mit `await` synchronisiert. Der Scroll-Offset des `DraggableScrollableSheet`s wird vor der Aktion erfasst und via Post-Frame-Callback stabil gehalten.
+  - `TripWizardScreen`: ScrollController und `PageStorageKey` zur `SingleChildScrollView` hinzugefügt; Scrollposition nach Hinzufügen/Bearbeiten von Crew-Mitgliedern bleibt exakt erhalten.
+  - Pixel 7 Pro (412dp) Overflow-Fix: Essenszähler-Zeilen im Törn-Bearbeiten-Dialog mit `Expanded` vor RenderFlex-Overflows geschützt.
+- **UX-D – Nichtdestruktive Vorschau des animierten Welcome-Screens:**
+  - `MoreScreen`: Neuer Menüeintrag `welcomePreviewTitle` („PROVY Welcome-Tour ansehen“) mit Icon und Untertitel.
+  - `AppRouter`: Ermöglicht `/welcome?preview=true` auch bei bereits gesetztem `hasSeen`-Flag.
+  - `WelcomeScreen`: Erkennt Preview-Modus, blendet Schließen-Button oben rechts ein und navigiert via `context.pop()` zurück zum aufrufenden Screen, ohne bestehende Törndaten oder den Persistenzzustand zu modifizieren.
+  - Volle Lokalisierung in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) und Unterstützung für Nightwatch sowie reduzierte Bewegung (`disableAnimations`).
+- **Integrierte Testabsicherung:**
+  - `test/features/ux/ux_recovery_integrated_01_test.dart`: 5/5 deterministische E2E- und Integrationstests grün (Flight-Strip-Board Default, 40+ Artikel Scrollstabilität, Swipe/Quick-Add, Crew-Scrollstabilität, Welcome Preview).
+  - `test/features/trip/crew_scroll_reproduction_test.dart`: 2/2 Crew-Scroll-Tests grün.
+  - `test/features/shopping_list/shopping_mode_hcd_test.dart`: 13/13 HCD-Checkout-Tests grün.
+
 ## 2026-11-06 – HCD-SHOP-01 Step 1: Stability, Persistence Truth & Lifecycle (#66)
 
 - **#66 (STEP 1) – Behebung des Checkout-Scroll-Resets und Full-Screen-Spinners im Einkaufsmodus:**

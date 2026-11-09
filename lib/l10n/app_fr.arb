@@ -1201,5 +1201,13 @@
   "welcomeBrandHeadline": "Planifier mieux. Naviguer plus léger.",
   "welcomeBrandSubline": "Calculer les vivres. Partager les frais d'équipage. Régler en toute sérénité.",
   "welcomeStorageError": "Impossible d'enregistrer l'état de bienvenue.",
-  "welcomeContinueAnyway": "Continuer quand même"
+  "welcomeContinueAnyway": "Continuer quand même",
+  "welcomePreviewTitle": "Revoir la bienvenue",
+  "@welcomePreviewTitle": {
+    "description": "Menu entry in more screen to rewatch the welcome screen"
+  },
+  "welcomePreviewSubtitle": "Voir l'animation et l'introduction",
+  "@welcomePreviewSubtitle": {
+    "description": "Subtitle for welcome preview in more screen"
+  }
 }

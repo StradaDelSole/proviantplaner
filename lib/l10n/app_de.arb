@@ -1523,5 +1523,13 @@
   "welcomeContinueAnyway": "Trotzdem fortfahren",
   "@welcomeContinueAnyway": {
     "description": "Schaltflaeche um bei Speicherfehler ohne Persistenz fortzufahren"
+  },
+  "welcomePreviewTitle": "Welcome erneut ansehen",
+  "@welcomePreviewTitle": {
+    "description": "Menüeintrag im Mehr-Bereich zum erneuten Aufruf des Welcome-Screens"
+  },
+  "welcomePreviewSubtitle": "Animation und Einführungsvorschau ansehen",
+  "@welcomePreviewSubtitle": {
+    "description": "Untertitel für die Welcome-Vorschau im Mehr-Bereich"
   }
 }
