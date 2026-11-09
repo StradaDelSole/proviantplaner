@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-06 – HCD-SHOP-01 Step 1: Stability, Persistence Truth & Lifecycle (#66)
+
+- **#66 (STEP 1) – Behebung des Checkout-Scroll-Resets und Full-Screen-Spinners im Einkaufsmodus:**
+  - `shopping_mode_screen.dart`: Das Scrollable (`ListView`) wird nicht mehr bei jedem Riverpod-Reload durch einen Full-Screen-Spinner unmounted (`dataAsync.when` abgelöst). Bei bestehenden Daten (`dataAsync.hasValue`) bleibt die Liste inklusive Scrollposition während asynchroner Datenaktualisierungen stabil gemountet.
+  - Redundantes manuelles `ref.invalidate(tripShoppingListProvider)` beim Checkbox-Toggle ersatzlos entfernt. Die Reaktivität stützt sich strikt und sauber auf `ShoppingListService.onTripDataChanged` und `tripDataVersionProvider`.
+  - Differenzierte Fehler- und Ladezustände:
+    1. Initiales Laden ohne Vorabdaten: Dedizierter Ladeindikator.
+    2. Initialer Fehler ohne Vorabdaten: Vollwertiger Fehlerbildschirm mit Wiederholungs-Button (`retry`), kein irreführender `NotFoundScreen`.
+    3. Reload-Fehler bei bestehenden Daten: Einkaufsliste bleibt voll bedienbar; ein diskretes Warnbanner am oberen Bildschirmrand weist auf den Fehlschlag hin und bietet eine Wiederholungsmöglichkeit (`shopping_mode_reload_error_banner`).
+    4. Nicht existierender Einkaufsstopp: Gezielte Anzeige von `NotFoundScreen` mit `shoppingStopNotFound`.
+  - Wahrhaftige Persistenz und Fehlerbehandlung (`_handleToggleBought`): Rückgabewerte von `toggleBought` werden geprüft. Sowohl ein Rückgabewert von `false` als auch aufgetretene Exceptions zeigen eine informative SnackBar mit Retry-Aktion und behaupten keinen Scheinerfolg.
+  - Per-Item Concurrency Guard (`_pendingItemIds`): Schnelle Mehrfach-Taps auf denselben Artikel werden abgefangen; die Checkbox wird während des Schreibvorgangs deaktiviert, wodurch redundante SQLite-Transaktionen und Race Conditions verhindert werden.
+  - Fail-Closed Retry-Validierung & Intent-Generationsschutz (R5/R6): Generationszähler pro Artikel verwirft veraltete Retries nach zwischenzeitlichen Nutzeraktionen; Stopp-, Artikel- und Mengenprüfung (`packagesAtStop > 0` inkl. Ersteinkauf-Restmengen) verhindert Geister-Allokationen und Mengenaufblähung.
+  - Robuste Lifecycle-Absicherung: Sämtliche `ref`- und `setState`-Zugriffe prüfen strikt `mounted`.
+  - Responsives `AppBar`-Layout: Verhindert RenderFlex-Overflows bei schmalen Displays (320 logical px) und hoher Schriftskalierung (1.5x) durch adaptive Umschaltung auf `IconButton` mit Tooltip.
+- **Regressionstests (`test/features/shopping_list/shopping_mode_hcd_test.dart`):**
+  - Schritt 0 empirisch belegt: Vollständige Reproduktion des Scroll-Resets auf unmodifiziertem `main`.
+  - Schritt 1 verifiziert: 13/13 Tests grün (Scroll-Stabilität bei 40+ Artikeln, initialer Fehler, Reload-Fehler mit Warnbanner, ungültiger Stopp, Fehler-SnackBar bei Schreibfehlschlag, Doppel-Tap-Guard, 320dp/1.5x A11Y-Stabilität, Stale Retry Superseded, Disposed Lifecycle, R6-A Verschobene Allokation, R6-B Nicht verfügbare Daten, R6-C Gültiger Retry).
+
 ## 2026-11-05 – PIXEL-QA-61 + BRAND-WELCOME-01: Review Amendment 1 (PR #60, Findings W1, W2, FLICKER-61-B)
 
 - **W1 – Stabiler Lade- & Fehlerzustand vor Welcome-Check:**
