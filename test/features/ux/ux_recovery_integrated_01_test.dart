@@ -141,6 +141,10 @@ void main() {
       await tester.pumpWidget(buildTestApp(router: router));
       await tester.pumpAndSettle();
 
+      // Ein-Klick-Umschaltung auf Flight-Strip-Board via AppBar-Button
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.pumpAndSettle();
+
       // Flight-Strip-Board ist direkt sichtbar
       expect(find.byKey(const ValueKey('flight_strip_search_field')), findsOneWidget);
       expect(find.byKey(const ValueKey('flight_strip_basket_tray')), findsOneWidget);
@@ -166,6 +170,10 @@ void main() {
       );
 
       await tester.pumpWidget(buildTestApp(router: router));
+      await tester.pumpAndSettle();
+
+      // Auf Flight-Strip-Board wechseln
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
       await tester.pumpAndSettle();
 
       final listFinder = find.byKey(PageStorageKey<String>('flight_strip_list_view_$tripId'));
@@ -222,6 +230,10 @@ void main() {
       );
 
       await tester.pumpWidget(buildTestApp(router: router));
+      await tester.pumpAndSettle();
+
+      // Auf Flight-Strip-Board wechseln
+      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
       await tester.pumpAndSettle();
 
       final firstDismissible = find.byType(Dismissible).first;

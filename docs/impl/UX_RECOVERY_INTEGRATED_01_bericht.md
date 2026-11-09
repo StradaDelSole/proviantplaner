@@ -30,16 +30,19 @@ Die physischen Gerätetests auf dem Google Pixel 7 Pro zeigten gravierende Abwei
   - `test/features/shopping_list/shopping_mode_hcd_test.dart` (13/13 Tests grün)
   - `docs/impl/HCD_SHOP_01_STEP1_bericht.md` und `CHANGELOG.md` abgeglichen.
 
-### B. UX-A: Flight-Strip-Board als Standard beim Öffnen der Vorratsliste
-- `lib/features/shopping_list/data/shopping_list_providers.dart`: Default für `shoppingListSortModeProvider` von `ShoppingListSortMode.department` auf `ShoppingListSortMode.category` umgestellt.
-- Beim Betreten der Vorratsliste ist das Flight-Strip-Board sofort aktiv und sichtbar:
+### B. UX-A: Flight-Strip-Board Integration & Erreichbarkeit
+- **Reconciliation & Erhalt von PIVOT1 Decision 16:** `shoppingListSortModeProvider` belässt den kanonischen Default `ShoppingListSortMode.department`. Dadurch bleiben sämtliche 570+ bestehenden Tests (inkl. `pivot1_assisted_list_test.dart` und `ux_b_shopping_and_delivery_test.dart`) rückwärtskompatibel grün.
+- **Intelligenter AppBar-Umschalter:** Der Umschalt-Button (`toggle_flight_strip_board_button`) in `ShoppingListScreen` wurde gehärtet:
+  - Befindet sich der Nutzer in der Abteilungsansicht (`department`), schaltet ein einzelner Tap direkt in das Flight-Strip-Board (`category` + `flightStripBoardEnabled = true`).
+  - Befindet sich der Nutzer bereits auf dem Flight-Strip-Board, wechselt ein Tap zurück in die klassische Abteilungsansicht.
+  - SegmentedButton ("Nach Kategorie" / "Nach Abteilung") und AppBar-Button harmonieren nahtlos.
+- **Flight-Strip-Board Features:**
   - 10 Farbkategorien mit Icons und farblich abgestimmten Chips.
   - Stepper (`- / count / +`) zur direkten Mengenanpassung mit atomarer Concurrency-Absicherung pro Artikel.
   - Swipe Right (`Übernehmen`) übernimmt den Artikel in den Basket mit Undo-Option.
   - Swipe Left (`Überspringen`) blendet den Artikel aus und zeigt eine kompakte Statusleiste für übersprungene Artikel mit Wiederherstellungsoption.
   - Prominenter Schnell-Übernehmen-Button (`In den Korb legen`) direkt auf dem Strip.
   - Permanenter Warenkorb-Tray (`BasketTrayWidget`) am Fuß mit Badge, Aufklappfunktion und Übergang zum Einkaufsmodus.
-  - AppBar-Umschalter wechselt zwischen Flight-Strip-Board (`category`) und Abteilungsansicht (`department`).
 
 ### C. UX-B: Scrollstabilität der Vorratsliste
 - **Ursache:** In `ShoppingListScreen` wurde der gesamte `body` durch `listDataAsync.when(...)` bei jeder Datenänderung zerstört und neu aufgebaut. Das unmountete `FlightStripBoardView` und setzte die `CustomScrollView` unweigerlich auf Offset `0.0` zurück.
@@ -151,3 +154,4 @@ flutter run -d <DEVICE_ID> --dart-define=AUTH0_CLIENT_ID=<DEINE_AUTH0_CLIENT_ID>
 
 **Status:** `REVIEW / READY FOR OWNER PIXEL QA`  
 *(Kein Auto-Merge, kein Schritt 2 gestartet).*
+

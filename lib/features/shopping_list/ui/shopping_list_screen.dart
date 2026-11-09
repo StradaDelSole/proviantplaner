@@ -115,21 +115,28 @@ class ShoppingListScreen extends ConsumerWidget {
               ProvisioningReviewSheet.show(context, data: data);
             },
           ),
-          IconButton(
-            key: const ValueKey('toggle_flight_strip_board_button'),
-            icon: Icon(ref.watch(flightStripBoardEnabledProvider)
-                ? Icons.table_rows_outlined
-                : Icons.view_agenda_outlined),
-            tooltip: ref.watch(flightStripBoardEnabledProvider)
-                ? l10n.switchToClassicList
-                : l10n.switchToFlightStripBoard,
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: () {
-              final isCurrentlyBoard = ref.read(flightStripBoardEnabledProvider);
-              if (!isCurrentlyBoard) {
-                ref.read(shoppingListViewModeProvider.notifier).state = ShoppingListSortMode.category;
-              }
-              ref.read(flightStripBoardEnabledProvider.notifier).update((v) => !v);
+          Builder(
+            builder: (ctx) {
+              final isFlightBoardActive = ref.watch(flightStripBoardEnabledProvider) &&
+                  ref.watch(shoppingListViewModeProvider) == ShoppingListSortMode.category;
+              return IconButton(
+                key: const ValueKey('toggle_flight_strip_board_button'),
+                icon: Icon(isFlightBoardActive
+                    ? Icons.table_rows_outlined
+                    : Icons.view_agenda_outlined),
+                tooltip: isFlightBoardActive
+                    ? l10n.switchToClassicList
+                    : l10n.switchToFlightStripBoard,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                onPressed: () {
+                  if (isFlightBoardActive) {
+                    ref.read(shoppingListViewModeProvider.notifier).state = ShoppingListSortMode.department;
+                  } else {
+                    ref.read(flightStripBoardEnabledProvider.notifier).state = true;
+                    ref.read(shoppingListViewModeProvider.notifier).state = ShoppingListSortMode.category;
+                  }
+                },
+              );
             },
           ),
           PopupMenuButton<String>(
