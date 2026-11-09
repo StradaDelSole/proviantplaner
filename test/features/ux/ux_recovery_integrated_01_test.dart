@@ -142,7 +142,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Ein-Klick-Umschaltung auf Flight-Strip-Board via AppBar-Button
-      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.tap(find.byIcon(Icons.category_outlined));
       await tester.pumpAndSettle();
 
       // Flight-Strip-Board ist direkt sichtbar
@@ -173,7 +173,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Auf Flight-Strip-Board wechseln
-      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.tap(find.byIcon(Icons.category_outlined));
       await tester.pumpAndSettle();
 
       final listFinder = find.byKey(PageStorageKey<String>('flight_strip_list_view_$tripId'));
@@ -233,7 +233,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Auf Flight-Strip-Board wechseln
-      await tester.tap(find.byKey(const ValueKey('toggle_flight_strip_board_button')));
+      await tester.tap(find.byIcon(Icons.category_outlined));
       await tester.pumpAndSettle();
 
       final firstDismissible = find.byType(Dismissible).first;
