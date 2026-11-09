@@ -114,11 +114,26 @@ void main() {
       await tester.pumpAndSettle();
 
       final offsetAfter = tester.state<ScrollableState>(scrollable).position.pixels;
-      debugPrint('>>> Wizard Scroll Offset before: $offsetBefore, after: $offsetAfter');
+      expect(offsetAfter, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'Wizard scroll position must not reset to top on crew addition');
+      expect(find.text('Bob'), findsOneWidget);
+
+      // Wiederholte Crew-Aktion im Wizard: zweite Person hinzufügen
+      await tester.tap(addCrewBtn);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, 'Alice');
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+
+      final offsetAfter2 = tester.state<ScrollableState>(scrollable).position.pixels;
+      expect(offsetAfter2, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'Wizard scroll position must remain preserved after repeated crew additions');
+      expect(find.text('Alice'), findsOneWidget);
     });
 
     testWidgets('TripOverviewScreen Edit Trip Sheet: adding crew member preserves or resets scroll position?', (tester) async {
-      tester.view.physicalSize = const Size(600, 1000);
+      tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -208,7 +223,28 @@ void main() {
       await tester.pumpAndSettle();
 
       final offsetAfter = tester.state<ScrollableState>(sheetScrollable).position.pixels;
-      debugPrint('>>> Edit Sheet Scroll Offset after: $offsetAfter');
+      expect(offsetAfter, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'Edit sheet scroll position must remain at the crew section');
+      expect(find.text('Charlie'), findsOneWidget);
+
+      final crewInDb1 = await db.tripDao.getCrewForTrip(tripId);
+      expect(crewInDb1.any((c) => c.name == 'Charlie'), isTrue);
+
+      // Wiederholte Crew-Aktion im Edit Sheet: vierte Person hinzufügen
+      await tester.tap(addCrewInSheet);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).last, 'David');
+      await tester.tap(find.text('Speichern').last);
+      await tester.pumpAndSettle();
+
+      final offsetAfter2 = tester.state<ScrollableState>(sheetScrollable).position.pixels;
+      expect(offsetAfter2, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'Edit sheet scroll position must remain preserved after repeated crew additions');
+      expect(find.text('David'), findsOneWidget);
+
+      final crewInDb2 = await db.tripDao.getCrewForTrip(tripId);
+      expect(crewInDb2.any((c) => c.name == 'David'), isTrue);
     });
   });
 }

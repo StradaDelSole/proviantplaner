@@ -2,9 +2,10 @@
 
 ## 2026-11-09 – UX-RECOVERY-INTEGRATED-01: Integrierte UX-Recovery, Scrollstabilität & Pixel-7-Pro-Abnahme
 
-- **UX-A – Flight-Strip-Board als Standard beim Öffnen der Vorratsliste:**
-  - `shoppingListSortModeProvider` startet per Default in `ShoppingListSortMode.category`. Das Flight-Strip-Board mit 10 Farbkategorien, Steppern (- / Zähler / +), horizontalem Kategorie-Karussell, Suchleiste und permanentem Basket-Tray am Fuß ist sofort beim Betreten der Vorratsliste aktiv.
-  - Das Umschalten via AppBar-Button wechselt nahtlos zwischen Flight-Strip-Board (`category`) und Abteilungsansicht (`department`).
+- **UX-A – Vorratsliste startet nach Abteilung (PIVOT1 Decision 16); 1-Klick-Wechsel auf Flight-Strip-Board:**
+  - `shoppingListSortModeProvider` startet standardmäßig in `ShoppingListSortMode.department` (PIVOT1 Decision 16).
+  - Der gehärtete AppBar-Umschalter wechselt bei Klick aus der Abteilungsansicht sofort in das Flight-Strip-Board (`category` + `flightStripBoardEnabled = true`), und das Segment „Nach Kategorie“ führt ebenso direkt zum Board mit 10 Farbkategorien, Steppern, Suchleiste und Basket-Tray.
+  - Aus dem Flight-Strip-Board schaltet der AppBar-Button nahtlos zwischen Board und `PlanningView` um.
   - Schnelle Übernahme via dediziertem Quick-Add-Button (`In den Korb legen`) oder Wischgeste nach rechts (`Übernehmen`). Wischgeste nach links (`Überspringen`) mit Undo-SnackBar.
 - **UX-B – Scrollstabilität der Vorratsliste:**
   - `ShoppingListScreen`: Ersetzt das destruktive `listDataAsync.when(...)`-Rebuild durch eine zustandsbewahrende Struktur (`hasValue`). Während asynchroner Riverpod-Reloads bleibt der Scrollable-Tree (`CustomScrollView`, `ListView`) permanent gemountet.
@@ -16,9 +17,13 @@
   - Pixel 7 Pro (412dp) Overflow-Fix: Essenszähler-Zeilen im Törn-Bearbeiten-Dialog mit `Expanded` vor RenderFlex-Overflows geschützt.
 - **UX-D – Nichtdestruktive Vorschau des animierten Welcome-Screens:**
   - `MoreScreen`: Neuer Menüeintrag `welcomePreviewTitle` („PROVY Welcome-Tour ansehen“) mit Icon und Untertitel.
-  - `AppRouter`: Ermöglicht `/welcome?preview=true` auch bei bereits gesetztem `hasSeen`-Flag.
-  - `WelcomeScreen`: Erkennt Preview-Modus, blendet Schließen-Button oben rechts ein und navigiert via `context.pop()` zurück zum aufrufenden Screen, ohne bestehende Törndaten oder den Persistenzzustand zu modifizieren.
+  - `AppRouter`: Ermöglicht `/welcome?preview=true` auch bei bereits gesetztem `hasSeen`-Flag und bewahrt den Preview-Parameter über den Lade-Gate hinweg.
+  - `WelcomeScreen`: Erkennt Preview-Modus (`widget.isPreview` bzw. URI-Query-Parameter); sowohl der Schließen-Button oben rechts als auch der primäre CTA („Los geht's“) navigieren nichtdestruktiv zurück (`context.pop()` / `context.go('/')`), ohne `completeWelcome()` aufzurufen oder `WelcomeStorage` zu modifizieren (belegt durch `writeCalls == 0`).
   - Volle Lokalisierung in allen 6 Sprachen (DE, EN, ES, FR, HR, PT) und Unterstützung für Nightwatch sowie reduzierte Bewegung (`disableAnimations`).
+- **Review #5833473757 Amendment (R1, R2, R3):**
+  - R1: Startzustand nach Abteilung (`department`) und AppBar-Toggle reconciliiert; 1-Klick-Wechsel auf Flight-Strip-Board aus `department` hergestellt; PlanningView-Umschaltung erhalten.
+  - R2: Preview-CTA ruft kein `completeWelcome()` auf; instrumentierte Tests weisen 0 Schreibzugriffe für beide Ausstiege nach.
+  - R3: `crew_scroll_reproduction_test.dart` mit realen Post-Action-Assertions (`offsetAfter >= offsetBefore - 20`), Namenssichtbarkeitsprüfung, Datenbankabgleich und wiederholten Crew-Aktionen im realen 412x915 Viewport gehärtet.
 - **Integrierte Testabsicherung:**
   - `test/features/ux/ux_recovery_integrated_01_test.dart`: 5/5 deterministische E2E- und Integrationstests grün (Flight-Strip-Board Default, 40+ Artikel Scrollstabilität, Swipe/Quick-Add, Crew-Scrollstabilität, Welcome Preview).
   - `test/features/trip/crew_scroll_reproduction_test.dart`: 2/2 Crew-Scroll-Tests grün.

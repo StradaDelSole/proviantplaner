@@ -19,7 +19,9 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_provide
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/calculation/quantity_engine.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/quantities_models.dart';
+import 'package:proviantplaner/features/shopping_list/ui/flight_strip/flight_strip_board_view.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
+import 'package:proviantplaner/features/shopping_list/ui/widgets/shopping_view.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
 import 'package:proviantplaner/features/trip/data/trip_service.dart';
 import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
@@ -120,7 +122,7 @@ void main() {
   }
 
   group('PROVY UX-RECOVERY-INTEGRATED-01 Verification Suite', () {
-    testWidgets('1. Flight-Strip-Board ist Standard beim Öffnen der Vorratsliste (Pixel 7 Pro 412x915)', (tester) async {
+    testWidgets('1. Vorratsliste startet in Abteilungsansicht (PIVOT1 Decision 16); 1-Klick-Wechsel auf Flight-Strip-Board (Pixel 7 Pro 412x915)', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -141,14 +143,36 @@ void main() {
       await tester.pumpWidget(buildTestApp(router: router));
       await tester.pumpAndSettle();
 
-      // Ein-Klick-Umschaltung auf Flight-Strip-Board via AppBar-Button
-      await tester.tap(find.byIcon(Icons.category_outlined));
+      // 1. Vorratsliste startet standardmäßig nach Supermarkt-Abteilung (PIVOT1 Decision 16)
+      expect(find.byType(ShoppingView), findsOneWidget);
+      expect(find.byType(FlightStripBoardView), findsNothing);
+
+      // 2. Ein-Klick-Umschaltung auf Flight-Strip-Board via AppBar-Button
+      final toggleBtn = find.byKey(const ValueKey('toggle_flight_strip_board_button'));
+      expect(toggleBtn, findsOneWidget);
+      await tester.tap(toggleBtn);
       await tester.pumpAndSettle();
 
-      // Flight-Strip-Board ist direkt sichtbar
+      // Flight-Strip-Board ist direkt mit Board, Basket Tray und Farb-Kategorien sichtbar
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
       expect(find.byKey(const ValueKey('flight_strip_search_field')), findsOneWidget);
       expect(find.byKey(const ValueKey('flight_strip_basket_tray')), findsOneWidget);
       expect(find.byKey(const ValueKey('cat_chip_fruehstueck')), findsOneWidget);
+
+      // 3. Umschaltung über SegmentedButton zurück auf Abteilung und wieder auf Kategorie
+      await tester.tap(find.descendant(
+        of: find.byType(SegmentedButton<ShoppingListSortMode>),
+        matching: find.byIcon(Icons.storefront_outlined),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShoppingView), findsOneWidget);
+
+      await tester.tap(find.descendant(
+        of: find.byType(SegmentedButton<ShoppingListSortMode>),
+        matching: find.byIcon(Icons.category_outlined),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byType(FlightStripBoardView), findsOneWidget);
     });
 
     testWidgets('2. Scrollstabilität der Vorratsliste: 40+ Produkte, Adoptionen in Listenmitte, kein Sprung, kein Fullscreen-Reload', (tester) async {
@@ -317,7 +341,7 @@ void main() {
       expect(crewInDb.any((c) => c.name == 'Daniel'), isTrue);
     });
 
-    testWidgets('5. Welcome Screen Preview: Menüeintrag in MoreScreen öffnet Vorschau nichtdestruktiv', (tester) async {
+    testWidgets('5. Welcome Screen Preview: Menüeintrag in MoreScreen öffnet Vorschau nichtdestruktiv (weder Close noch CTA schreiben Storage)', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -338,7 +362,9 @@ void main() {
           ),
           GoRoute(
             path: '/welcome',
-            builder: (_, __) => const WelcomeScreen(),
+            builder: (_, state) => WelcomeScreen(
+              isPreview: state.uri.queryParameters['preview'] == 'true',
+            ),
           ),
         ],
       );
@@ -346,11 +372,14 @@ void main() {
       await tester.pumpWidget(buildTestApp(router: router));
       await tester.pumpAndSettle();
 
+      expect(memoryWelcomeStorage.writeCalls, equals(0));
+
       // Menüeintrag "Welcome erneut ansehen" vorhanden
       final welcomeTile = find.byKey(const ValueKey('more_welcome_preview_tile'));
       await tester.scrollUntilVisible(welcomeTile, 300);
       expect(welcomeTile, findsOneWidget);
 
+      // --- Exit 1: Close-Button oben rechts ---
       await tester.tap(welcomeTile);
       await tester.pumpAndSettle();
 
@@ -358,7 +387,6 @@ void main() {
       expect(find.text('PROVY'), findsOneWidget);
       expect(find.text('Smarter planen. Leichter segeln.'), findsOneWidget);
 
-      // Close-Button oben rechts schließt die Vorschau
       final closeBtn = find.byKey(const ValueKey('welcome_preview_close_button'));
       expect(closeBtn, findsOneWidget);
 
@@ -367,10 +395,29 @@ void main() {
 
       // Wieder auf MoreScreen
       expect(find.byType(MoreScreen), findsOneWidget);
+      // Keine Schreibzugriffe auf WelcomeStorage
+      expect(memoryWelcomeStorage.writeCalls, equals(0));
+
+      // --- Exit 2: Primärer CTA "Los geht's" in der Vorschau ---
+      await tester.tap(welcomeTile);
+      await tester.pumpAndSettle();
+
+      final ctaBtn = find.byKey(const ValueKey('welcome_get_started_button'));
+      expect(ctaBtn, findsOneWidget);
+
+      await tester.tap(ctaBtn);
+      await tester.pumpAndSettle();
+
+      // Kehrt zurück auf MoreScreen ohne zu schreiben
+      expect(find.byType(MoreScreen), findsOneWidget);
+      expect(memoryWelcomeStorage.writeCalls, equals(0),
+          reason: 'Preview CTA must never write to WelcomeStorage');
 
       // Bestehende Törndaten in DB unberührt
       final trip = await db.tripDao.getTripById(tripId);
       expect(trip, isNotNull);
+      final crew = await db.tripDao.getCrewForTrip(tripId);
+      expect(crew.length, equals(2));
     });
   });
 }

@@ -13,7 +13,9 @@ import 'package:proviantplaner/features/welcome/data/welcome_storage.dart';
 /// Animationen. Unterstützt reduzierten Bewegungseffekt (disableAnimations)
 /// sowie den Nachtwache-Modus.
 class WelcomeScreen extends ConsumerStatefulWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({super.key, this.isPreview = false});
+
+  final bool isPreview;
 
   @override
   ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -118,11 +120,30 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   bool _isSubmitting = false;
   bool _showContinueAnyway = false;
 
+  bool get _isEffectivePreview {
+    if (widget.isPreview) return true;
+    try {
+      final state = GoRouterState.of(context);
+      return state.uri.queryParameters['preview'] == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _handleGetStarted() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
     try {
+      if (_isEffectivePreview) {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+        return;
+      }
+
       await ref.read(welcomeCompletedProvider.notifier).completeWelcome();
       if (!mounted) return;
       if (context.canPop()) {
@@ -188,14 +209,20 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (context.canPop())
+                      if (_isEffectivePreview || context.canPop())
                         Align(
                           alignment: Alignment.topRight,
                           child: IconButton(
                             key: const ValueKey('welcome_preview_close_button'),
                             icon: Icon(Icons.close, color: primaryColor),
                             tooltip: l10n.cancel,
-                            onPressed: () => context.pop(),
+                            onPressed: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/');
+                              }
+                            },
                           ),
                         ),
                       const Spacer(flex: 1),

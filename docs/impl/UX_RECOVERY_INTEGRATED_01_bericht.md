@@ -75,6 +75,34 @@ Die physischen Gerätetests auf dem Google Pixel 7 Pro zeigten gravierende Abwei
 
 ---
 
+---
+
+## 2.1 Behebung des Independent Review #5833473757 (R1, R2, R3)
+
+Im Independent Review #5833473757 zu PR #73 (HEAD `922e934`) wurden drei gezielte Befunde identifiziert und vollständig behoben:
+
+### R1 (BLOCKER) – Flight-Strip Startzustand und 1-Klick-Erreichbarkeit
+- **Problem:** Vorratsliste startete richtigerweise nach Abteilung (`department`, PIVOT1 Decision 16), aber der AppBar-Button schaltete nur `flightStripBoardEnabledProvider`, ohne den Modus auf `category` zu wechseln. Dadurch blieben Streifen beim Tippen aus der Abteilungsansicht unsichtbar.
+- **Behebung:**
+  - `lib/features/shopping_list/ui/shopping_list_screen.dart`: AppBar-Button prüft `currentSortMode == category && flightStripBoardEnabled`. Befindet sich der Nutzer in `department`, schaltet 1 Tap zuverlässig auf `category` und aktiviert das Flight-Strip-Board. Befindet er sich auf dem Board, schaltet ein Tap auf `PlanningView`.
+  - Der SegmentedButton ("Nach Kategorie") führt direkt zum Flight-Strip-Board.
+  - Test und PR-Aussagen wurden wahrheitsgetreu reconciliiert: Standard ist PIVOT1 Decision 16 (`department`), Board/Basket/Farben sind in einer einzigen intuitiven Aktion erreichbar.
+
+### R2 (BLOCKER) – Welcome-Preview primärer CTA ist nun strikt nichtdestruktiv
+- **Problem:** `WelcomeScreen._handleGetStarted()` rief unkonditioniert `completeWelcome()` auf, wodurch auch die Vorschau `provy_welcome_seen_v1` in den Secure Storage schrieb.
+- **Behebung:**
+  - `lib/features/welcome/ui/welcome_screen.dart` & `lib/core/routing/app_router.dart`: Preview-Route wird explizit als `isPreview` ausgewertet (auch nach Lade-Gate).
+  - Weder der Schließen-Button noch der primäre CTA ("Los geht's") rufen `completeWelcome()` auf; beide kehren via `context.pop()` bzw. `context.go('/')` zurück.
+  - Tests mit `MemoryWelcomeStorage` belegen für beide Ausstiege strikt `writeCalls == 0`.
+
+### R3 (TEST GAP) – Reale Scroll- & Persistenz-Assertions für Crew-Aktionen
+- **Problem:** `test/features/trip/crew_scroll_reproduction_test.dart` enthielt nur `debugPrint`, keine echten Assertions.
+- **Behebung:**
+  - Realistischer Pixel 7 Pro Viewport (412x915).
+  - Deterministische Post-Action-Assertions: `offsetAfter >= offsetBefore - 20` sowohl für `TripWizardScreen` als auch für `TripOverviewScreen` Edit-Sheet.
+  - Sichtbarkeitsprüfung der hinzugefügten Crew-Mitglieder (`find.text(...)`) und Datenbank-Persistenzprüfung (`getCrewForTrip(...)`).
+  - Wiederholte Crew-Aktionen (mehrfaches Hinzufügen) sichern langfristige Scrollstabilität ab.
+
 ## 3. Geänderte und neue Dateien
 
 | Datei | Art der Änderung |

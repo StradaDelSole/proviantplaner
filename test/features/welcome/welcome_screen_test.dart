@@ -417,5 +417,39 @@ void main() {
       // Nutzer gelangt zur Startseite
       expect(find.byType(StartScreen), findsOneWidget);
     });
+
+    testWidgets('UX-D / W2: Vorschau-Route (/welcome?preview=true) schließt über Close-Button ohne Storage-Schreibzugriff', (tester) async {
+      final storage = MemoryWelcomeStorage(initialSeen: true);
+      await tester.pumpWidget(buildTestApp(storage: storage, initialLocation: '/welcome?preview=true'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PROVY'), findsOneWidget);
+      final closeBtn = find.byKey(const ValueKey('welcome_preview_close_button'));
+      expect(closeBtn, findsOneWidget);
+
+      await tester.tap(closeBtn);
+      await tester.pumpAndSettle();
+
+      expect(storage.writeCalls, equals(0),
+          reason: 'Preview Close button must never write to WelcomeStorage');
+      expect(find.byType(StartScreen), findsOneWidget);
+    });
+
+    testWidgets('UX-D / W2: Vorschau-Route (/welcome?preview=true) schließt über CTA ohne Storage-Schreibzugriff', (tester) async {
+      final storage = MemoryWelcomeStorage(initialSeen: true);
+      await tester.pumpWidget(buildTestApp(storage: storage, initialLocation: '/welcome?preview=true'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PROVY'), findsOneWidget);
+      final ctaButton = find.byKey(const ValueKey('welcome_get_started_button'));
+      expect(ctaButton, findsOneWidget);
+
+      await tester.tap(ctaButton);
+      await tester.pumpAndSettle();
+
+      expect(storage.writeCalls, equals(0),
+          reason: 'Preview CTA must never call setSeenWelcome()');
+      expect(find.byType(StartScreen), findsOneWidget);
+    });
   });
 }

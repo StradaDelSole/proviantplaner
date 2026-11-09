@@ -160,7 +160,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // 1. Ladezustand: Home- und Törnrouten sperren, Ladebildschirm anzeigen (W1)
       if (welcomeState.isLoading) {
         if (location == '/welcome-loading') return null;
-        final fromParam = location != '/' ? '?from=${Uri.encodeComponent(location)}' : '';
+        final targetUri = state.uri.toString();
+        final fromParam = targetUri != '/' && targetUri != '/welcome'
+            ? '?from=${Uri.encodeComponent(targetUri)}'
+            : '';
         return '/welcome-loading$fromParam';
       }
 
@@ -207,7 +210,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/welcome',
         name: 'welcome',
-        builder: (context, state) => const WelcomeScreen(),
+        builder: (context, state) => WelcomeScreen(
+          isPreview: state.uri.queryParameters['preview'] == 'true',
+        ),
       ),
       GoRoute(
         path: '/',
