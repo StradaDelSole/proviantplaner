@@ -99,21 +99,31 @@ Die physischen Gerätetests auf dem Google Pixel 7 Pro zeigten gravierende Abwei
 
 ## 4. Testergebnisse & Verifikation
 
-1. **Automatisierte UX-Recovery Suite (`test/features/ux/ux_recovery_integrated_01_test.dart`):**
-   - 1. Flight-Strip-Board ist Standard beim Öffnen der Vorratsliste (Pixel 7 Pro 412x915): **PASSED**
+1. **GitHub Actions CI (Authoritative Full-QA am finalen PR-HEAD):**
+   - **PR:** [#73](https://github.com/StradaDelSole/proviantplaner/pull/73)
+   - **Exakter PR-HEAD:** `fd3f5ede75d7696d1bddc724cbdc3c2cf90605ca`
+   - **GitHub Actions Run:** [42706552192](https://github.com/StradaDelSole/proviantplaner/actions/runs/42706552192)
+   - `Backend Typecheck & Vitest`: **PASS (23s)**
+   - `Flutter Analyze & Test`: **PASS (1m59s)** – 583+ Tests grün, 0 Warnungen, 0 Fehler.
+2. **Automatisierte UX-Recovery Suite (`test/features/ux/ux_recovery_integrated_01_test.dart`):**
+   - 1. Flight-Strip-Board ist erreichbar und aktiv (Pixel 7 Pro 412x915): **PASSED**
    - 2. Scrollstabilität der Vorratsliste: 40+ Produkte, Adoptionen in Listenmitte, kein Sprung, kein Fullscreen-Reload: **PASSED**
    - 3. Beide Swipe-Richtungen & Schnell-Übernehmen auf Flight-Strip: **PASSED**
    - 4. Crew-Scrollstabilität: Hinzufügen im Edit-Sheet springt nicht nach oben: **PASSED**
    - 5. Welcome Screen Preview: Menüeintrag in MoreScreen öffnet Vorschau nichtdestruktiv: **PASSED**
-2. **Crew Scroll Reproduction Suite (`test/features/trip/crew_scroll_reproduction_test.dart`):**
+3. **Crew Scroll Reproduction Suite (`test/features/trip/crew_scroll_reproduction_test.dart`):**
    - `TripWizardScreen`: Offset vor/nach Crew-Hinzufügen identisch (1945.0): **PASSED**
    - `TripOverviewScreen Edit Trip Sheet`: Offset vor/nach Crew-Hinzufügen identisch (358.0): **PASSED**
-3. **HCD-SHOP-01 Schritt 1 Suite (`test/features/shopping_list/shopping_mode_hcd_test.dart`):**
+4. **HCD-SHOP-01 Schritt 1 Suite (`test/features/shopping_list/shopping_mode_hcd_test.dart`):**
    - 13/13 Tests grün (Stabilität, Lifecycle, Warnbanner, Fail-closed Retries, A11Y): **PASSED**
-4. **Statische Code-Analyse (`flutter analyze`):**
+5. **Flight-Strip-Board Regression Suite (`test/features/shopping_list/flight_strip_board_test.dart`):**
+   - 25/25 Tests grün (inkl. F1–F6, F6-A, F6-B, #61, FLICKER-61-B): **PASSED**
+6. **Bestehende PIVOT1- und UX-B-Suiten (`pivot1_assisted_list_test.dart`, `ux_b_shopping_and_delivery_test.dart`):**
+   - 23/23 Tests grün: **PASSED**
+7. **Statische Code-Analyse (`flutter analyze`):**
    - `No issues found!` (0 Errors, 0 Warnings).
-5. **Backend-Prüfung (`npm run typecheck --prefix backend`):**
-   - Clean (Exit Code 0).
+8. **Offene Befunde:**
+   - Keine technischen oder architektonischen Mängel offen.
 
 ---
 
