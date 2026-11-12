@@ -10,16 +10,21 @@ import 'package:proviantplaner/features/shopping_list/data/shopping_list_provide
 import 'package:proviantplaner/features/shopping_list/data/shopping_list_service.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/provisioning_review_models.dart';
 import 'package:proviantplaner/features/shopping_list/domain/models/shopping_list_models.dart';
+import '../flight_strip/flight_strip_colors.dart';
 import 'add_or_edit_item_sheet.dart';
 
 class ShoppingListItemRow extends ConsumerStatefulWidget {
   final TripShoppingListData data;
   final ShoppingListItemView item;
+  final bool showCategoryAccent;
+  final String? categoryLabel;
 
   const ShoppingListItemRow({
     super.key,
     required this.data,
     required this.item,
+    this.showCategoryAccent = false,
+    this.categoryLabel,
   });
 
   @override
@@ -118,6 +123,15 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
     final theme = Theme.of(context);
     final item = widget.item;
     final isOnList = item.isOnList;
+    final isNightwatch = theme.scaffoldBackgroundColor == AppTheme.nightwatchSurface &&
+        (theme.colorScheme.primary == AppTheme.nightwatchPrimary ||
+            theme.colorScheme.primary == const Color(0xFFFF3B30));
+    final categoryColor = FlightStripColors.getCategoryColor(
+      item.categoryId,
+      brightness: theme.brightness,
+      isNightwatch: isNightwatch,
+    );
+    final categoryIcon = FlightStripColors.getCategoryIcon(item.categoryId);
 
     return Dismissible(
       key: ValueKey('item_swipe_${item.item.id}'),
@@ -148,15 +162,43 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
       child: Container(
         constraints: const BoxConstraints(minHeight: 64),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+          border: Border(
+            bottom: BorderSide(
+              color: theme.colorScheme.outlineVariant.withOpacity(
+                widget.showCategoryAccent ? 0.65 : 1.0,
+              ),
+            ),
+          ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+        padding: EdgeInsets.fromLTRB(
+          widget.showCategoryAccent ? 12 : 16,
+          widget.showCategoryAccent ? 10 : 8,
+          widget.showCategoryAccent ? 12 : 16,
+          widget.showCategoryAccent ? 10 : 8,
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.showCategoryAccent) ...[
+                Container(
+                  key: ValueKey('dept_row_category_accent_${item.item.id}'),
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: categoryColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                 // Text-Spalte (Name, Vorschlag / Bedarf, Badges) - Tap öffnet AddOrEditItemSheet
                 Expanded(
                   child: InkWell(
@@ -176,10 +218,40 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          if (widget.showCategoryAccent) ...[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  categoryIcon,
+                                  key: ValueKey('dept_row_category_icon_${item.item.id}'),
+                                  size: 13,
+                                  color: categoryColor,
+                                ),
+                                if (widget.categoryLabel != null && widget.categoryLabel!.isNotEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      widget.categoryLabel!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                          ],
                           Text(
                             item.localizedName(context),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w600,
+                              height: 1.25,
                             ),
                           ),
                           if (item.storageNotice != null || (widget.data.trip.fridgeCapacity <= 0 && item.isCooled)) ...[
@@ -372,7 +444,11 @@ class _ShoppingListItemRowState extends ConsumerState<ShoppingListItemRow> {
             ],
             // PIVOT2: Maximal 1 höchstpriorisierter kontextueller Hinweis aus der Vorratsprüfung
             _buildReviewInlineHint(context, ref, theme, l10n),
-          ],
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
