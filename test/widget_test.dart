@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proviantplaner/features/trip/data/trip_provider.dart';
+import 'package:proviantplaner/features/welcome/data/welcome_storage.dart';
 import 'package:proviantplaner/main.dart';
 
 void main() {
@@ -10,6 +11,7 @@ void main() {
       ProviderScope(
         overrides: [
           allTripsProvider.overrideWith((ref) => Future.value([])),
+          welcomeStorageProvider.overrideWithValue(MemoryWelcomeStorage(initialSeen: true)),
         ],
         child: const ProviantplanerApp(locale: Locale('de')),
       ),
@@ -31,6 +33,7 @@ void main() {
       ProviderScope(
         overrides: [
           allTripsProvider.overrideWith((ref) => Future.value([])),
+          welcomeStorageProvider.overrideWithValue(MemoryWelcomeStorage(initialSeen: true)),
         ],
         child: const ProviantplanerApp(locale: Locale('en')),
       ),

@@ -1,7 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:proviantplaner/core/config/app_config.dart';
 import 'package:proviantplaner/core/routing/not_found_screen.dart';
+import 'package:proviantplaner/features/welcome/data/welcome_storage.dart';
+import 'package:proviantplaner/features/welcome/ui/welcome_screen.dart';
 import 'package:proviantplaner/features/home/ui/start_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_list_screen.dart';
 import 'package:proviantplaner/features/shopping_list/ui/shopping_mode_screen.dart';
@@ -13,13 +17,213 @@ import 'package:proviantplaner/features/trip/ui/trip_overview_screen.dart';
 import 'package:proviantplaner/features/trip/ui/trip_timeline_screen.dart';
 import 'package:proviantplaner/features/more/ui/more_screen.dart';
 
+/// Notifier für GoRouter-Reaktivität ohne Re-Erzeugung der Router-Instanz (W1).
+class AppRouterRefreshNotifier extends ChangeNotifier {
+  AppRouterRefreshNotifier(Ref ref) {
+    ref.listen<AsyncValue<bool>>(welcomeCompletedProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+}
+
+final appRouterRefreshNotifierProvider = Provider<AppRouterRefreshNotifier>((ref) {
+  return AppRouterRefreshNotifier(ref);
+});
+
+/// Ermöglicht Tests das Überschreiben der initialen Route (z.B. für Deep-Link-Prüfungen).
+final appRouterInitialLocationProvider = Provider<String>((ref) => '/');
+
+/// Expliziter Ladebildschirm während des initialen Welcome-Checks (W1).
+class WelcomeGateLoadingScreen extends StatelessWidget {
+  const WelcomeGateLoadingScreen({
+    super.key = const Key('welcome_gate_loading'),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isNightwatch = theme.scaffoldBackgroundColor == const Color(0xFF000000);
+    final primaryColor = isNightwatch
+        ? const Color(0xFFFF3B30)
+        : theme.colorScheme.primary;
+
+    return Scaffold(
+      key: const Key('welcome_gate_loading_scaffold'),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppConfig.appName.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSans',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 6.0,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Expliziter, wiederholbarer Fehlerbildschirm mit Retry- und Notfall-Pfad (W1, W2).
+class WelcomeGateErrorScreen extends ConsumerWidget {
+  const WelcomeGateErrorScreen({
+    super.key = const Key('welcome_gate_error'),
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final isNightwatch = theme.scaffoldBackgroundColor == const Color(0xFF000000);
+    final primaryColor = isNightwatch
+        ? const Color(0xFFFF3B30)
+        : theme.colorScheme.primary;
+
+    return Scaffold(
+      key: const Key('welcome_gate_error_scaffold'),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: primaryColor),
+              const SizedBox(height: 16),
+              Text(
+                l10n.technicalErrorTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: isNightwatch ? const Color(0xFFFF3B30) : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.technicalErrorMessage,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isNightwatch
+                      ? const Color(0xFFFF3B30).withOpacity(0.8)
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                key: const Key('welcome_gate_retry_button'),
+                onPressed: () => ref.read(welcomeCompletedProvider.notifier).retry(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: isNightwatch ? Colors.black : Colors.white,
+                ),
+                child: Text(l10n.retry),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                key: const Key('welcome_gate_skip_button'),
+                onPressed: () => ref.read(welcomeCompletedProvider.notifier).continueWithoutPersistence(),
+                child: Text(
+                  l10n.welcomeContinueAnyway,
+                  style: TextStyle(color: primaryColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Provider für den GoRouter der Anwendung.
 /// Ermöglicht deklarative Navigation gemäß den technischen Leitplanken.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final refreshNotifier = ref.watch(appRouterRefreshNotifierProvider);
+  final initialLocation = ref.watch(appRouterInitialLocationProvider);
+
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: initialLocation,
+    refreshListenable: refreshNotifier,
     errorBuilder: (context, state) => const NotFoundScreen(),
+    redirect: (context, state) {
+      final welcomeState = ref.read(welcomeCompletedProvider);
+      final location = state.matchedLocation;
+
+      // 1. Ladezustand: Home- und Törnrouten sperren, Ladebildschirm anzeigen (W1)
+      if (welcomeState.isLoading) {
+        if (location == '/welcome-loading') return null;
+        final targetUri = state.uri.toString();
+        final fromParam = targetUri != '/' && targetUri != '/welcome'
+            ? '?from=${Uri.encodeComponent(targetUri)}'
+            : '';
+        return '/welcome-loading$fromParam';
+      }
+
+      // 2. Fehlerzustand: Expliziter Fehlerbildschirm mit Retry-Möglichkeit (W1)
+      if (welcomeState.hasError) {
+        if (location == '/welcome-error') return null;
+        return '/welcome-error';
+      }
+
+      final hasSeen = welcomeState.value ?? false;
+
+      // 3. Erstnutzung noch nicht abgeschlossen: Alle Einstiege (inkl. Deep-Links) auf /welcome leiten (W1)
+      if (!hasSeen) {
+        if (location == '/welcome') return null;
+        return '/welcome';
+      }
+
+      // 4. Welcome abgeschlossen:
+      // Befindet sich die Navigation noch auf einer Gate-Route, zur Zielroute oder Startseite navigieren.
+      if (location == '/welcome' || location == '/welcome-loading' || location == '/welcome-error') {
+        if (location == '/welcome' && state.uri.queryParameters['preview'] == 'true') {
+          return null; // Nichtdestruktive Vorschau für Bestandsnutzer (UX-D)
+        }
+        final from = state.uri.queryParameters['from'];
+        if (from != null && from.isNotEmpty && from != '/welcome') {
+          return from;
+        }
+        return '/';
+      }
+
+      return null;
+    },
     routes: [
+      GoRoute(
+        path: '/welcome-loading',
+        name: 'welcome_loading',
+        builder: (context, state) => const WelcomeGateLoadingScreen(),
+      ),
+      GoRoute(
+        path: '/welcome-error',
+        name: 'welcome_error',
+        builder: (context, state) => const WelcomeGateErrorScreen(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => WelcomeScreen(
+          isPreview: state.uri.queryParameters['preview'] == 'true',
+        ),
+      ),
       GoRoute(
         path: '/',
         name: 'start',

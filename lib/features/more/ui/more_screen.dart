@@ -322,6 +322,14 @@ class MoreScreen extends ConsumerWidget {
             trailing: const Icon(Icons.open_in_new, size: 18),
             onTap: () => _launchExternalUrl(AppConfig.imprintUrl),
           ),
+          ListTile(
+            key: const ValueKey('more_welcome_preview_tile'),
+            leading: const Icon(Icons.slideshow_outlined),
+            title: Text(l10n.welcomePreviewTitle),
+            subtitle: Text(l10n.welcomePreviewSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/welcome?preview=true'),
+          ),
           const SizedBox(height: 24),
           Center(
             child: Column(

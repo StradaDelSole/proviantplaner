@@ -7,7 +7,7 @@
   "navFund": "Caixa de bordo",
   "navMore": "Mais",
   "welcomeHeadline": "Mantimentos e caixa de bordo – simples e prático",
-  "welcomeSubline": "Calcular mantimentos, gerir provisões e repartir as despesas a bordo com justiça.",
+  "welcomeSubline": "Calcule mantimentos, gira o stock e divida as despesas de forma justa.",
   "tripWizardTitle": "Nova viagem",
   "stepBasic": "Dados básicos",
   "stepBoat": "Barco e bacia",
@@ -1111,5 +1111,106 @@
   "selectDate": "Selecionar data",
   "tripNameRequired": "Por favor, introduza um nome para a viagem.",
   "startDateRequired": "Por favor, selecione uma data de início.",
-  "tripNameHint": "ex. Cruzeiro de verão, Navegação Croácia"
+  "tripNameHint": "ex. Cruzeiro de verão, Navegação Croácia",
+  "flightStripBoardTitle": "Quadro Flight-Strip",
+  "classicListViewTitle": "Lista clássica",
+  "switchToFlightStripBoard": "Mudar para o quadro Flight-Strip",
+  "switchToClassicList": "Mudar para a lista clássica",
+  "basketTitle": "Cesta",
+  "basketSummary": "{count, plural, =0{Cesta vazia} =1{1 item na cesta} other{{count} itens na cesta}}",
+  "@basketSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addedToBasketMessage": "{name} adicionado à cesta ({count} {unit})",
+  "@addedToBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "itemSkippedMessage": "{name} ignorado",
+  "@itemSkippedMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allSubgroups": "Todos",
+  "showSkippedItems": "{count, plural, =1{Mostrar 1 item ignorado} other{Mostrar {count} itens ignorados}}",
+  "@showSkippedItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hideSkippedItems": "Ocultar ignorados",
+  "restoreAllSkipped": "Restaurar tudo",
+  "restoreLastSkipped": "Restaurar último",
+  "restoreItem": "Restaurar",
+  "manageSkippedItems": "Mostrar",
+  "inBasketBadge": "Na cesta: {count}",
+  "@inBasketBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addToBasketTooltip": "Adicionar à cesta",
+  "skipItemTooltip": "Ignorar",
+  "swipeActionAdd": "Para a cesta",
+  "swipeActionSkip": "Ignorar",
+  "emptyBasketTitle": "Sua cesta está vazia",
+  "emptyBasketSubtitle": "Deslize as tiras para a direita ou toque em + para adicionar produtos.",
+  "alreadyInBasketMessage": "{name} já está no cesto ({count} {unit})",
+  "@alreadyInBasketMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSavingItem": "Erro ao salvar {name}",
+  "@errorSavingItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeStepPlanning": "Planeamento de mantimentos",
+  "welcomeStepCosts": "Caixa de bordo",
+  "welcomeStepSettlement": "Acerto de contas",
+  "welcomeGetStarted": "Começar",
+  "welcomeBrandHeadline": "Planeie melhor. Navegue mais leve.",
+  "welcomeBrandSubline": "Calcule mantimentos. Partilhe custos da tripulação. Acerte contas com facilidade.",
+  "welcomeStorageError": "Não foi possível guardar o estado de boas-vindas.",
+  "welcomeContinueAnyway": "Continuar mesmo assim",
+  "welcomePreviewTitle": "Ver as boas-vindas novamente",
+  "@welcomePreviewTitle": {
+    "description": "Menu entry in more screen to rewatch the welcome screen"
+  },
+  "welcomePreviewSubtitle": "Ver animação e introdução",
+  "@welcomePreviewSubtitle": {
+    "description": "Subtitle for welcome preview in more screen"
+  }
 }

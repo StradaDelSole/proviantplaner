@@ -33,6 +33,7 @@ class ShoppingView extends ConsumerWidget {
     }
 
     return ListView.builder(
+      key: PageStorageKey<String>('shopping_view_list_${data.trip.id}'),
       padding: const EdgeInsets.only(bottom: 32),
       itemCount: departments.length,
       itemBuilder: (ctx, i) {

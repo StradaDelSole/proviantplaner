@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,13 +23,40 @@ void main() {
 /// Fungiert zugleich als verbindliches zentrales Bootstrap-/Recovery-Gate (RECEIPT1 Amendment 4 Finding F):
 /// Bevor der Router aufgebaut wird oder Datenmutationen über die Oberfläche möglich sind,
 /// muss [appStartupRecoveryProvider] erfolgreich abgeschlossen sein.
-class ProviantplanerApp extends ConsumerWidget {
+class ProviantplanerApp extends ConsumerStatefulWidget {
   final Locale? locale;
 
   const ProviantplanerApp({super.key, this.locale});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProviantplanerApp> createState() => _ProviantplanerAppState();
+}
+
+class _ProviantplanerAppState extends ConsumerState<ProviantplanerApp> {
+  static const Duration _minLaunchHoldDuration = Duration(milliseconds: 2000);
+
+  bool _minLaunchHoldElapsed = false;
+  Timer? _minLaunchTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _minLaunchTimer = Timer(_minLaunchHoldDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _minLaunchHoldElapsed = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _minLaunchTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final recoveryState = ref.watch(appStartupRecoveryProvider);
     final appThemeMode = ref.watch(themeControllerProvider);
 
@@ -53,46 +82,48 @@ class ProviantplanerApp extends ConsumerWidget {
         ? AppTheme.nightwatchTheme
         : AppTheme.darkTheme;
 
-    return recoveryState.when(
-      loading: () => MaterialApp(
+    if (recoveryState.hasError) {
+      return MaterialApp(
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
         theme: currentTheme,
         darkTheme: darkTheme,
         themeMode: mode,
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const AppStartupRecoveryLoadingScreen(),
-      ),
-      error: (error, _) => MaterialApp(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: currentTheme,
-        darkTheme: darkTheme,
-        themeMode: mode,
-        locale: locale,
+        locale: widget.locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: AppStartupRecoveryErrorScreen(
-          error: error,
+          error: recoveryState.error!,
           onRetry: () => ref.invalidate(appStartupRecoveryProvider),
         ),
-      ),
-      data: (_) {
-        final router = ref.watch(appRouterProvider);
-        return MaterialApp.router(
-          title: AppConfig.appName,
-          debugShowCheckedModeBanner: false,
-          theme: currentTheme,
-          darkTheme: darkTheme,
-          themeMode: mode,
-          locale: locale,
-          routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-        );
-      },
+      );
+    }
+
+    if (!_minLaunchHoldElapsed || recoveryState.isLoading) {
+      return MaterialApp(
+        title: AppConfig.appName,
+        debugShowCheckedModeBanner: false,
+        theme: currentTheme,
+        darkTheme: darkTheme,
+        themeMode: mode,
+        locale: widget.locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AppStartupRecoveryLoadingScreen(),
+      );
+    }
+
+    final router = ref.watch(appRouterProvider);
+    return MaterialApp.router(
+      title: AppConfig.appName,
+      debugShowCheckedModeBanner: false,
+      theme: currentTheme,
+      darkTheme: darkTheme,
+      themeMode: mode,
+      locale: widget.locale,
+      routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }
@@ -105,20 +136,38 @@ class AppStartupRecoveryLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final isNightwatch = theme.scaffoldBackgroundColor == const Color(0xFF000000);
+    final primaryColor = isNightwatch
+        ? const Color(0xFFFF3B30)
+        : theme.colorScheme.primary;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
               Text(
-                l10n?.appTitle ?? AppConfig.appName,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
+                AppConfig.appName.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSans',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 6.0,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
               ),
             ],
           ),

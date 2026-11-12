@@ -85,6 +85,7 @@ class _PlanningViewState extends ConsumerState<PlanningView> {
           ),
         Expanded(
           child: ListView.builder(
+            key: PageStorageKey<String>('planning_list_view_${widget.data.trip.id}'),
             padding: const EdgeInsets.only(bottom: 96),
             itemCount: categories.length + (hasAdoptedItems ? 0 : 1),
             itemBuilder: (ctx, index) {

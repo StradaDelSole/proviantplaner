@@ -45,6 +45,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
   late final TextEditingController _fridgeCapacityController;
   late final TextEditingController _freezerCapacityController;
   late final TextEditingController _waterTankController;
+  final ScrollController _scrollController = ScrollController();
 
   // Sektion 3: Crew (Issue #4: Standard 1 Person, Minimum 1)
   final List<CrewMemberInput> _crewMembers = [
@@ -87,6 +88,7 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     _fridgeCapacityController.dispose();
     _freezerCapacityController.dispose();
     _waterTankController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -131,29 +133,52 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     }
   }
 
+  void _restoreScrollAfterCrewAction(double targetOffset) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients || targetOffset <= 0) return;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      final clamped = targetOffset.clamp(0.0, maxExtent);
+      if ((_scrollController.offset - clamped).abs() > 20.0 ||
+          _scrollController.offset < clamped) {
+        _scrollController.jumpTo(clamped);
+      }
+    });
+  }
+
   void _addPerson() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => const CrewMemberDialog(),
     );
-    if (result != null) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (result != null && mounted) {
       setState(() => _crewMembers.add(result));
+      _restoreScrollAfterCrewAction(offset);
     }
   }
 
   void _editPerson(int index) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => CrewMemberDialog(initialMember: _crewMembers[index]),
     );
-    if (result != null) {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (result != null && mounted) {
       setState(() => _crewMembers[index] = result);
+      _restoreScrollAfterCrewAction(offset);
     }
   }
 
   void _removePerson(int index) {
     if (_crewMembers.length <= 1) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     setState(() => _crewMembers.removeAt(index));
+    _restoreScrollAfterCrewAction(offset);
   }
 
   void _showDurationWheelPicker() {
@@ -303,6 +328,8 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
+                key: const PageStorageKey('trip_wizard_scroll_view'),
+                controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 child: Center(
                   child: ConstrainedBox(
