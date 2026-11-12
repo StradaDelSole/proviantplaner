@@ -32,6 +32,11 @@ class ShoppingView extends ConsumerWidget {
       return EmptyShoppingListView(data: data);
     }
 
+    final categoryLabels = <String, String>{
+      for (final catView in data.categories)
+        catView.category.id: catView.category.localizedName(context),
+    };
+
     return ListView.builder(
       key: PageStorageKey<String>('shopping_view_list_${data.trip.id}'),
       padding: const EdgeInsets.only(bottom: 32),
@@ -41,7 +46,7 @@ class ShoppingView extends ConsumerWidget {
         final filteredItems = _filterItems(deptView.items);
         if (filteredItems.isEmpty) return const SizedBox.shrink();
 
-        return _buildDepartmentSection(context, ref, deptView, filteredItems, theme, l10n);
+        return _buildDepartmentSection(context, ref, deptView, filteredItems, categoryLabels, theme, l10n);
       },
     );
   }
@@ -71,19 +76,28 @@ class ShoppingView extends ConsumerWidget {
     WidgetRef ref,
     ShoppingListDepartmentView deptView,
     List<ShoppingListItemView> items,
+    Map<String, String> categoryLabels,
     ThemeData theme,
     AppLocalizations l10n,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Abteilungskopf
+        // Neutraler Abteilungskopf (eine Abteilung kann mehrere Provy-Kategorien enthalten)
         Container(
+          key: ValueKey('dept_header_${deptView.department.name}'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+            border: Border(
+              bottom: BorderSide(
+                color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+              ),
+            ),
+          ),
           child: Row(
             children: [
-              Icon(deptView.icon, size: 20, color: theme.colorScheme.primary),
+              Icon(deptView.icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -91,6 +105,7 @@ class ShoppingView extends ConsumerWidget {
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.1,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -103,10 +118,12 @@ class ShoppingView extends ConsumerWidget {
             ],
           ),
         ),
-        // Postenliste
+        // Postenliste mit konsistenter Kategorie-Farbmarkierung
         ...items.map((it) => ShoppingListItemRow(
               data: data,
               item: it,
+              showCategoryAccent: true,
+              categoryLabel: categoryLabels[it.categoryId],
             )),
       ],
     );

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-12 – UX-D-01: Vorräte „Nach Abteilung“ – Kategorie-Color-Coding & visuelle Hierarchie (#74)
+
+- **Kategorie-Color-Coding in der Abteilungsansicht (`ShoppingView` & `ShoppingListItemRow`):**
+  - Wiederverwendung der bestehenden zentralen `FlightStripColors.getCategoryColor` / `getCategoryIcon` je Produktzeile (`item.categoryId`) über einen dezenten 4dp-Farbakzentstreifen sowie Kategorie-Icon und lokalisiertes Kategorie-Label.
+  - Abteilungsköpfe bleiben bewusst neutral (eine Abteilung kann mehrere Provy-Kategorien enthalten).
+  - Optionale Parameter `showCategoryAccent` / `categoryLabel` in `ShoppingListItemRow` halten alle übrigen Aufrufstellen (`PlanningView` und Tests) unverändert.
+  - Vollständige Unterstützung für Hell-, Dunkel- und Nachtwache-Modus (strikt `#FFFF3B30` auf Schwarz) sowie schmale Viewports (`320dp`) ohne Einzeilen-Abschneidung.
+- **Unveränderte Semantik & dokumentierte Produktentscheidung:** `isOnList`-Filter, Stop-Allokation, Flight-Strips, Warenkorb, Scrollstabilität und Einkaufsmodus bleiben unverändert; die UX-Divergenz (Sortierung vs. Auswahl/Komposition) ist in `docs/impl/UX_D_01_bericht.md` als separate Owner-Entscheidung dokumentiert.
+- **Tests:** `test/features/shopping_list/ux_d_01_department_view_test.dart` (6/6 grün).
+
 ## 2026-11-09 – UX-RECOVERY-INTEGRATED-01: Integrierte UX-Recovery, Scrollstabilität & Pixel-7-Pro-Abnahme
 
 - **UX-A – Vorratsliste startet nach Abteilung (PIVOT1 Decision 16); 1-Klick-Wechsel auf Flight-Strip-Board:**
