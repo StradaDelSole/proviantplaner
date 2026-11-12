@@ -132,6 +132,93 @@ void main() {
       expect(find.text('Alice'), findsOneWidget);
     });
 
+    testWidgets('R4: TripWizardScreen mit fokussiertem Törnnamen-Feld und Android-IME-Resize springt beim Crew-Hinzufügen/Bearbeiten nicht nach oben', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            catalogRepositoryProvider.overrideWithValue(catalogRepo),
+            tripServiceProvider.overrideWithValue(tripService),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [Locale('de')],
+            locale: Locale('de'),
+            home: TripWizardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Typischer Einstieg auf Pixel: Nutzer tippt zuerst Törnnamen in Sektion 1 ein (TextField erhält Fokus)
+      final tripNameField = find.byType(TextField).first;
+      await tester.tap(tripNameField);
+      await tester.enterText(tripNameField, 'Adria Sommertörn');
+      await tester.pump();
+
+      // 2. Zum Crew-Bereich nach unten scrollen (Touch auf Button entzieht dem oberen TextField unter Android keinen Fokus)
+      final scrollable = find.byType(Scrollable).first;
+      final addCrewBtn = find.byIcon(Icons.person_add);
+      await tester.scrollUntilVisible(addCrewBtn, 100, scrollable: scrollable);
+      await tester.pumpAndSettle();
+
+      final offsetBefore = tester.state<ScrollableState>(scrollable).position.pixels;
+      expect(offsetBefore, greaterThan(100));
+
+      // 3. Crew-Dialog öffnen und Android-Tastatur (viewInsets) öffnen
+      await tester.tap(addCrewBtn);
+      await tester.pumpAndSettle();
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField).last, 'PixelCrew1');
+      await tester.tap(find.text('Speichern'));
+      await tester.pump();
+
+      // Zwischenframes während sich die Android-Tastatur schließt
+      tester.view.viewInsets = const FakeViewPadding(bottom: 160);
+      await tester.pump(const Duration(milliseconds: 50));
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pumpAndSettle();
+
+      final offsetAfterAdd = tester.state<ScrollableState>(scrollable).position.pixels;
+      expect(offsetAfterAdd, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'R4: Nach Schließen des Crew-Dialogs inkl. IME darf der Wizard nicht zu Sektion 1 nach oben springen');
+      expect(find.text('PixelCrew1'), findsOneWidget);
+
+      // 4. Wiederholte Aktion: Crew-Mitglied bearbeiten mit Tastatur
+      final editBtn = find.byIcon(Icons.edit).last;
+      await tester.tap(editBtn);
+      await tester.pumpAndSettle();
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField).last, 'PixelCrew1-Edit');
+      await tester.tap(find.text('Speichern'));
+      await tester.pump();
+
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pumpAndSettle();
+
+      final offsetAfterEdit = tester.state<ScrollableState>(scrollable).position.pixels;
+      expect(offsetAfterEdit, greaterThanOrEqualTo(offsetBefore - 20),
+          reason: 'R4: Auch beim Bearbeiten eines Crew-Mitglieds muss die Scrollposition beim Crew-Bereich bleiben');
+      expect(find.text('PixelCrew1-Edit'), findsOneWidget);
+    });
+
     testWidgets('TripOverviewScreen Edit Trip Sheet: adding crew member preserves or resets scroll position?', (tester) async {
       tester.view.physicalSize = const Size(412, 915);
       tester.view.devicePixelRatio = 1.0;

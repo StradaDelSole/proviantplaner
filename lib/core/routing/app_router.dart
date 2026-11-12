@@ -51,22 +51,32 @@ class WelcomeGateLoadingScreen extends StatelessWidget {
       key: const Key('welcome_gate_loading_scaffold'),
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              AppConfig.appName.toUpperCase(),
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2.0,
-                color: primaryColor,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppConfig.appName.toUpperCase(),
+                style: TextStyle(
+                  fontFamily: 'IBMPlexSans',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 6.0,
+                  color: primaryColor,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,13 +23,40 @@ void main() {
 /// Fungiert zugleich als verbindliches zentrales Bootstrap-/Recovery-Gate (RECEIPT1 Amendment 4 Finding F):
 /// Bevor der Router aufgebaut wird oder Datenmutationen über die Oberfläche möglich sind,
 /// muss [appStartupRecoveryProvider] erfolgreich abgeschlossen sein.
-class ProviantplanerApp extends ConsumerWidget {
+class ProviantplanerApp extends ConsumerStatefulWidget {
   final Locale? locale;
 
   const ProviantplanerApp({super.key, this.locale});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProviantplanerApp> createState() => _ProviantplanerAppState();
+}
+
+class _ProviantplanerAppState extends ConsumerState<ProviantplanerApp> {
+  static const Duration _minLaunchHoldDuration = Duration(milliseconds: 2000);
+
+  bool _minLaunchHoldElapsed = false;
+  Timer? _minLaunchTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _minLaunchTimer = Timer(_minLaunchHoldDuration, () {
+      if (!mounted) return;
+      setState(() {
+        _minLaunchHoldElapsed = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _minLaunchTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final recoveryState = ref.watch(appStartupRecoveryProvider);
     final appThemeMode = ref.watch(themeControllerProvider);
 
@@ -53,46 +82,48 @@ class ProviantplanerApp extends ConsumerWidget {
         ? AppTheme.nightwatchTheme
         : AppTheme.darkTheme;
 
-    return recoveryState.when(
-      loading: () => MaterialApp(
+    if (recoveryState.hasError) {
+      return MaterialApp(
         title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
         theme: currentTheme,
         darkTheme: darkTheme,
         themeMode: mode,
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const AppStartupRecoveryLoadingScreen(),
-      ),
-      error: (error, _) => MaterialApp(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: currentTheme,
-        darkTheme: darkTheme,
-        themeMode: mode,
-        locale: locale,
+        locale: widget.locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: AppStartupRecoveryErrorScreen(
-          error: error,
+          error: recoveryState.error!,
           onRetry: () => ref.invalidate(appStartupRecoveryProvider),
         ),
-      ),
-      data: (_) {
-        final router = ref.watch(appRouterProvider);
-        return MaterialApp.router(
-          title: AppConfig.appName,
-          debugShowCheckedModeBanner: false,
-          theme: currentTheme,
-          darkTheme: darkTheme,
-          themeMode: mode,
-          locale: locale,
-          routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-        );
-      },
+      );
+    }
+
+    if (!_minLaunchHoldElapsed || recoveryState.isLoading) {
+      return MaterialApp(
+        title: AppConfig.appName,
+        debugShowCheckedModeBanner: false,
+        theme: currentTheme,
+        darkTheme: darkTheme,
+        themeMode: mode,
+        locale: widget.locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AppStartupRecoveryLoadingScreen(),
+      );
+    }
+
+    final router = ref.watch(appRouterProvider);
+    return MaterialApp.router(
+      title: AppConfig.appName,
+      debugShowCheckedModeBanner: false,
+      theme: currentTheme,
+      darkTheme: darkTheme,
+      themeMode: mode,
+      locale: widget.locale,
+      routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }

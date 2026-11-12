@@ -133,45 +133,52 @@ class _TripWizardScreenState extends ConsumerState<TripWizardScreen> {
     }
   }
 
+  void _restoreScrollAfterCrewAction(double targetOffset) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients || targetOffset <= 0) return;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      final clamped = targetOffset.clamp(0.0, maxExtent);
+      if ((_scrollController.offset - clamped).abs() > 20.0 ||
+          _scrollController.offset < clamped) {
+        _scrollController.jumpTo(clamped);
+      }
+    });
+  }
+
   void _addPerson() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => const CrewMemberDialog(),
     );
+    FocusManager.instance.primaryFocus?.unfocus();
     if (result != null && mounted) {
       setState(() => _crewMembers.add(result));
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients && offset > 0) {
-          if (_scrollController.offset < offset) {
-            _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
-          }
-        }
-      });
+      _restoreScrollAfterCrewAction(offset);
     }
   }
 
   void _editPerson(int index) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     final result = await showDialog<CrewMemberInput>(
       context: context,
       builder: (_) => CrewMemberDialog(initialMember: _crewMembers[index]),
     );
+    FocusManager.instance.primaryFocus?.unfocus();
     if (result != null && mounted) {
       setState(() => _crewMembers[index] = result);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients && offset > 0) {
-          if (_scrollController.offset < offset) {
-            _scrollController.jumpTo(offset.clamp(0.0, _scrollController.position.maxScrollExtent));
-          }
-        }
-      });
+      _restoreScrollAfterCrewAction(offset);
     }
   }
 
   void _removePerson(int index) {
     if (_crewMembers.length <= 1) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    final offset = _scrollController.hasClients ? _scrollController.offset : 0.0;
     setState(() => _crewMembers.removeAt(index));
+    _restoreScrollAfterCrewAction(offset);
   }
 
   void _showDurationWheelPicker() {

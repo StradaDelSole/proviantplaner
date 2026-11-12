@@ -187,9 +187,31 @@ flutter run -d <DEVICE_ID> --dart-define=AUTH0_CLIENT_ID=<DEINE_AUTH0_CLIENT_ID>
 4. **Einkaufsmodus:**
    - Aus dem Warenkorb-Tray auf **„Einkaufen starten“** tippen.
    - Artikel abhaken und entkaufen: Liste bleibt stabil, kein Scroll-Reset.
+5. **R4 / R5 / R6 Nachtest (Pixel 7 Pro):**
+   - **R4 (Törn-Assistent Crew-Scroll):** Törnnamen in Abschnitt 1 eingeben (Tastatur/Fokus aktiv), nach unten zu „Crew“ scrollen, Crew-Mitglied hinzufügen/bearbeiten und Dialog schließen → Ansicht bleibt im Crew-Bereich ohne Rücksprung nach oben.
+   - **R5 (Skip-Wiederherstellung):** Im Flight-Strip-Board zwei Artikel A und B nach links überspringen → „Letzten wiederherstellen“ tippen (B kehrt zurück, A bleibt übersprungen); „Übersprungene (1)“ öffnen → A gezielt per Einzelbutton oder „Alle wiederherstellen“ zurückholen.
+   - **R6 (Startscreen & Welcome):** Kaltstart zeigt den gebrandeten PROVY-Launch-Screen sichtbar (~2s) statt eines 0,1s-Blitzes; beim Erststart bleibt der Welcome-Screen bis zum Tippen auf „Los geht's“ stehen.
 
 ---
 
-**Status:** `REVIEW / READY FOR OWNER PIXEL QA`  
-*(Kein Auto-Merge, kein Schritt 2 gestartet).*
+## 6. Amendment R4–R6 (Owner-Feedback Pixel 7 Pro, `#issuecomment-6833630861`)
+
+- **R4 – Scrollsprung beim Crew-Hinzufügen im Törn-Assistenten (`TripWizardScreen`):**
+  - *Ursache:* Nach Fokus auf das Törnnamen-`TextField` in Abschnitt 1/2 öffnete `CrewMemberDialog` das IME (`viewInsets`); beim `Navigator.pop` stellte Flutter den Fokus automatisch auf das vorherige `TextField` wieder her und löste `EditableText.showOnScreen()` / `Scrollable.ensureVisible()` aus (Sprung von Offset `1945.0` auf `73.0`).
+  - *Lösung:* `FocusManager.instance.primaryFocus?.unfocus()` vor und nach `showDialog` in `_addPerson()`, `_editPerson()` und `_removePerson()` sowie Post-Frame-Scroll-Sicherung (`_restoreScrollAfterCrewAction`) in `lib/features/trip/ui/trip_wizard_screen.dart`.
+  - *Nachweis:* `test/features/trip/crew_scroll_reproduction_test.dart` (3/3 Tests grün, inkl. gezieltem R4-IME/Fokus-Regressionstest).
+- **R5 – Benutzerfreundliches Wiederherstellen übersprungener Artikel (`FlightStripBoardView`):**
+  - *Ursache:* Nur ein generisches „Alle wiederherstellen“ ohne LIFO-Einzelwiederherstellung oder Übersicht früher übersprungener Artikel.
+  - *Lösung:* `_skippedItemOrder` (LIFO), direkt sichtbarer Button „Letzten wiederherstellen“ (`ValueKey('restore_last_skipped_button')`), aufklappbare Liste mit Einzelbuttons (`ValueKey('restore_skipped_item_<id>')`) und „Alle wiederherstellen“ (`ValueKey('restore_all_skipped_button')`) in `lib/features/shopping_list/ui/flight_strip/flight_strip_board_view.dart`; neue ARB-Schlüssel (`restoreLastSkipped`, `restoreItem`, `manageSkippedItems`) in allen 6 Sprachen.
+  - *Nachweis:* `test/features/shopping_list/flight_strip_board_test.dart` (28/28 Tests grün, inkl. LIFO-, Einzel-, Re-Skip-, „Alle“- und 320dp-Overflow-Tests) sowie `test/features/i18n/s9_i18n_test.dart`.
+- **R6 – Startscreen & Welcome-Sequenz (`ProviantplanerApp`, `WelcomeGateLoadingScreen`):**
+  - *Ursache:* `appStartupRecoveryProvider` und `welcomeCompletedProvider` lösten auf dem Pixel 7 Pro in ~50ms auf, sodass die Ladeansichten ~0,1s aufblitzten.
+  - *Lösung:* Einmalige Kaltstart-Mindesthaltedauer von 2000ms in `ProviantplanerApp` (`ConsumerStatefulWidget` mit sauber in `dispose()` abgebrochenem `Timer`) in `lib/main.dart`; Recovery-Fehler (`AppStartupRecoveryErrorScreen`) umgehen den Timer und erscheinen sofort fail-closed; `WelcomeGateLoadingScreen` in `lib/core/routing/app_router.dart` typografisch vereinheitlicht.
+  - *Nachweis:* `test/features/welcome/startup_launch_sequence_test.dart` (4/4 Tests grün), `test/core/services/backup_coordinator_test.dart --name "Finding F"` (3/3 Tests grün), `test/widget_test.dart`, `test/features/welcome/welcome_screen_test.dart`.
+- **Statische Analyse & Regressionen:** `flutter analyze` (`No issues found!`), `ux_recovery_integrated_01_test.dart`, `s9_i18n_test.dart`, `shopping_mode_hcd_test.dart` (42/42 grün).
+
+---
+
+**Status:** `REVIEW / READY FOR OWNER PIXEL QA (R4–R6)`  
+*(Kein Auto-Merge, kein neuer Slice).*
 

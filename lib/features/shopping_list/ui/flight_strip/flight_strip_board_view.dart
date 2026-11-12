@@ -37,6 +37,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
   String? _selectedCategoryId;
   String? _selectedGroupId;
   final Set<String> _skippedItemIds = {};
+  final List<String> _skippedItemOrder = [];
   final Set<String> _transferredItemIds = {};
   final Set<String> _pendingOperations = {};
   final Map<String, int> _itemKeyGenerations = {};
@@ -191,12 +192,47 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     }
   }
 
+  void _skipItem(String itemId) {
+    _skippedItemIds.add(itemId);
+    _skippedItemOrder.remove(itemId);
+    _skippedItemOrder.add(itemId);
+  }
+
+  void _restoreSkippedItem(String itemId) {
+    _skippedItemIds.remove(itemId);
+    _skippedItemOrder.remove(itemId);
+    _itemKeyGenerations[itemId] = (_itemKeyGenerations[itemId] ?? 0) + 1;
+    if (_skippedItemIds.isEmpty) {
+      _showSkipped = false;
+    }
+  }
+
+  void _restoreLastSkipped() {
+    if (_skippedItemOrder.isEmpty) return;
+    final lastId = _skippedItemOrder.last;
+    setState(() {
+      _restoreSkippedItem(lastId);
+    });
+  }
+
+  void _restoreAllSkipped() {
+    if (_skippedItemIds.isEmpty) return;
+    setState(() {
+      for (final id in _skippedItemIds) {
+        _itemKeyGenerations[id] = (_itemKeyGenerations[id] ?? 0) + 1;
+      }
+      _skippedItemIds.clear();
+      _skippedItemOrder.clear();
+      _showSkipped = false;
+    });
+  }
+
   void _handleSkip(ShoppingListItemView item) {
     final l10n = AppLocalizations.of(context)!;
     final itemName = item.localizedName(context);
 
     setState(() {
-      _skippedItemIds.add(item.id);
+      _skipItem(item.id);
     });
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -208,7 +244,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
           onPressed: () {
             if (!mounted) return;
             setState(() {
-              _skippedItemIds.remove(item.id);
+              _restoreSkippedItem(item.id);
             });
           },
         ),
@@ -225,7 +261,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
       final q = _searchQuery.trim().toLowerCase();
       return all.where((it) {
         if (_transferredItemIds.contains(it.id)) return false;
-        if (!_showSkipped && _skippedItemIds.contains(it.id)) return false;
+        if (_skippedItemIds.contains(it.id)) return false;
         final nameMatch = it.name.toLowerCase().contains(q) ||
             it.localizedName(context).toLowerCase().contains(q);
         final tagMatch = it.variant?.tags.any((t) => t.toLowerCase().contains(q)) ?? false;
@@ -250,7 +286,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
       if (groupView == null) return [];
       return groupView.variants.where((it) {
         if (_transferredItemIds.contains(it.id)) return false;
-        return _showSkipped || !_skippedItemIds.contains(it.id);
+        return !_skippedItemIds.contains(it.id);
       }).toList();
     }
 
@@ -258,7 +294,7 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
     final items = <ShoppingListItemView>[];
     for (final g in catView.groups) {
       for (final v in g.variants) {
-        if (!_transferredItemIds.contains(v.id) && (_showSkipped || !_skippedItemIds.contains(v.id))) {
+        if (!_transferredItemIds.contains(v.id) && !_skippedItemIds.contains(v.id)) {
           items.add(v);
         }
       }
@@ -427,58 +463,129 @@ class _FlightStripBoardViewState extends ConsumerState<FlightStripBoardView> {
             ),
         ],
 
-        // 4. Statuszeile für übersprungene Artikel
+        // 4. Persistente Wiederherstellungsleiste für übersprungene Artikel (R5)
         if (_skippedItemIds.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.skip_next_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l10n.showSkippedItems(_skippedItemIds.length),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                Row(
+                  children: [
+                    Icon(Icons.skip_next_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        l10n.showSkippedItems(_skippedItemIds.length),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    FilledButton.tonalIcon(
+                      key: const ValueKey('restore_last_skipped_button'),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: _restoreLastSkipped,
+                      icon: const Icon(Icons.undo, size: 15),
+                      label: Text(
+                        l10n.restoreLastSkipped,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    TextButton(
+                      key: const ValueKey('toggle_skipped_button'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        setState(() => _showSkipped = !_showSkipped);
+                      },
+                      child: Text(
+                        _showSkipped
+                            ? l10n.hideSkippedItems
+                            : '${l10n.manageSkippedItems} (${_skippedItemIds.length})',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    TextButton(
+                      key: const ValueKey('restore_all_skipped_button'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: _restoreAllSkipped,
+                      child: Text(
+                        l10n.restoreAllSkipped,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_showSkipped)
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 160),
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.only(top: 4),
+                      children: _skippedItemOrder.reversed.map((skippedId) {
+                        final item = widget.data.allItems
+                            .where((it) => it.id == skippedId)
+                            .firstOrNull;
+                        if (item == null) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.localizedName(context),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton.icon(
+                                key: ValueKey('restore_skipped_item_${item.id}'),
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  setState(() => _restoreSkippedItem(item.id));
+                                },
+                                icon: const Icon(Icons.restore, size: 15),
+                                label: Text(
+                                  l10n.restoreItem,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                ),
-                TextButton(
-                  key: const ValueKey('toggle_skipped_button'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () {
-                    setState(() => _showSkipped = !_showSkipped);
-                  },
-                  child: Text(
-                    _showSkipped ? l10n.hideSkippedItems : l10n.allSubgroups,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ),
-                TextButton(
-                  key: const ValueKey('restore_all_skipped_button'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _skippedItemIds.clear();
-                      _showSkipped = false;
-                    });
-                  },
-                  child: Text(
-                    l10n.restoreAllSkipped,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ),
               ],
             ),
           ),

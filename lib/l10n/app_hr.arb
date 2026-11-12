@@ -1158,6 +1158,9 @@
   },
   "hideSkippedItems": "Sakrij preskočeno",
   "restoreAllSkipped": "Vrati sve",
+  "restoreLastSkipped": "Vrati zadnje",
+  "restoreItem": "Vrati",
+  "manageSkippedItems": "Prikaži",
   "inBasketBadge": "U košarici: {count}",
   "@inBasketBadge": {
     "placeholders": {

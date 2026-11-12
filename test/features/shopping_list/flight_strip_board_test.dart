@@ -1148,5 +1148,140 @@ void main() {
       expect(find.byKey(const ValueKey('empty_list_banner')), findsNothing);
       expect(find.byType(FlightStripBoardView), findsOneWidget);
     });
+
+    testWidgets('R5: Letzten übersprungenen Artikel wiederherstellen (LIFO: A dann B -> B zurück, A bleibt übersprungen -> A zurück)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      String topStripId() {
+        final key = tester.widget<ProductStripWidget>(find.byType(ProductStripWidget).first).key as ValueKey<String>;
+        return key.value.replaceFirst('strip_widget_', '');
+      }
+
+      // 1. Artikel A nach links wischen (überspringen)
+      final idA = topStripId();
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // 2. Artikel B nach links wischen (überspringen)
+      final idB = topStripId();
+      expect(idB, isNot(equals(idA)));
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // Warten bis 4s-SnackBar verschwunden ist -> Statusleiste bleibt persistent sichtbar
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('strip_widget_$idA')), findsNothing);
+      expect(find.byKey(ValueKey('strip_widget_$idB')), findsNothing);
+
+      final restoreLastBtn = find.byKey(const ValueKey('restore_last_skipped_button'));
+      expect(restoreLastBtn, findsOneWidget);
+
+      // 3. Ein-Tap "Letzten wiederherstellen" -> B kehrt zurück, A bleibt übersprungen
+      await tester.tap(restoreLastBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('strip_widget_$idB')), findsOneWidget);
+      expect(find.byKey(ValueKey('strip_widget_$idA')), findsNothing);
+      expect(find.textContaining('1 übersprungenen Artikel'), findsOneWidget);
+
+      // 4. Erneut "Letzten wiederherstellen" -> A kehrt zurück, Skip-Leiste verschwindet
+      await tester.tap(restoreLastBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('strip_widget_$idA')), findsOneWidget);
+      expect(find.byKey(const ValueKey('restore_last_skipped_button')), findsNothing);
+      // Weder A noch B wurden versehentlich in den Korb gelegt
+      expect(find.textContaining('Korb leer'), findsOneWidget);
+    });
+
+    testWidgets('R5: Früher übersprungenen Artikel einzeln wiederherstellen, Re-Skip und Alle wiederherstellen mit Suche/Korb', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      String topStripId() {
+        final key = tester.widget<ProductStripWidget>(find.byType(ProductStripWidget).first).key as ValueKey<String>;
+        return key.value.replaceFirst('strip_widget_', '');
+      }
+
+      // A, B, C überspringen (jeweils obersten sichtbaren Strip wischen)
+      final idA = topStripId();
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+      final idB = topStripId();
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+      final idC = topStripId();
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // Einzelansicht für übersprungene Artikel öffnen
+      await tester.tap(find.byKey(const ValueKey('toggle_skipped_button')));
+      await tester.pumpAndSettle();
+
+      // Früher übersprungenen Artikel A gezielt einzeln wiederherstellen
+      final restoreABtn = find.byKey(ValueKey('restore_skipped_item_$idA'));
+      expect(restoreABtn, findsOneWidget);
+      await tester.tap(restoreABtn);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('strip_widget_$idA')), findsOneWidget);
+      expect(find.byKey(ValueKey('restore_skipped_item_$idB')), findsOneWidget);
+      expect(find.byKey(ValueKey('restore_skipped_item_$idC')), findsOneWidget);
+
+      // A erneut überspringen -> A ist nun der zuletzt übersprungene Artikel
+      await tester.fling(find.byKey(ValueKey('strip_widget_$idA')), const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      // "Letzten wiederherstellen" stellt A wieder her (LIFO nach Re-Skip)
+      await tester.tap(find.byKey(const ValueKey('restore_last_skipped_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ValueKey('strip_widget_$idA')), findsOneWidget);
+      expect(find.byKey(ValueKey('strip_widget_$idB')), findsNothing);
+      expect(find.byKey(ValueKey('strip_widget_$idC')), findsNothing);
+
+      // "Alle wiederherstellen" stellt B und C wieder her
+      await tester.tap(find.byKey(const ValueKey('restore_all_skipped_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ValueKey('strip_widget_$idB')), findsOneWidget);
+      expect(find.byKey(ValueKey('strip_widget_$idC')), findsOneWidget);
+      expect(find.byKey(const ValueKey('restore_last_skipped_button')), findsNothing);
+    });
+
+    testWidgets('R5: Schmaler 320dp-Viewport ohne RenderFlex-Overflow bei aktivem Skip-Recovery-Panel', (tester) async {
+      tester.view.physicalSize = const Size(320, 760);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      final firstStripKey = (tester.widget<ProductStripWidget>(find.byType(ProductStripWidget).first).key as ValueKey<String>).value;
+      final firstItemId = firstStripKey.replaceFirst('strip_widget_', '');
+
+      await tester.fling(find.byType(ProductStripWidget).first, const Offset(-600, 0), 1000);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('toggle_skipped_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('restore_last_skipped_button')), findsOneWidget);
+      expect(find.byKey(ValueKey('restore_skipped_item_$firstItemId')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

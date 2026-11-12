@@ -1158,6 +1158,9 @@
   },
   "hideSkippedItems": "Ocultar omitidos",
   "restoreAllSkipped": "Restaurar todos",
+  "restoreLastSkipped": "Restaurar último",
+  "restoreItem": "Restaurar",
+  "manageSkippedItems": "Mostrar",
   "inBasketBadge": "En cesta: {count}",
   "@inBasketBadge": {
     "placeholders": {
